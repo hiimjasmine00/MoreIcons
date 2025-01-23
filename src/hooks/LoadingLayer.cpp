@@ -14,10 +14,7 @@ class $modify(MILoadingLayer, LoadingLayer) {
     }
 
     void loadAssets() {
-        if (m_loadStep > 0) {
-            LoadingLayer::loadAssets();
-            return;
-        }
+        if (m_loadStep > 0) return LoadingLayer::loadAssets();
 
         auto f = m_fields.self();
         switch (f->m_iconLoadStep) {
@@ -55,8 +52,7 @@ class $modify(MILoadingLayer, LoadingLayer) {
                 MoreIcons::loadTrails(f->m_iconPacks);
                 break;
             default:
-                LoadingLayer::loadAssets();
-                return;
+                return LoadingLayer::loadAssets();
         }
 
         if (f->m_iconLoadStep < 11) {

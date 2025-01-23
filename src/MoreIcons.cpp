@@ -28,6 +28,17 @@ $execute {
         MoreIconsAPI::updatePlayerObject(object, icon, type);
         return ListenerResult::Propagate;
     }, DispatchFilter<PlayerObject*, std::string, IconType>("player-object"_spr));
+
+    new EventListener(+[](std::vector<std::string>* vec, IconType type) {
+        vec->clear();
+        *vec = MoreIconsAPI::vectorForType(type);
+        return ListenerResult::Propagate;
+    }, DispatchFilter<std::vector<std::string>*, IconType>("all-icons"_spr));
+
+    new EventListener(+[](std::string* icon, IconType type, bool dual) {
+        *icon = MoreIconsAPI::activeForType(type, dual);
+        return ListenerResult::Propagate;
+    }, DispatchFilter<std::string*, IconType, bool>("active-icon"_spr));
 }
 
 $on_mod(DataSaved) {
@@ -389,10 +400,10 @@ void MoreIcons::loadIcon(const std::filesystem::path& path, const TexturePack& p
             dict->setObject(frames, "frames");
             auto metadata = static_cast<CCDictionary*>(dict->objectForKey("metadata"));
             auto texturePath = std::filesystem::path(metadata->valueForKey("textureFileName")->getCString()).filename().string();
-            auto fullTexturePath = (path.parent_path() / texturePath).string();
+            auto fullTexturePath = path.parent_path() / texturePath;
             if (!std::filesystem::exists(fullTexturePath)) {
-                auto fallbackTexturePath = std::filesystem::path(plistPath).replace_extension(".png").string();
-                if (!std::filesystem::exists((fallbackTexturePath))) {
+                auto fallbackTexturePath = std::filesystem::path(path).replace_extension(".png");
+                if (!std::filesystem::exists(fallbackTexturePath)) {
                     auto logMessage = fmt::format("{}: Texture file {} not found, no fallback", path.string(), texturePath);
                     log::warn("{}", logMessage);
                     {
@@ -406,12 +417,12 @@ void MoreIcons::loadIcon(const std::filesystem::path& path, const TexturePack& p
             }
 
             auto image = new CCImage();
-            if (image->initWithImageFileThreadSafe(fullTexturePath.c_str())) {
+            if (image->initWithImageFileThreadSafe(fullTexturePath.string().c_str())) {
                 std::lock_guard lock(IMAGE_MUTEX);
                 IMAGES.push_back({
                     .image = image,
                     .dict = dict,
-                    .texturePath = fullTexturePath,
+                    .texturePath = fullTexturePath.string(),
                     .name = name,
                     .frameName = "",
                     .pack = pack,

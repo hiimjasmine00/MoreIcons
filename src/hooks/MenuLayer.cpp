@@ -8,10 +8,7 @@ class $modify(MIMenuLayer, MenuLayer) {
         if (auto initHookRes = self.getHook("MenuLayer::init")) {
             auto initHook = initHookRes.unwrap();
             if (auto iconProfile = Loader::get()->getInstalledMod("capeling.icon_profile")) {
-                if (iconProfile->shouldLoad()) {
-                    initHook->setPriority(-1);
-                    return;
-                }
+                if (iconProfile->shouldLoad()) return initHook->setPriority(-1);
             }
 
             queueInMainThread([initHook] {

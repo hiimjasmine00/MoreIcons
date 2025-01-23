@@ -43,13 +43,25 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
 
     setUserObject(player, icon);
 
+    player->m_firstLayer->setVisible(type != IconType::Robot && type != IconType::Spider);
+    player->m_secondLayer->setVisible(type != IconType::Robot && type != IconType::Spider);
+    player->m_birdDome->setVisible(type == IconType::Ufo);
+
     if (type == IconType::Robot) {
-        updateRobotSprite(player->m_robotSprite, icon, type);
-        return;
+        if (!player->m_robotSprite) player->createRobotSprite(1);
+        player->m_robotSprite->setVisible(true);
+        player->m_robotSprite->m_color = player->m_firstLayer->getColor();
+        player->m_robotSprite->m_secondColor = player->m_secondLayer->getColor();
+        player->m_robotSprite->updateColors();
+        return updateRobotSprite(player->m_robotSprite, icon, type);
     }
     else if (type == IconType::Spider) {
-        updateRobotSprite(player->m_spiderSprite, icon, type);
-        return;
+        if (!player->m_spiderSprite) player->createSpiderSprite(1);
+        player->m_spiderSprite->setVisible(true);
+        player->m_spiderSprite->m_color = player->m_firstLayer->getColor();
+        player->m_spiderSprite->m_secondColor = player->m_secondLayer->getColor();
+        player->m_spiderSprite->updateColors();
+        return updateRobotSprite(player->m_spiderSprite, icon, type);
     }
 
     auto iconFrame = fmt::format("{}_001.png"_spr, icon);
@@ -60,6 +72,8 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
 
     auto sfc = CCSpriteFrameCache::get();
     player->m_firstLayer->setDisplayFrame(sfc->spriteFrameByName(iconFrame.c_str()));
+    player->m_firstLayer->setScale(type == IconType::Ball ? 0.9f : 1.0f);
+    player->m_firstLayer->setPosition({ 0.0f, type == IconType::Ufo ? -7.0f : 0.0f });
     player->m_secondLayer->setDisplayFrame(sfc->spriteFrameByName(iconFrame2.c_str()));
     auto firstCenter = player->m_firstLayer->getContentSize() / 2;
     player->m_secondLayer->setPosition(firstCenter);
@@ -152,8 +166,7 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& i
         batchNode->addChild(robotSprite);
         if (hasExisted && ((type == IconType::Robot && object->m_isRobot) || (type == IconType::Spider && object->m_isSpider)))
             object->m_mainLayer->addChild(batchNode, 2);
-        robotSprite->release();
-        return;
+        return robotSprite->release();
     }
 
     auto iconFrame = fmt::format("{}_001.png"_spr, icon);

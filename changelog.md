@@ -1,4 +1,8 @@
 # More Icons Changelog
+## v1.6.0 (2025-01-23)
+- Added a header-only API for other mods to use
+- Fixed a bug where the player's icon would not change properly when exiting dual mode (Reported by [Cocoiscool748](https://github.com/Cocoiscool748))
+
 ## v1.5.3 (2024-12-24)
 - Fixed a bug where the game would crash when using a custom trail on macOS ([#18](https://github.com/hiimjustin000/MoreIcons/issues/18))
 

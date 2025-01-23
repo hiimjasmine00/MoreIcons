@@ -87,16 +87,12 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto& vec = MoreIconsAPI::vectorForType(type);
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto it = std::find(vec.begin(), vec.end(), MoreIconsAPI::activeForType(type, sdi && sdi->getSavedValue("2pselected", false)));
-        return it == vec.end() ? active : ((gameManager->countForType(type) + 35) / 36) + (it - vec.begin()) / 36;
+        return it == vec.end() ? active : (gameManager->countForType(type) + 35) / 36 + (it - vec.begin()) / 36;
     }
 
     void onSelect(CCObject* sender) {
         auto btn = static_cast<CCMenuItemSpriteExtra*>(sender);
-        if (btn->getUserObject("name"_spr)) {
-            if (m_iconType == IconType::Special) onCustomSpecialSelect(btn);
-            else onCustomSelect(btn);
-            return;
-        }
+        if (btn->getUserObject("name"_spr)) return m_iconType == IconType::Special ? onCustomSpecialSelect(btn) : onCustomSelect(btn);
 
         GJGarageLayer::onSelect(sender);
 
@@ -269,10 +265,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     }
 
     void setupCustomPage(int page) {
-        if (m_iconType == IconType::Special) {
-            setupCustomSpecialPage(page);
-            return;
-        }
+        if (m_iconType == IconType::Special) return setupCustomSpecialPage(page);
 
         auto& vec = MoreIconsAPI::vectorForType(m_iconType);
         auto f = m_fields.self();
@@ -281,10 +274,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             f->m_pageBar = nullptr;
         }
         auto gameManager = GameManager::get();
-        if (vec.empty() || page * 36 < gameManager->countForType(m_iconType)) {
-            createNavMenu();
-            return;
-        }
+        if (vec.empty() || page * 36 < gameManager->countForType(m_iconType)) return createNavMenu();
 
         m_iconSelection->setVisible(false);
 
@@ -338,7 +328,6 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         m_cursor1->setPosition(sender->getParent()->convertToWorldSpace(sender->getPosition()));
         m_cursor1->setVisible(true);
         auto player = dual ? static_cast<SimplePlayer*>(getChildByID("player2-icon")) : m_playerObject;
-        player->updatePlayerFrame(1, m_iconType);
         player->updateColors();
         MoreIconsAPI::updateSimplePlayer(player, name, m_iconType);
         if (!dual) GameManager::get()->m_playerIconType = m_iconType;
@@ -395,10 +384,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             f->m_pageBar->removeFromParent();
             f->m_pageBar = nullptr;
         }
-        if (vec.empty() || page * 36 < GameManager::get()->countForType(m_iconType)) {
-            createNavMenu();
-            return;
-        }
+        if (vec.empty() || page * 36 < GameManager::get()->countForType(m_iconType)) return createNavMenu();
 
         m_iconSelection->setVisible(false);
 

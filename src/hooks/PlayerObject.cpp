@@ -28,10 +28,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updatePlayerFrame(int frame) {
         PlayerObject::updatePlayerFrame(frame);
 
-        if (!m_gameLayer || frame == 0) {
-            MoreIconsAPI::removeUserObject(this);
-            return;
-        }
+        if (!m_gameLayer || frame == 0) return MoreIconsAPI::removeUserObject(this);
 
         if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this)
             MoreIconsAPI::updatePlayerObject(this, MoreIconsAPI::activeForType(IconType::Cube, false), IconType::Cube);
@@ -43,10 +40,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updatePlayerShipFrame(int frame) {
         PlayerObject::updatePlayerShipFrame(frame);
 
-        if (!m_gameLayer) {
-            MoreIconsAPI::removeUserObject(this);
-            return;
-        }
+        if (!m_gameLayer) return MoreIconsAPI::removeUserObject(this);
 
         if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this)
             MoreIconsAPI::updatePlayerObject(this, MoreIconsAPI::activeForType(IconType::Ship, false), IconType::Ship);
@@ -58,10 +52,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updatePlayerRollFrame(int frame) {
         PlayerObject::updatePlayerRollFrame(frame);
 
-        if (!m_gameLayer || frame == 0) {
-            MoreIconsAPI::removeUserObject(this);
-            return;
-        }
+        if (!m_gameLayer || frame == 0) return MoreIconsAPI::removeUserObject(this);
 
         if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this)
             MoreIconsAPI::updatePlayerObject(this, MoreIconsAPI::activeForType(IconType::Ball, false), IconType::Ball);
@@ -73,10 +64,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updatePlayerBirdFrame(int frame) {
         PlayerObject::updatePlayerBirdFrame(frame);
 
-        if (!m_gameLayer) {
-            MoreIconsAPI::removeUserObject(this);
-            return;
-        }
+        if (!m_gameLayer) return MoreIconsAPI::removeUserObject(this);
 
         if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this)
             MoreIconsAPI::updatePlayerObject(this, MoreIconsAPI::activeForType(IconType::Ufo, false), IconType::Ufo);
@@ -88,10 +76,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updatePlayerDartFrame(int frame) {
         PlayerObject::updatePlayerDartFrame(frame);
 
-        if (!m_gameLayer) {
-            MoreIconsAPI::removeUserObject(this);
-            return;
-        }
+        if (!m_gameLayer) return MoreIconsAPI::removeUserObject(this);
 
         if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this)
             MoreIconsAPI::updatePlayerObject(this, MoreIconsAPI::activeForType(IconType::Wave, false), IconType::Wave);
@@ -103,10 +88,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void createRobot(int frame) {
         PlayerObject::createRobot(frame);
 
-        if (!m_gameLayer) {
-            MoreIconsAPI::removeUserObject(this);
-            return;
-        }
+        if (!m_gameLayer) return MoreIconsAPI::removeUserObject(this);
 
         if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this)
             MoreIconsAPI::updatePlayerObject(this, MoreIconsAPI::activeForType(IconType::Robot, false), IconType::Robot);
@@ -118,10 +100,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void createSpider(int frame) {
         PlayerObject::createSpider(frame);
 
-        if (!m_gameLayer) {
-            MoreIconsAPI::removeUserObject(this);
-            return;
-        }
+        if (!m_gameLayer) return MoreIconsAPI::removeUserObject(this);
 
         if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this)
             MoreIconsAPI::updatePlayerObject(this, MoreIconsAPI::activeForType(IconType::Spider, false), IconType::Spider);
@@ -133,10 +112,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updatePlayerSwingFrame(int frame) {
         PlayerObject::updatePlayerSwingFrame(frame);
 
-        if (!m_gameLayer) {
-            MoreIconsAPI::removeUserObject(this);
-            return;
-        }
+        if (!m_gameLayer) return MoreIconsAPI::removeUserObject(this);
 
         if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this)
             MoreIconsAPI::updatePlayerObject(this, MoreIconsAPI::activeForType(IconType::Swing, false), IconType::Swing);
@@ -148,10 +124,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updatePlayerJetpackFrame(int frame) {
         PlayerObject::updatePlayerJetpackFrame(frame);
 
-        if (!m_gameLayer) {
-            MoreIconsAPI::removeUserObject(this);
-            return;
-        }
+        if (!m_gameLayer) return MoreIconsAPI::removeUserObject(this);
 
         if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this)
             MoreIconsAPI::updatePlayerObject(this, MoreIconsAPI::activeForType(IconType::Jetpack, false), IconType::Jetpack);

@@ -51,25 +51,42 @@ To use a custom icon, you will need to go into the icon kit. In the icon kit, th
 
 To deselect a custom icon, use the first row of dots to go back to the default icons, and click on one of the default icons to select it.
 
-## Mod Support
-Here are some examples of how to support More Icons in your mod.
-```cpp
-// Get the player's icon (The parameter is the gamemode or the gamemode plus "-dual" if Separate Dual Icons is enabled)
-Loader::get()->getLoadedMod("hiimjustin000.more_icons")->getSavedValue<std::string>("icon");
+## More Icons API
+To use the More Icons API, add the following to the `dependencies` object in your `mod.json`:
+```json
+{
+    "dependencies": {
+        "hiimjustin000.more_icons": {
+            "version": ">=v1.6.0",
+            "importance": "suggested"
+        }
+    }
+}
+```
 
-// Get the list of icons (The parameter is the gamemode plus the letter "s")
-Loader::get()->getLoadedMod("hiimjustin000.more_icons")->getSavedValue<std::vector<std::string>>("icons");
+Here are some examples of how to use the More Icons API:
+```cpp
+// Include the More Icons API header
+#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
+
+// Get the player's icon
+auto icon = MoreIcons::activeForType(IconType::Cube);
+// Get the player's dual icon (If the player has the mod "Separate Dual Icons" by Weebify enabled)
+auto dualIcon = MoreIcons::activeForType(IconType::Cube, true);
+
+// Get the list of icons (Read-only)
+auto icons = MoreIcons::vectorForType(IconType::Cube);
 
 // Change a SimplePlayer to a custom icon
-DispatchEvent<SimplePlayer*, std::string, IconType>("hiimjustin000.more_icons/simple-player", simplePlayer, "my-icon", IconType::Cube).post();
+MoreIcons::updateSimplePlayer(simplePlayer, "my-icon", IconType::Cube);
 
 // Change a GJRobotSprite to a custom icon
-DispatchEvent<GJRobotSprite*, std::string>("hiimjustin000.more_icons/robot-sprite", robotSprite, "my-icon").post(); // Determines the icon type
-DispatchEvent<GJRobotSprite*, std::string, IconType>("hiimjustin000.more_icons/robot-sprite", robotSprite, "my-icon", IconType::Robot).post();
+MoreIcons::updateRobotSprite(robotSprite, "my-icon"); // Determines the icon type
+MoreIcons::updateRobotSprite(robotSprite, "my-icon", IconType::Robot);
 
 // Change a PlayerObject to a custom icon
-DispatchEvent<PlayerObject*, std::string>("hiimjustin000.more_icons/player-object", playerObject, "my-icon").post(); // Determines the icon type
-DispatchEvent<PlayerObject*, std::string, IconType>("hiimjustin000.more_icons/player-object", playerObject, "my-icon", IconType::Cube).post();
+MoreIcons::updatePlayerObject(playerObject, "my-icon"); // Determines the icon type
+MoreIcons::updatePlayerObject(playerObject, "my-icon", IconType::Cube);
 ```
 
 ## Credits
