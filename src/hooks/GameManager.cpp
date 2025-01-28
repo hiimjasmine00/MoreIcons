@@ -1,8 +1,8 @@
 #include "../MoreIcons.hpp"
+#include <Geode/modify/GameManager.hpp>
 
 using namespace geode::prelude;
 
-#include <Geode/modify/GameManager.hpp>
 class $modify(MIGameManager, GameManager) {
     void reloadAllStep2() {
         GameManager::reloadAllStep2();

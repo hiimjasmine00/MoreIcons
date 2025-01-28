@@ -1,8 +1,9 @@
 #include "../MoreIcons.hpp"
+#include <Geode/binding/GJBaseGameLayer.hpp>
+#include <Geode/modify/PlayerObject.hpp>
 
 using namespace geode::prelude;
 
-#include <Geode/modify/PlayerObject.hpp>
 class $modify(MIPlayerObject, PlayerObject) {
     static void onModify(auto& self) {
         (void)self.setHookPriority("PlayerObject::setupStreak", -1);

@@ -1,3 +1,9 @@
+#include <cocos2d.h>
+#include <Geode/binding/GJRobotSprite.hpp>
+#include <Geode/binding/PlayerObject.hpp>
+#include <Geode/loader/Mod.hpp>
+#include <Geode/utils/casts.hpp>
+
 // https://github.com/Alphalaneous/FineOutline/blob/1.0.8/src/CCSpriteBatchNode.h#L24 probably
 class DummyNode : public cocos2d::CCSpriteBatchNode {
 public:
@@ -38,23 +44,9 @@ public:
         CCNode::visit();
     }
 
-    void setBlendFunc(cocos2d::ccBlendFunc blendFunc) override {
-        CCSpriteBatchNode::setBlendFunc(blendFunc);
+    void setBlendFunc(cocos2d::ccBlendFunc blendFunc) override;
 
-        for (auto child : geode::cocos::CCArrayExt<CCNode*>(getChildren())) {
-            if (geode::cast::typeinfo_cast<CCBlendProtocol*>(child)) recursiveBlend(child, blendFunc);
-        }
-    }
-
-    void recursiveBlend(CCNode* node, cocos2d::ccBlendFunc blendFunc) {
-        if (!node) return;
-
-        if (auto blendNode = geode::cast::typeinfo_cast<CCBlendProtocol*>(node)) blendNode->setBlendFunc(blendFunc);
-
-        for (auto child : geode::cocos::CCArrayExt<CCNode*>(node->getChildren())) {
-            if (geode::cast::typeinfo_cast<CCBlendProtocol*>(child)) recursiveBlend(child, blendFunc);
-        }
-    }
+    void recursiveBlend(CCNode* node, cocos2d::ccBlendFunc blendFunc);
 };
 
 class MoreIconsAPI {

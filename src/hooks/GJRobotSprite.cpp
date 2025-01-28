@@ -1,8 +1,8 @@
 #include "../api/MoreIconsAPI.hpp"
+#include <Geode/modify/GJRobotSprite.hpp>
 
 using namespace geode::prelude;
 
-#include <Geode/modify/GJRobotSprite.hpp>
 class $modify(MIRobotSprite, GJRobotSprite) {
     void updateFrame(int frame) {
         GJRobotSprite::updateFrame(frame);

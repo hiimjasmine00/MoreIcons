@@ -1,5 +1,5 @@
-#include <BS_thread_pool.hpp>
 #include "api/MoreIconsAPI.hpp"
+#include <BS_thread_pool.hpp>
 
 struct TexturePack {
     std::string name;
@@ -167,42 +167,7 @@ public:
         return name;
     }
 
-    static SimplePlayer* findPlayer(cocos2d::CCNode* node) {
-        if (!node) return nullptr;
-        return geode::cocos::findFirstChildRecursive<SimplePlayer>(node, [](auto) { return true; });
-    }
+    static SimplePlayer* findPlayer(cocos2d::CCNode* node);
 
-    static void showInfoPopup(bool folderButton = false) {
-        geode::createQuickPopup(
-            "More Icons",
-            fmt::format(std::locale(""),
-                "<cg>Icons</c>: {:L}\n"
-                "<cp>Ships</c>: {:L}\n"
-                "<cr>Balls</c>: {:L}\n"
-                "<co>UFOs</c>: {:L}\n"
-                "<cj>Waves</c>: {:L}\n"
-                "Robots: {:L}\n"
-                "<ca>Spiders</c>: {:L}\n"
-                "<cy>Swings</c>: {:L}\n"
-                "<cd>Jetpacks</c>: {:L}\n"
-                "<cb>Trails</c>: {:L}",
-                MoreIconsAPI::ICONS.size(),
-                MoreIconsAPI::SHIPS.size(),
-                MoreIconsAPI::BALLS.size(),
-                MoreIconsAPI::UFOS.size(),
-                MoreIconsAPI::WAVES.size(),
-                MoreIconsAPI::ROBOTS.size(),
-                MoreIconsAPI::SPIDERS.size(),
-                MoreIconsAPI::SWINGS.size(),
-                MoreIconsAPI::JETPACKS.size(),
-                MoreIconsAPI::TRAILS.size()
-            ),
-            "OK",
-            folderButton ? "Folder" : nullptr,
-            300.0f,
-            [folderButton](auto, bool btn2) {
-                if (folderButton && btn2) geode::utils::file::openFolder(geode::Mod::get()->getConfigDir());
-            }
-        );
-    }
+    static void showInfoPopup(bool folderButton = false);
 };

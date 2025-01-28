@@ -1,8 +1,9 @@
 #include "../api/MoreIconsAPI.hpp"
+#include <Geode/binding/GameManager.hpp>
+#include <Geode/modify/MenuGameLayer.hpp>
 
 using namespace geode::prelude;
 
-#include <Geode/modify/MenuGameLayer.hpp>
 class $modify(MIMenuGameLayer, MenuGameLayer) {
     void resetPlayer() {
         MenuGameLayer::resetPlayer();

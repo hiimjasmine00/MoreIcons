@@ -1,9 +1,18 @@
 #include "../classes/ButtonHooker.hpp"
 #include "../classes/LogLayer.hpp"
+#include <Geode/binding/BoomScrollLayer.hpp>
+#include <Geode/binding/GameManager.hpp>
+#include <Geode/binding/GJItemIcon.hpp>
+#include <Geode/binding/GJSpiderSprite.hpp>
+#include <Geode/binding/ItemInfoPopup.hpp>
+#include <Geode/binding/ListButtonBar.hpp>
+#include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/binding/TextArea.hpp>
+#include <Geode/modify/GJGarageLayer.hpp>
+#include <Geode/ui/BasedButtonSprite.hpp>
 
 using namespace geode::prelude;
 
-#include <Geode/modify/GJGarageLayer.hpp>
 class $modify(MIGarageLayer, GJGarageLayer) {
     struct Fields {
         ListButtonBar* m_pageBar;

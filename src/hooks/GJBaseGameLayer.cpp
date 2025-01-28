@@ -1,8 +1,9 @@
 #include "../MoreIcons.hpp"
+#include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/modify/GJBaseGameLayer.hpp>
 
 using namespace geode::prelude;
 
-#include <Geode/modify/GJBaseGameLayer.hpp>
 class $modify(MIBaseGameLayer, GJBaseGameLayer) {
     void playExitDualEffect(PlayerObject* object) {
         GJBaseGameLayer::playExitDualEffect(object);

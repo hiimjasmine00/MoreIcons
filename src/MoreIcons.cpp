@@ -1,5 +1,7 @@
 #include "MoreIcons.hpp"
+#include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/loader/Dispatch.hpp>
+#include <Geode/ui/Popup.hpp>
 
 using namespace geode::prelude;
 
@@ -560,4 +562,43 @@ void MoreIcons::loadTrail(const std::filesystem::path& path, const TexturePack& 
         }
         else image->release();
     });
+}
+
+SimplePlayer* MoreIcons::findPlayer(cocos2d::CCNode* node) {
+    if (!node) return nullptr;
+    return geode::cocos::findFirstChildRecursive<SimplePlayer>(node, [](auto) { return true; });
+}
+
+void MoreIcons::showInfoPopup(bool folderButton) {
+    geode::createQuickPopup(
+        "More Icons",
+        fmt::format(std::locale(""),
+            "<cg>Icons</c>: {:L}\n"
+            "<cp>Ships</c>: {:L}\n"
+            "<cr>Balls</c>: {:L}\n"
+            "<co>UFOs</c>: {:L}\n"
+            "<cj>Waves</c>: {:L}\n"
+            "Robots: {:L}\n"
+            "<ca>Spiders</c>: {:L}\n"
+            "<cy>Swings</c>: {:L}\n"
+            "<cd>Jetpacks</c>: {:L}\n"
+            "<cb>Trails</c>: {:L}",
+            MoreIconsAPI::ICONS.size(),
+            MoreIconsAPI::SHIPS.size(),
+            MoreIconsAPI::BALLS.size(),
+            MoreIconsAPI::UFOS.size(),
+            MoreIconsAPI::WAVES.size(),
+            MoreIconsAPI::ROBOTS.size(),
+            MoreIconsAPI::SPIDERS.size(),
+            MoreIconsAPI::SWINGS.size(),
+            MoreIconsAPI::JETPACKS.size(),
+            MoreIconsAPI::TRAILS.size()
+        ),
+        "OK",
+        folderButton ? "Folder" : nullptr,
+        300.0f,
+        [folderButton](auto, bool btn2) {
+            if (folderButton && btn2) geode::utils::file::openFolder(geode::Mod::get()->getConfigDir());
+        }
+    );
 }

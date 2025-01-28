@@ -1,3 +1,5 @@
+#include <cocos2d.h>
+
 #define CALL_BUTTON_ORIGINAL(button) \
     if (auto hooker = static_cast<ButtonHooker*>(static_cast<CCNode*>(button)->getUserObject("hooker"_spr))) \
         (hooker->m_listener->*hooker->m_selector)(button)

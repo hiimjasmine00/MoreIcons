@@ -1,9 +1,9 @@
 #include "../MoreIcons.hpp"
 #include "../classes/ButtonHooker.hpp"
+#include <Geode/modify/ProfilePage.hpp>
 
 using namespace geode::prelude;
 
-#include <Geode/modify/ProfilePage.hpp>
 class $modify(MIProfilePage, ProfilePage) {
     static void onModify(auto& self) {
         (void)self.setHookPriority("ProfilePage::loadPageFromUserInfo", -1);

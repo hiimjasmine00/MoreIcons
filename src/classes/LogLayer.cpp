@@ -1,4 +1,7 @@
 #include "LogLayer.hpp"
+#include <Geode/binding/MultilineBitmapFont.hpp>
+#include <Geode/binding/TextArea.hpp>
+#include <Geode/ui/ScrollLayer.hpp>
 
 using namespace geode::prelude;
 

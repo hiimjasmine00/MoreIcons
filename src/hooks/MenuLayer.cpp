@@ -1,8 +1,10 @@
 #include "../MoreIcons.hpp"
+#include <Geode/binding/GameManager.hpp>
+#include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/modify/MenuLayer.hpp>
 
 using namespace geode::prelude;
 
-#include <Geode/modify/MenuLayer.hpp>
 class $modify(MIMenuLayer, MenuLayer) {
     static void onModify(auto& self) {
         if (auto initHookRes = self.getHook("MenuLayer::init")) {

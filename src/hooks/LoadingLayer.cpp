@@ -1,8 +1,8 @@
 #include "../MoreIcons.hpp"
+#include <Geode/modify/LoadingLayer.hpp>
 
 using namespace geode::prelude;
 
-#include <Geode/modify/LoadingLayer.hpp>
 class $modify(MILoadingLayer, LoadingLayer) {
     struct Fields {
         int m_iconLoadStep;

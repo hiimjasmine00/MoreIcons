@@ -1,8 +1,9 @@
 #include "../MoreIcons.hpp"
+#include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/modify/CharacterColorPage.hpp>
 
 using namespace geode::prelude;
 
-#include <Geode/modify/CharacterColorPage.hpp>
 class $modify(MICharacterColorPage, CharacterColorPage) {
     static void onModify(auto& self) {
         (void)self.setHookPriority("CharacterColorPage::init", -1);

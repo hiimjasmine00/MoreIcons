@@ -1,4 +1,5 @@
 #include "../MoreIcons.hpp"
+#include <Geode/ui/Popup.hpp>
 
 class LogLayer : public geode::Popup<> {
 protected:

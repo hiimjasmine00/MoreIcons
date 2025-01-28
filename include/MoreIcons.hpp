@@ -1,3 +1,6 @@
+#pragma once
+#include <Geode/Enums.hpp>
+#include <Geode/GeneratedPredeclare.hpp>
 #include <Geode/loader/Dispatch.hpp>
 
 class MoreIcons {

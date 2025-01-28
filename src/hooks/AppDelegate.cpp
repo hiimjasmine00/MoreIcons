@@ -1,8 +1,8 @@
 #include "../MoreIcons.hpp"
+#include <Geode/modify/AppDelegate.hpp>
 
 using namespace geode::prelude;
 
-#include <Geode/modify/AppDelegate.hpp>
 class $modify(MIAppDelegate, AppDelegate) {
     static void onModify(auto& self) {
         (void)self.setHookPriority("AppDelegate::trySaveGame", -1);

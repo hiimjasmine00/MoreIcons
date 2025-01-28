@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v1.6.1 (2025-01-28)
+- Fixed header inclusion in the API
+
 ## v1.6.0 (2025-01-23)
 - Added a header-only API for other mods to use
 - Fixed a bug where the player's icon would not change properly when exiting dual mode (Reported by [Cocoiscool748](https://github.com/Cocoiscool748))
