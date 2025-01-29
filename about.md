@@ -53,4 +53,4 @@ To deselect a custom icon, use the first row of dots to go back to the default i
 
 ## Credits
 - [DeepResonanceX](user:5668656) - Idea for the mod
-- [hiimjustin000](user:7466002) - Creator of the mod
+- [hiimjasmine00](user:7466002) - Creator of the mod

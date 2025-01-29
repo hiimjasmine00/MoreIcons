@@ -2,11 +2,12 @@
 #include <Geode/modify/LoadingLayer.hpp>
 
 using namespace geode::prelude;
+using namespace geode::texture_loader;
 
 class $modify(MILoadingLayer, LoadingLayer) {
     struct Fields {
         int m_iconLoadStep;
-        std::vector<std::filesystem::path> m_iconPacks;
+        std::vector<Pack> m_iconPacks;
     };
 
     static void onModify(auto& self) {

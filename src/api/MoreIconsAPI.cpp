@@ -2,8 +2,10 @@
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
+#include <Geode/binding/PlayerObject.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
-#include <Geode/utils/cocos.hpp>
+#include <Geode/loader/Mod.hpp>
+#include <Geode/utils/ranges.hpp>
 
 using namespace geode::prelude;
 
@@ -23,6 +25,18 @@ void DummyNode::recursiveBlend(CCNode* node, ccBlendFunc blendFunc) {
     for (auto child : CCArrayExt<CCNode*>(node->getChildren())) {
         if (typeinfo_cast<CCBlendProtocol*>(child)) recursiveBlend(child, blendFunc);
     }
+}
+
+void MoreIconsAPI::setUserObject(CCNode* node, const std::string& value) {
+    if (!node || node->getUserObject("name"_spr)) return;
+
+    node->setUserObject("name"_spr, CCString::create(value));
+}
+
+void MoreIconsAPI::removeUserObject(CCNode* node) {
+    if (!node) return;
+
+    node->setUserObject("name"_spr, nullptr);
 }
 
 std::vector<std::string>& MoreIconsAPI::vectorForType(IconType type) {
@@ -59,6 +73,20 @@ std::string_view MoreIconsAPI::savedForType(IconType type, bool dual) {
         case IconType::Special: return isDual ? "trail-dual" : "trail";
         default: return "";
     }
+}
+
+std::string MoreIconsAPI::activeForType(IconType type, bool dual) {
+    auto savedType = savedForType(type, dual);
+    return !savedType.empty() ? Mod::get()->getSavedValue<std::string>(savedType, "") : "";
+}
+
+void MoreIconsAPI::setIcon(const std::string& icon, IconType type, bool dual) {
+    auto savedType = savedForType(type, dual);
+    if (!savedType.empty()) Mod::get()->setSavedValue(savedType, icon);
+}
+
+bool MoreIconsAPI::hasIcon(const std::string& icon, IconType type) {
+    return !icon.empty() && ranges::contains(vectorForType(type), icon);
 }
 
 void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type) {
@@ -115,6 +143,12 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
     }
 }
 
+void MoreIconsAPI::updateRobotSprite(GJRobotSprite* sprite, const std::string& icon) {
+    if (!sprite || icon.empty()) return;
+
+    updateRobotSprite(sprite, icon, sprite->m_iconType);
+}
+
 void MoreIconsAPI::updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type) {
     if (!sprite || icon.empty() || !hasIcon(icon, type)) return;
 
@@ -163,6 +197,26 @@ void MoreIconsAPI::updateRobotSprite(GJRobotSprite* sprite, const std::string& i
             sprite->m_extraSprite->setVisible(hasExtra);
         }
     }
+}
+
+IconType MoreIconsAPI::getIconType(PlayerObject* object) {
+    if (object->m_isShip) {
+        if (object->m_isPlatformer) return IconType::Jetpack;
+        else return IconType::Ship;
+    }
+    else if (object->m_isBall) return IconType::Ball;
+    else if (object->m_isBird) return IconType::Ufo;
+    else if (object->m_isDart) return IconType::Wave;
+    else if (object->m_isRobot) return IconType::Robot;
+    else if (object->m_isSpider) return IconType::Spider;
+    else if (object->m_isSwing) return IconType::Swing;
+    else return IconType::Cube;
+}
+
+void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& icon) {
+    if (!object || icon.empty()) return;
+
+    updatePlayerObject(object, icon, getIconType(object));
 }
 
 void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type) {

@@ -1,5 +1,6 @@
 #include "../MoreIcons.hpp"
 #include "../classes/ButtonHooker.hpp"
+#include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/ProfilePage.hpp>
 
 using namespace geode::prelude;
@@ -9,23 +10,33 @@ class $modify(MIProfilePage, ProfilePage) {
         (void)self.setHookPriority("ProfilePage::loadPageFromUserInfo", -1);
     }
 
+    SimplePlayer* findPlayer(CCNode* node) {
+        if (!node) return nullptr;
+        return findFirstChildRecursive<SimplePlayer>(node, [](auto) { return true; });
+    }
+
+    void changePlayers() {
+        auto playerMenu = m_mainLayer->getChildByID("player-menu");
+        if (!playerMenu) return;
+
+        auto playerShip = playerMenu->getChildByID("player-ship");
+        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-icon")), IconType::Cube);
+        MoreIcons::changeSimplePlayer(findPlayer(playerShip), playerShip ? (IconType)playerShip->getTag() : IconType::Ship);
+        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-ball")), IconType::Ball);
+        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-ufo")), IconType::Ufo);
+        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-wave")), IconType::Wave);
+        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-robot")), IconType::Robot);
+        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-spider")), IconType::Spider);
+        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-swing")), IconType::Swing);
+        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-jetpack")), IconType::Jetpack);
+    }
+
     void loadPageFromUserInfo(GJUserScore* score) {
         ProfilePage::loadPageFromUserInfo(score);
 
         if (!m_ownProfile) return;
-
-        auto playerMenu = m_mainLayer->getChildByID("player-menu");
-        if (!playerMenu) return;
-
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-icon")), IconType::Cube);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-ship")), IconType::Ship);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-ball")), IconType::Ball);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-ufo")), IconType::Ufo);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-wave")), IconType::Wave);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-robot")), IconType::Robot);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-spider")), IconType::Spider);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-swing")), IconType::Swing);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-jetpack")), IconType::Jetpack);
+        
+        changePlayers();
 
         if (Loader::get()->isModLoaded("weebify.separate_dual_icons")) {
             if (auto leftMenu = m_mainLayer->getChildByID("left-menu")) {
@@ -37,20 +48,8 @@ class $modify(MIProfilePage, ProfilePage) {
 
     void newOn2PToggle(CCObject* sender) {
         CALL_BUTTON_ORIGINAL(sender);
-
-        auto playerMenu = m_mainLayer->getChildByID("player-menu");
-        if (!playerMenu) return;
-
-        auto playerShip = playerMenu->getChildByID("player-ship");
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-icon")), IconType::Cube);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerShip), playerShip ? (IconType)playerShip->getTag() : IconType::Ship);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-ball")), IconType::Ball);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-ufo")), IconType::Ufo);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-wave")), IconType::Wave);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-robot")), IconType::Robot);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-spider")), IconType::Spider);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-swing")), IconType::Swing);
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(playerMenu->getChildByID("player-jetpack")), IconType::Jetpack);
+        
+        changePlayers();
     }
 
     void toggleShip(CCObject* sender) {
@@ -58,6 +57,6 @@ class $modify(MIProfilePage, ProfilePage) {
 
         if (!m_ownProfile) return;
 
-        MoreIcons::changeSimplePlayer(MoreIcons::findPlayer(static_cast<CCNode*>(sender)), (IconType)sender->getTag());
+        MoreIcons::changeSimplePlayer(findPlayer(static_cast<CCNode*>(sender)), (IconType)sender->getTag());
     }
 };

@@ -57,7 +57,7 @@ To use the More Icons API, add the following to the `dependencies` object in you
 {
     "dependencies": {
         "hiimjustin000.more_icons": {
-            "version": ">=v1.6.0",
+            "version": ">=v1.7.0",
             "importance": "suggested"
         }
     }
@@ -91,7 +91,7 @@ MoreIcons::updatePlayerObject(playerObject, "my-icon", IconType::Cube);
 
 ## Credits
 - [DeepResonanceX](https://gdbrowser.com/u/5668656) - Idea for the mod
-- [hiimjustin000](https://gdbrowser.com/u/7466002) - Creator of the mod
+- [hiimjasmine00](https://gdbrowser.com/u/7466002) - Creator of the mod
 
 # License
 This mod is licensed under the [MIT License](./LICENSE).

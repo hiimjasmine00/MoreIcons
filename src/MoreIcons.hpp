@@ -1,5 +1,7 @@
 #include "api/MoreIconsAPI.hpp"
-#include <BS_thread_pool.hpp>
+#include <Geode/loader/Loader.hpp>
+#include <Geode/utils/VersionInfo.hpp>
+#include <geode.texture-loader/include/TextureLoader.hpp>
 
 struct TexturePack {
     std::string name;
@@ -36,23 +38,6 @@ struct LogData {
     LogType type;
 };
 
-// https://github.com/GlobedGD/globed2/blob/v1.6.2/src/util/cocos.cpp#L44
-namespace {
-    template <typename TC>
-    using priv_method_t = void(TC::*)(cocos2d::CCDictionary*, cocos2d::CCTexture2D*);
-
-    template <typename TC, priv_method_t<TC> func>
-    struct priv_caller {
-        friend void _addSpriteFramesWithDictionary(cocos2d::CCDictionary* dict, cocos2d::CCTexture2D* texture) {
-            (cocos2d::CCSpriteFrameCache::get()->*func)(dict, texture);
-        }
-    };
-
-    template struct priv_caller<cocos2d::CCSpriteFrameCache, &cocos2d::CCSpriteFrameCache::addSpriteFramesWithDictionary>;
-
-    void _addSpriteFramesWithDictionary(cocos2d::CCDictionary*, cocos2d::CCTexture2D*);
-}
-
 class MoreIcons {
 public:
     static inline std::unordered_map<std::string, TexturePack> ICON_INFO;
@@ -71,60 +56,19 @@ public:
     static inline std::mutex LOG_MUTEX;
     static inline LogType HIGHEST_SEVERITY = LogType::Info;
 
-    static BS::thread_pool& sharedPool() {
-        static BS::thread_pool _sharedPool(std::thread::hardware_concurrency());
-        return _sharedPool;
-    }
-
-    static void removeSaved() {
-        geode::Mod::get()->setSavedValue<std::vector<std::string>>("icons", {});
-        geode::Mod::get()->setSavedValue<std::vector<std::string>>("ships", {});
-        geode::Mod::get()->setSavedValue<std::vector<std::string>>("balls", {});
-        geode::Mod::get()->setSavedValue<std::vector<std::string>>("ufos", {});
-        geode::Mod::get()->setSavedValue<std::vector<std::string>>("waves", {});
-        geode::Mod::get()->setSavedValue<std::vector<std::string>>("robots", {});
-        geode::Mod::get()->setSavedValue<std::vector<std::string>>("spiders", {});
-        geode::Mod::get()->setSavedValue<std::vector<std::string>>("swings", {});
-        geode::Mod::get()->setSavedValue<std::vector<std::string>>("jetpacks", {});
-        geode::Mod::get()->setSavedValue<std::vector<std::string>>("trails", {});
-    }
-
     static std::vector<std::filesystem::directory_entry> naturalSort(const std::filesystem::path& path);
-
     static void naturalSort(std::vector<std::string>& vec);
-
     static bool naturalSorter(const std::string& aStr, const std::string& bStr);
-
-    static std::vector<std::filesystem::path> getTexturePacks();
-
-    static std::string replaceEnd(const std::string& str, std::string_view end, std::string_view replace, bool check = false) {
-        return !check || str.ends_with(end) ? fmt::format("{}{}", str.substr(0, str.size() - end.size()), replace) : str;
-    }
-
-    static void loadIcons(
-        const std::vector<std::filesystem::path>& packs, std::string_view suffix, IconType type
-    );
-
+    static std::vector<geode::texture_loader::Pack> getTexturePacks();
+    static void loadIcons(const std::vector<geode::texture_loader::Pack>& packs, std::string_view suffix, IconType type);
     static void loadIcon(const std::filesystem::path& path, const TexturePack& pack, IconType type);
-
-    static void loadTrails(const std::vector<std::filesystem::path>& packs);
-
+    static void loadTrails(const std::vector<geode::texture_loader::Pack>& packs);
     static void loadTrail(const std::filesystem::path& path, const TexturePack& pack);
-
-    static void saveTrails() {
-        for (auto& [trail, info] : TRAIL_INFO) {
-            std::fstream file(std::filesystem::path(info.texture).replace_extension(".json"), std::ios::out);
-            file << matjson::Value(matjson::makeObject({
-                { "blend", info.blend },
-                { "tint", info.tint },
-            })).dump();
-            file.close();
-        }
-    }
+    static void saveTrails();
+    static bool dualSelected();
 
     static void changeSimplePlayer(SimplePlayer* player, IconType type) {
-        auto sdi = geode::Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        MoreIconsAPI::updateSimplePlayer(player, MoreIconsAPI::activeForType(type, sdi && sdi->getSavedValue("2pselected", false)), type);
+        MoreIconsAPI::updateSimplePlayer(player, MoreIconsAPI::activeForType(type, dualSelected()), type);
     }
 
     static void changeSimplePlayer(SimplePlayer* player, IconType type, bool dual) {
@@ -148,26 +92,6 @@ public:
             }
         }
     }
-
-    static std::string getFrameName(const std::string& name, const std::string& prefix, IconType type) {
-        if (type != IconType::Robot && type != IconType::Spider) {
-            if (name.ends_with("_2_001.png")) return fmt::format("{}_2_001.png"_spr, prefix);
-            else if (name.ends_with("_3_001.png")) return fmt::format("{}_3_001.png"_spr, prefix);
-            else if (name.ends_with("_extra_001.png")) return fmt::format("{}_extra_001.png"_spr, prefix);
-            else if (name.ends_with("_glow_001.png")) return fmt::format("{}_glow_001.png"_spr, prefix);
-            else if (name.ends_with("_001.png")) return fmt::format("{}_001.png"_spr, prefix);
-        }
-        else for (int i = 1; i < 5; i++) {
-            if (name.ends_with(fmt::format("_{:02}_2_001.png", i))) return fmt::format("{}_{:02}_2_001.png"_spr, prefix, i);
-            else if (i == 1 && name.ends_with(fmt::format("_{:02}_extra_001.png", i))) return fmt::format("{}_{:02}_extra_001.png"_spr, prefix, i);
-            else if (name.ends_with(fmt::format("_{:02}_glow_001.png", i))) return fmt::format("{}_{:02}_glow_001.png"_spr, prefix, i);
-            else if (name.ends_with(fmt::format("_{:02}_001.png", i))) return fmt::format("{}_{:02}_001.png"_spr, prefix, i);
-        }
-
-        return name;
-    }
-
-    static SimplePlayer* findPlayer(cocos2d::CCNode* node);
 
     static void showInfoPopup(bool folderButton = false);
 };

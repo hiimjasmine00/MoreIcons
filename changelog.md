@@ -1,4 +1,8 @@
 # More Icons Changelog
+## v1.7.0 (2025-01-29)
+- Added an API method to set the player's icon
+- Fixed the API being private
+
 ## v1.6.1 (2025-01-28)
 - Fixed header inclusion in the API
 
@@ -7,15 +11,15 @@
 - Fixed a bug where the player's icon would not change properly when exiting dual mode (Reported by [Cocoiscool748](https://github.com/Cocoiscool748))
 
 ## v1.5.3 (2024-12-24)
-- Fixed a bug where the game would crash when using a custom trail on macOS ([#18](https://github.com/hiimjustin000/MoreIcons/issues/18))
+- Fixed a bug where the game would crash when using a custom trail on macOS ([#18](https://github.com/hiimjasmine00/MoreIcons/issues/18))
 
 ## v1.5.2 (2024-12-11)
 - Fixed a bug where selecting a new icon would not work properly in the icon kit
 
 ## v1.5.1 (2024-12-11)
 - Separated icon loading by icon type
-- Separated icons by texture pack in the icon kit ([#17](https://github.com/hiimjustin000/MoreIcons/issues/17))
-- Fixed a bug that would reset the player's icon when exiting dual mode ([#15](https://github.com/hiimjustin000/MoreIcons/issues/15))
+- Separated icons by texture pack in the icon kit ([#17](https://github.com/hiimjasmine00/MoreIcons/issues/17))
+- Fixed a bug that would reset the player's icon when exiting dual mode ([#15](https://github.com/hiimjasmine00/MoreIcons/issues/15))
 - Fixed pages not updating properly in the icon kit using arrow buttons (Reported by [NyteLyte](https://github.com/NyteLytee))
 
 ## v1.5.0 (2024-11-18)
@@ -49,7 +53,7 @@
 ## v1.4.0 (2024-10-27)
 - Merged the More Icons API into the mod
 - Added support for events for other mods to use
-- Fixed texture pack credits only showing up for cubes ([#14](https://github.com/hiimjustin000/MoreIcons/issues/14))
+- Fixed texture pack credits only showing up for cubes ([#14](https://github.com/hiimjasmine00/MoreIcons/issues/14))
 
 ## v1.3.4 (2024-10-21)
 - Moved some logic to More Icons API
@@ -58,11 +62,11 @@
 ## v1.3.3 (2024-10-19)
 - Improved the duplicate system
 - Changed page functionality in the icon kit
-- Added texture pack credits to the icon kit ([#8](https://github.com/hiimjustin000/MoreIcons/issues/8))
+- Added texture pack credits to the icon kit ([#8](https://github.com/hiimjasmine00/MoreIcons/issues/8))
 - Added number formatting to the info popup in the icon kit
 
 ## v1.3.2 (2024-10-13)
-- Changed the More Icons button in the icon kit to only show the info when there are no logs ([#10](https://github.com/hiimjustin000/MoreIcons/issues/10))
+- Changed the More Icons button in the icon kit to only show the info when there are no logs ([#10](https://github.com/hiimjasmine00/MoreIcons/issues/10))
 
 ## v1.3.1 (2024-10-12)
 - Fixed a bug where the game would crash when pressing the More Icons button in the icon kit
@@ -90,24 +94,24 @@
 - Removed loaded icons from the mod's saved values when closing the game
 
 ## v1.2.3 (2024-10-08)
-- Fixed blend mode not working properly ([#5](https://github.com/hiimjustin000/MoreIcons/issues/5))
+- Fixed blend mode not working properly ([#5](https://github.com/hiimjasmine00/MoreIcons/issues/5))
 - Fixed trail customization resetting when reloading textures
 - Fixed trail display in the icon kit
 - Fixed loading text not showing up
 
 ## v1.2.2 (2024-10-08)
 - Added support for individual images per icon piece
-- Added trail customization options ([#5](https://github.com/hiimjustin000/MoreIcons/issues/5))
+- Added trail customization options ([#5](https://github.com/hiimjasmine00/MoreIcons/issues/5))
 - Fixed robots and spiders not changing in icon popups
 
 ## v1.2.1 (2024-10-08)
-- Fixed custom spiders not showing up in game ([#4](https://github.com/hiimjustin000/MoreIcons/issues/4))
+- Fixed custom spiders not showing up in game ([#4](https://github.com/hiimjasmine00/MoreIcons/issues/4))
 
 ## v1.2.0 (2024-10-07)
 - Added support for texture packs
 - Added support for custom trails
 - Added support for Icon Profile in the main menu and Animated Profile Icons in the icon kit
-- Fixed a bug where the robot's boost particles would not show up ([#3](https://github.com/hiimjustin000/MoreIcons/issues/3))
+- Fixed a bug where the robot's boost particles would not show up ([#3](https://github.com/hiimjasmine00/MoreIcons/issues/3))
 
 ## v1.1.2 (2024-10-07)
 - Added sprite name detection for spritesheets
@@ -115,7 +119,7 @@
 
 ## v1.1.1 (2024-10-06)
 - Fixed custom jetpacks not showing up in game
-- Fixed icon sorting not working properly ([#2](https://github.com/hiimjustin000/MoreIcons/issues/2))
+- Fixed icon sorting not working properly ([#2](https://github.com/hiimjasmine00/MoreIcons/issues/2))
 
 ## v1.1.0 (2024-10-06)
 - Added support for Separate Dual Icons

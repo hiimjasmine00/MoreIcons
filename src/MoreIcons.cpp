@@ -1,9 +1,12 @@
 #include "MoreIcons.hpp"
-#include <Geode/binding/SimplePlayer.hpp>
+#include <BS_thread_pool.hpp>
+#include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Dispatch.hpp>
+#include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Popup.hpp>
 
 using namespace geode::prelude;
+using namespace geode::texture_loader;
 
 $execute {
     new EventListener(+[](SimplePlayer* player, const std::string& icon, IconType type) {
@@ -41,6 +44,11 @@ $execute {
         *icon = MoreIconsAPI::activeForType(type, dual);
         return ListenerResult::Propagate;
     }, DispatchFilter<std::string*, IconType, bool>("active-icon"_spr));
+
+    new EventListener(+[](const std::string& icon, IconType type, bool dual) {
+        MoreIconsAPI::setIcon(icon, type, dual);
+        return ListenerResult::Propagate;
+    }, DispatchFilter<std::string, IconType, bool>("set-icon"_spr));
 }
 
 $on_mod(DataSaved) {
@@ -53,29 +61,7 @@ std::vector<std::filesystem::directory_entry> MoreIcons::naturalSort(const std::
         entries.push_back(entry);
     }
     std::sort(entries.begin(), entries.end(), [](const std::filesystem::directory_entry& a, const std::filesystem::directory_entry& b) {
-        auto aStr = a.path().filename().string();
-        auto bStr = b.path().filename().string();
-
-        auto aIt = aStr.begin();
-        auto bIt = bStr.begin();
-
-        while (aIt != aStr.end() && bIt != bStr.end()) {
-            if (std::isdigit(*aIt) && std::isdigit(*bIt)) {
-                std::string aNum, bNum;
-                while (std::isdigit(*aIt)) aNum += *aIt++;
-                while (std::isdigit(*bIt)) bNum += *bIt++;
-                if (aNum != bNum) return std::stoi(aNum) < std::stoi(bNum);
-            }
-            else {
-                auto aLower = std::tolower(*aIt);
-                auto bLower = std::tolower(*bIt);
-                if (aLower != bLower) return aLower < bLower;
-                aIt++;
-                bIt++;
-            }
-        }
-
-        return aStr.size() < bStr.size();
+        return naturalSorter(a.path().filename().string(), b.path().filename().string());
     });
     return entries;
 }
@@ -129,63 +115,69 @@ bool MoreIcons::naturalSorter(const std::string& aStr, const std::string& bStr) 
     return a.size() < b.size();
 }
 
-// The cooler https://github.com/Alphalaneous/HappyTextures/blob/1.5.0/src/Utils.h#L60
-std::vector<std::filesystem::path> MoreIcons::getTexturePacks() {
-    std::vector<std::filesystem::path> packs;
-    packs.push_back(Mod::get()->getConfigDir());
-    if (auto textureLoader = Loader::get()->getLoadedMod("geode.texture-loader")) {
-        auto searchPaths = CCFileUtils::get()->getSearchPaths();
-        auto texturePacks = textureLoader->getConfigDir() / "packs";
-        auto unzippedPacks = textureLoader->getSaveDir() / "unzipped";
-        auto modID = Mod::get()->getID();
-        for (auto searchPath : searchPaths) {
-            auto path = std::filesystem::path(searchPath);
-            auto parentPath = std::filesystem::path(searchPath);
-            while (parentPath.has_parent_path()) {
-                if (parentPath == texturePacks || parentPath == unzippedPacks && std::find(packs.begin(), packs.end(), path) == packs.end()) {
-                    auto configPath = path / "config" / modID;
-                    if (std::filesystem::exists(configPath)) packs.push_back(configPath);
-                    break;
-                }
-                if (parentPath == std::filesystem::current_path().root_path()) break;
-                parentPath = parentPath.parent_path();
-            }
-        }
+std::vector<Pack> MoreIcons::getTexturePacks() {
+    std::vector<Pack> packs;
+
+    packs.push_back({
+        .name = "More Icons",
+        .resourcesPath = dirs::getGeodeDir()
+    });
+    for (auto& pack : getAppliedPacks()) {
+        if (std::filesystem::exists(pack.resourcesPath / "config" / GEODE_MOD_ID)) packs.push_back(pack);
     }
+
     return packs;
 }
 
-void MoreIcons::loadIcons(const std::vector<std::filesystem::path>& packs, std::string_view suffix, IconType type) {
-    int i = 0;
-    for (auto& packPath : packs) {
-        std::string packName;
-        std::string packID;
-        if (i != 0) {
-            auto rootPackPath = packPath.parent_path().parent_path();
-            auto packJSON = rootPackPath / "pack.json";
-            if (std::filesystem::exists(packJSON)) {
-                std::ifstream file(packJSON);
-                std::stringstream bufferStream;
-                bufferStream << file.rdbuf();
-                auto tryJson = matjson::parse(bufferStream.str());
-                auto packFileName = rootPackPath.filename().string();
-                if (!tryJson.isOk()) {
-                    packName = packFileName;
-                    packID = packFileName;
-                }
-                auto json = tryJson.unwrapOr(matjson::Value());
-                if (json.contains("name") && json["name"].isString()) packName = json["name"].asString().unwrap();
-                else packName = packFileName;
-                if (json.contains("id") && json["id"].isString()) packID = json["id"].asString().unwrap();
-                else packID = packFileName;
-            }
-        }
-        else {
-            packName = "More Icons";
-            packID = "";
-        }
+// https://github.com/GlobedGD/globed2/blob/v1.6.2/src/util/cocos.cpp#L44
+namespace {
+    template <typename TC>
+    using priv_method_t = void(TC::*)(CCDictionary*, CCTexture2D*);
 
-        auto path = packPath / suffix;
+    template <typename TC, priv_method_t<TC> func>
+    struct priv_caller {
+        friend void _addSpriteFramesWithDictionary(CCDictionary* dict, CCTexture2D* texture) {
+            (CCSpriteFrameCache::get()->*func)(dict, texture);
+        }
+    };
+
+    template struct priv_caller<CCSpriteFrameCache, &CCSpriteFrameCache::addSpriteFramesWithDictionary>;
+
+    void _addSpriteFramesWithDictionary(CCDictionary*, CCTexture2D*);
+}
+
+std::string getFrameName(const std::string& name, const std::string& prefix, IconType type) {
+    if (type != IconType::Robot && type != IconType::Spider) {
+        if (name.ends_with("_2_001.png")) return fmt::format("{}_2_001.png"_spr, prefix);
+        else if (name.ends_with("_3_001.png")) return fmt::format("{}_3_001.png"_spr, prefix);
+        else if (name.ends_with("_extra_001.png")) return fmt::format("{}_extra_001.png"_spr, prefix);
+        else if (name.ends_with("_glow_001.png")) return fmt::format("{}_glow_001.png"_spr, prefix);
+        else if (name.ends_with("_001.png")) return fmt::format("{}_001.png"_spr, prefix);
+    }
+    else for (int i = 1; i < 5; i++) {
+        if (name.ends_with(fmt::format("_{:02}_2_001.png", i))) return fmt::format("{}_{:02}_2_001.png"_spr, prefix, i);
+        else if (i == 1 && name.ends_with(fmt::format("_{:02}_extra_001.png", i))) return fmt::format("{}_{:02}_extra_001.png"_spr, prefix, i);
+        else if (name.ends_with(fmt::format("_{:02}_glow_001.png", i))) return fmt::format("{}_{:02}_glow_001.png"_spr, prefix, i);
+        else if (name.ends_with(fmt::format("_{:02}_001.png", i))) return fmt::format("{}_{:02}_001.png"_spr, prefix, i);
+    }
+
+    return name;
+}
+
+std::string replaceEnd(const std::string& str, std::string_view end, std::string_view replace) {
+    return fmt::format("{}{}", str.substr(0, str.size() - end.size()), replace);
+}
+
+BS::thread_pool& sharedPool() {
+    static BS::thread_pool _sharedPool(std::thread::hardware_concurrency());
+    return _sharedPool;
+}
+
+void MoreIcons::loadIcons(const std::vector<Pack>& packs, std::string_view suffix, IconType type) {
+    for (int i = 0; i < packs.size(); i++) {
+        auto& pack = packs[i];
+
+        auto path = pack.resourcesPath / "config" / GEODE_MOD_ID / suffix;
         if (!std::filesystem::exists(path)) {
             if (i == 0) std::filesystem::create_directories(path);
             continue;
@@ -196,12 +188,10 @@ void MoreIcons::loadIcons(const std::vector<std::filesystem::path>& packs, std::
             if (!entry.is_regular_file() && !entry.is_directory()) continue;
 
             loadIcon(entry.path(), {
-                .name = packName,
-                .id = packID
+                .name = pack.name,
+                .id = pack.id
             }, type);
         }
-
-        i++;
     }
 
     sharedPool().wait();
@@ -237,18 +227,6 @@ void MoreIcons::loadIcons(const std::vector<std::filesystem::path>& packs, std::
         log::info("Loaded {} {}{}", vec.size(), suffix, vec.size() == 1 ? "" : "s");
         IMAGES.clear();
         naturalSort(vec);
-        switch (type) {
-            case IconType::Cube: Mod::get()->setSavedValue("icons", vec); break;
-            case IconType::Ship: Mod::get()->setSavedValue("ships", vec); break;
-            case IconType::Ball: Mod::get()->setSavedValue("balls", vec); break;
-            case IconType::Ufo: Mod::get()->setSavedValue("ufos", vec); break;
-            case IconType::Wave: Mod::get()->setSavedValue("waves", vec); break;
-            case IconType::Robot: Mod::get()->setSavedValue("robots", vec); break;
-            case IconType::Spider: Mod::get()->setSavedValue("spiders", vec); break;
-            case IconType::Swing: Mod::get()->setSavedValue("swings", vec); break;
-            case IconType::Jetpack: Mod::get()->setSavedValue("jetpacks", vec); break;
-            default: break;
-        }
     }
 }
 
@@ -439,37 +417,11 @@ void MoreIcons::loadIcon(const std::filesystem::path& path, const TexturePack& p
     }
 }
 
-void MoreIcons::loadTrails(const std::vector<std::filesystem::path>& packs) {
-    int i = 0;
-    for (auto& packPath : packs) {
-        std::string packName;
-        std::string packID;
-        if (i != 0) {
-            auto rootPackPath = packPath.parent_path().parent_path();
-            auto packJSON = rootPackPath / "pack.json";
-            if (std::filesystem::exists(packJSON)) {
-                std::ifstream file(packJSON);
-                std::stringstream bufferStream;
-                bufferStream << file.rdbuf();
-                auto tryJson = matjson::parse(bufferStream.str());
-                auto packFileName = rootPackPath.filename().string();
-                if (!tryJson.isOk()) {
-                    packName = packFileName;
-                    packID = packFileName;
-                }
-                auto json = tryJson.unwrapOr(matjson::Value());
-                if (json.contains("name") && json["name"].isString()) packName = json["name"].asString().unwrap();
-                else packName = packFileName;
-                if (json.contains("id") && json["id"].isString()) packID = json["id"].asString().unwrap();
-                else packID = packFileName;
-            }
-        }
-        else {
-            packName = "More Icons";
-            packID = "";
-        }
+void MoreIcons::loadTrails(const std::vector<Pack>& packs) {
+    for (int i = 0; i < packs.size(); i++) {
+        auto& pack = packs[i];
 
-        auto path = packPath / "trail";
+        auto path = pack.resourcesPath / "config" / GEODE_MOD_ID / "trail";
         if (!std::filesystem::exists(path)) {
             if (i == 0) std::filesystem::create_directories(path);
             continue;
@@ -483,12 +435,10 @@ void MoreIcons::loadTrails(const std::vector<std::filesystem::path>& packs) {
             if (entryPath.extension() != ".png") continue;
 
             loadTrail(entryPath, {
-                .name = packName,
-                .id = packID
+                .name = pack.name,
+                .id = pack.id
             });
         }
-
-        i++;
     }
 
     sharedPool().wait();
@@ -516,7 +466,6 @@ void MoreIcons::loadTrails(const std::vector<std::filesystem::path>& packs) {
         log::info("Loaded {} trail{}", MoreIconsAPI::TRAILS.size(), MoreIconsAPI::TRAILS.size() == 1 ? "" : "s");
         IMAGES.clear();
         naturalSort(MoreIconsAPI::TRAILS);
-        Mod::get()->setSavedValue("trails", MoreIconsAPI::TRAILS);
     }
 }
 
@@ -564,13 +513,21 @@ void MoreIcons::loadTrail(const std::filesystem::path& path, const TexturePack& 
     });
 }
 
-SimplePlayer* MoreIcons::findPlayer(cocos2d::CCNode* node) {
-    if (!node) return nullptr;
-    return geode::cocos::findFirstChildRecursive<SimplePlayer>(node, [](auto) { return true; });
+void MoreIcons::saveTrails() {
+    for (auto& [trail, info] : TRAIL_INFO) {
+        std::fstream file(std::filesystem::path(info.texture).replace_extension(".json"), std::ios::out);
+        file << matjson::makeObject({ { "blend", info.blend }, { "tint", info.tint }, }).dump();
+        file.close();
+    }
+}
+
+bool MoreIcons::dualSelected() {
+    auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+    return sdi && sdi->getSavedValue("2pselected", false);
 }
 
 void MoreIcons::showInfoPopup(bool folderButton) {
-    geode::createQuickPopup(
+    createQuickPopup(
         "More Icons",
         fmt::format(std::locale(""),
             "<cg>Icons</c>: {:L}\n"
@@ -598,7 +555,7 @@ void MoreIcons::showInfoPopup(bool folderButton) {
         folderButton ? "Folder" : nullptr,
         300.0f,
         [folderButton](auto, bool btn2) {
-            if (folderButton && btn2) geode::utils::file::openFolder(geode::Mod::get()->getConfigDir());
+            if (folderButton && btn2) file::openFolder(Mod::get()->getConfigDir());
         }
     );
 }

@@ -1,5 +1,6 @@
 #include "../api/MoreIconsAPI.hpp"
 #include <Geode/binding/GameManager.hpp>
+#include <Geode/binding/PlayerObject.hpp>
 #include <Geode/modify/MenuGameLayer.hpp>
 
 using namespace geode::prelude;

@@ -10,6 +10,7 @@
 #include <Geode/binding/TextArea.hpp>
 #include <Geode/modify/GJGarageLayer.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
+#include <Geode/utils/ranges.hpp>
 
 using namespace geode::prelude;
 
@@ -93,10 +94,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     int findIconPage(IconType type) {
         auto gameManager = GameManager::get();
         auto active = (gameManager->activeIconForType(type) - 1) / 36;
-        auto& vec = MoreIconsAPI::vectorForType(type);
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto it = std::find(vec.begin(), vec.end(), MoreIconsAPI::activeForType(type, sdi && sdi->getSavedValue("2pselected", false)));
-        return it == vec.end() ? active : (gameManager->countForType(type) + 35) / 36 + (it - vec.begin()) / 36;
+        auto i = ranges::indexOf(MoreIconsAPI::vectorForType(type), MoreIconsAPI::activeForType(type, MoreIcons::dualSelected()));
+        return !i.has_value() ? active : (gameManager->countForType(type) + 35) / 36 + i.value() / 36;
     }
 
     void onSelect(CCObject* sender) {
@@ -105,10 +104,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         GJGarageLayer::onSelect(sender);
 
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto dual = sdi && sdi->getSavedValue("2pselected", false);
-        auto savedType = MoreIconsAPI::savedForType(dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
-        if (!savedType.empty()) Mod::get()->setSavedValue<std::string>(savedType, "");
+        auto dual = MoreIcons::dualSelected();
+        MoreIconsAPI::setIcon("", dual ? (IconType)Loader::get()->getLoadedMod("weebify.separate_dual_icons")->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
     }
 
     void newOn2PToggle(CCObject* sender) {
@@ -117,27 +114,26 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         setupCustomPage(m_fields->m_pages[m_iconType]);
     }
 
-    void swapDual(std::string_view name) {
-        auto dualName = fmt::format("{}-dual", name);
-        auto normalIcon = Mod::get()->getSavedValue<std::string>(name, "");
-        auto dualIcon = Mod::get()->getSavedValue<std::string>(dualName, "");
-        Mod::get()->setSavedValue(name, dualIcon);
-        Mod::get()->setSavedValue(dualName, normalIcon);
+    void swapDual(IconType type) {
+        auto normalIcon = MoreIconsAPI::activeForType(type, false);
+        auto dualIcon = MoreIconsAPI::activeForType(type, true);
+        MoreIconsAPI::setIcon(normalIcon, type, true);
+        MoreIconsAPI::setIcon(dualIcon, type, false);
     }
 
     void newSwap2PKit(CCObject* sender) {
         CALL_BUTTON_ORIGINAL(sender);
 
-        swapDual("icon");
-        swapDual("ship");
-        swapDual("ball");
-        swapDual("ufo");
-        swapDual("wave");
-        swapDual("robot");
-        swapDual("spider");
-        swapDual("swing");
-        swapDual("jetpack");
-        swapDual("trail");
+        swapDual(IconType::Cube);
+        swapDual(IconType::Ship);
+        swapDual(IconType::Ball);
+        swapDual(IconType::Ufo);
+        swapDual(IconType::Wave);
+        swapDual(IconType::Robot);
+        swapDual(IconType::Spider);
+        swapDual(IconType::Swing);
+        swapDual(IconType::Jetpack);
+        swapDual(IconType::Special);
         auto iconType = GameManager::get()->m_playerIconType;
         MoreIconsAPI::updateSimplePlayer(m_playerObject, MoreIconsAPI::activeForType(iconType, false), iconType);
         auto lastmode = (IconType)Loader::get()->getLoadedMod("weebify.separate_dual_icons")->getSavedValue("lastmode", 0);
@@ -301,8 +297,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         CCMenuItemSpriteExtra* current = nullptr;
         int i = 1;
         auto hasAnimProf = Loader::get()->isModLoaded("thesillydoggo.animatedprofiles");
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto dual = sdi && sdi->getSavedValue("2pselected", false);
+        auto dual = MoreIcons::dualSelected();
         for (auto name : getPage()) {
             auto itemIcon = GJItemIcon::createBrowserItem(unlockType, 1);
             itemIcon->setScale(GJItemIcon::scaleForType(unlockType));
@@ -331,7 +326,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
     void onCustomSelect(CCMenuItemSpriteExtra* sender) {
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto dual = sdi && sdi->getSavedValue("2pselected", false);
+        auto dual = MoreIcons::dualSelected();
         std::string name = static_cast<CCString*>(sender->getUserObject("name"_spr))->getCString();
 
         m_cursor1->setPosition(sender->getParent()->convertToWorldSpace(sender->getPosition()));
@@ -342,7 +337,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         if (!dual) GameManager::get()->m_playerIconType = m_iconType;
         player->setScale(m_iconType == IconType::Jetpack ? 1.5f : 1.6f);
         auto selectedIconType = dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType;
-        if (Mod::get()->setSavedValue(MoreIconsAPI::savedForType(m_iconType, dual), name) == name && selectedIconType == m_iconType) {
+        if (MoreIconsAPI::activeForType(m_iconType, dual) == name && selectedIconType == m_iconType) {
             auto& iconInfo = MoreIcons::infoForType(m_iconType)[name];
             auto iconID = 1;
             if (!iconInfo.id.empty()) switch (m_iconType) {
@@ -379,6 +374,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             }
             popup->show();
         }
+        else MoreIconsAPI::setIcon(name, m_iconType, dual);
+
         if (dual) {
             sdi->setSavedValue("lastmode", (int)m_iconType);
             sdi->setSavedValue("lasttype", (int)m_iconType);
@@ -410,8 +407,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         auto objs = CCArray::create();
         CCMenuItemSpriteExtra* current = nullptr;
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto dual = sdi && sdi->getSavedValue("2pselected", false);
+        auto dual = MoreIcons::dualSelected();
         int i = 1;
         for (auto name : getPage()) {
             auto square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
@@ -444,13 +440,13 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         using namespace std::string_view_literals;
 
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto dual = sdi && sdi->getSavedValue("2pselected", false);
+        auto dual = MoreIcons::dualSelected();
         std::string name = static_cast<CCString*>(sender->getUserObject("name"_spr))->getCString();
 
         m_cursor1->setPosition(sender->getParent()->convertToWorldSpace(sender->getPosition()));
         m_cursor1->setVisible(true);
         auto selectedIconType = dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType;
-        if (Mod::get()->setSavedValue(MoreIconsAPI::savedForType(m_iconType, dual), name) == name && selectedIconType == m_iconType) {
+        if (MoreIconsAPI::activeForType(m_iconType, dual) == name && selectedIconType == m_iconType) {
             auto trailInfo = MoreIcons::TRAIL_INFO[name];
             auto popup = ItemInfoPopup::create(!trailInfo.pack.id.empty() ? 128 : 1, UnlockType::Cube);
             if (auto nameLabel = static_cast<CCLabelBMFont*>(popup->m_mainLayer->getChildByID("name-label")))
@@ -522,6 +518,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             popup->m_mainLayer->addChild(tintLabel);
             popup->show();
         }
+        else MoreIconsAPI::setIcon(name, m_iconType, dual);
+
         if (dual) sdi->setSavedValue("lasttype", (int)m_iconType);
         else m_selectedIconType = m_iconType;
     }

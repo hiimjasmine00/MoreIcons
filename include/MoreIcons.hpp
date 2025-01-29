@@ -2,8 +2,11 @@
 #include <Geode/Enums.hpp>
 #include <Geode/GeneratedPredeclare.hpp>
 #include <Geode/loader/Dispatch.hpp>
+#include <string>
+#include <vector>
 
 class MoreIcons {
+public:
     static void updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type) {
         geode::DispatchEvent<SimplePlayer*, std::string, IconType>("hiimjustin000.more_icons/simple-player", player, icon, type).post();
     }
@@ -34,5 +37,9 @@ class MoreIcons {
         std::string icon;
         geode::DispatchEvent<std::string*, IconType, bool>("hiimjustin000.more_icons/active-icon", &icon, type, dual).post();
         return icon;
+    }
+
+    static void setIcon(const std::string& icon, IconType type, bool dual = false) {
+        geode::DispatchEvent<std::string, IconType, bool>("hiimjustin000.more_icons/set-icon", icon, type, dual).post();
     }
 };

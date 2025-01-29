@@ -14,8 +14,7 @@ class $modify(MICharacterColorPage, CharacterColorPage) {
         if (!CharacterColorPage::init()) return false;
 
         for (int i = 0; i < m_playerObjects->count(); i++) {
-            auto player = static_cast<SimplePlayer*>(m_playerObjects->objectAtIndex(i));
-            MoreIcons::changeSimplePlayer(player, (IconType)i);
+            MoreIcons::changeSimplePlayer(static_cast<SimplePlayer*>(m_playerObjects->objectAtIndex(i)), (IconType)i);
         }
 
         return true;

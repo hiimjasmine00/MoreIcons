@@ -5,13 +5,17 @@
         "win": "2.2074",
         "mac": "2.2074"
     },
-    "version": "v1.6.1",
+    "version": "v1.7.0",
     "id": "hiimjustin000.more_icons",
     "name": "More Icons",
     "developer": "hiimjasmine00",
     "description": "A mod that loads custom icons.",
     "dependencies": {
-        "geode.node-ids": ">=v1.17.0"
+        "geode.node-ids": ">=v1.17.0",
+        "geode.texture-loader": {
+            "importance": "suggested",
+            "version": ">=v1.7.0"
+        }
     },
     "resources": {
         "sprites": [
