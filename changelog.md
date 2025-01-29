@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v1.7.1 (2025-01-29)
+- Fixed a bug that caused custom icons to not work in-game
+
 ## v1.7.0 (2025-01-29)
 - Added an API method to set the player's icon
 - Fixed the API being private
