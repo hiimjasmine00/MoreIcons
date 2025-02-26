@@ -2,16 +2,15 @@
 #include <Geode/modify/LoadingLayer.hpp>
 
 using namespace geode::prelude;
-using namespace geode::texture_loader;
 
 class $modify(MILoadingLayer, LoadingLayer) {
     struct Fields {
-        int m_iconLoadStep;
-        std::vector<Pack> m_iconPacks;
+        int m_iconLoadStep GEODE_ANDROID(= -1);
+        std::vector<IconPack> m_iconPacks;
     };
 
-    static void onModify(auto& self) {
-        (void)self.setHookPriority("LoadingLayer::loadAssets", 1);
+    static void onModify(ModifyBase<ModifyDerive<MILoadingLayer, LoadingLayer>>& self) {
+        (void)self.setHookPriorityAfterPre("LoadingLayer::loadAssets", "geode.loader");
     }
 
     void loadAssets() {
@@ -19,7 +18,12 @@ class $modify(MILoadingLayer, LoadingLayer) {
 
         auto f = m_fields.self();
         switch (f->m_iconLoadStep) {
+            case -1:
+                break;
             case 0:
+                #ifdef GEODE_IS_ANDROID
+                MoreIcons::unzipVanillaAssets();
+                #endif
                 f->m_iconPacks = MoreIcons::getTexturePacks();
                 break;
             case 1:
@@ -65,6 +69,9 @@ class $modify(MILoadingLayer, LoadingLayer) {
 
     void changeLoadText() {
         if (auto smallLabel2 = static_cast<CCLabelBMFont*>(getChildByID("geode-small-label-2"))) switch (m_fields->m_iconLoadStep) {
+            #ifdef GEODE_IS_ANDROID
+            case 0: smallLabel2->setString("More Icons: Unzipping Textures"); break;
+            #endif
             case 1: smallLabel2->setString("More Icons: Loading Icons"); break;
             case 2: smallLabel2->setString("More Icons: Loading Ships"); break;
             case 3: smallLabel2->setString("More Icons: Loading Balls"); break;

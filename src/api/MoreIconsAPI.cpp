@@ -1,4 +1,5 @@
 #include "MoreIconsAPI.hpp"
+#include "../classes/DummyNode.hpp"
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
@@ -8,36 +9,6 @@
 #include <Geode/utils/ranges.hpp>
 
 using namespace geode::prelude;
-
-void DummyNode::setBlendFunc(ccBlendFunc blendFunc) {
-    CCSpriteBatchNode::setBlendFunc(blendFunc);
-
-    for (auto child : CCArrayExt<CCNode*>(getChildren())) {
-        if (typeinfo_cast<CCBlendProtocol*>(child)) recursiveBlend(child, blendFunc);
-    }
-}
-
-void DummyNode::recursiveBlend(CCNode* node, ccBlendFunc blendFunc) {
-    if (!node) return;
-
-    if (auto blendNode = typeinfo_cast<CCBlendProtocol*>(node)) blendNode->setBlendFunc(blendFunc);
-
-    for (auto child : CCArrayExt<CCNode*>(node->getChildren())) {
-        if (typeinfo_cast<CCBlendProtocol*>(child)) recursiveBlend(child, blendFunc);
-    }
-}
-
-void MoreIconsAPI::setUserObject(CCNode* node, const std::string& value) {
-    if (!node || node->getUserObject("name"_spr)) return;
-
-    node->setUserObject("name"_spr, CCString::create(value));
-}
-
-void MoreIconsAPI::removeUserObject(CCNode* node) {
-    if (!node) return;
-
-    node->setUserObject("name"_spr, nullptr);
-}
 
 std::vector<std::string>& MoreIconsAPI::vectorForType(IconType type) {
     switch (type) {
@@ -89,6 +60,10 @@ bool MoreIconsAPI::hasIcon(const std::string& icon, IconType type) {
     return !icon.empty() && ranges::contains(vectorForType(type), icon);
 }
 
+bool doesExist(CCSpriteFrame* frame) {
+    return frame && frame->getTag() != 105871529;
+}
+
 void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type) {
     if (!player || icon.empty() || !hasIcon(icon, type)) return;
 
@@ -106,7 +81,9 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
         player->m_robotSprite->updateColors();
         return updateRobotSprite(player->m_robotSprite, icon, type);
     }
-    else if (type == IconType::Spider) {
+    else if (player->m_robotSprite) player->m_robotSprite->setVisible(false);
+
+    if (type == IconType::Spider) {
         if (!player->m_spiderSprite) player->createSpiderSprite(1);
         player->m_spiderSprite->setVisible(true);
         player->m_spiderSprite->m_color = player->m_firstLayer->getColor();
@@ -114,27 +91,22 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
         player->m_spiderSprite->updateColors();
         return updateRobotSprite(player->m_spiderSprite, icon, type);
     }
+    else if (player->m_spiderSprite) player->m_spiderSprite->setVisible(false);
 
-    auto iconFrame = fmt::format("{}_001.png"_spr, icon);
-    auto iconFrame2 = fmt::format("{}_2_001.png"_spr, icon);
-    auto iconFrame3 = fmt::format("{}_3_001.png"_spr, icon);
-    auto iconFrameExtra = fmt::format("{}_extra_001.png"_spr, icon);
-    auto iconFrameGlow = fmt::format("{}_glow_001.png"_spr, icon);
-
-    auto sfc = CCSpriteFrameCache::get();
-    player->m_firstLayer->setDisplayFrame(sfc->spriteFrameByName(iconFrame.c_str()));
+    auto sfc = CCSpriteFrameCache::sharedSpriteFrameCache();
+    player->m_firstLayer->setDisplayFrame(sfc->spriteFrameByName(fmt::format("{}_001.png"_spr, icon).c_str()));
     player->m_firstLayer->setScale(type == IconType::Ball ? 0.9f : 1.0f);
     player->m_firstLayer->setPosition({ 0.0f, type == IconType::Ufo ? -7.0f : 0.0f });
-    player->m_secondLayer->setDisplayFrame(sfc->spriteFrameByName(iconFrame2.c_str()));
+    player->m_secondLayer->setDisplayFrame(sfc->spriteFrameByName(fmt::format("{}_2_001.png"_spr, icon).c_str()));
     auto firstCenter = player->m_firstLayer->getContentSize() / 2;
     player->m_secondLayer->setPosition(firstCenter);
-    player->m_outlineSprite->setDisplayFrame(sfc->spriteFrameByName(iconFrameGlow.c_str()));
+    player->m_outlineSprite->setDisplayFrame(sfc->spriteFrameByName(fmt::format("{}_glow_001.png"_spr, icon).c_str()));
     player->m_outlineSprite->setPosition(firstCenter);
     if (type == IconType::Ufo) {
-        player->m_birdDome->setDisplayFrame(sfc->spriteFrameByName(iconFrame3.c_str()));
+        player->m_birdDome->setDisplayFrame(sfc->spriteFrameByName(fmt::format("{}_3_001.png"_spr, icon).c_str()));
         player->m_birdDome->setPosition(firstCenter);
     }
-    auto extraFrame = sfc->spriteFrameByName(iconFrameExtra.c_str());
+    auto extraFrame = sfc->spriteFrameByName(fmt::format("{}_extra_001.png"_spr, icon).c_str());
     auto extraVisible = doesExist(extraFrame);
     player->m_detailSprite->setVisible(extraVisible);
     if (extraVisible) {
@@ -158,30 +130,25 @@ void MoreIconsAPI::updateRobotSprite(GJRobotSprite* sprite, const std::string& i
     sprite->m_paSprite->setBatchNode(nullptr);
 
     auto spriteParts = sprite->m_paSprite->m_spriteParts;
-    auto spriteFrameCache = CCSpriteFrameCache::get();
+    auto spriteFrameCache = CCSpriteFrameCache::sharedSpriteFrameCache();
     for (int i = 0; i < spriteParts->count(); i++) {
         auto spritePart = static_cast<CCSpritePart*>(spriteParts->objectAtIndex(i));
         auto tag = spritePart->getTag();
 
-        auto spriteFrame = fmt::format("{}_{:02}_001.png"_spr, icon, tag);
-        auto spriteFrame2 = fmt::format("{}_{:02}_2_001.png"_spr, icon, tag);
-        auto spriteFrameExtra = fmt::format("{}_{:02}_extra_001.png"_spr, icon, tag);
-        auto spriteFrameGlow = fmt::format("{}_{:02}_glow_001.png"_spr, icon, tag);
-
         spritePart->setBatchNode(nullptr);
-        spritePart->setDisplayFrame(spriteFrameCache->spriteFrameByName(spriteFrame.c_str()));
+        spritePart->setDisplayFrame(spriteFrameCache->spriteFrameByName(fmt::format("{}_{:02}_001.png"_spr, icon, tag).c_str()));
         if (auto secondSprite = static_cast<CCSprite*>(sprite->m_secondArray->objectAtIndex(i))) {
             secondSprite->setBatchNode(nullptr);
-            secondSprite->setDisplayFrame(spriteFrameCache->spriteFrameByName(spriteFrame2.c_str()));
+            secondSprite->setDisplayFrame(spriteFrameCache->spriteFrameByName(fmt::format("{}_{:02}_2_001.png"_spr, icon, tag).c_str()));
             secondSprite->setPosition(spritePart->getContentSize() / 2);
         }
 
         auto glowChild = static_cast<CCSprite*>(sprite->m_glowSprite->getChildren()->objectAtIndex(i));
         glowChild->setBatchNode(nullptr);
-        glowChild->setDisplayFrame(spriteFrameCache->spriteFrameByName(spriteFrameGlow.c_str()));
+        glowChild->setDisplayFrame(spriteFrameCache->spriteFrameByName(fmt::format("{}_{:02}_glow_001.png"_spr, icon, tag).c_str()));
 
         if (spritePart == sprite->m_headSprite) {
-            auto extraFrame = spriteFrameCache->spriteFrameByName(spriteFrameExtra.c_str());
+            auto extraFrame = spriteFrameCache->spriteFrameByName(fmt::format("{}_{:02}_extra_001.png"_spr, icon, tag).c_str());
             auto hasExtra = doesExist(extraFrame);
             if (hasExtra) {
                 if (sprite->m_extraSprite) {
@@ -246,29 +213,23 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& i
         return robotSprite->release();
     }
 
-    auto iconFrame = fmt::format("{}_001.png"_spr, icon);
-    auto iconFrame2 = fmt::format("{}_2_001.png"_spr, icon);
-    auto iconFrame3 = fmt::format("{}_3_001.png"_spr, icon);
-    auto iconFrameExtra = fmt::format("{}_extra_001.png"_spr, icon);
-    auto iconFrameGlow = fmt::format("{}_glow_001.png"_spr, icon);
-
     auto isVehicle = type == IconType::Ship || type == IconType::Ufo || type == IconType::Jetpack;
     auto firstLayer = isVehicle ? object->m_vehicleSprite : object->m_iconSprite;
     auto secondLayer = isVehicle ? object->m_vehicleSpriteSecondary : object->m_iconSpriteSecondary;
     auto outlineSprite = isVehicle ? object->m_vehicleGlow : object->m_iconGlow;
     auto detailSprite = isVehicle ? object->m_vehicleSpriteWhitener : object->m_iconSpriteWhitener;
 
-    auto sfc = CCSpriteFrameCache::get();
-    firstLayer->setDisplayFrame(sfc->spriteFrameByName(iconFrame.c_str()));
-    secondLayer->setDisplayFrame(sfc->spriteFrameByName(iconFrame2.c_str()));
+    auto sfc = CCSpriteFrameCache::sharedSpriteFrameCache();
+    firstLayer->setDisplayFrame(sfc->spriteFrameByName(fmt::format("{}_001.png"_spr, icon).c_str()));
+    secondLayer->setDisplayFrame(sfc->spriteFrameByName(fmt::format("{}_2_001.png"_spr, icon).c_str()));
     auto firstCenter = firstLayer->getContentSize() / 2;
     secondLayer->setPosition(firstCenter);
     if (type == IconType::Ufo) {
-        object->m_birdVehicle->setDisplayFrame(sfc->spriteFrameByName(iconFrame3.c_str()));
+        object->m_birdVehicle->setDisplayFrame(sfc->spriteFrameByName(fmt::format("{}_3_001.png"_spr, icon).c_str()));
         object->m_birdVehicle->setPosition(firstCenter);
     }
-    outlineSprite->setDisplayFrame(sfc->spriteFrameByName(iconFrameGlow.c_str()));
-    auto extraFrame = sfc->spriteFrameByName(iconFrameExtra.c_str());
+    outlineSprite->setDisplayFrame(sfc->spriteFrameByName(fmt::format("{}_glow_001.png"_spr, icon).c_str()));
+    auto extraFrame = sfc->spriteFrameByName(fmt::format("{}_extra_001.png"_spr, icon).c_str());
     auto extraVisible = doesExist(extraFrame);
     detailSprite->setVisible(extraVisible);
     if (extraVisible) {

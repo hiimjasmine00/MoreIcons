@@ -1,16 +1,21 @@
 #include "api/MoreIconsAPI.hpp"
-#include <Geode/loader/Loader.hpp>
-#include <Geode/utils/VersionInfo.hpp>
-#include <geode.texture-loader/include/TextureLoader.hpp>
 
 struct TexturePack {
     std::string name;
     std::string id;
 };
 
+struct IconPack {
+    std::string name;
+    std::string id;
+    std::filesystem::path path;
+    bool vanilla;
+};
+
 struct TrailInfo {
     std::string texture;
     TexturePack pack;
+    int trailID;
     bool blend;
     bool tint;
 };
@@ -23,6 +28,7 @@ struct ImageData {
     std::string frameName;
     TexturePack pack;
     int index;
+    int trailID;
     bool blend;
     bool tint;
 };
@@ -55,15 +61,20 @@ public:
     static inline std::vector<LogData> LOGS;
     static inline std::mutex LOG_MUTEX;
     static inline LogType HIGHEST_SEVERITY = LogType::Info;
+    static inline bool GLOBED_ICONS_LOADED = false;
 
     static std::vector<std::filesystem::directory_entry> naturalSort(const std::filesystem::path& path);
     static void naturalSort(std::vector<std::string>& vec);
     static bool naturalSorter(const std::string& aStr, const std::string& bStr);
-    static std::vector<geode::texture_loader::Pack> getTexturePacks();
-    static void loadIcons(const std::vector<geode::texture_loader::Pack>& packs, std::string_view suffix, IconType type);
-    static void loadIcon(const std::filesystem::path& path, const TexturePack& pack, IconType type);
-    static void loadTrails(const std::vector<geode::texture_loader::Pack>& packs);
-    static void loadTrail(const std::filesystem::path& path, const TexturePack& pack);
+    static std::vector<IconPack> getTexturePacks();
+    static void unzipVanillaAssets();
+    static std::string vanillaTexturePath(const std::string& path, bool skipSuffix);
+    static void loadIcons(const std::vector<IconPack>& packs, std::string_view suffix, IconType type);
+    static void loadIcon(const std::filesystem::path& path, const IconPack& pack, IconType type);
+    static void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack, IconType type);
+    static void loadTrails(const std::vector<IconPack>& packs);
+    static void loadTrail(const std::filesystem::path& path, const IconPack& pack);
+    static void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack);
     static void saveTrails();
     static bool dualSelected();
 

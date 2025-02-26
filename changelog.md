@@ -1,4 +1,8 @@
 # More Icons Changelog
+## v1.8.0 (2025-02-26)
+- Added traditional icon texture pack support, marking the old texture pack system as legacy
+- Fixed a bug that caused the robot/spider in the icon kit to stay visible when selecting a new icon ([#21](https://github.com/hiimjasmine00/MoreIcons/issues/21))
+
 ## v1.7.1 (2025-01-29)
 - Fixed a bug that caused custom icons to not work in-game
 

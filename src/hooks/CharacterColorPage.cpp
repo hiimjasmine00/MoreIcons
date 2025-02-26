@@ -5,9 +5,9 @@
 using namespace geode::prelude;
 
 class $modify(MICharacterColorPage, CharacterColorPage) {
-    static void onModify(auto& self) {
-        (void)self.setHookPriority("CharacterColorPage::init", -1);
-        (void)self.setHookPriority("CharacterColorPage::toggleShip", -1);
+    static void onModify(ModifyBase<ModifyDerive<MICharacterColorPage, CharacterColorPage>>& self) {
+        (void)self.setHookPriorityAfterPost("CharacterColorPage::init", "weebify.separate_dual_icons");
+        (void)self.setHookPriorityAfterPost("CharacterColorPage::toggleShip", "weebify.separate_dual_icons");
     }
 
     bool init() {

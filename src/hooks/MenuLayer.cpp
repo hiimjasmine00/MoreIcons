@@ -2,26 +2,36 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/MenuLayer.hpp>
+#include <Geode/utils/ranges.hpp>
 
 using namespace geode::prelude;
 
 class $modify(MIMenuLayer, MenuLayer) {
-    static void onModify(auto& self) {
-        if (auto initHookRes = self.getHook("MenuLayer::init")) {
-            auto initHook = initHookRes.unwrap();
-            if (auto iconProfile = Loader::get()->getInstalledMod("capeling.icon_profile")) {
-                if (iconProfile->shouldLoad()) return initHook->setPriority(-1);
-            }
+    static void onModify(ModifyBase<ModifyDerive<MIMenuLayer, MenuLayer>>& self) {
+        auto initRes = self.getHook("MenuLayer::init");
+        if (initRes.isErr()) return log::error("Failed to get MenuLayer::init hook: {}", initRes.unwrapErr());
 
-            queueInMainThread([initHook] {
-                if (!initHook->disable()) log::error("Failed to disable MenuLayer::init hook");
-            });
+        auto initHook = initRes.unwrap();
+        initHook->setAutoEnable(false);
+        if (auto iconProfile = Loader::get()->getInstalledMod("capeling.icon_profile")) {
+            auto func = [iconProfile, initHook](ModStateEvent*) {
+                auto enableRes = initHook->enable();
+                if (enableRes.isErr()) return log::error("Failed to enable MenuLayer::init hook: {}", enableRes.unwrapErr());
+                auto address = initHook->getAddress();
+                auto hookOpt = ranges::find(iconProfile->getHooks(), [address](Hook* hook) { return hook->getAddress() == address; });
+                if (!hookOpt.has_value()) return log::error("Failed to find MenuLayer::init hook in capeling.icon_profile");
+                auto hookPriority = hookOpt.value()->getPriority();
+                if (initHook->getPriority() >= hookPriority) initHook->setPriority(hookPriority - 1);
+            };
+            if (iconProfile->isEnabled()) func(nullptr);
+            else new EventListener(func, ModStateFilter(iconProfile, ModEventType::Loaded));
         }
-        else log::error("Failed to find MenuLayer::init hook");
     }
 
     bool init() {
         if (!MenuLayer::init()) return false;
+
+        MoreIcons::GLOBED_ICONS_LOADED = true;
 
         auto profileMenu = getChildByID("profile-menu");
         if (!profileMenu) return true;

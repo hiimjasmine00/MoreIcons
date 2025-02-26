@@ -1,20 +1,17 @@
-#include "../MoreIcons.hpp"
 #include <Geode/ui/Popup.hpp>
+#include <Geode/ui/ScrollLayer.hpp>
 
 class LogLayer : public geode::Popup<> {
 protected:
+    geode::ScrollLayer* m_scrollLayer;
+    CCMenuItemSpriteExtra* m_prevButton;
+    CCMenuItemSpriteExtra* m_nextButton;
+    int m_page;
+
+    void page(int page);
     bool setup() override;
 public:
     static LogLayer* create();
-};
 
-class LogCell : public cocos2d::CCLayer {
-protected:
-    int m_index = 0;
-    int m_total = 0;
-
-    bool init(const LogData& data, int index, int total, bool dark);
-public:
-    static LogCell* create(const LogData& data, int index, int total, bool dark);
-    void draw() override;
+    void keyDown(cocos2d::enumKeyCodes) override;
 };

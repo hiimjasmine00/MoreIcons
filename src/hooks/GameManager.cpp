@@ -32,5 +32,29 @@ class $modify(MIGameManager, GameManager) {
         MoreIcons::TRAIL_INFO.clear();
         MoreIcons::LOGS.clear();
         MoreIcons::HIGHEST_SEVERITY = LogType::Info;
+        MoreIcons::GLOBED_ICONS_LOADED = false;
+    }
+
+    gd::string sheetNameForIcon(int id, int type) {
+        auto ret = GameManager::sheetNameForIcon(id, type);
+        if (ret.empty()) return ret;
+        return MoreIcons::vanillaTexturePath(ret, false);
+    }
+
+    CCTexture2D* loadIcon(int id, int type, int requestID) {
+        auto iconExists = m_loadIcon[keyForIcon(id, type)] > 0;
+        auto ret = GameManager::loadIcon(id, type, requestID);
+        if (!ret || iconExists) return ret;
+        std::string sheetName = GameManager::sheetNameForIcon(id, type);
+        if (sheetName.empty()) return ret;
+        auto dict = CCContentManager::sharedManager()->addDict((sheetName + ".plist").c_str(), false);
+        if (!dict) return ret;
+        auto frames = static_cast<CCDictionary*>(dict->objectForKey("frames"));
+        if (!frames) return ret;
+        auto sfc = CCSpriteFrameCache::sharedSpriteFrameCache();
+        for (auto [frameName, frame] : CCDictionaryExt<std::string, CCDictionary*>(frames)) {
+            sfc->spriteFrameByName(frameName.c_str())->setTexture(ret);
+        }
+        return ret;
     }
 };

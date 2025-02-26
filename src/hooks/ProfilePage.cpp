@@ -6,8 +6,8 @@
 using namespace geode::prelude;
 
 class $modify(MIProfilePage, ProfilePage) {
-    static void onModify(auto& self) {
-        (void)self.setHookPriority("ProfilePage::loadPageFromUserInfo", -1);
+    static void onModify(ModifyBase<ModifyDerive<MIProfilePage, ProfilePage>>& self) {
+        (void)self.setHookPriorityAfterPost("ProfilePage::loadPageFromUserInfo", "weebify.separate_dual_icons");
     }
 
     SimplePlayer* findPlayer(CCNode* node) {

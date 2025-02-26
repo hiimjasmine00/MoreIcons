@@ -1,3 +1,4 @@
+#include "../MoreIcons.hpp"
 #include "../classes/ButtonHooker.hpp"
 #include "../classes/LogLayer.hpp"
 #include <Geode/binding/BoomScrollLayer.hpp>
@@ -22,9 +23,9 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         bool m_initialized;
     };
 
-    static void onModify(auto& self) {
-        (void)self.setHookPriority("GJGarageLayer::init", -1);
-        (void)self.setHookPriority("GJGarageLayer::setupPage", 1);
+    static void onModify(ModifyBase<ModifyDerive<MIGarageLayer, GJGarageLayer>>& self) {
+        (void)self.setHookPriorityAfterPost("GJGarageLayer::init", "weebify.separate_dual_icons");
+        (void)self.setHookPriorityBeforePost("GJGarageLayer::setupPage", "weebify.separate_dual_icons"); 
     }
 
     bool init() {
@@ -149,7 +150,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
     void createNavMenu() {
         auto f = m_fields.self();
-        auto winSize = CCDirector::get()->getWinSize();
+        auto winSize = CCDirector::sharedDirector()->getWinSize();
         if (!f->m_navMenu) {
             f->m_navMenu = CCMenu::create();
             f->m_navMenu->setPosition({ winSize.width / 2, 15.0f });
@@ -167,9 +168,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             m_navDotMenu->setEnabled(true);
             m_navDotMenu->removeAllChildren();
             auto firstDot = static_cast<CCMenuItemSpriteExtra*>(m_pageButtons->objectAtIndex(0));
-            static_cast<CCSprite*>(firstDot->getNormalImage())->setDisplayFrame(CCSpriteFrameCache::get()->spriteFrameByName(
-                f->m_pageBar && !vec.empty() ? "gj_navDotBtn_off_001.png" : "gj_navDotBtn_on_001.png"
-            ));
+            static_cast<CCSprite*>(firstDot->getNormalImage())->setDisplayFrame(CCSpriteFrameCache::sharedSpriteFrameCache()->spriteFrameByName(
+                f->m_pageBar && !vec.empty() ? "gj_navDotBtn_off_001.png" : "gj_navDotBtn_on_001.png"));
             m_navDotMenu->addChild(firstDot);
             m_navDotMenu->updateLayout();
             m_leftArrow->setVisible(true);
@@ -286,7 +286,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         f->m_pages[m_iconType] = wrapPage(m_iconType, page);
         createNavMenu();
 
-        auto spriteFrameCache = CCSpriteFrameCache::get();
+        auto spriteFrameCache = CCSpriteFrameCache::sharedSpriteFrameCache();
         for (auto navDot : CCArrayExt<CCMenuItemSpriteExtra*>(m_navDotMenu->getChildren())) {
             static_cast<CCSprite*>(navDot->getNormalImage())->setDisplayFrame(spriteFrameCache->spriteFrameByName("gj_navDotBtn_off_001.png"));
         }
@@ -301,10 +301,11 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         for (auto name : getPage()) {
             auto itemIcon = GJItemIcon::createBrowserItem(unlockType, 1);
             itemIcon->setScale(GJItemIcon::scaleForType(unlockType));
-            MoreIconsAPI::updateSimplePlayer(itemIcon->m_player, name, m_iconType);
+            auto simplePlayer = static_cast<SimplePlayer*>(itemIcon->m_player);
+            MoreIconsAPI::updateSimplePlayer(simplePlayer, name, m_iconType);
             if (hasAnimProf) {
-                if (auto robotSprite = itemIcon->m_player->m_robotSprite) robotSprite->runAnimation("idle01");
-                if (auto spiderSprite = itemIcon->m_player->m_spiderSprite) spiderSprite->runAnimation("idle01");
+                if (auto robotSprite = simplePlayer->m_robotSprite) robotSprite->runAnimation("idle01");
+                if (auto spiderSprite = simplePlayer->m_spiderSprite) spiderSprite->runAnimation("idle01");
             }
             auto iconButton = CCMenuItemSpriteExtra::create(itemIcon, this, menu_selector(GJGarageLayer::onSelect));
             iconButton->setUserObject("name"_spr, CCString::create(name));
@@ -315,7 +316,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             if (name == MoreIconsAPI::activeForType(m_iconType, dual)) current = iconButton;
         }
 
-        f->m_pageBar = ListButtonBar::create(objs, CCDirector::get()->getWinSize() / 2 - CCPoint { 0.0f, 65.0f }, 12, 3, 5.0f, 5.0f, 25.0f, 220.0f, 1);
+        f->m_pageBar = ListButtonBar::create(objs,
+            CCDirector::sharedDirector()->getWinSize() / 2 - CCPoint { 0.0f, 65.0f }, 12, 3, 5.0f, 5.0f, 25.0f, 220.0f, 1);
         f->m_pageBar->m_scrollLayer->togglePageIndicators(false);
         f->m_pageBar->setID("icon-selection-bar"_spr);
         addChild(f->m_pageBar, 101);
@@ -358,7 +360,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
                 nameLabel->setString(name.substr(name.find_first_of(':') + 1).c_str());
             if (auto achLabel = static_cast<CCLabelBMFont*>(popup->m_mainLayer->getChildByID("achievement-label"))) achLabel->setString("Custom");
             if (auto popupIcon = static_cast<GJItemIcon*>(popup->m_mainLayer->getChildByIDRecursive("item-icon")))
-                MoreIconsAPI::updateSimplePlayer(popupIcon->m_player, name, m_iconType);
+                MoreIconsAPI::updateSimplePlayer(static_cast<SimplePlayer*>(popupIcon->m_player), name, m_iconType);
             if (auto descText = static_cast<TextArea*>(popup->m_mainLayer->getChildByID("description-area"))) descText->setString(
                 fmt::format("This <cg>{}</c> is added by the <cl>More Icons</c> mod.", std::string(ItemInfoPopup::nameForUnlockType(1, unlockType))));
             if (auto completionMenu = popup->m_mainLayer->getChildByID("completionMenu")) completionMenu->setVisible(false);
@@ -400,7 +402,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         m_leftArrow->setVisible(vec.size() > 36);
         m_rightArrow->setVisible(vec.size() > 36);
 
-        auto spriteFrameCache = CCSpriteFrameCache::get();
+        auto spriteFrameCache = CCSpriteFrameCache::sharedSpriteFrameCache();
         for (auto navDot : CCArrayExt<CCMenuItemSpriteExtra*>(m_navDotMenu->getChildren())) {
             static_cast<CCSprite*>(navDot->getNormalImage())->setDisplayFrame(spriteFrameCache->spriteFrameByName("gj_navDotBtn_off_001.png"));
         }
@@ -412,7 +414,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         for (auto name : getPage()) {
             auto square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
             square->setColor({ 150, 150, 150 });
-            auto texture = CCTextureCache::get()->textureForKey(MoreIcons::TRAIL_INFO[name].texture.c_str());
+            auto texture = CCTextureCache::sharedTextureCache()->textureForKey(MoreIcons::TRAIL_INFO[name].texture.c_str());
             auto streak = CCSprite::createWithTexture(texture);
             limitNodeHeight(streak, 27.0f, 999.0f, 0.001f);
             streak->setRotation(-90.0f);
@@ -426,7 +428,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             if (name == MoreIconsAPI::activeForType(m_iconType, dual)) current = iconButton;
         }
 
-        f->m_pageBar = ListButtonBar::create(objs, CCDirector::get()->getWinSize() / 2 - CCPoint { 0.0f, 65.0f }, 12, 3, 5.0f, 5.0f, 25.0f, 220.0f, 1);
+        f->m_pageBar = ListButtonBar::create(objs,
+            CCDirector::sharedDirector()->getWinSize() / 2 - CCPoint { 0.0f, 65.0f }, 12, 3, 5.0f, 5.0f, 25.0f, 220.0f, 1);
         f->m_pageBar->m_scrollLayer->togglePageIndicators(false);
         f->m_pageBar->setID("icon-selection-bar"_spr);
         addChild(f->m_pageBar, 101);
@@ -456,7 +459,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
                 popupIcon->setVisible(false);
                 auto square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
                 square->setColor({ 150, 150, 150 });
-                auto streak = CCSprite::createWithTexture(CCTextureCache::get()->textureForKey(MoreIcons::TRAIL_INFO[name].texture.c_str()));
+                auto streak = CCSprite::createWithTexture(
+                    CCTextureCache::sharedTextureCache()->textureForKey(MoreIcons::TRAIL_INFO[name].texture.c_str()));
                 limitNodeHeight(streak, 27.0f, 999.0f, 0.001f);
                 streak->setRotation(-90.0f);
                 square->addChild(streak);
@@ -489,33 +493,35 @@ class $modify(MIGarageLayer, GJGarageLayer) {
                     }
                 }
             }
-            auto winSize = CCDirector::get()->getWinSize();
-            auto blendToggler = CCMenuItemExt::createTogglerWithStandardSprites(0.5f, [this, name](CCMenuItemToggler* sender) {
-                MoreIcons::TRAIL_INFO[name].blend = !sender->isToggled();
-            });
-            blendToggler->setPosition(popup->m_buttonMenu->convertToNodeSpace(winSize / 2 - CCPoint { 123.0f, 78.0f }));
-            blendToggler->toggle(trailInfo.blend);
-            blendToggler->setID("blend-toggler"_spr);
-            popup->m_buttonMenu->addChild(blendToggler);
-            auto blendLabel = CCLabelBMFont::create("Blend", "bigFont.fnt");
-            blendLabel->setPosition(winSize / 2 - CCPoint { 112.0f, 78.0f });
-            blendLabel->setAnchorPoint({ 0.0f, 0.5f });
-            blendLabel->setScale(0.3f);
-            blendLabel->setID("blend-label"_spr);
-            popup->m_mainLayer->addChild(blendLabel);
-            auto tintToggler = CCMenuItemExt::createTogglerWithStandardSprites(0.5f, [this, name](CCMenuItemToggler* sender) {
-                MoreIcons::TRAIL_INFO[name].tint = !sender->isToggled();
-            });
-            tintToggler->setPosition(popup->m_buttonMenu->convertToNodeSpace(winSize / 2 - CCPoint { 123.0f, 98.0f }));
-            tintToggler->toggle(trailInfo.tint);
-            tintToggler->setID("tint-toggler"_spr);
-            popup->m_buttonMenu->addChild(tintToggler);
-            auto tintLabel = CCLabelBMFont::create("Tint", "bigFont.fnt");
-            tintLabel->setPosition(winSize / 2 - CCPoint { 112.0f, 98.0f });
-            tintLabel->setAnchorPoint({ 0.0f, 0.5f });
-            tintLabel->setScale(0.3f);
-            tintLabel->setID("tint-label"_spr);
-            popup->m_mainLayer->addChild(tintLabel);
+            if (trailInfo.trailID <= 0) {
+                auto winSize = CCDirector::sharedDirector()->getWinSize();
+                auto blendToggler = CCMenuItemExt::createTogglerWithStandardSprites(0.5f, [name](CCMenuItemToggler* sender) {
+                    MoreIcons::TRAIL_INFO[name].blend = !sender->isToggled();
+                });
+                blendToggler->setPosition(popup->m_buttonMenu->convertToNodeSpace(winSize / 2 - CCPoint { 123.0f, 78.0f }));
+                blendToggler->toggle(trailInfo.blend);
+                blendToggler->setID("blend-toggler"_spr);
+                popup->m_buttonMenu->addChild(blendToggler);
+                auto blendLabel = CCLabelBMFont::create("Blend", "bigFont.fnt");
+                blendLabel->setPosition(winSize / 2 - CCPoint { 112.0f, 78.0f });
+                blendLabel->setAnchorPoint({ 0.0f, 0.5f });
+                blendLabel->setScale(0.3f);
+                blendLabel->setID("blend-label"_spr);
+                popup->m_mainLayer->addChild(blendLabel);
+                auto tintToggler = CCMenuItemExt::createTogglerWithStandardSprites(0.5f, [name](CCMenuItemToggler* sender) {
+                    MoreIcons::TRAIL_INFO[name].tint = !sender->isToggled();
+                });
+                tintToggler->setPosition(popup->m_buttonMenu->convertToNodeSpace(winSize / 2 - CCPoint { 123.0f, 98.0f }));
+                tintToggler->toggle(trailInfo.tint);
+                tintToggler->setID("tint-toggler"_spr);
+                popup->m_buttonMenu->addChild(tintToggler);
+                auto tintLabel = CCLabelBMFont::create("Tint", "bigFont.fnt");
+                tintLabel->setPosition(winSize / 2 - CCPoint { 112.0f, 98.0f });
+                tintLabel->setAnchorPoint({ 0.0f, 0.5f });
+                tintLabel->setScale(0.3f);
+                tintLabel->setID("tint-label"_spr);
+                popup->m_mainLayer->addChild(tintLabel);
+            }
             popup->show();
         }
         else MoreIconsAPI::setIcon(name, m_iconType, dual);
