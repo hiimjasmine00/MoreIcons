@@ -27,11 +27,11 @@ bool LogCell::init(const LogData& data, int index, int total, bool dark) {
     if (dark) bg->setColor(index % 2 == 0 ? ccColor3B { 48, 48, 48 } : ccColor3B { 80, 80, 80 });
     else bg->setColor(index % 2 == 0 ? ccColor3B { 161, 88, 44 } : ccColor3B { 194, 114, 62 });
     bg->ignoreAnchorPointForPosition(false);
-    if (index == 0) {
+    if (index % 25 == 0) {
         bg->setContentSize({ 400.0f, 35.0f });
         bg->setPosition({ 200.0f, 17.5f });
     }
-    else if (index == total - 1) {
+    else if (index % 25 == 24 || index == total - 1) {
         bg->setContentSize({ 400.0f, 35.0f });
         bg->setPosition({ 200.0f, 52.5f });
     }
@@ -41,7 +41,7 @@ bool LogCell::init(const LogData& data, int index, int total, bool dark) {
     }
     addChild(bg, -1);
 
-    if (index == 0 || index == total - 1) {
+    if (index % 25 == 0 || index % 25 == 24 || index == total - 1) {
         auto bgBg = CCScale9Sprite::create("square02b_001.png", { 0, 0, 80, 80 });
         bgBg->setContentSize({ 400.0f, 70.0f });
         bgBg->setPosition({ 200.0f, 35.0f });

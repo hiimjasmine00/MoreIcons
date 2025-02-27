@@ -1,6 +1,10 @@
 # More Icons Changelog
+## v1.8.1 (2025-02-26)
+- Added pagination to the log viewer in the icon kit
+- Fixed a bug that caused the 6th trail to not work properly (Reported by [lucaswiese6](https://github.com/lucaswiese6))
+
 ## v1.8.0 (2025-02-26)
-- Added traditional icon texture pack support, marking the old texture pack system as legacy
+- Added traditional icon texture pack support
 - Fixed a bug that caused the robot/spider in the icon kit to stay visible when selecting a new icon ([#21](https://github.com/hiimjasmine00/MoreIcons/issues/21))
 
 ## v1.7.1 (2025-01-29)

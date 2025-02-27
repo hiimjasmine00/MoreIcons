@@ -1,5 +1,6 @@
 #include "LogLayer.hpp"
 #include "LogCell.hpp"
+#include <Geode/binding/SetIDPopup.hpp>
 #include <Geode/loader/Mod.hpp>
 
 using namespace geode::prelude;
@@ -48,6 +49,15 @@ bool LogLayer::setup() {
     m_nextButton->setPosition({ 474.5f, 145.0f });
     m_buttonMenu->addChild(m_nextButton);
 
+    auto countLabel = CCLabelBMFont::create("", "goldFont.fnt");
+    countLabel->setScale(0.5f);
+    m_pageButton = CCMenuItemExt::createSpriteExtra(countLabel, [this](auto) {
+        auto popup = SetIDPopup::create(m_page + 1, 1, (MoreIcons::LOGS.size() + 24) / 25, "Go To Page", "Go", true, 1, 60.0f, false, false);
+        popup->m_delegate = this;
+        popup->show();
+    });
+    m_buttonMenu->addChild(m_pageButton);
+
     page(0);
 
     auto topButtons = CCMenu::create();
@@ -76,19 +86,25 @@ void LogLayer::page(int page) {
     m_page = page;
 
     auto& vec = MoreIcons::LOGS;
+    auto size = vec.size();
     m_prevButton->setVisible(page > 0);
-    m_nextButton->setVisible(page < (vec.size() - 1) / 10);
+    m_nextButton->setVisible(page < (size - 1) / 25);
 
     m_scrollLayer->m_contentLayer->removeAllChildren();
 
-    auto size = std::min(10, (int)vec.size() - page * 10);
     auto dark = Loader::get()->isModLoaded("bitz.darkmode_v4");
-    for (int i = page * 10; i < page * 10 + size; i++) {
+    for (int i = page * 25; i < page * 25 + 25 && i < size; i++) {
         m_scrollLayer->m_contentLayer->addChild(LogCell::create(vec[i], i, size, dark));
     }
 
     m_scrollLayer->m_contentLayer->updateLayout();
     m_scrollLayer->scrollToTop();
+
+    auto countLabel = static_cast<CCLabelBMFont*>(m_pageButton->getNormalImage());
+    countLabel->setString(fmt::format("Page {} of {}", page + 1, (size + 24) / 25).c_str());
+    auto& countSize = countLabel->getContentSize();
+    m_pageButton->setPosition({ 435.0f - countSize.width * 0.25f, 7.0f + countSize.height * 0.25f });
+    m_pageButton->updateSprite();
 }
 
 void LogLayer::keyDown(enumKeyCodes key) {
@@ -105,4 +121,8 @@ void LogLayer::keyDown(enumKeyCodes key) {
             Popup<>::keyDown(key);
             break;
     }
+}
+
+void LogLayer::setIDPopupClosed(SetIDPopup*, int id) {
+    page(std::min(std::max(id - 1, 0), (int)(MoreIcons::LOGS.size() - 1) / 25));
 }

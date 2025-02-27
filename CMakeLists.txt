@@ -5,7 +5,7 @@ set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
 
-project(MoreIcons VERSION 1.8.0)
+project(MoreIcons VERSION 1.8.1)
 
 add_library(${PROJECT_NAME} SHARED
     src/api/MoreIconsAPI.cpp

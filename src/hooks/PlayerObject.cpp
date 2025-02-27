@@ -89,12 +89,10 @@ class $modify(MIPlayerObject, PlayerObject) {
     }
 
     void resetTrail() {
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto trailID = sdi && m_gameLayer && m_gameLayer->m_player2 == this
-            ? sdi->getSavedValue<int>("trail", 1) : GameManager::get()->m_playerStreak.value();
-        if (Loader::get()->isModLoaded("acaruso.pride") && trailID == 2) return;
+        if (Loader::get()->isModLoaded("acaruso.pride") && m_playerStreak == 2) return;
         m_regularTrail->setTexture(CCTextureCache::sharedTextureCache()->addImage(
-            MoreIcons::vanillaTexturePath(fmt::format("streak_{:02}_001.png", trailID), true).c_str(), false));
+            MoreIcons::vanillaTexturePath(fmt::format("streak_{:02}_001.png", m_playerStreak), true).c_str(), false));
+        if (m_playerStreak == 6) m_regularTrail->enableRepeatMode(0.1f);
     }
 
     void setupStreak() {
@@ -103,10 +101,8 @@ class $modify(MIPlayerObject, PlayerObject) {
         if (!isMainPlayer()) return resetTrail();
 
         std::string trailFile;
-        if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this)
-            trailFile = MoreIconsAPI::activeForType(IconType::Special, false);
-        else if (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this)
-            trailFile = MoreIconsAPI::activeForType(IconType::Special, true);
+        if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) trailFile = MoreIconsAPI::activeForType(IconType::Special, false);
+        else if (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this) trailFile = MoreIconsAPI::activeForType(IconType::Special, true);
 
         if (trailFile.empty() || !MoreIconsAPI::hasIcon(trailFile, IconType::Special)) return resetTrail();
 
@@ -146,6 +142,7 @@ class $modify(MIPlayerObject, PlayerObject) {
             }
 
             m_regularTrail->initWithFade(fade, 5.0f, stroke, { 255, 255, 255 }, textureCache->textureForKey(trailInfo.texture.c_str()));
+            if (trailInfo.trailID == 6) m_regularTrail->enableRepeatMode(0.1f);
             m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
         }
         m_streakRelated1 = 14.0f;
