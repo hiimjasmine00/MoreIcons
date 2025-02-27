@@ -58,17 +58,6 @@ $on_mod(DataSaved) {
     MoreIcons::saveTrails();
 }
 
-std::vector<std::filesystem::directory_entry> MoreIcons::naturalSort(const std::filesystem::path& path) {
-    std::vector<std::filesystem::directory_entry> entries;
-    for (auto& entry : std::filesystem::directory_iterator(path)) {
-        entries.push_back(entry);
-    }
-    std::sort(entries.begin(), entries.end(), [](const std::filesystem::directory_entry& a, const std::filesystem::directory_entry& b) {
-        return naturalSorter(a.path().filename().string(), b.path().filename().string());
-    });
-    return entries;
-}
-
 void MoreIcons::naturalSort(std::vector<std::string>& vec) {
     std::map<std::string, std::vector<std::string>> packs;
     for (auto& str : vec) {
@@ -104,7 +93,12 @@ bool MoreIcons::naturalSorter(const std::string& aStr, const std::string& bStr) 
             std::string aNum, bNum;
             while (std::isdigit(*aIt)) aNum += *aIt++;
             while (std::isdigit(*bIt)) bNum += *bIt++;
-            if (aNum != bNum) return std::stoi(aNum) < std::stoi(bNum);
+            if (aNum != bNum) {
+                if (aNum.size() != bNum.size()) return aNum.size() < bNum.size();
+                for (int i = 0; i < aNum.size(); i++) {
+                    if (aNum[i] != bNum[i]) return aNum[i] < bNum[i];
+                }
+            }
         }
         else {
             auto aLower = std::tolower(*aIt);
@@ -259,7 +253,7 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
             }
             log::info("Loading {}s from {}", suffix, path.string());
 
-            for (auto& entry : naturalSort(path)) {
+            for (auto& entry : std::filesystem::directory_iterator(path)) {
                 if (entry.is_regular_file()) {
                     auto& entryPath = entry.path();
                     if (entryPath.extension() != ".plist") continue;
@@ -287,7 +281,7 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
                 case IconType::Jetpack: prefix = "jetpack_"; break;
                 default: break;
             }
-            for (auto& entry : naturalSort(path)) {
+            for (auto& entry : std::filesystem::directory_iterator(path)) {
                 if (!entry.is_regular_file()) continue;
 
                 auto& entryPath = entry.path();
@@ -345,7 +339,7 @@ void MoreIcons::loadIcon(const std::filesystem::path& path, const IconPack& pack
             auto textureCache = CCTextureCache::sharedTextureCache();
             auto spriteFrameCache = CCSpriteFrameCache::sharedSpriteFrameCache();
             int i = 0;
-            for (auto& subEntry : naturalSort(path)) {
+            for (auto& subEntry : std::filesystem::directory_iterator(path)) {
                 if (!subEntry.is_regular_file()) continue;
 
                 auto subEntryPath = subEntry.path();
@@ -615,7 +609,7 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
             }
             log::info("Loading trails from {}", path.string());
 
-            for (auto& entry : naturalSort(path)) {
+            for (auto& entry : std::filesystem::directory_iterator(path)) {
                 if (!entry.is_regular_file()) continue;
 
                 auto& entryPath = entry.path();
@@ -629,7 +623,7 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
         }
         else {
             auto trailCount = GameManager::get()->countForType(IconType::Special);
-            for (auto& entry : naturalSort(pack.path)) {
+            for (auto& entry : std::filesystem::directory_iterator(pack.path)) {
                 if (!entry.is_regular_file()) continue;
 
                 auto& entryPath = entry.path();

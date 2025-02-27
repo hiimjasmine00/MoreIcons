@@ -1,7 +1,10 @@
 # More Icons Changelog
+## v1.8.2 (2025-02-27)
+- Fixed the icon sorter crashing with file names that end with numbers bigger than 2,147,483,647 (Reported by [Sharkcrome](user:26481173))
+
 ## v1.8.1 (2025-02-26)
 - Added pagination to the log viewer in the icon kit
-- Fixed a bug that caused the 6th trail to not work properly (Reported by [lucaswiese6](https://github.com/lucaswiese6))
+- Fixed a bug that caused the 6th trail to not work properly (Reported by [lucaswiese6](user:27435227))
 
 ## v1.8.0 (2025-02-26)
 - Added traditional icon texture pack support
@@ -31,7 +34,7 @@
 - Separated icon loading by icon type
 - Separated icons by texture pack in the icon kit ([#17](https://github.com/hiimjasmine00/MoreIcons/issues/17))
 - Fixed a bug that would reset the player's icon when exiting dual mode ([#15](https://github.com/hiimjasmine00/MoreIcons/issues/15))
-- Fixed pages not updating properly in the icon kit using arrow buttons (Reported by [NyteLyte](https://github.com/NyteLytee))
+- Fixed pages not updating properly in the icon kit using arrow buttons (Reported by [NyteLyte](user:26352471))
 
 ## v1.5.0 (2024-11-18)
 - Added custom icons to the main menu

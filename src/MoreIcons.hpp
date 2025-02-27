@@ -63,7 +63,6 @@ public:
     static inline LogType HIGHEST_SEVERITY = LogType::Info;
     static inline bool GLOBED_ICONS_LOADED = false;
 
-    static std::vector<std::filesystem::directory_entry> naturalSort(const std::filesystem::path& path);
     static void naturalSort(std::vector<std::string>& vec);
     static bool naturalSorter(const std::string& aStr, const std::string& bStr);
     static std::vector<IconPack> getTexturePacks();
