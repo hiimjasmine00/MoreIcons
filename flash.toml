@@ -25,7 +25,7 @@ config-args = [
     "-G", "Ninja",
     "-DCMAKE_CXX_COMPILER=clang++",
     "-DCMAKE_C_COMPILER=clang",
-    "-DGEODE_BUILDING_DOCS=ON",
+    "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
     "-DGEODE_CODEGEN_CMAKE_ARGS=-DCMAKE_CXX_COMPILER=clang++;-DCMAKE_C_COMPILER=clang"
 ]
 build-dir = "build-docs"
