@@ -118,7 +118,7 @@ std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuff
     }
     return path;
     #else
-    return dirs::getGameDir() / "Resources" / path;
+    return (dirs::getGameDir() / "Resources" / path).string();
     #endif
 }
 

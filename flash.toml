@@ -29,4 +29,4 @@ config-args = [
     "-DGEODE_CODEGEN_CMAKE_ARGS=-DCMAKE_CXX_COMPILER=clang++;-DCMAKE_C_COMPILER=clang"
 ]
 build-dir = "build-docs"
-infer-args-from = "src/api/MoreIconsAPI.cpp"
+infer-args-from = "src\\api\\MoreIconsAPI.cpp"
