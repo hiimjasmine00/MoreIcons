@@ -47,6 +47,8 @@ jobs:
 
       - name: Generate Documentation
         run: |
+          mkdir "${{ github.workspace }}/cli-profile/geode/mods"
+          geode profile add --name MoreIcons "${{ github.workspace }}/cli-profile/GeometryDash.exe" win
           geode sdk install "${{ github.workspace }}/geode"
           setx GEODE_SDK "${{ github.workspace }}/geode"
           geode sdk update ${{ steps.geode.outputs.version }} && geode sdk install-binaries

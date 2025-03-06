@@ -104,7 +104,7 @@ void MoreIcons::unzipVanillaAssets() {
 }
 #endif
 
-std::filesystem::path MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuffix) {
+std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuffix) {
     #ifdef GEODE_IS_ANDROID
     if (CCDirector::get()->getContentScaleFactor() >= 4.0f && !skipSuffix) {
         if (auto highGraphicsAndroid = Loader::get()->getLoadedMod("weebify.high-graphics-android")) {
