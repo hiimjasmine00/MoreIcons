@@ -31,6 +31,9 @@ jobs:
           latest: true
           fileName: flash.exe
 
+      - name: Setup Geode CLI
+        uses: geode-sdk/cli/.github/actions/setup@main
+
       - name: Get Geode Version
         id: geode
         shell: bash
@@ -41,17 +44,13 @@ jobs:
           echo "Geode Version: $GEODE_VERSION"
           # set GITHUB_OUTPUT
           echo "version=$GEODE_VERSION" >> $GITHUB_OUTPUT
-          echo "GEODE_SDK=$GITHUB_WORKSPACE/geode" >> $GITHUB_ENV
-
-      - name: Checkout Geode
-        uses: actions/checkout@v4
-        with:
-          repository: geode-sdk/geode
-          ref: ${{ steps.geode.outputs.version }}
-          path: ./geode
 
       - name: Generate Documentation
         run: |
+          geode sdk install "${{ github.workspace }}/geode"
+          GEODE_SDK=${{ github.workspace }}/geode
+          echo "GEODE_SDK=$GEODE_SDK" >> $GITHUB_ENV
+          geode sdk update ${{ steps.geode.outputs.version }} && geode sdk install-binaries
           mkdir dist
           mv ./MoreIcons/fix-docs.js ./dist/fix-docs.js
           cd dist

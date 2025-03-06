@@ -189,6 +189,12 @@ std::string getFrameName(const std::string& name, const std::string& prefix, Ico
     return name;
 }
 
+#ifdef GEODE_IS_WINDOWS // I simply cannot believe this
+std::string replaceEnd(const std::filesystem::path& path, size_t end, std::string_view replace) {
+    return replaceEnd(path.string(), end, replace);
+}
+#endif
+
 std::string replaceEnd(const std::string& str, size_t end, std::string_view replace) {
     return fmt::format("{}{}", str.substr(0, str.size() - end), replace);
 }
@@ -399,7 +405,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack, Ic
         frames->release();
 
         auto image = new CCImage();
-        if (image->initWithImageFileThreadSafe(path.c_str())) {
+        if (image->initWithImageFileThreadSafe(path.string().c_str())) {
             std::lock_guard lock(IMAGE_MUTEX);
             if (!pack.id.empty()) {
                 for (auto& image : IMAGES) {
@@ -439,7 +445,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
         }));
 
         auto image = new CCImage();
-        if (image->initWithImageFileThreadSafe(path.c_str())) {
+        if (image->initWithImageFileThreadSafe(path.string().c_str())) {
             std::lock_guard lock(IMAGE_MUTEX);
             if (!pack.id.empty() && ranges::contains(IMAGES, [name](const ImageData& image) { return image.name == name; })) {
                 printLog(Severity::Warning, "{}: Duplicate trail name {}", path, name);
@@ -477,7 +483,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
         if (trailID <= 0) return;
 
         auto image = new CCImage();
-        if (image->initWithImageFileThreadSafe(path.c_str())) {
+        if (image->initWithImageFileThreadSafe(path.string().c_str())) {
             std::lock_guard lock(IMAGE_MUTEX);
             if (!pack.id.empty()) {
                 for (auto& image : IMAGES) {
