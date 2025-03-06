@@ -1,0 +1,32 @@
+[project]
+name = "More Icons"
+version = ""
+repository = "https://github.com/hiimjasmine00/MoreIcons"
+tree = "https://github.com/hiimjasmine00/MoreIcons/tree/master"
+icon = "logo.png"
+
+[tutorials]
+dir = "docs"
+
+[[sources]]
+name = "More Icons"
+dir = "include"
+include = [
+    "*.hpp"
+]
+
+[ignore]
+patterns-name = [
+    "^[^M]|^.[^o]|^..[^r]|[^o]..$|[^n].$|[^s]$"
+]
+
+[cmake]
+config-args = [
+    "-G", "Ninja",
+    "-DCMAKE_CXX_COMPILER=clang++",
+    "-DCMAKE_C_COMPILER=clang",
+    "-DGEODE_BUILDING_DOCS=ON",
+    "-DGEODE_CODEGEN_CMAKE_ARGS=-DCMAKE_CXX_COMPILER=clang++;-DCMAKE_C_COMPILER=clang"
+]
+build-dir = "build-docs"
+infer-args-from = "src/api/MoreIconsAPI.cpp"

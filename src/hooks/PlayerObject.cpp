@@ -15,10 +15,10 @@ class $modify(MIPlayerObject, PlayerObject) {
     }
 
     void updateIcon(IconType type) {
-        if (!isMainPlayer()) return MoreIconsAPI::removeUserObject(this);
+        if (!isMainPlayer()) return setUserObject("name"_spr, nullptr);
 
-        if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) MoreIconsAPI::updatePlayerObject(this, MoreIconsAPI::activeForType(type, false), type);
-        else if (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this) MoreIconsAPI::updatePlayerObject(this, MoreIconsAPI::activeForType(type, true), type);
+        if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) MoreIconsAPI::updatePlayerObject(this, type, false);
+        else if (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this) MoreIconsAPI::updatePlayerObject(this, type, true);
     }
 
     bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool highGraphics) {
@@ -33,64 +33,65 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updatePlayerFrame(int frame) {
         PlayerObject::updatePlayerFrame(frame);
 
-        if (frame == 0) return MoreIconsAPI::removeUserObject(this);
-        
+        if (frame == 0) return setUserObject("name"_spr, nullptr);
+
         updateIcon(IconType::Cube);
     }
 
     void updatePlayerShipFrame(int frame) {
         PlayerObject::updatePlayerShipFrame(frame);
-        
+
         updateIcon(IconType::Ship);
     }
 
     void updatePlayerRollFrame(int frame) {
         PlayerObject::updatePlayerRollFrame(frame);
 
-        if (frame == 0) return MoreIconsAPI::removeUserObject(this);
-        
+        if (frame == 0) return setUserObject("name"_spr, nullptr);
+
         updateIcon(IconType::Ball);
     }
 
     void updatePlayerBirdFrame(int frame) {
         PlayerObject::updatePlayerBirdFrame(frame);
-        
+
         updateIcon(IconType::Ufo);
     }
 
     void updatePlayerDartFrame(int frame) {
         PlayerObject::updatePlayerDartFrame(frame);
-        
+
         updateIcon(IconType::Wave);
     }
 
     void createRobot(int frame) {
         PlayerObject::createRobot(frame);
-        
+
         updateIcon(IconType::Robot);
     }
 
     void createSpider(int frame) {
         PlayerObject::createSpider(frame);
-        
+
         updateIcon(IconType::Spider);
     }
 
     void updatePlayerSwingFrame(int frame) {
         PlayerObject::updatePlayerSwingFrame(frame);
-        
+
         updateIcon(IconType::Swing);
     }
 
     void updatePlayerJetpackFrame(int frame) {
         PlayerObject::updatePlayerJetpackFrame(frame);
-        
+
         updateIcon(IconType::Jetpack);
     }
 
     void resetTrail() {
-        if (Loader::get()->isModLoaded("acaruso.pride") && m_playerStreak == 2) return;
-        m_regularTrail->setTexture(CCTextureCache::sharedTextureCache()->addImage(
+        if (m_regularTrail->getUserObject("name"_spr)) m_regularTrail->setUserObject("name"_spr, nullptr);
+        if (!MoreIcons::TRADITIONAL_PACKS || (Loader::get()->isModLoaded("acaruso.pride") && m_playerStreak == 2)) return;
+        m_regularTrail->setTexture(CCTextureCache::get()->addImage(
             MoreIcons::vanillaTexturePath(fmt::format("streak_{:02}_001.png", m_playerStreak), true).c_str(), false));
         if (m_playerStreak == 6) m_regularTrail->enableRepeatMode(0.1f);
     }
@@ -106,21 +107,21 @@ class $modify(MIPlayerObject, PlayerObject) {
 
         if (trailFile.empty() || !MoreIconsAPI::hasIcon(trailFile, IconType::Special)) return resetTrail();
 
-        auto textureCache = CCTextureCache::sharedTextureCache();
+        auto textureCache = CCTextureCache::get();
         auto trailInfo = MoreIcons::TRAIL_INFO[trailFile];
         if (trailInfo.trailID > 0) {
-            m_streakRelated1 = 10.0f;
+            m_streakStrokeWidth = 10.0f;
             auto fade = 0.3f;
             auto stroke = 10.0f;
             switch (trailInfo.trailID) {
                 case 2:
                 case 7:
                     stroke = 14.0f;
-                    m_streakRelated2 = true;
-                    m_streakRelated1 = 14.0f;
+                    m_disableStreakTint = true;
+                    m_streakStrokeWidth = 14.0f;
                     break;
                 case 3:
-                    m_streakRelated1 = 8.5f;
+                    m_streakStrokeWidth = 8.5f;
                     stroke = 8.5f;
                     break;
                 case 4:
@@ -128,15 +129,15 @@ class $modify(MIPlayerObject, PlayerObject) {
                     stroke = 10.0f;
                     break;
                 case 5:
-                    m_streakRelated1 = 5.0f;
+                    m_streakStrokeWidth = 5.0f;
                     fade = 0.6f;
-                    m_streakRelated3 = true;
+                    m_alwaysShowStreak = true;
                     stroke = 5.0f;
                     break;
                 case 6:
                     fade = 1.0f;
-                    m_streakRelated3 = true;
-                    m_streakRelated1 = 3.0f;
+                    m_alwaysShowStreak = true;
+                    m_streakStrokeWidth = 3.0f;
                     stroke = 3.0f;
                     break;
             }
@@ -144,11 +145,13 @@ class $modify(MIPlayerObject, PlayerObject) {
             m_regularTrail->initWithFade(fade, 5.0f, stroke, { 255, 255, 255 }, textureCache->textureForKey(trailInfo.texture.c_str()));
             if (trailInfo.trailID == 6) m_regularTrail->enableRepeatMode(0.1f);
             m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
+            m_regularTrail->setUserObject("name"_spr, CCString::create(trailFile));
         }
-        m_streakRelated1 = 14.0f;
-        m_streakRelated2 = !trailInfo.tint;
-        m_streakRelated3 = false;
+        m_streakStrokeWidth = 14.0f;
+        m_disableStreakTint = !trailInfo.tint;
+        m_alwaysShowStreak = false;
         m_regularTrail->initWithFade(0.3f, 5.0f, 14.0f, { 255, 255, 255 }, textureCache->textureForKey(trailInfo.texture.c_str()));
         if (trailInfo.blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
+        m_regularTrail->setUserObject("name"_spr, CCString::create(trailFile));
     }
 };

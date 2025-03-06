@@ -42,7 +42,7 @@ If anything goes wrong, the mod will log warnings and errors to the console, whi
 ## Texture Packs
 Icon texture packs can be loaded with the mod "Texture Loader" by Geode Team. The texture pack should be placed in `(Geometry Dash folder)/config/geode.texture-loader/packs/(pack name)`, where `(pack name)` is the name of the texture pack, or a zip file containing the texture pack. The same rules apply for the texture pack as they do for the custom icons, with the sprites being added to `(pack name)/config/hiimjustin000.more_icons/(gamemode)`, where `(gamemode)` is the gamemode the icon is for.
 
-Traditional icon texture packs can be loaded without prior modification, and More Icons will separate the icons without replacing the original icons. However, trail properties from these packs cannot be modified; they are instead derived from vanilla trails.
+Traditional icon texture packs can be loaded without prior modification, and More Icons will separate the icons without replacing the original icons. However, trail properties from these packs cannot be modified; they are instead derived from vanilla trails. This behavior can be disabled in the mod settings.
 
 ## Using Icons
 To use a custom icon, you will need to go into the icon kit. In the icon kit, there is a second row of dots that you can click on to view the extra icons. Click on the dot (or scroll to it with the page arrows) to view a page of extra icons, and click on one of the icons to select it.

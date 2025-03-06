@@ -1,5 +1,6 @@
 #include "LogLayer.hpp"
 #include "LogCell.hpp"
+#include "../MoreIcons.hpp"
 #include <Geode/binding/SetIDPopup.hpp>
 #include <Geode/loader/Mod.hpp>
 
@@ -94,7 +95,7 @@ void LogLayer::page(int page) {
 
     auto dark = Loader::get()->isModLoaded("bitz.darkmode_v4");
     for (int i = page * 25; i < page * 25 + 25 && i < size; i++) {
-        m_scrollLayer->m_contentLayer->addChild(LogCell::create(vec[i], i, size, dark));
+        m_scrollLayer->m_contentLayer->addChild(LogCell::create(vec[i].message, vec[i].severity, i, size, dark));
     }
 
     m_scrollLayer->m_contentLayer->updateLayout();

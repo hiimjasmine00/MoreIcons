@@ -1,4 +1,4 @@
-#include "../MoreIcons.hpp"
+#include "../api/MoreIconsAPI.hpp"
 #include "../classes/ButtonHooker.hpp"
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/ProfilePage.hpp>
@@ -20,22 +20,24 @@ class $modify(MIProfilePage, ProfilePage) {
         if (!playerMenu) return;
 
         auto playerShip = playerMenu->getChildByID("player-ship");
-        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-icon")), IconType::Cube);
-        MoreIcons::changeSimplePlayer(findPlayer(playerShip), playerShip ? (IconType)playerShip->getTag() : IconType::Ship);
-        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-ball")), IconType::Ball);
-        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-ufo")), IconType::Ufo);
-        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-wave")), IconType::Wave);
-        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-robot")), IconType::Robot);
-        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-spider")), IconType::Spider);
-        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-swing")), IconType::Swing);
-        MoreIcons::changeSimplePlayer(findPlayer(playerMenu->getChildByID("player-jetpack")), IconType::Jetpack);
+        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+        auto dual = sdi && sdi->getSavedValue("2pselected", false);
+        MoreIconsAPI::updateSimplePlayer(findPlayer(playerMenu->getChildByID("player-icon")), IconType::Cube, dual);
+        MoreIconsAPI::updateSimplePlayer(findPlayer(playerShip), playerShip ? (IconType)playerShip->getTag() : IconType::Ship, dual);
+        MoreIconsAPI::updateSimplePlayer(findPlayer(playerMenu->getChildByID("player-ball")), IconType::Ball, dual);
+        MoreIconsAPI::updateSimplePlayer(findPlayer(playerMenu->getChildByID("player-ufo")), IconType::Ufo, dual);
+        MoreIconsAPI::updateSimplePlayer(findPlayer(playerMenu->getChildByID("player-wave")), IconType::Wave, dual);
+        MoreIconsAPI::updateSimplePlayer(findPlayer(playerMenu->getChildByID("player-robot")), IconType::Robot, dual);
+        MoreIconsAPI::updateSimplePlayer(findPlayer(playerMenu->getChildByID("player-spider")), IconType::Spider, dual);
+        MoreIconsAPI::updateSimplePlayer(findPlayer(playerMenu->getChildByID("player-swing")), IconType::Swing, dual);
+        MoreIconsAPI::updateSimplePlayer(findPlayer(playerMenu->getChildByID("player-jetpack")), IconType::Jetpack, dual);
     }
 
     void loadPageFromUserInfo(GJUserScore* score) {
         ProfilePage::loadPageFromUserInfo(score);
 
         if (!m_ownProfile) return;
-        
+
         changePlayers();
 
         if (Loader::get()->isModLoaded("weebify.separate_dual_icons")) {
@@ -48,7 +50,7 @@ class $modify(MIProfilePage, ProfilePage) {
 
     void newOn2PToggle(CCObject* sender) {
         CALL_BUTTON_ORIGINAL(sender);
-        
+
         changePlayers();
     }
 
@@ -57,6 +59,8 @@ class $modify(MIProfilePage, ProfilePage) {
 
         if (!m_ownProfile) return;
 
-        MoreIcons::changeSimplePlayer(findPlayer(static_cast<CCNode*>(sender)), (IconType)sender->getTag());
+        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+        MoreIconsAPI::updateSimplePlayer(findPlayer(static_cast<CCNode*>(sender)),
+            (IconType)sender->getTag(), sdi && sdi->getSavedValue("2pselected", false));
     }
 };

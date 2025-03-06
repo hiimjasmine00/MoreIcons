@@ -5,7 +5,7 @@ set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
 
-project(MoreIcons VERSION 1.8.2)
+project(MoreIcons VERSION 1.9.0)
 
 add_library(${PROJECT_NAME} SHARED
     src/api/MoreIconsAPI.cpp
@@ -27,6 +27,8 @@ add_library(${PROJECT_NAME} SHARED
     src/hooks/SimplePlayer.cpp
     src/MoreIcons.cpp
 )
+
+target_include_directories(${PROJECT_NAME} PRIVATE include)
 
 if (NOT DEFINED ENV{GEODE_SDK})
     message(FATAL_ERROR "Unable to find Geode SDK! Please define GEODE_SDK environment variable to point to Geode")

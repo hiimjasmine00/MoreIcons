@@ -5,7 +5,7 @@
         "win": "2.2074",
         "mac": "2.2074"
     },
-    "version": "v1.8.2",
+    "version": "v1.9.0",
     "id": "hiimjustin000.more_icons",
     "name": "More Icons",
     "developer": "hiimjasmine00",
@@ -26,6 +26,20 @@
         "include": [
             "include/*.hpp"
         ]
+    },
+    "settings": {
+        "debug-logs": {
+            "name": "Debug Logs",
+            "description": "Whether to enable debug logs in the mod.",
+            "type": "bool",
+            "default": true
+        },
+        "traditional-packs": {
+            "name": "Load from Traditional Packs",
+            "description": "Whether to load icons from traditional icon packs.",
+            "type": "bool",
+            "default": true
+        }
     },
     "links": {
         "community": "https://discord.gg/QVKmbvBXA7",

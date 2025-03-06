@@ -1,0 +1,48 @@
+name: Deploy Documentation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "master"
+
+concurrency:
+  group: "deploy"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy Documentation
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout More Icons
+        uses: actions/checkout@v4
+        with:
+          path: ./MoreIcons
+
+      - name: Setup Ninja
+        uses: seanmiddleditch/gha-setup-ninja@master
+
+      - name: Download Flash
+        uses: robinraju/release-downloader@v1.11
+        with:
+          repository: geode-sdk/flash
+          latest: true
+          fileName: ./flash.exe
+          out-file-path: ""
+
+      - name: Generate Documentation
+        run: |
+          mkdir dist
+          mv ./MoreIcons/fix-docs.js ./dist/fix-docs.js
+          cd dist
+          ../flash.exe -i ../MoreIcons -o . && node ./fix-docs.js
+
+      - name: Upload Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+        
+      - name: Deploy Pages
+        uses: actions/deploy-pages@v4

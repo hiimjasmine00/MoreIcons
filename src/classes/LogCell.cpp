@@ -4,9 +4,9 @@
 
 using namespace geode::prelude;
 
-LogCell* LogCell::create(const LogData& data, int index, int total, bool dark) {
+LogCell* LogCell::create(const std::string& message, Severity severity, int index, int total, bool dark) {
     auto ret = new LogCell();
-    if (ret->init(data, index, total, dark)) {
+    if (ret->init(message, severity, index, total, dark)) {
         ret->autorelease();
         return ret;
     }
@@ -14,7 +14,7 @@ LogCell* LogCell::create(const LogData& data, int index, int total, bool dark) {
     return nullptr;
 }
 
-bool LogCell::init(const LogData& data, int index, int total, bool dark) {
+bool LogCell::init(const std::string& message, Severity severity, int index, int total, bool dark) {
     if (!CCLayer::init()) return false;
 
     ignoreAnchorPointForPosition(false);
@@ -50,17 +50,17 @@ bool LogCell::init(const LogData& data, int index, int total, bool dark) {
     }
 
     auto infoFrame = "";
-    switch (data.type) {
-        case LogType::Info: infoFrame = "GJ_infoIcon_001.png"; break;
-        case LogType::Warn: infoFrame = "geode.loader/info-warning.png"; break;
-        case LogType::Error: infoFrame = "geode.loader/info-alert.png"; break;
+    switch (severity) {
+        case Severity::Info: infoFrame = "GJ_infoIcon_001.png"; break;
+        case Severity::Warning: infoFrame = "geode.loader/info-warning.png"; break;
+        case Severity::Error: infoFrame = "geode.loader/info-alert.png"; break;
     }
 
     auto infoIcon = CCSprite::createWithSpriteFrameName(infoFrame);
     infoIcon->setPosition({ 20.0f, 35.0f });
     addChild(infoIcon);
 
-    auto textArea = TextArea::create(data.message, "bigFont.fnt", 0.25f, 350.0f, { 0.0f, 1.0f }, 10.0f, true);
+    auto textArea = TextArea::create(message, "bigFont.fnt", 0.25f, 350.0f, { 0.0f, 1.0f }, 10.0f, true);
     textArea->setContentSize({ textArea->m_width, textArea->m_height * (textArea->m_label->m_lines ? textArea->m_label->m_lines->count() : 0) });
     textArea->m_label->setPosition({ 0.0f, textArea->getContentHeight() });
     textArea->setPosition({ 40.0f, 35.0f });

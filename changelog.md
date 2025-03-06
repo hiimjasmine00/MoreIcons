@@ -1,4 +1,11 @@
 # More Icons Changelog
+## v1.9.0 (2025-03-02)
+- Added debug logs, which can be disabled in the settings
+- Added a setting to disable loading traditional icon texture packs
+- Added simpler API overloads and a new method to get the name of an icon ([Documentation](https://more-icons.hiimjasmine00.com))
+- Added user objects for custom trails
+- Fixed some memory leaks
+
 ## v1.8.2 (2025-02-27)
 - Fixed the icon sorter crashing with file names that end with numbers bigger than 2,147,483,647 (Reported by [Sharkcrome](user:26481173))
 

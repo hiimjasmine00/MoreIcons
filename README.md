@@ -42,50 +42,12 @@ If anything goes wrong, the mod will log warnings and errors to the console, whi
 ## Texture Packs
 Icon texture packs can be loaded with the mod "Texture Loader" by Geode Team. The texture pack should be placed in `(Geometry Dash folder)/config/geode.texture-loader/packs/(pack name)`, where `(pack name)` is the name of the texture pack, or a zip file containing the texture pack. The same rules apply for the texture pack as they do for the custom icons, with the sprites being added to `(pack name)/config/hiimjustin000.more_icons/(gamemode)`, where `(gamemode)` is the gamemode the icon is for.
 
-Traditional icon texture packs can be loaded without prior modification, and More Icons will separate the icons without replacing the original icons. However, trail properties from these packs cannot be modified; they are instead derived from vanilla trails.
+Traditional icon texture packs can be loaded without prior modification, and More Icons will separate the icons without replacing the original icons. However, trail properties from these packs cannot be modified; they are instead derived from vanilla trails. This behavior can be disabled in the mod settings.
 
 ## Using Icons
 To use a custom icon, you will need to go into the icon kit. In the icon kit, there is a second row of dots that you can click on to view the extra icons. Click on the dot (or scroll to it with the page arrows) to view a page of extra icons, and click on one of the icons to select it.
 
 To deselect a custom icon, use the first row of dots to go back to the default icons, and click on one of the default icons to select it.
-
-## More Icons API
-To use the More Icons API, add the following to the `dependencies` object in your `mod.json`:
-```json
-{
-    "dependencies": {
-        "hiimjustin000.more_icons": {
-            "version": ">=v1.7.0",
-            "importance": "suggested"
-        }
-    }
-}
-```
-
-Here are some examples of how to use the More Icons API:
-```cpp
-// Include the More Icons API header
-#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
-
-// Get the player's icon
-auto icon = MoreIcons::activeForType(IconType::Cube);
-// Get the player's dual icon (If the player has the mod "Separate Dual Icons" by Weebify enabled)
-auto dualIcon = MoreIcons::activeForType(IconType::Cube, true);
-
-// Get the list of icons (Read-only)
-auto icons = MoreIcons::vectorForType(IconType::Cube);
-
-// Change a SimplePlayer to a custom icon
-MoreIcons::updateSimplePlayer(simplePlayer, "my-icon", IconType::Cube);
-
-// Change a GJRobotSprite to a custom icon
-MoreIcons::updateRobotSprite(robotSprite, "my-icon"); // Determines the icon type
-MoreIcons::updateRobotSprite(robotSprite, "my-icon", IconType::Robot);
-
-// Change a PlayerObject to a custom icon
-MoreIcons::updatePlayerObject(playerObject, "my-icon"); // Determines the icon type
-MoreIcons::updatePlayerObject(playerObject, "my-icon", IconType::Cube);
-```
 
 ## Credits
 - [DeepResonanceX](https://gdbrowser.com/u/5668656) - Ideas for the mod

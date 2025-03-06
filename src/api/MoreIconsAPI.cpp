@@ -1,3 +1,4 @@
+#include <MoreIcons.hpp>
 #include "MoreIconsAPI.hpp"
 #include "../classes/DummyNode.hpp"
 #include <Geode/binding/CCPartAnimSprite.hpp>
@@ -5,10 +6,58 @@
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/PlayerObject.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/loader/Dispatch.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/utils/ranges.hpp>
 
 using namespace geode::prelude;
+
+$execute {
+    new EventListener(+[](SimplePlayer* player, const std::string& icon, IconType type) {
+        MoreIconsAPI::updateSimplePlayer(player, icon, type);
+        return ListenerResult::Propagate;
+    }, MoreIcons::SimplePlayerFilter("simple-player"_spr));
+
+    new EventListener(+[](GJRobotSprite* sprite, const std::string& icon, IconType type) {
+        MoreIconsAPI::updateRobotSprite(sprite, icon, type);
+        return ListenerResult::Propagate;
+    }, MoreIcons::RobotSpriteFilter("robot-sprite"_spr));
+
+    new EventListener(+[](PlayerObject* object, const std::string& icon, IconType type) {
+        MoreIconsAPI::updatePlayerObject(object, icon, type);
+        return ListenerResult::Propagate;
+    }, MoreIcons::PlayerObjectFilter("player-object"_spr));
+
+    new EventListener(+[](std::vector<std::string>* vec, IconType type) {
+        vec->clear();
+        *vec = MoreIconsAPI::vectorForType(type);
+        return ListenerResult::Propagate;
+    }, MoreIcons::AllIconsFilter("all-icons"_spr));
+
+    #if GEODE_COMP_GD_VERSION == 22074 // Keep this until the next Geometry Dash update
+    new EventListener(+[](GJRobotSprite* sprite, const std::string& icon) {
+        if (!sprite || icon.empty()) return ListenerResult::Propagate;
+        MoreIconsAPI::updateRobotSprite(sprite, icon, sprite->m_iconType);
+        return ListenerResult::Propagate;
+    }, DispatchFilter<GJRobotSprite*, std::string>("robot-sprite"_spr));
+
+    new EventListener(+[](PlayerObject* object, const std::string& icon) {
+        if (!object || icon.empty()) return ListenerResult::Propagate;
+        MoreIconsAPI::updatePlayerObject(object, icon, MoreIconsAPI::getIconType(object));
+        return ListenerResult::Propagate;
+    }, DispatchFilter<PlayerObject*, std::string>("player-object"_spr));
+
+    new EventListener(+[](std::string* icon, IconType type, bool dual) {
+        *icon = MoreIconsAPI::activeForType(type, dual);
+        return ListenerResult::Propagate;
+    }, DispatchFilter<std::string*, IconType, bool>("active-icon"_spr));
+
+    new EventListener(+[](const std::string& icon, IconType type, bool dual) {
+        MoreIconsAPI::setIcon(icon, type, dual);
+        return ListenerResult::Propagate;
+    }, DispatchFilter<std::string, IconType, bool>("set-icon"_spr));
+    #endif
+}
 
 std::vector<std::string>& MoreIconsAPI::vectorForType(IconType type) {
     switch (type) {
@@ -29,30 +78,13 @@ std::vector<std::string>& MoreIconsAPI::vectorForType(IconType type) {
     }
 }
 
-std::string_view MoreIconsAPI::savedForType(IconType type, bool dual) {
-    auto isDual = Loader::get()->isModLoaded("weebify.separate_dual_icons") && dual;
-    switch (type) {
-        case IconType::Cube: return isDual ? "icon-dual" : "icon";
-        case IconType::Ship: return isDual ? "ship-dual" : "ship";
-        case IconType::Ball: return isDual ? "ball-dual" : "ball";
-        case IconType::Ufo: return isDual ? "ufo-dual" : "ufo";
-        case IconType::Wave: return isDual ? "wave-dual" : "wave";
-        case IconType::Robot: return isDual ? "robot-dual" : "robot";
-        case IconType::Spider: return isDual ? "spider-dual" : "spider";
-        case IconType::Swing: return isDual ? "swing-dual" : "swing";
-        case IconType::Jetpack: return isDual ? "jetpack-dual" : "jetpack";
-        case IconType::Special: return isDual ? "trail-dual" : "trail";
-        default: return "";
-    }
-}
-
 std::string MoreIconsAPI::activeForType(IconType type, bool dual) {
-    auto savedType = savedForType(type, dual);
+    auto savedType = MoreIcons::savedForType(type, dual);
     return !savedType.empty() ? Mod::get()->getSavedValue<std::string>(savedType, "") : "";
 }
 
 void MoreIconsAPI::setIcon(const std::string& icon, IconType type, bool dual) {
-    auto savedType = savedForType(type, dual);
+    auto savedType = MoreIcons::savedForType(type, dual);
     if (!savedType.empty()) Mod::get()->setSavedValue(savedType, icon);
 }
 
@@ -60,14 +92,22 @@ bool MoreIconsAPI::hasIcon(const std::string& icon, IconType type) {
     return !icon.empty() && ranges::contains(vectorForType(type), icon);
 }
 
+IconType MoreIconsAPI::getIconType(PlayerObject* object) {
+    return MoreIcons::getIconType(object);
+}
+
 bool doesExist(CCSpriteFrame* frame) {
     return frame && frame->getTag() != 105871529;
+}
+
+void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, IconType type, bool dual) {
+    updateSimplePlayer(player, activeForType(type, dual), type);
 }
 
 void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type) {
     if (!player || icon.empty() || !hasIcon(icon, type)) return;
 
-    setUserObject(player, icon);
+    player->setUserObject("name"_spr, CCString::create(icon));
 
     player->m_firstLayer->setVisible(type != IconType::Robot && type != IconType::Spider);
     player->m_secondLayer->setVisible(type != IconType::Robot && type != IconType::Spider);
@@ -93,7 +133,7 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
     }
     else if (player->m_spiderSprite) player->m_spiderSprite->setVisible(false);
 
-    auto sfc = CCSpriteFrameCache::sharedSpriteFrameCache();
+    auto sfc = CCSpriteFrameCache::get();
     player->m_firstLayer->setDisplayFrame(sfc->spriteFrameByName(fmt::format("{}_001.png"_spr, icon).c_str()));
     player->m_firstLayer->setScale(type == IconType::Ball ? 0.9f : 1.0f);
     player->m_firstLayer->setPosition({ 0.0f, type == IconType::Ufo ? -7.0f : 0.0f });
@@ -115,22 +155,16 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
     }
 }
 
-void MoreIconsAPI::updateRobotSprite(GJRobotSprite* sprite, const std::string& icon) {
-    if (!sprite || icon.empty()) return;
-
-    updateRobotSprite(sprite, icon, sprite->m_iconType);
-}
-
 void MoreIconsAPI::updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type) {
     if (!sprite || icon.empty() || !hasIcon(icon, type)) return;
 
-    setUserObject(sprite, icon);
+    sprite->setUserObject("name"_spr, CCString::create(icon));
 
     sprite->setBatchNode(nullptr);
     sprite->m_paSprite->setBatchNode(nullptr);
 
     auto spriteParts = sprite->m_paSprite->m_spriteParts;
-    auto spriteFrameCache = CCSpriteFrameCache::sharedSpriteFrameCache();
+    auto spriteFrameCache = CCSpriteFrameCache::get();
     for (int i = 0; i < spriteParts->count(); i++) {
         auto spritePart = static_cast<CCSpritePart*>(spriteParts->objectAtIndex(i));
         auto tag = spritePart->getTag();
@@ -166,30 +200,14 @@ void MoreIconsAPI::updateRobotSprite(GJRobotSprite* sprite, const std::string& i
     }
 }
 
-IconType MoreIconsAPI::getIconType(PlayerObject* object) {
-    if (object->m_isShip) {
-        if (object->m_isPlatformer) return IconType::Jetpack;
-        else return IconType::Ship;
-    }
-    else if (object->m_isBall) return IconType::Ball;
-    else if (object->m_isBird) return IconType::Ufo;
-    else if (object->m_isDart) return IconType::Wave;
-    else if (object->m_isRobot) return IconType::Robot;
-    else if (object->m_isSpider) return IconType::Spider;
-    else if (object->m_isSwing) return IconType::Swing;
-    else return IconType::Cube;
-}
-
-void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& icon) {
-    if (!object || icon.empty()) return;
-
-    updatePlayerObject(object, icon, getIconType(object));
+void MoreIconsAPI::updatePlayerObject(PlayerObject* object, IconType type, bool dual) {
+    updatePlayerObject(object, activeForType(type, dual), type);
 }
 
 void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type) {
     if (!object || icon.empty() || !hasIcon(icon, type)) return;
 
-    setUserObject(object, icon);
+    object->setUserObject("name"_spr, CCString::create(icon));
 
     if (type == IconType::Robot || type == IconType::Spider) {
         auto robotSprite = type == IconType::Robot ? object->m_robotSprite : object->m_spiderSprite;
@@ -219,7 +237,7 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& i
     auto outlineSprite = isVehicle ? object->m_vehicleGlow : object->m_iconGlow;
     auto detailSprite = isVehicle ? object->m_vehicleSpriteWhitener : object->m_iconSpriteWhitener;
 
-    auto sfc = CCSpriteFrameCache::sharedSpriteFrameCache();
+    auto sfc = CCSpriteFrameCache::get();
     firstLayer->setDisplayFrame(sfc->spriteFrameByName(fmt::format("{}_001.png"_spr, icon).c_str()));
     secondLayer->setDisplayFrame(sfc->spriteFrameByName(fmt::format("{}_2_001.png"_spr, icon).c_str()));
     auto firstCenter = firstLayer->getContentSize() / 2;

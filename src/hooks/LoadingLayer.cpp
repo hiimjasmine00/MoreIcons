@@ -21,9 +21,7 @@ class $modify(MILoadingLayer, LoadingLayer) {
             case -1:
                 break;
             case 0:
-                #ifdef GEODE_IS_ANDROID
-                MoreIcons::unzipVanillaAssets();
-                #endif
+                GEODE_ANDROID(MoreIcons::unzipVanillaAssets();)
                 f->m_iconPacks = MoreIcons::getTexturePacks();
                 break;
             case 1:
@@ -69,9 +67,7 @@ class $modify(MILoadingLayer, LoadingLayer) {
 
     void changeLoadText() {
         if (auto smallLabel2 = static_cast<CCLabelBMFont*>(getChildByID("geode-small-label-2"))) switch (m_fields->m_iconLoadStep) {
-            #ifdef GEODE_IS_ANDROID
-            case 0: smallLabel2->setString("More Icons: Unzipping Textures"); break;
-            #endif
+            GEODE_ANDROID(case 0: smallLabel2->setString("More Icons: Unzipping Textures"); break;)
             case 1: smallLabel2->setString("More Icons: Loading Icons"); break;
             case 2: smallLabel2->setString("More Icons: Loading Ships"); break;
             case 3: smallLabel2->setString("More Icons: Loading Balls"); break;
