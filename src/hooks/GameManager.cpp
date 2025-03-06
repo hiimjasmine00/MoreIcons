@@ -39,7 +39,7 @@ class $modify(MIGameManager, GameManager) {
     gd::string sheetNameForIcon(int id, int type) {
         auto ret = GameManager::sheetNameForIcon(id, type);
         if (ret.empty() || !MoreIcons::TRADITIONAL_PACKS) return ret;
-        return MoreIcons::vanillaTexturePath(ret, false);
+        return MoreIcons::vanillaTexturePath(ret, false).string();
     }
 
     CCTexture2D* loadIcon(int id, int type, int requestID) {

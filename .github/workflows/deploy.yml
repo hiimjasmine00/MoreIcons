@@ -36,7 +36,7 @@ jobs:
           mkdir dist
           mv ./MoreIcons/fix-docs.js ./dist/fix-docs.js
           cd dist
-          ../flash.exe -i ../MoreIcons -o . && node ./fix-docs.js
+          ../flash.exe -i ../MoreIcons -o . --overwrite && node ./fix-docs.js
 
       - name: Upload Pages
         uses: actions/upload-pages-artifact@v3

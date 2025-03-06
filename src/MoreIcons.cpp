@@ -116,6 +116,7 @@ std::filesystem::path MoreIcons::vanillaTexturePath(const std::string& path, boo
         auto assetsDir = Mod::get()->getTempDir() / "assets";
         if (std::filesystem::exists(assetsDir)) return assetsDir / path;
     }
+    return path;
     #else
     return dirs::getGameDir() / "Resources" / path;
     #endif
