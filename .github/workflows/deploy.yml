@@ -31,6 +31,25 @@ jobs:
           latest: true
           fileName: flash.exe
 
+      - name: Get Geode Version
+        id: geode
+        shell: bash
+        run: |
+          cd MoreIcons
+          GEODE_VERSION=$(jq -r '.geode' mod.json)
+          GEODE_VERSION=v${GEODE_VERSION#v}
+          echo "Geode Version: $GEODE_VERSION"
+          # set GITHUB_OUTPUT
+          echo "version=$GEODE_VERSION" >> $GITHUB_OUTPUT
+          echo "GEODE_SDK=$GITHUB_WORKSPACE/geode" >> $GITHUB_ENV
+
+      - name: Checkout Geode
+        uses: actions/checkout@v4
+        with:
+          repository: geode-sdk/geode
+          ref: ${{ steps.geode.outputs.version }}
+          path: ./geode
+
       - name: Generate Documentation
         run: |
           mkdir dist
