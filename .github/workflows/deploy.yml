@@ -6,6 +6,11 @@ on:
     branches:
       - "master"
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
 concurrency:
   group: "deploy"
   cancel-in-progress: true
@@ -27,7 +32,7 @@ jobs:
       - name: Download Flash
         uses: robinraju/release-downloader@v1.11
         with:
-          repository: hiimjasmine00/flash
+          repository: geode-sdk/flash
           latest: true
           fileName: flash.exe
 
