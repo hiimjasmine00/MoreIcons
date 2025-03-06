@@ -48,8 +48,7 @@ jobs:
       - name: Generate Documentation
         run: |
           geode sdk install "${{ github.workspace }}/geode"
-          export GEODE_SDK="${{ github.workspace }}/geode"
-          echo "GEODE_SDK=$GEODE_SDK" >> $GITHUB_ENV
+          setx GEODE_SDK "${{ github.workspace }}/geode"
           geode sdk update ${{ steps.geode.outputs.version }} && geode sdk install-binaries
           mkdir dist
           mv ./MoreIcons/fix-docs.js ./dist/fix-docs.js

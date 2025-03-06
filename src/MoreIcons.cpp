@@ -263,9 +263,9 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
             std::string pngPath;
             if (fileQuality == kTextureQualityHigh) pngPath = replaceEnd(subEntryPath, 8, ".png");
             else if (fileQuality == kTextureQualityMedium) pngPath = replaceEnd(subEntryPath, 7, ".png");
-            else pngPath = subEntryPath;
+            else pngPath = subEntryPath.string();
             auto image = new CCImage();
-            if (image->initWithImageFileThreadSafe(subEntryPath.c_str())) {
+            if (image->initWithImageFileThreadSafe(subEntryPath.string().c_str())) {
                 std::lock_guard lock(IMAGE_MUTEX);
                 if (!pack.id.empty() && ranges::contains(IMAGES, [name](const ImageData& image) { return image.name == name; })) {
                     printLog(Severity::Warning, "{}: Duplicate icon name {}", subEntryPath, name);
@@ -274,7 +274,7 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
                 IMAGES.push_back({
                     .image = image,
                     .dict = nullptr,
-                    .texturePath = subEntryPath,
+                    .texturePath = subEntryPath.string(),
                     .name = name,
                     .frameName = getFrameName(string::contains(pngPath, '/') ?
                         pngPath.substr(pngPath.find_last_of('/') + 1) : pngPath, name, type),
@@ -320,7 +320,7 @@ void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconT
             fileQuality == kTextureQualityMedium ? replaceEnd(path, 9, "") : path.stem().string();
         if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
         safeDebug("Loading file icon {} from {}", name, pack.name);
-        auto dict = CCDictionary::createWithContentsOfFileThreadSafe(path.c_str());
+        auto dict = CCDictionary::createWithContentsOfFileThreadSafe(path.string().c_str());
         auto frames = new CCDictionary();
         for (auto [frameName, frame] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(dict->objectForKey("frames")))) {
             frames->setObject(frame, getFrameName(frameName, name, type));
@@ -337,7 +337,7 @@ void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconT
                 printLog(Severity::Error, "{}: Texture file {} not found", path, texturePath);
                 return dict->release();
             }
-            else fullTexturePath = fallbackTexturePath;
+            else fullTexturePath = fallbackTexturePath.string();
         }
 
         auto image = new CCImage();
@@ -419,7 +419,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack, Ic
             IMAGES.push_back({
                 .image = image,
                 .dict = dict,
-                .texturePath = path,
+                .texturePath = path.string(),
                 .name = name,
                 .frameName = "",
                 .pack = {
@@ -454,7 +454,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
             IMAGES.push_back({
                 .image = image,
                 .dict = nullptr,
-                .texturePath = path,
+                .texturePath = path.string(),
                 .name = name,
                 .frameName = "",
                 .pack = {
@@ -496,7 +496,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
             IMAGES.push_back({
                 .image = image,
                 .dict = nullptr,
-                .texturePath = path,
+                .texturePath = path.string(),
                 .name = name,
                 .frameName = "",
                 .pack = {
@@ -580,7 +580,7 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
 
                 auto& entryPath = entry.path();
                 if (entryPath.extension() != ".png" || !entryPath.filename().string().starts_with(prefix) ||
-                    (type == IconType::Cube && string::contains(entryPath.filename(), "player_ball_"))) continue; // Nice one RobTop
+                    (type == IconType::Cube && string::contains(entryPath.filename().string(), "player_ball_"))) continue; // Nice one RobTop
 
                 loadVanillaIcon(entryPath, pack, type);
             }
