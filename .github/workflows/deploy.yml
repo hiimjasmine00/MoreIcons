@@ -29,8 +29,7 @@ jobs:
         with:
           repository: geode-sdk/flash
           latest: true
-          fileName: ./flash.exe
-          out-file-path: ""
+          fileName: flash.exe
 
       - name: Generate Documentation
         run: |
