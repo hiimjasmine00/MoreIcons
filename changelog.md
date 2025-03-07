@@ -1,7 +1,7 @@
 # More Icons Changelog
 ## v1.9.0 (2025-03-07)
 - Added debug logs, which can be disabled in the settings
-- Added a setting to disable loading traditional icon texture packs
+- Added a setting to disable loading traditional icon texture packs ([#24](https://github.com/hiimjasmine00/MoreIcons/issues/24))
 - Added simpler API overloads and a new method to get the name of an icon
 - [Added API documentation](https://more-icons.hiimjasmine00.com)
 - Added user objects for custom trails
