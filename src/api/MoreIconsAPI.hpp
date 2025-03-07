@@ -17,7 +17,7 @@ public:
 
     static std::vector<std::string>& vectorForType(IconType type);
     static std::string activeForType(IconType type, bool dual);
-    static void setIcon(const std::string& icon, IconType type, bool dual);
+    static std::string setIcon(const std::string& icon, IconType type, bool dual);
     static bool hasIcon(const std::string& icon, IconType type);
     static IconType getIconType(PlayerObject* object);
     static void updateSimplePlayer(SimplePlayer* player, IconType type, bool dual);

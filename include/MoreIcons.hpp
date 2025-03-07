@@ -223,11 +223,12 @@ public:
      * @param icon The name of the icon to set.
      * @param type The type of icon to set.
      * @param dual Whether or not to set the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
+     * @returns The name of the previous icon for the specified type, or an empty string if the icon was not set.
      */
-    static void setIcon(const std::string& icon, IconType type, bool dual = false) {
-        if (!loaded()) return;
+    static std::string setIcon(const std::string& icon, IconType type, bool dual = false) {
+        if (!loaded()) return "";
         auto savedType = savedForType(type, dual);
-        if (!savedType.empty()) get()->setSavedValue(savedType, icon);
+        return !savedType.empty() ? get()->setSavedValue(savedType, icon) : "";
     }
 
     /**
@@ -238,6 +239,6 @@ public:
     static std::string getIconName(cocos2d::CCNode* node) {
         if (!node || !loaded()) return "";
         auto userObject = static_cast<cocos2d::CCString*>(node->getUserObject(MORE_ICONS_EXPAND("name")));
-        return userObject ? userObject->getCString() : "";
+        return userObject ? userObject->m_sString : "";
     }
 };

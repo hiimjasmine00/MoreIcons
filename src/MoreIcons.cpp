@@ -316,8 +316,8 @@ void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconT
             else fileQuality = kTextureQualityLow;
         }
 
-        auto name = fileQuality == kTextureQualityHigh ? replaceEnd(path, 10, "") :
-            fileQuality == kTextureQualityMedium ? replaceEnd(path, 9, "") : path.stem().string();
+        auto name = fileQuality == kTextureQualityHigh ? replaceEnd(path.stem(), 4, "") :
+            fileQuality == kTextureQualityMedium ? replaceEnd(path.stem(), 3, "") : path.stem().string();
         if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
         safeDebug("Loading file icon {} from {}", name, pack.name);
         auto dict = CCDictionary::createWithContentsOfFileThreadSafe(path.string().c_str());
@@ -330,8 +330,8 @@ void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconT
 
         auto fullTexturePath = replaceEnd(path, 6, ".png");
         if (!std::filesystem::exists(fullTexturePath)) {
-            auto texturePath = std::filesystem::path(static_cast<CCDictionary*>(
-                dict->objectForKey("metadata"))->valueForKey("textureFileName")->getCString()).filename();
+            std::string texturePath = static_cast<CCDictionary*>(dict->objectForKey("metadata"))->valueForKey("textureFileName")->m_sString;
+            texturePath = string::contains(texturePath, '/') ? texturePath.substr(texturePath.find_last_of('/') + 1) : texturePath;
             auto fallbackTexturePath = path.parent_path() / texturePath;
             if (!std::filesystem::exists(fallbackTexturePath)) {
                 printLog(Severity::Error, "{}: Texture file {} not found", path, texturePath);
@@ -389,8 +389,8 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack, Ic
             else fileQuality = kTextureQualityLow;
         }
 
-        auto name = fmt::format("{}:{}", pack.id, fileQuality == kTextureQualityHigh ? replaceEnd(path, 8, "") :
-            fileQuality == kTextureQualityMedium ? replaceEnd(path, 7, "") : path.stem().string());
+        auto name = fmt::format("{}:{}", pack.id, fileQuality == kTextureQualityHigh ? replaceEnd(path.stem(), 4, "") :
+            fileQuality == kTextureQualityMedium ? replaceEnd(path.stem(), 3, "") : path.stem().string());
         safeDebug("Loading vanilla icon {} from {}", name, pack.name);
         auto plistPath = replaceEnd(path, 4, ".plist");
         if (!std::filesystem::exists(plistPath)) plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", path.stem()), false);

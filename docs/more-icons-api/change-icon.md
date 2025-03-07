@@ -9,14 +9,14 @@ order: 2
 #include <hiimjustin000.more_icons/include/MoreIcons.hpp>
 
 // Change the current icon
-MoreIcons::setIcon("my_custom_icon", IconType::Cube);
+auto oldIcon = MoreIcons::setIcon("my_custom_icon", IconType::Cube);
 
 // Change the current icon (Separate Dual Icons)
-MoreIcons::setIcon("my_custom_icon", IconType::Cube, true);
+auto oldDualIcon = MoreIcons::setIcon("my_custom_icon", IconType::Cube, true);
 
 // Change the current icon (Internal behavior)
 if (auto MI = MoreIcons::get()) {
-    MI->setSavedValue(MoreIcons::savedForType(IconType::Cube), "my_custom_icon");
-    MI->setSavedValue(MoreIcons::savedForType(IconType::Cube, true), "my_custom_icon");
+    auto oldIcon = MI->setSavedValue(MoreIcons::savedForType(IconType::Cube), "my_custom_icon");
+    auto oldDualIcon = MI->setSavedValue(MoreIcons::savedForType(IconType::Cube, true), "my_custom_icon");
 }
 ```

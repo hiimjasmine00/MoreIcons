@@ -83,9 +83,9 @@ std::string MoreIconsAPI::activeForType(IconType type, bool dual) {
     return !savedType.empty() ? Mod::get()->getSavedValue<std::string>(savedType, "") : "";
 }
 
-void MoreIconsAPI::setIcon(const std::string& icon, IconType type, bool dual) {
+std::string MoreIconsAPI::setIcon(const std::string& icon, IconType type, bool dual) {
     auto savedType = MoreIcons::savedForType(type, dual);
-    if (!savedType.empty()) Mod::get()->setSavedValue(savedType, icon);
+    return !savedType.empty() ? Mod::get()->setSavedValue(savedType, icon) : "";
 }
 
 bool MoreIconsAPI::hasIcon(const std::string& icon, IconType type) {

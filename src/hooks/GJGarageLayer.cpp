@@ -103,6 +103,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         GJGarageLayer::onSelect(sender);
 
+        if (!GameManager::get()->isIconUnlocked(sender->getTag(), btn->m_iconType)) return;
+
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
         MoreIconsAPI::setIcon("", dual ? (IconType)Loader::get()->getLoadedMod(
@@ -116,10 +118,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     }
 
     void swapDual(IconType type) {
-        auto normalIcon = MoreIconsAPI::activeForType(type, false);
-        auto dualIcon = MoreIconsAPI::activeForType(type, true);
-        MoreIconsAPI::setIcon(normalIcon, type, true);
-        MoreIconsAPI::setIcon(dualIcon, type, false);
+        MoreIconsAPI::setIcon(MoreIconsAPI::setIcon(MoreIconsAPI::activeForType(type, true), type, false), type, true);
     }
 
     void newSwap2PKit(CCObject* sender) {
@@ -322,22 +321,22 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         addChild(f->m_pageBar, 101);
 
         m_cursor1->setVisible(current != nullptr);
-        if (current) m_cursor1->setPosition(current->convertToWorldSpace({ 0.0f, 0.0f }));
+        if (current) m_cursor1->setPosition(current->getParent()->convertToWorldSpace(current->getPosition()));
     }
 
     void onCustomSelect(CCMenuItemSpriteExtra* sender) {
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
-        std::string name = static_cast<CCString*>(sender->getUserObject("name"_spr))->getCString();
+        std::string name = static_cast<CCString*>(sender->getUserObject("name"_spr))->m_sString;
 
-        m_cursor1->setPosition(sender->convertToWorldSpace({ 0.0f, 0.0f }));
+        m_cursor1->setPosition(sender->getParent()->convertToWorldSpace(sender->getPosition()));
         m_cursor1->setVisible(true);
         auto player = dual ? static_cast<SimplePlayer*>(getChildByID("player2-icon")) : m_playerObject;
         player->updateColors();
         MoreIconsAPI::updateSimplePlayer(player, name, m_iconType);
         player->setScale(m_iconType == IconType::Jetpack ? 1.5f : 1.6f);
         auto selectedIconType = dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType;
-        if (MoreIconsAPI::activeForType(m_iconType, dual) == name && selectedIconType == m_iconType) {
+        if (MoreIconsAPI::setIcon(name, m_iconType, dual) == name && selectedIconType == m_iconType) {
             auto& iconInfo = MoreIcons::infoForType(m_iconType)[name];
             auto iconID = 1;
             if (!iconInfo.id.empty()) switch (m_iconType) {
@@ -375,7 +374,6 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             }
             popup->show();
         }
-        else MoreIconsAPI::setIcon(name, m_iconType, dual);
 
         if (dual) {
             sdi->setSavedValue("lastmode", (int)m_iconType);
@@ -437,7 +435,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         addChild(f->m_pageBar, 101);
 
         m_cursor1->setVisible(current != nullptr);
-        if (current) m_cursor1->setPosition(current->convertToWorldSpace({ 0.0f, 0.0f }));
+        if (current) m_cursor1->setPosition(current->getParent()->convertToWorldSpace(current->getPosition()));
         m_cursor2->setVisible(false);
     }
 
@@ -446,12 +444,12 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
-        std::string name = static_cast<CCString*>(sender->getUserObject("name"_spr))->getCString();
+        std::string name = static_cast<CCString*>(sender->getUserObject("name"_spr))->m_sString;
 
-        m_cursor1->setPosition(sender->convertToWorldSpace({ 0.0f, 0.0f }));
+        m_cursor1->setPosition(sender->getParent()->convertToWorldSpace(sender->getPosition()));
         m_cursor1->setVisible(true);
         auto selectedIconType = dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType;
-        if (MoreIconsAPI::activeForType(m_iconType, dual) == name && selectedIconType == m_iconType) {
+        if (MoreIconsAPI::setIcon(name, m_iconType, dual) == name && selectedIconType == m_iconType) {
             auto trailInfo = MoreIcons::TRAIL_INFO[name];
             auto popup = ItemInfoPopup::create(!trailInfo.pack.id.empty() ? 128 : 1, UnlockType::Cube);
             if (auto nameLabel = static_cast<CCLabelBMFont*>(popup->m_mainLayer->getChildByID("name-label")))
@@ -540,7 +538,6 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             }
             popup->show();
         }
-        else MoreIconsAPI::setIcon(name, m_iconType, dual);
 
         if (dual) sdi->setSavedValue("lasttype", (int)m_iconType);
         else m_selectedIconType = m_iconType;

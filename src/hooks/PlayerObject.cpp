@@ -145,13 +145,14 @@ class $modify(MIPlayerObject, PlayerObject) {
             m_regularTrail->initWithFade(fade, 5.0f, stroke, { 255, 255, 255 }, textureCache->textureForKey(trailInfo.texture.c_str()));
             if (trailInfo.trailID == 6) m_regularTrail->enableRepeatMode(0.1f);
             m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
-            m_regularTrail->setUserObject("name"_spr, CCString::create(trailFile));
         }
-        m_streakStrokeWidth = 14.0f;
-        m_disableStreakTint = !trailInfo.tint;
-        m_alwaysShowStreak = false;
-        m_regularTrail->initWithFade(0.3f, 5.0f, 14.0f, { 255, 255, 255 }, textureCache->textureForKey(trailInfo.texture.c_str()));
-        if (trailInfo.blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
+        else {
+            m_streakStrokeWidth = 14.0f;
+            m_disableStreakTint = !trailInfo.tint;
+            m_alwaysShowStreak = false;
+            m_regularTrail->initWithFade(0.3f, 5.0f, 14.0f, { 255, 255, 255 }, textureCache->textureForKey(trailInfo.texture.c_str()));
+            if (trailInfo.blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
+        }
         m_regularTrail->setUserObject("name"_spr, CCString::create(trailFile));
     }
 };
