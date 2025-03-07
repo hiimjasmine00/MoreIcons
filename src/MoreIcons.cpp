@@ -189,12 +189,6 @@ std::string getFrameName(const std::string& name, const std::string& prefix, Ico
     return name;
 }
 
-#ifdef GEODE_IS_WINDOWS // I simply cannot believe this
-std::string replaceEnd(const std::filesystem::path& path, size_t end, std::string_view replace) {
-    return replaceEnd(path.string(), end, replace);
-}
-#endif
-
 std::string replaceEnd(const std::string& str, size_t end, std::string_view replace) {
     return fmt::format("{}{}", str.substr(0, str.size() - end), replace);
 }
@@ -206,17 +200,17 @@ BS::thread_pool<BS::tp::none>& sharedPool() {
 
 template <typename... Args>
 void printLog(Severity severity, fmt::format_string<Args...> message, Args&&... args) {
-    log::logImpl(severity, Mod::get(), message, std::forward<Args>(args)...);
+    log::vlogImpl(severity, Mod::get(), message, fmt::make_format_args(args...));
     {
         std::lock_guard lock(LOG_MUTEX);
-        MoreIcons::LOGS.push_back({ fmt::format(message, std::forward<Args>(args)...), severity });
+        MoreIcons::LOGS.push_back({ fmt::vformat(message, fmt::make_format_args(args...)), severity });
         if (MoreIcons::HIGHEST_SEVERITY < severity) MoreIcons::HIGHEST_SEVERITY = severity;
     }
 }
 
 template <typename... Args>
 void safeDebug(fmt::format_string<Args...> message, Args&&... args) {
-    if (MoreIcons::DEBUG_LOGS) log::debug(message, std::forward<Args>(args)...);
+    if (MoreIcons::DEBUG_LOGS) log::vlogImpl(Severity::Debug, Mod::get(), message, fmt::make_format_args(args...));
 }
 
 void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, IconType type) {
@@ -251,19 +245,17 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
                     continue;
                 }
 
-                if (std::filesystem::exists(replaceEnd(subEntryPath, 7, "-uhd.png")) && scaleFactor >= 4.0f) continue;
+                if (std::filesystem::exists(replaceEnd(subEntryPath.string(), 7, "-uhd.png")) && scaleFactor >= 4.0f) continue;
                 else fileQuality = kTextureQualityMedium;
             }
             else {
-                if (std::filesystem::exists(replaceEnd(subEntryPath, 4, "-uhd.png")) && scaleFactor >= 4.0f) continue;
-                else if (std::filesystem::exists(replaceEnd(subEntryPath, 4, "-hd.png")) && scaleFactor >= 2.0f) continue;
+                if (std::filesystem::exists(replaceEnd(subEntryPath.string(), 4, "-uhd.png")) && scaleFactor >= 4.0f) continue;
+                else if (std::filesystem::exists(replaceEnd(subEntryPath.string(), 4, "-hd.png")) && scaleFactor >= 2.0f) continue;
                 else fileQuality = kTextureQualityLow;
             }
 
-            std::string pngPath;
-            if (fileQuality == kTextureQualityHigh) pngPath = replaceEnd(subEntryPath, 8, ".png");
-            else if (fileQuality == kTextureQualityMedium) pngPath = replaceEnd(subEntryPath, 7, ".png");
-            else pngPath = subEntryPath.string();
+            auto pngPath = fileQuality == kTextureQualityHigh ? replaceEnd(subEntryPath.filename().string(), 8, ".png") :
+                fileQuality == kTextureQualityMedium ? replaceEnd(subEntryPath.filename().string(), 7, ".png") : subEntryPath.filename().string();
             auto image = new CCImage();
             if (image->initWithImageFileThreadSafe(subEntryPath.string().c_str())) {
                 std::lock_guard lock(IMAGE_MUTEX);
@@ -276,8 +268,7 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
                     .dict = nullptr,
                     .texturePath = subEntryPath.string(),
                     .name = name,
-                    .frameName = getFrameName(string::contains(pngPath, '/') ?
-                        pngPath.substr(pngPath.find_last_of('/') + 1) : pngPath, name, type),
+                    .frameName = getFrameName(pngPath, name, type),
                     .pack = {
                         .name = pack.name,
                         .id = pack.id
@@ -307,17 +298,17 @@ void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconT
         else if (pathFilename.ends_with("-hd.plist")) {
             if (scaleFactor < 2.0f) return printLog(Severity::Info, "{}: Ignoring medium-quality plist file for low texture quality", path);
 
-            if (std::filesystem::exists(replaceEnd(path, 9, "-uhd.plist")) && scaleFactor >= 4.0f) return;
+            if (std::filesystem::exists(replaceEnd(path.string(), 9, "-uhd.plist")) && scaleFactor >= 4.0f) return;
             else fileQuality = kTextureQualityMedium;
         }
         else {
-            if (std::filesystem::exists(replaceEnd(path, 6, "-uhd.plist")) && scaleFactor >= 4.0f) return;
-            else if (std::filesystem::exists(replaceEnd(path, 6, "-hd.plist")) && scaleFactor >= 2.0f) return;
+            if (std::filesystem::exists(replaceEnd(path.string(), 6, "-uhd.plist")) && scaleFactor >= 4.0f) return;
+            else if (std::filesystem::exists(replaceEnd(path.string(), 6, "-hd.plist")) && scaleFactor >= 2.0f) return;
             else fileQuality = kTextureQualityLow;
         }
 
-        auto name = fileQuality == kTextureQualityHigh ? replaceEnd(path.stem(), 4, "") :
-            fileQuality == kTextureQualityMedium ? replaceEnd(path.stem(), 3, "") : path.stem().string();
+        auto name = fileQuality == kTextureQualityHigh ? replaceEnd(path.stem().string(), 4, "") :
+            fileQuality == kTextureQualityMedium ? replaceEnd(path.stem().string(), 3, "") : path.stem().string();
         if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
         safeDebug("Loading file icon {} from {}", name, pack.name);
         auto dict = CCDictionary::createWithContentsOfFileThreadSafe(path.string().c_str());
@@ -328,7 +319,7 @@ void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconT
         dict->setObject(frames, "frames");
         frames->release();
 
-        auto fullTexturePath = replaceEnd(path, 6, ".png");
+        auto fullTexturePath = replaceEnd(path.string(), 6, ".png");
         if (!std::filesystem::exists(fullTexturePath)) {
             std::string texturePath = static_cast<CCDictionary*>(dict->objectForKey("metadata"))->valueForKey("textureFileName")->m_sString;
             texturePath = string::contains(texturePath, '/') ? texturePath.substr(texturePath.find_last_of('/') + 1) : texturePath;
@@ -380,19 +371,19 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack, Ic
         }
         else if (pathFilename.ends_with("-hd.png")) {
             if (scaleFactor < 2.0f) return;
-            if (std::filesystem::exists(replaceEnd(path, 7, "-uhd.png")) && scaleFactor >= 4.0f) return;
+            if (std::filesystem::exists(replaceEnd(path.string(), 7, "-uhd.png")) && scaleFactor >= 4.0f) return;
             else fileQuality = kTextureQualityMedium;
         }
         else {
-            if (std::filesystem::exists(replaceEnd(path, 4, "-uhd.png")) && scaleFactor >= 4.0f) return;
-            else if (std::filesystem::exists(replaceEnd(path, 4, "-hd.png")) && scaleFactor >= 2.0f) return;
+            if (std::filesystem::exists(replaceEnd(path.string(), 4, "-uhd.png")) && scaleFactor >= 4.0f) return;
+            else if (std::filesystem::exists(replaceEnd(path.string(), 4, "-hd.png")) && scaleFactor >= 2.0f) return;
             else fileQuality = kTextureQualityLow;
         }
 
-        auto name = fmt::format("{}:{}", pack.id, fileQuality == kTextureQualityHigh ? replaceEnd(path.stem(), 4, "") :
-            fileQuality == kTextureQualityMedium ? replaceEnd(path.stem(), 3, "") : path.stem().string());
+        auto name = fmt::format("{}:{}", pack.id, fileQuality == kTextureQualityHigh ? replaceEnd(path.stem().string(), 4, "") :
+            fileQuality == kTextureQualityMedium ? replaceEnd(path.stem().string(), 3, "") : path.stem().string());
         safeDebug("Loading vanilla icon {} from {}", name, pack.name);
-        auto plistPath = replaceEnd(path, 4, ".plist");
+        auto plistPath = replaceEnd(path.string(), 4, ".plist");
         if (!std::filesystem::exists(plistPath)) plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", path.stem()), false);
         if (!std::filesystem::exists(plistPath)) return printLog(Severity::Error, "{}: Plist file not found (Last attempt: {})", path, plistPath);
 
@@ -439,7 +430,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
         auto name = pack.id.empty() ? path.stem().string() : fmt::format("{}:{}", pack.id, path.stem());
 
         safeDebug("Loading trail {} from {}", name, pack.name);
-        auto json = file::readJson(replaceEnd(path, 4, ".json")).unwrapOr(matjson::makeObject({
+        auto json = file::readJson(replaceEnd(path.string(), 4, ".json")).unwrapOr(matjson::makeObject({
             { "blend", false },
             { "tint", false }
         }));
