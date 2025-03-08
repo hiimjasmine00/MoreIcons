@@ -25,6 +25,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
     static void onModify(ModifyBase<ModifyDerive<MIGarageLayer, GJGarageLayer>>& self) {
         (void)self.setHookPriorityAfterPost("GJGarageLayer::init", "weebify.separate_dual_icons");
+        (void)self.setHookPriorityBeforePre("GJGarageLayer::onSelect", "weebify.separate_dual_icons");
         (void)self.setHookPriorityBeforePost("GJGarageLayer::setupPage", "weebify.separate_dual_icons");
     }
 

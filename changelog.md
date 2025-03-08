@@ -1,4 +1,9 @@
 # More Icons Changelog
+## v1.9.1 (2025-03-08)
+- Fixed a bug that sometimes caused selecting dual icons to not work properly ([#23](https://github.com/hiimjasmine00/MoreIcons/issues/23))
+- Fixed an incompatibility with the mod "Better Unlock Info" by Rynat ([#26](https://github.com/hiimjasmine00/MoreIcons/issues/26))
+- Fixed a probable crash that can occur when loading a vanilla icon (Reported by [Dasshu](user:1975253))
+
 ## v1.9.0 (2025-03-07)
 - Added debug logs, which can be disabled in the settings
 - Added a setting to disable loading traditional icon texture packs ([#24](https://github.com/hiimjasmine00/MoreIcons/issues/24))

@@ -46,16 +46,21 @@ class $modify(MIGameManager, GameManager) {
         auto iconExists = m_loadIcon[keyForIcon(id, type)] > 0;
         auto ret = GameManager::loadIcon(id, type, requestID);
         if (!ret || iconExists || !MoreIcons::TRADITIONAL_PACKS) return ret;
+
         std::string sheetName = GameManager::sheetNameForIcon(id, type);
         if (sheetName.empty()) return ret;
+
         auto dict = CCDictionary::createWithContentsOfFile(fmt::format("{}.plist", sheetName).c_str());
         if (!dict) return ret;
+
         auto frames = static_cast<CCDictionary*>(dict->objectForKey("frames"));
         if (!frames) return ret;
+
         auto sfc = CCSpriteFrameCache::get();
-        for (auto [frameName, frame] : CCDictionaryExt<std::string, CCDictionary*>(frames)) {
-            sfc->spriteFrameByName(frameName.c_str())->setTexture(ret);
+        for (auto [frameName, _] : CCDictionaryExt<std::string, CCDictionary*>(frames)) {
+            if (auto frame = sfc->spriteFrameByName(frameName.c_str())) frame->setTexture(ret);
         }
+
         return ret;
     }
 };

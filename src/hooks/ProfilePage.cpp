@@ -20,10 +20,11 @@ class $modify(MIProfilePage, ProfilePage) {
         if (!playerMenu) return;
 
         auto playerShip = playerMenu->getChildByID("player-ship");
+        auto shipTag = playerShip ? playerShip->getTag() : -1;
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
         MoreIconsAPI::updateSimplePlayer(findPlayer(playerMenu->getChildByID("player-icon")), IconType::Cube, dual);
-        MoreIconsAPI::updateSimplePlayer(findPlayer(playerShip), playerShip ? (IconType)playerShip->getTag() : IconType::Ship, dual);
+        MoreIconsAPI::updateSimplePlayer(findPlayer(playerShip), shipTag != -1 ? (IconType)shipTag : IconType::Ship, dual);
         MoreIconsAPI::updateSimplePlayer(findPlayer(playerMenu->getChildByID("player-ball")), IconType::Ball, dual);
         MoreIconsAPI::updateSimplePlayer(findPlayer(playerMenu->getChildByID("player-ufo")), IconType::Ufo, dual);
         MoreIconsAPI::updateSimplePlayer(findPlayer(playerMenu->getChildByID("player-wave")), IconType::Wave, dual);
@@ -60,7 +61,6 @@ class $modify(MIProfilePage, ProfilePage) {
         if (!m_ownProfile) return;
 
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        MoreIconsAPI::updateSimplePlayer(findPlayer(static_cast<CCNode*>(sender)),
-            (IconType)sender->getTag(), sdi && sdi->getSavedValue("2pselected", false));
+        MoreIconsAPI::updateSimplePlayer(findPlayer(static_cast<CCNode*>(sender)), (IconType)sender->getTag(), sdi && sdi->getSavedValue("2pselected", false));
     }
 };
