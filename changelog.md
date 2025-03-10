@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v1.10.1 (2025-03-10)
+- Fixed a bug where the game would crash when using a custom trail without entering the icon kit ([#28](https://github.com/hiimjasmine00/MoreIcons/issues/28))
+
 ## v1.10.0 (2025-03-09)
 - Changed icon loading to only load icon textures when needed (Suggested by [qjivxn](user:5327860))
 - Added new API methods (MoreIcons::loadIcon, MoreIcons::unloadIcon)

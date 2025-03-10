@@ -173,7 +173,7 @@ class $modify(MIPlayerObject, PlayerObject) {
             stroke = 14.0f;
         }
 
-        m_regularTrail->initWithFade(fade, 5.0f, stroke, { 255, 255, 255 }, CCTextureCache::get()->textureForKey(trailInfo.textures[0].c_str()));
+        m_regularTrail->initWithFade(fade, 5.0f, stroke, { 255, 255, 255 }, CCTextureCache::get()->addImage(trailInfo.textures[0].c_str(), true));
         if (trailInfo.trailID == 6) m_regularTrail->enableRepeatMode(0.1f);
         if (trailInfo.trailID > 0 || trailInfo.blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
         m_regularTrail->setUserObject("name"_spr, CCString::create(trailFile));
