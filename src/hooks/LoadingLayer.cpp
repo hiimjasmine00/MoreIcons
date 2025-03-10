@@ -5,7 +5,7 @@ using namespace geode::prelude;
 
 class $modify(MILoadingLayer, LoadingLayer) {
     struct Fields {
-        int m_iconLoadStep GEODE_ANDROID(= -1);
+        int m_iconLoadStep;
         std::vector<IconPack> m_iconPacks;
     };
 
@@ -18,10 +18,7 @@ class $modify(MILoadingLayer, LoadingLayer) {
 
         auto f = m_fields.self();
         switch (f->m_iconLoadStep) {
-            case -1:
-                break;
             case 0:
-                GEODE_ANDROID(MoreIcons::unzipVanillaAssets();)
                 f->m_iconPacks = MoreIcons::getTexturePacks();
                 break;
             case 1:
@@ -67,7 +64,6 @@ class $modify(MILoadingLayer, LoadingLayer) {
 
     void changeLoadText() {
         if (auto smallLabel2 = static_cast<CCLabelBMFont*>(getChildByID("geode-small-label-2"))) switch (m_fields->m_iconLoadStep) {
-            GEODE_ANDROID(case 0: smallLabel2->setString("More Icons: Unzipping Textures"); break;)
             case 1: smallLabel2->setString("More Icons: Loading Icons"); break;
             case 2: smallLabel2->setString("More Icons: Loading Ships"); break;
             case 3: smallLabel2->setString("More Icons: Loading Balls"); break;

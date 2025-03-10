@@ -2,6 +2,19 @@
 This website hosts the documentation for the More Icons mod for Geometry Dash.\
 At this moment, it only hosts API documentation, but user documentation will be considered in the future.
 
+## Adding the API
+To use the More Icons API, you must add it as a suggested dependency in your `mod.json` file.\
+```json
+{
+    "dependencies": {
+        "hiimjustin000.more_icons": {
+            "version": ">=v1.10.0",
+            "importance": "suggested"
+        }
+    }
+}
+```
+
 ## Supported [Icon Types](https://github.com/geode-sdk/bindings/blob/d10b6889c0cc57dfee696f9837c7ea3c3ecfb5fe/bindings/include/Geode/Enums.hpp#L767)
 - `IconType::Cube` (0)
 - `IconType::Ship` (1)

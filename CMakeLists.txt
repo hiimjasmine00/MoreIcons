@@ -5,7 +5,7 @@ set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
 
-project(MoreIcons VERSION 1.9.1)
+project(MoreIcons VERSION 1.10.0)
 
 add_library(${PROJECT_NAME} SHARED
     src/api/MoreIconsAPI.cpp
@@ -37,8 +37,5 @@ else()
 endif()
 
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
-
-CPMAddPackage("gh:bshoshany/thread-pool@5.0.0")
-target_include_directories(${PROJECT_NAME} PRIVATE ${thread-pool_SOURCE_DIR}/include)
 
 setup_geode_mod(${PROJECT_NAME})

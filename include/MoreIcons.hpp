@@ -10,6 +10,8 @@
 #define MORE_ICONS_ROBOT_SPRITE(...) MoreIcons::RobotSpriteEvent(MORE_ICONS_EXPAND("robot-sprite"), __VA_ARGS__).post()
 #define MORE_ICONS_PLAYER_OBJECT(...) MoreIcons::PlayerObjectEvent(MORE_ICONS_EXPAND("player-object"), __VA_ARGS__).post()
 #define MORE_ICONS_ALL_ICONS(...) MoreIcons::AllIconsEvent(MORE_ICONS_EXPAND("all-icons"), __VA_ARGS__).post()
+#define MORE_ICONS_LOAD_ICON(...) MoreIcons::LoadIconEvent(MORE_ICONS_EXPAND("load-icon"), __VA_ARGS__).post()
+#define MORE_ICONS_UNLOAD_ICON(...) MoreIcons::UnloadIconEvent(MORE_ICONS_EXPAND("unload-icon"), __VA_ARGS__).post()
 
 /**
  * A class that provides an API for interacting with the More Icons mod.
@@ -24,6 +26,10 @@ public:
     using PlayerObjectFilter = geode::DispatchFilter<PlayerObject*, std::string, IconType>;
     using AllIconsEvent = geode::DispatchEvent<std::vector<std::string>*, IconType>;
     using AllIconsFilter = geode::DispatchFilter<std::vector<std::string>*, IconType>;
+    using LoadIconEvent = geode::DispatchEvent<std::string, IconType>;
+    using LoadIconFilter = geode::DispatchFilter<std::string, IconType>;
+    using UnloadIconEvent = geode::DispatchEvent<std::string, IconType>;
+    using UnloadIconFilter = geode::DispatchFilter<std::string, IconType>;
 
     /**
      * Checks if the More Icons mod is loaded.
@@ -41,6 +47,26 @@ public:
     static geode::Mod* get() {
         static auto mod = geode::Loader::get()->getLoadedMod(MORE_ICONS_ID);
         return mod;
+    }
+
+    /**
+     * Loads a custom icon into the texture cache.
+     * @param name The name of the icon to load.
+     * @param type The type of icon to load.
+     */
+    static void loadIcon(const std::string& name, IconType type) {
+        if (!loaded()) return;
+        MORE_ICONS_LOAD_ICON(name, type);
+    }
+
+    /**
+     * Unloads a custom icon from the texture cache.
+     * @param name The name of the icon to unload.
+     * @param type The type of icon to unload.
+     */
+    static void unloadIcon(const std::string& name, IconType type) {
+        if (!loaded()) return;
+        MORE_ICONS_UNLOAD_ICON(name, type);
     }
 
     /**

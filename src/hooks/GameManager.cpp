@@ -9,29 +9,11 @@ class $modify(MIGameManager, GameManager) {
 
         if (!m_unkBool1) return;
 
-        MoreIconsAPI::ICONS.clear();
-        MoreIcons::ICON_INFO.clear();
-        MoreIconsAPI::SHIPS.clear();
-        MoreIcons::SHIP_INFO.clear();
-        MoreIconsAPI::BALLS.clear();
-        MoreIcons::BALL_INFO.clear();
-        MoreIconsAPI::UFOS.clear();
-        MoreIcons::UFO_INFO.clear();
-        MoreIconsAPI::WAVES.clear();
-        MoreIcons::WAVE_INFO.clear();
-        MoreIconsAPI::ROBOTS.clear();
-        MoreIcons::ROBOT_INFO.clear();
-        MoreIconsAPI::SPIDERS.clear();
-        MoreIcons::SPIDER_INFO.clear();
-        MoreIconsAPI::SWINGS.clear();
-        MoreIcons::SWING_INFO.clear();
-        MoreIconsAPI::JETPACKS.clear();
-        MoreIcons::JETPACK_INFO.clear();
-        MoreIconsAPI::TRAILS.clear();
         MoreIcons::saveTrails();
-        MoreIcons::TRAIL_INFO.clear();
+        MoreIconsAPI::ICONS.clear();
+        MoreIconsAPI::LOADED_ICONS.clear();
         MoreIcons::LOGS.clear();
-        MoreIcons::HIGHEST_SEVERITY = Severity::Info;
+        MoreIcons::HIGHEST_SEVERITY = Severity::Debug;
         MoreIcons::DEBUG_LOGS = Mod::get()->getSettingValue<bool>("debug-logs");
         MoreIcons::TRADITIONAL_PACKS = Mod::get()->getSettingValue<bool>("traditional-packs");
     }

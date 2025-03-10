@@ -4,10 +4,7 @@
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
-#include <Geode/binding/PlayerObject.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
-#include <Geode/loader/Dispatch.hpp>
-#include <Geode/loader/Mod.hpp>
 #include <Geode/utils/ranges.hpp>
 
 using namespace geode::prelude;
@@ -34,6 +31,16 @@ $execute {
         return ListenerResult::Propagate;
     }, MoreIcons::AllIconsFilter("all-icons"_spr));
 
+    new EventListener(+[](std::string icon, IconType type) {
+        MoreIconsAPI::setIcon(icon, type, false);
+        return ListenerResult::Propagate;
+    }, MoreIcons::LoadIconFilter("load-icon"_spr));
+
+    new EventListener(+[](std::string icon, IconType type) {
+        MoreIconsAPI::setIcon(icon, type, false);
+        return ListenerResult::Propagate;
+    }, MoreIcons::UnloadIconFilter("unload-icon"_spr));
+
     #if GEODE_COMP_GD_VERSION == 22074 // Keep this until the next Geometry Dash update
     new EventListener(+[](GJRobotSprite* sprite, const std::string& icon) {
         if (!sprite || icon.empty()) return ListenerResult::Propagate;
@@ -59,23 +66,14 @@ $execute {
     #endif
 }
 
-std::vector<std::string>& MoreIconsAPI::vectorForType(IconType type) {
-    switch (type) {
-        case IconType::Cube: return ICONS;
-        case IconType::Ship: return SHIPS;
-        case IconType::Ball: return BALLS;
-        case IconType::Ufo: return UFOS;
-        case IconType::Wave: return WAVES;
-        case IconType::Robot: return ROBOTS;
-        case IconType::Spider: return SPIDERS;
-        case IconType::Swing: return SWINGS;
-        case IconType::Jetpack: return JETPACKS;
-        case IconType::Special: return TRAILS;
-        default: {
-            static std::vector<std::string> empty;
-            return empty;
-        }
-    }
+std::vector<std::string> MoreIconsAPI::vectorForType(IconType type) {
+    return ranges::map<std::vector<std::string>>(ranges::filter(ICONS, [type](const IconInfo& info) {
+        return info.type == type;
+    }), [](const IconInfo& info) { return info.name; });
+}
+
+std::optional<IconInfo> MoreIconsAPI::infoForIcon(const std::string& name, IconType type) {
+    return ranges::find(ICONS, [name, type](const IconInfo& info) { return info.name == name && info.type == type; });
 }
 
 std::string MoreIconsAPI::activeForType(IconType type, bool dual) {
@@ -89,15 +87,114 @@ std::string MoreIconsAPI::setIcon(const std::string& icon, IconType type, bool d
 }
 
 bool MoreIconsAPI::hasIcon(const std::string& icon, IconType type) {
-    return !icon.empty() && ranges::contains(vectorForType(type), icon);
+    return !icon.empty() && std::ranges::any_of(ICONS, [icon, type](const IconInfo& info) { return info.name == icon && info.type == type; });
+}
+
+int MoreIconsAPI::countForType(IconType type) {
+    return std::ranges::count_if(ICONS, [type](const IconInfo& info) { return info.type == type; });
 }
 
 IconType MoreIconsAPI::getIconType(PlayerObject* object) {
     return MoreIcons::getIconType(object);
 }
 
-bool doesExist(CCSpriteFrame* frame) {
-    return frame && frame->getTag() != 105871529;
+std::string MoreIconsAPI::getFrameName(const std::string& name, const std::string& prefix, IconType type) {
+    if (type != IconType::Robot && type != IconType::Spider) {
+        if (name.ends_with("_2_001.png")) return fmt::format("{}_2_001.png"_spr, prefix);
+        else if (name.ends_with("_3_001.png")) return fmt::format("{}_3_001.png"_spr, prefix);
+        else if (name.ends_with("_extra_001.png")) return fmt::format("{}_extra_001.png"_spr, prefix);
+        else if (name.ends_with("_glow_001.png")) return fmt::format("{}_glow_001.png"_spr, prefix);
+        else if (name.ends_with("_001.png")) return fmt::format("{}_001.png"_spr, prefix);
+    }
+    else for (int i = 1; i < 5; i++) {
+        if (name.ends_with(fmt::format("_{:02}_2_001.png", i))) return fmt::format("{}_{:02}_2_001.png"_spr, prefix, i);
+        else if (i == 1 && name.ends_with(fmt::format("_{:02}_extra_001.png", i))) return fmt::format("{}_{:02}_extra_001.png"_spr, prefix, i);
+        else if (name.ends_with(fmt::format("_{:02}_glow_001.png", i))) return fmt::format("{}_{:02}_glow_001.png"_spr, prefix, i);
+        else if (name.ends_with(fmt::format("_{:02}_001.png", i))) return fmt::format("{}_{:02}_001.png"_spr, prefix, i);
+    }
+
+    return name;
+}
+
+// Adapted from https://github.com/GlobedGD/globed2/blob/v1.7.2/src/util/cocos.cpp#L82
+
+using AddSpriteFramesWithDictionaryType = void(CCSpriteFrameCache::*)(CCDictionary*, CCTexture2D*);
+template <AddSpriteFramesWithDictionaryType func>
+struct AddSpriteFramesWithDictionaryCaller {
+    friend void addSpriteFrames(CCSpriteFrameCache* cache, CCDictionary* dict, CCTexture2D* texture) {
+        (cache->*func)(dict, texture);
+    }
+};
+
+template struct AddSpriteFramesWithDictionaryCaller<&CCSpriteFrameCache::addSpriteFramesWithDictionary>;
+void addSpriteFrames(CCSpriteFrameCache* cache, CCDictionary* dict, CCTexture2D* texture);
+
+using RemoveSpriteFramesFromDictionaryType = void(CCSpriteFrameCache::*)(CCDictionary*);
+template <RemoveSpriteFramesFromDictionaryType func>
+struct RemoveSpriteFramesFromDictionaryCaller {
+    friend void removeSpriteFrames(CCSpriteFrameCache* cache, CCDictionary* dict) {
+        (cache->*func)(dict);
+    }
+};
+
+template struct RemoveSpriteFramesFromDictionaryCaller<&CCSpriteFrameCache::removeSpriteFramesFromDictionary>;
+void removeSpriteFrames(CCSpriteFrameCache* cache, CCDictionary* dict);
+
+void MoreIconsAPI::loadIcon(const std::string& name, IconType type) {
+    if (ranges::contains(LOADED_ICONS, { name, type })) return;
+
+    auto found = infoForIcon(name, type);
+    if (!found.has_value()) return;
+
+    auto& info = found.value();
+    auto textureCache = CCTextureCache::get();
+    auto spriteFrameCache = CCSpriteFrameCache::get();
+
+    for (int i = 0; i < info.textures.size(); i++) {
+        auto texture = textureCache->addImage(info.textures[i].c_str(), true);
+        if (info.frameNames.size() > i) spriteFrameCache->addSpriteFrame(
+            CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }), info.frameNames[i].c_str());
+    }
+
+    if (!info.sheetName.empty()) {
+        auto dict = CCDictionary::createWithContentsOfFile(info.sheetName.c_str());
+        auto frames = CCDictionary::create();
+        for (auto [frameName, frame] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(dict->objectForKey("frames")))) {
+            frames->setObject(frame, getFrameName(frameName, name, type));
+        }
+        dict->setObject(frames, "frames");
+        addSpriteFrames(spriteFrameCache, dict, textureCache->textureForKey(info.textures[0].c_str()));
+    }
+
+    LOADED_ICONS.push_back({ name, type });
+}
+
+void MoreIconsAPI::unloadIcon(const std::string& name, IconType type) {
+    if (!ranges::contains(LOADED_ICONS, { name, type })) return;
+
+    auto found = infoForIcon(name, type);
+    if (!found.has_value()) return;
+
+    auto& info = found.value();
+    auto textureCache = CCTextureCache::get();
+    auto spriteFrameCache = CCSpriteFrameCache::get();
+
+    for (int i = 0; i < info.textures.size(); i++) {
+        textureCache->removeTextureForKey(info.textures[i].c_str());
+        if (info.frameNames.size() > i) spriteFrameCache->removeSpriteFrameByName(info.frameNames[i].c_str());
+    }
+
+    if (!info.sheetName.empty()) {
+        auto dict = CCDictionary::createWithContentsOfFile(info.sheetName.c_str());
+        auto frames = CCDictionary::create();
+        for (auto [frameName, frame] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(dict->objectForKey("frames")))) {
+            frames->setObject(frame, getFrameName(frameName, name, type));
+        }
+        dict->setObject(frames, "frames");
+        removeSpriteFrames(spriteFrameCache, dict);
+    }
+
+    ranges::remove(LOADED_ICONS, { name, type });
 }
 
 void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, IconType type, bool dual) {
@@ -108,6 +205,7 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
     if (!player || icon.empty() || !hasIcon(icon, type)) return;
 
     player->setUserObject("name"_spr, CCString::create(icon));
+    player->setUserObject("type"_spr, CCInteger::create((int)type));
 
     player->m_firstLayer->setVisible(type != IconType::Robot && type != IconType::Spider);
     player->m_secondLayer->setVisible(type != IconType::Robot && type != IconType::Spider);
@@ -133,6 +231,8 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
     }
     else if (player->m_spiderSprite) player->m_spiderSprite->setVisible(false);
 
+    loadIcon(icon, type);
+
     auto sfc = CCSpriteFrameCache::get();
     player->m_firstLayer->setDisplayFrame(sfc->spriteFrameByName(fmt::format("{}_001.png"_spr, icon).c_str()));
     player->m_firstLayer->setScale(type == IconType::Ball ? 0.9f : 1.0f);
@@ -147,7 +247,7 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
         player->m_birdDome->setPosition(firstCenter);
     }
     auto extraFrame = sfc->spriteFrameByName(fmt::format("{}_extra_001.png"_spr, icon).c_str());
-    auto extraVisible = doesExist(extraFrame);
+    auto extraVisible = extraFrame && extraFrame->getTag() != 105871529;
     player->m_detailSprite->setVisible(extraVisible);
     if (extraVisible) {
         player->m_detailSprite->setDisplayFrame(extraFrame);
@@ -159,9 +259,12 @@ void MoreIconsAPI::updateRobotSprite(GJRobotSprite* sprite, const std::string& i
     if (!sprite || icon.empty() || !hasIcon(icon, type)) return;
 
     sprite->setUserObject("name"_spr, CCString::create(icon));
+    sprite->setUserObject("type"_spr, CCInteger::create((int)type));
 
     sprite->setBatchNode(nullptr);
     sprite->m_paSprite->setBatchNode(nullptr);
+
+    loadIcon(icon, type);
 
     auto spriteParts = sprite->m_paSprite->m_spriteParts;
     auto spriteFrameCache = CCSpriteFrameCache::get();
@@ -183,7 +286,7 @@ void MoreIconsAPI::updateRobotSprite(GJRobotSprite* sprite, const std::string& i
 
         if (spritePart == sprite->m_headSprite) {
             auto extraFrame = spriteFrameCache->spriteFrameByName(fmt::format("{}_{:02}_extra_001.png"_spr, icon, tag).c_str());
-            auto hasExtra = doesExist(extraFrame);
+            auto hasExtra = extraFrame && extraFrame->getTag() != 105871529;
             if (hasExtra) {
                 if (sprite->m_extraSprite) {
                     sprite->m_extraSprite->setBatchNode(nullptr);
@@ -208,6 +311,7 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& i
     if (!object || icon.empty() || !hasIcon(icon, type)) return;
 
     object->setUserObject("name"_spr, CCString::create(icon));
+    object->setUserObject("type"_spr, CCInteger::create((int)type));
 
     if (type == IconType::Robot || type == IconType::Spider) {
         auto robotSprite = type == IconType::Robot ? object->m_robotSprite : object->m_spiderSprite;
@@ -231,6 +335,8 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& i
         return robotSprite->release();
     }
 
+    loadIcon(icon, type);
+
     auto isVehicle = type == IconType::Ship || type == IconType::Ufo || type == IconType::Jetpack;
     auto firstLayer = isVehicle ? object->m_vehicleSprite : object->m_iconSprite;
     auto secondLayer = isVehicle ? object->m_vehicleSpriteSecondary : object->m_iconSpriteSecondary;
@@ -248,7 +354,7 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& i
     }
     outlineSprite->setDisplayFrame(sfc->spriteFrameByName(fmt::format("{}_glow_001.png"_spr, icon).c_str()));
     auto extraFrame = sfc->spriteFrameByName(fmt::format("{}_extra_001.png"_spr, icon).c_str());
-    auto extraVisible = doesExist(extraFrame);
+    auto extraVisible = extraFrame && extraFrame->getTag() != 105871529;
     detailSprite->setVisible(extraVisible);
     if (extraVisible) {
         detailSprite->setDisplayFrame(extraFrame);

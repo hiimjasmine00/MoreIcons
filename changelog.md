@@ -1,4 +1,9 @@
 # More Icons Changelog
+## v1.10.0 (2025-03-09)
+- Changed icon loading to only load icon textures when needed (Suggested by [qjivxn](user:5327860))
+- Added new API methods (MoreIcons::loadIcon, MoreIcons::unloadIcon)
+- Fixed incompatibilities with "Known Players" by iAndyHD3 and "Pity Title Screen Secret Icons" by kittenchilly
+
 ## v1.9.1 (2025-03-08)
 - Fixed a bug that sometimes caused selecting dual icons to not work properly ([#23](https://github.com/hiimjasmine00/MoreIcons/issues/23))
 - Fixed an incompatibility with the mod "Better Unlock Info" by Rynat ([#26](https://github.com/hiimjasmine00/MoreIcons/issues/26))

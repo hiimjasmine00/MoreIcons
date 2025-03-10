@@ -1,6 +1,6 @@
 ---
 title: Changing a PlayerObject's Icon
-order: 7
+order: 9
 ---
 
 # Changing a PlayerObject's Icon
