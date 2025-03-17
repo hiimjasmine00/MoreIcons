@@ -1,6 +1,6 @@
 ---
 title: Changing a SimplePlayer's Icon
-order: 7
+order: 8
 ---
 
 # Changing a SimplePlayer's Icon

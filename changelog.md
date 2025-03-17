@@ -1,4 +1,10 @@
 # More Icons Changelog
+## v1.11.0 (2025-03-17)
+- Revamped the API, renaming many methods and adding new ones
+- Lowered the opacity of the cursor in the icon kit for vanilla selected icons
+- Fixed MoreIcons::loadIcon and MoreIcons::unloadIcon not working properly
+- Fixed probable crashes caused by malformed plist files (Reported by [MarioTudor22](user:26834754))
+
 ## v1.10.1 (2025-03-10)
 - Fixed a bug where the game would crash when using a custom trail without entering the icon kit ([#28](https://github.com/hiimjasmine00/MoreIcons/issues/28))
 

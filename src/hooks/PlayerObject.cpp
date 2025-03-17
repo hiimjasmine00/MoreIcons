@@ -1,13 +1,20 @@
 #include "../MoreIcons.hpp"
-#include <Geode/binding/GameManager.hpp>
+#include "../api/MoreIconsAPI.hpp"
 #include <Geode/binding/GJBaseGameLayer.hpp>
 #include <Geode/modify/PlayerObject.hpp>
 
 using namespace geode::prelude;
 
+#define UPDATE_HOOK(funcName, type) \
+    void funcName(int frame) { \
+        PlayerObject::funcName(frame); \
+        if (frame == 0) return resetPlayer(!isMainPlayer()); \
+        updateIcon(type); \
+    }
+
 class $modify(MIPlayerObject, PlayerObject) {
     struct Fields {
-        std::vector<std::pair<std::string, IconType>> m_icons;
+        std::set<std::pair<std::string, IconType>> m_icons;
         ~Fields() {
             for (auto& [name, type] : m_icons) MoreIconsAPI::unloadIcon(name, type);
         }
@@ -35,16 +42,17 @@ class $modify(MIPlayerObject, PlayerObject) {
         if (!isMainPlayer()) return resetPlayer(true);
 
         std::string icon;
-        if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) icon = MoreIconsAPI::activeForType(type, false);
-        else if (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this) icon = MoreIconsAPI::activeForType(type, true);
+        if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) icon = MoreIconsClass::activeIcon(type, false);
+        else if (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this) icon = MoreIconsClass::activeIcon(type, true);
 
-        if (!icon.empty() && MoreIconsAPI::hasIcon(icon, type)) m_fields->m_icons.emplace_back(icon, type);
+        if (icon.empty() || !MoreIconsAPI::hasIcon(icon, type)) return resetPlayer(true);
 
+        m_fields->m_icons.insert({ icon, type });
         MoreIconsAPI::updatePlayerObject(this, icon, type);
     }
 
-    bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool highGraphics) {
-        if (!PlayerObject::init(player, ship, gameLayer, layer, highGraphics)) return false;
+    bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool ignoreDamage) {
+        if (!PlayerObject::init(player, ship, gameLayer, layer, ignoreDamage)) return false;
 
         updateIcon(IconType::Cube);
         updateIcon(IconType::Ship);
@@ -52,63 +60,15 @@ class $modify(MIPlayerObject, PlayerObject) {
         return true;
     }
 
-    void updatePlayerFrame(int frame) {
-        PlayerObject::updatePlayerFrame(frame);
-
-        if (frame == 0) return resetPlayer(!isMainPlayer());
-
-        updateIcon(IconType::Cube);
-    }
-
-    void updatePlayerShipFrame(int frame) {
-        PlayerObject::updatePlayerShipFrame(frame);
-
-        updateIcon(IconType::Ship);
-    }
-
-    void updatePlayerRollFrame(int frame) {
-        PlayerObject::updatePlayerRollFrame(frame);
-
-        if (frame == 0) return resetPlayer(!isMainPlayer());
-
-        updateIcon(IconType::Ball);
-    }
-
-    void updatePlayerBirdFrame(int frame) {
-        PlayerObject::updatePlayerBirdFrame(frame);
-
-        updateIcon(IconType::Ufo);
-    }
-
-    void updatePlayerDartFrame(int frame) {
-        PlayerObject::updatePlayerDartFrame(frame);
-
-        updateIcon(IconType::Wave);
-    }
-
-    void createRobot(int frame) {
-        PlayerObject::createRobot(frame);
-
-        updateIcon(IconType::Robot);
-    }
-
-    void createSpider(int frame) {
-        PlayerObject::createSpider(frame);
-
-        updateIcon(IconType::Spider);
-    }
-
-    void updatePlayerSwingFrame(int frame) {
-        PlayerObject::updatePlayerSwingFrame(frame);
-
-        updateIcon(IconType::Swing);
-    }
-
-    void updatePlayerJetpackFrame(int frame) {
-        PlayerObject::updatePlayerJetpackFrame(frame);
-
-        updateIcon(IconType::Jetpack);
-    }
+    UPDATE_HOOK(updatePlayerFrame, IconType::Cube)
+    UPDATE_HOOK(updatePlayerShipFrame, IconType::Ship)
+    UPDATE_HOOK(updatePlayerRollFrame, IconType::Ball)
+    UPDATE_HOOK(updatePlayerBirdFrame, IconType::Ufo)
+    UPDATE_HOOK(updatePlayerDartFrame, IconType::Wave)
+    UPDATE_HOOK(createRobot, IconType::Robot)
+    UPDATE_HOOK(createSpider, IconType::Spider)
+    UPDATE_HOOK(updatePlayerSwingFrame, IconType::Swing)
+    UPDATE_HOOK(updatePlayerJetpackFrame, IconType::Jetpack)
 
     void resetTrail() {
         if (m_regularTrail->getUserObject("name"_spr)) m_regularTrail->setUserObject("name"_spr, nullptr);
@@ -124,18 +84,17 @@ class $modify(MIPlayerObject, PlayerObject) {
         if (!isMainPlayer()) return resetTrail();
 
         std::string trailFile;
-        if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) trailFile = MoreIconsAPI::activeForType(IconType::Special, false);
-        else if (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this) trailFile = MoreIconsAPI::activeForType(IconType::Special, true);
+        if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) trailFile = MoreIconsClass::activeIcon(IconType::Special, false);
+        else if (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this) trailFile = MoreIconsClass::activeIcon(IconType::Special, true);
 
         if (trailFile.empty() || !MoreIconsAPI::hasIcon(trailFile, IconType::Special)) return resetTrail();
 
-        auto found = MoreIconsAPI::infoForIcon(trailFile, IconType::Special);
-        if (!found.has_value()) return resetTrail();
+        auto info = MoreIconsAPI::getIcon(trailFile, IconType::Special);
+        if (!info) return resetTrail();
 
         auto fade = 0.3f;
         auto stroke = 10.0f;
-        auto& trailInfo = found.value();
-        if (trailInfo.trailID > 0) switch (trailInfo.trailID) {
+        if (info->trailID > 0) switch (info->trailID) {
             case 2:
             case 7:
                 stroke = 14.0f;
@@ -167,15 +126,15 @@ class $modify(MIPlayerObject, PlayerObject) {
                 break;
         } else {
             m_streakStrokeWidth = 14.0f;
-            m_disableStreakTint = !trailInfo.tint;
+            m_disableStreakTint = !info->tint;
             m_alwaysShowStreak = false;
             fade = 0.3f;
             stroke = 14.0f;
         }
 
-        m_regularTrail->initWithFade(fade, 5.0f, stroke, { 255, 255, 255 }, CCTextureCache::get()->addImage(trailInfo.textures[0].c_str(), true));
-        if (trailInfo.trailID == 6) m_regularTrail->enableRepeatMode(0.1f);
-        if (trailInfo.trailID > 0 || trailInfo.blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
+        m_regularTrail->initWithFade(fade, 5.0f, stroke, { 255, 255, 255 }, CCTextureCache::get()->addImage(info->textures[0].c_str(), true));
+        if (info->trailID == 6) m_regularTrail->enableRepeatMode(0.1f);
+        if (info->trailID > 0 || info->blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
         m_regularTrail->setUserObject("name"_spr, CCString::create(trailFile));
     }
 };

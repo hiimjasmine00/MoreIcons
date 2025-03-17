@@ -42,10 +42,8 @@ class $modify(MIProfilePage, ProfilePage) {
         changePlayers();
 
         if (Loader::get()->isModLoaded("weebify.separate_dual_icons")) {
-            if (auto leftMenu = m_mainLayer->getChildByID("left-menu")) {
-                if (auto twoPToggler = static_cast<CCMenuItemSpriteExtra*>(leftMenu->getChildByID("2p-toggler")))
-                    ButtonHooker::create(twoPToggler, this, menu_selector(MIProfilePage::newOn2PToggle));
-            }
+            if (auto leftMenu = m_mainLayer->getChildByID("left-menu"))
+                ButtonHooker::create(static_cast<CCMenuItem*>(leftMenu->getChildByID("2p-toggler")), this, menu_selector(MIProfilePage::newOn2PToggle));
         }
     }
 

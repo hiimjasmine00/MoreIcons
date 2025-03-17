@@ -5,6 +5,10 @@ on:
   push:
     branches:
       - "master"
+    paths:
+      - ".github/workflows/deploy.yml"
+      - "docs/**"
+      - "include/**"
 
 permissions:
   contents: read
@@ -32,7 +36,7 @@ jobs:
       - name: Download Flash
         uses: robinraju/release-downloader@v1.11
         with:
-          repository: geode-sdk/flash
+          repository: hiimjasmine00/flash
           latest: true
           fileName: flash.exe
 
@@ -60,7 +64,7 @@ jobs:
           echo "GEODE_SDK=$GEODE_SDK" >> $GITHUB_ENV
           geode sdk update ${{ steps.geode.outputs.version }} && geode sdk install-binaries
           mkdir dist
-          mv ./MoreIcons/fix-docs.js ./dist/fix-docs.js
+          cp ./MoreIcons/fix-docs.js ./dist/fix-docs.js
           cd dist
           ../flash.exe -i ../MoreIcons -o . --overwrite && node ./fix-docs.js
 

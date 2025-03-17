@@ -3,6 +3,7 @@
 using namespace geode::prelude;
 
 ButtonHooker* ButtonHooker::create(CCMenuItem* button, CCObject* listener, SEL_MenuHandler selector) {
+    if (!button) return nullptr;
     auto hooker = new ButtonHooker();
     hooker->m_listener = button->m_pListener;
     hooker->m_selector = button->m_pfnSelector;

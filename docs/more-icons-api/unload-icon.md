@@ -1,6 +1,6 @@
 ---
 title: Unloading a Custom Icon
-order: 6
+order: 7
 ---
 
 # Unloading a Custom Icon

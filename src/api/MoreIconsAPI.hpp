@@ -1,32 +1,20 @@
-#include <cocos2d.h>
-#include <Geode/Enums.hpp>
-#include <Geode/GeneratedPredeclare.hpp>
+#define MoreIcons MoreIconsClass
+#include <MoreIcons.hpp>
+#undef MoreIcons
 
-struct IconInfo {
-    std::string name;
-    std::vector<std::string> textures;
-    std::vector<std::string> frameNames;
-    std::string sheetName;
-    std::string packName;
-    std::string packID;
-    IconType type;
-    int trailID;
-    bool blend;
-    bool tint;
-};
+#ifndef MORE_ICONS_BUILDING_DOCS
+using IconInfo = MoreIconsClass::IconInfo;
+#endif
 
 class MoreIconsAPI {
 public:
     static inline std::vector<IconInfo> ICONS;
+    static inline std::map<IconType, std::pair<int, int>> ICON_INDICES;
     static inline std::vector<std::pair<std::string, IconType>> LOADED_ICONS;
 
-    static std::vector<std::string> vectorForType(IconType type);
-    static std::optional<IconInfo> infoForIcon(const std::string& name, IconType type);
-    static std::string activeForType(IconType type, bool dual);
-    static std::string setIcon(const std::string& icon, IconType type, bool dual);
-    static int countForType(IconType type);
+    static IconInfo* getIcon(const std::string& name, IconType type);
+    static int getCount(IconType type);
     static bool hasIcon(const std::string& icon, IconType type);
-    static IconType getIconType(PlayerObject* object);
     static std::string getFrameName(const std::string& name, const std::string& prefix, IconType type);
     static void loadIcon(const std::string& name, IconType type);
     static void unloadIcon(const std::string& name, IconType type);

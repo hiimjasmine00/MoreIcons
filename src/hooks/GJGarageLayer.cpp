@@ -1,4 +1,5 @@
 #include "../MoreIcons.hpp"
+#include "../api/MoreIconsAPI.hpp"
 #include "../classes/ButtonHooker.hpp"
 #include "../classes/LogLayer.hpp"
 #include <Geode/binding/BoomScrollLayer.hpp>
@@ -11,7 +12,6 @@
 #include <Geode/binding/TextArea.hpp>
 #include <Geode/modify/GJGarageLayer.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
-#include <Geode/utils/ranges.hpp>
 
 using namespace geode::prelude;
 
@@ -38,28 +38,29 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         MoreIconsAPI::updateSimplePlayer(m_playerObject, GameManager::get()->m_playerIconType, false);
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        if (sdi) MoreIconsAPI::updateSimplePlayer(
-            static_cast<SimplePlayer*>(getChildByID("player2-icon")), (IconType)sdi->getSavedValue("lastmode", 0), true);
+        if (sdi) MoreIconsAPI::updateSimplePlayer(static_cast<SimplePlayer*>(getChildByID("player2-icon")), (IconType)sdi->getSavedValue("lastmode", 0), true);
 
-        auto customIcon = MoreIconsAPI::activeForType(IconType::Cube, false);
+        auto customIcon = MoreIconsClass::activeIcon(IconType::Cube, false);
         if (!customIcon.empty() && MoreIconsAPI::hasIcon(customIcon, IconType::Cube)) setupCustomPage(findIconPage(IconType::Cube));
         else createNavMenu();
 
         auto shardsMenu = getChildByID("shards-menu");
         if (sdi) {
             if (auto playerButtonsMenu = getChildByID("player-buttons-menu")) {
-                auto p1Button = static_cast<CCMenuItemSpriteExtra*>(playerButtonsMenu->getChildByID("player1-button"));
-                auto p2Button = static_cast<CCMenuItemSpriteExtra*>(playerButtonsMenu->getChildByID("player2-button"));
-                if (p1Button && p2Button) {
-                    ButtonHooker::create(p1Button, this, menu_selector(MIGarageLayer::newOn2PToggle));
-                    ButtonHooker::create(p2Button, this, menu_selector(MIGarageLayer::newOn2PToggle));
-                }
+                ButtonHooker::create(
+                    static_cast<CCMenuItem*>(playerButtonsMenu->getChildByID("player1-button")),
+                    this, menu_selector(MIGarageLayer::newOn2PToggle)
+                );
+                ButtonHooker::create(
+                    static_cast<CCMenuItem*>(playerButtonsMenu->getChildByID("player2-button")),
+                    this, menu_selector(MIGarageLayer::newOn2PToggle)
+                );
             }
 
-            if (shardsMenu) {
-                if (auto swap2PButton = static_cast<CCMenuItemSpriteExtra*>(shardsMenu->getChildByID("swap-2p-button")))
-                    ButtonHooker::create(swap2PButton, this, menu_selector(MIGarageLayer::newSwap2PKit));
-            }
+            if (shardsMenu) ButtonHooker::create(
+                static_cast<CCMenuItem*>(shardsMenu->getChildByID("swap-2p-button")),
+                this, menu_selector(MIGarageLayer::newSwap2PKit)
+            );
         }
 
         auto moreIconsSprite = CircleButtonSprite::createWithSprite("MI_moreIcons_001.png"_spr, 1.0f, CircleBaseColor::Gray, CircleBaseSize::Small);
@@ -92,23 +93,30 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
     int findIconPage(IconType type) {
         auto gameManager = GameManager::get();
-        auto active = (gameManager->activeIconForType(type) - 1) / 36;
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto i = ranges::indexOf(MoreIconsAPI::vectorForType(type), MoreIconsAPI::activeForType(type, sdi && sdi->getSavedValue("2pselected", false)));
-        return !i.has_value() ? active : (gameManager->countForType(type) + 35) / 36 + i.value() / 36;
+        auto active = MoreIconsClass::activeIcon(type, sdi && sdi->getSavedValue("2pselected", false));
+        auto it = std::ranges::find_if(MoreIconsAPI::ICONS, [&active, type](const IconInfo& info) { return info.name == active && info.type == type; });
+        return it != MoreIconsAPI::ICONS.end() && MoreIconsAPI::ICON_INDICES.contains(type) ?
+            (gameManager->countForType(type) + 35) / 36 + (it - MoreIconsAPI::ICON_INDICES[type].first - MoreIconsAPI::ICONS.begin()) / 36 :
+            (gameManager->activeIconForType(type) - 1) / 36;
     }
 
     void onSelect(CCObject* sender) {
         auto btn = static_cast<CCMenuItemSpriteExtra*>(sender);
-        if (btn->getUserObject("name"_spr)) return m_iconType == IconType::Special ? onCustomSpecialSelect(btn) : onCustomSelect(btn);
+        if (btn->getUserObject("name"_spr)) {
+            m_cursor1->setOpacity(255);
+            return m_iconType == IconType::Special ? onCustomSpecialSelect(btn) : onCustomSelect(btn);
+        }
 
         GJGarageLayer::onSelect(sender);
 
         if (!GameManager::get()->isIconUnlocked(sender->getTag(), btn->m_iconType)) return;
 
+        m_cursor1->setOpacity(255);
+
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
-        MoreIconsAPI::setIcon("", dual ? (IconType)Loader::get()->getLoadedMod(
+        MoreIconsClass::setIcon("", dual ? (IconType)Loader::get()->getLoadedMod(
             "weebify.separate_dual_icons")->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
     }
 
@@ -119,7 +127,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     }
 
     void swapDual(IconType type) {
-        MoreIconsAPI::setIcon(MoreIconsAPI::setIcon(MoreIconsAPI::activeForType(type, true), type, false), type, true);
+        MoreIconsClass::setIcon(MoreIconsClass::setIcon(MoreIconsClass::activeIcon(type, true), type, false), type, true);
     }
 
     void newSwap2PKit(CCObject* sender) {
@@ -144,7 +152,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     void updatePlayerColors() {
         GJGarageLayer::updatePlayerColors();
 
-        if (m_iconSelection && m_fields->m_pageBar && MoreIconsAPI::countForType(m_iconType) > 0) m_iconSelection->setVisible(false);
+        if (m_iconSelection && m_fields->m_pageBar && MoreIconsAPI::getCount(m_iconType) > 0) m_iconSelection->setVisible(false);
     }
 
     void createNavMenu() {
@@ -159,14 +167,14 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             addChild(f->m_navMenu, 1);
         }
 
-        auto iconCount = MoreIconsAPI::countForType(m_iconType);
+        auto iconCount = MoreIconsAPI::getCount(m_iconType);
         m_navDotMenu->setPositionY(iconCount > 0 ? 35.0f : 25.0f);
         auto count = (GameManager::get()->countForType(m_iconType) + 35) / 36;
         if (count < 2) {
             m_navDotMenu->setVisible(true);
             m_navDotMenu->setEnabled(true);
             m_navDotMenu->removeAllChildren();
-            auto firstDot = static_cast<CCMenuItemSpriteExtra*>(m_pageButtons->objectAtIndex(0));
+            auto firstDot = static_cast<CCMenuItemSprite*>(m_pageButtons->objectAtIndex(0));
             static_cast<CCSprite*>(firstDot->getNormalImage())->setDisplayFrame(CCSpriteFrameCache::get()->spriteFrameByName(
                 f->m_pageBar && iconCount > 0 ? "gj_navDotBtn_off_001.png" : "gj_navDotBtn_on_001.png"));
             m_navDotMenu->addChild(firstDot);
@@ -203,6 +211,14 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             f->m_pageBar->removeFromParent();
             f->m_pageBar = nullptr;
         }
+
+        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+        auto active = MoreIconsClass::activeIcon(type, sdi && sdi->getSavedValue("2pselected", false));
+        if (MoreIconsAPI::hasIcon(active, type)) {
+            if (m_cursor1->isVisible()) m_cursor1->setOpacity(127);
+            else m_cursor1->setOpacity(255);
+        }
+        else m_cursor1->setOpacity(255);
     }
 
     void onNavigate(CCObject* sender) {
@@ -218,7 +234,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     }
 
     int wrapPage(IconType type, int page) {
-        auto pages = (GameManager::get()->countForType(type) + 35) / 36 + (MoreIconsAPI::countForType(type) + 35) / 36;
+        auto pages = (GameManager::get()->countForType(type) + 35) / 36 + (MoreIconsAPI::getCount(type) + 35) / 36;
         return pages > 0 ? page < 0 ? pages - 1 : page >= pages ? 0 : page : 0;
     }
 
@@ -259,15 +275,20 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         setupCustomPage(page);
     }
 
-    std::vector<std::string> getPage() {
-        auto vec = MoreIconsAPI::vectorForType(m_iconType);
+    std::vector<IconInfo> getPage() {
         auto customPage = m_fields->m_pages[m_iconType] - (GameManager::get()->countForType(m_iconType) + 35) / 36;
-        if (vec.size() <= customPage * 36) return {};
-        if (customPage < 0) return {};
-        return std::vector<std::string>(vec.begin() + customPage * 36, vec.begin() + std::min((int)vec.size(), (customPage + 1) * 36));
+        if (MoreIconsAPI::getCount(m_iconType) <= customPage * 36 || customPage < 0 || !MoreIconsAPI::ICON_INDICES.contains(m_iconType)) return {};
+
+        auto& [start, end] = MoreIconsAPI::ICON_INDICES[m_iconType];
+        return {
+            MoreIconsAPI::ICONS.begin() + start + customPage * 36,
+            MoreIconsAPI::ICONS.begin() + std::min(end, start + (customPage + 1) * 36)
+        };
     }
 
     void setupCustomPage(int page) {
+        m_cursor1->setOpacity(255);
+
         if (m_iconType == IconType::Special) return setupCustomSpecialPage(page);
 
         auto f = m_fields.self();
@@ -277,42 +298,44 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         }
 
         auto gameManager = GameManager::get();
-        if (MoreIconsAPI::countForType(m_iconType) <= 0 || page * 36 < gameManager->countForType(m_iconType)) return createNavMenu();
+        if (MoreIconsAPI::getCount(m_iconType) <= 0 || page * 36 < gameManager->countForType(m_iconType)) return createNavMenu();
 
         m_iconSelection->setVisible(false);
 
         f->m_pages[m_iconType] = wrapPage(m_iconType, page);
         createNavMenu();
 
-        auto spriteFrameCache = CCSpriteFrameCache::get();
+        auto sfc = CCSpriteFrameCache::get();
+        auto offFrame = sfc->spriteFrameByName("gj_navDotBtn_off_001.png");
         for (auto navDot : CCArrayExt<CCMenuItemSpriteExtra*>(m_navDotMenu->getChildren())) {
-            static_cast<CCSprite*>(navDot->getNormalImage())->setDisplayFrame(spriteFrameCache->spriteFrameByName("gj_navDotBtn_off_001.png"));
+            static_cast<CCSprite*>(navDot->getNormalImage())->setDisplayFrame(offFrame);
         }
 
         auto unlockType = gameManager->iconTypeToUnlockType(m_iconType);
-        auto playerSquare = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
+        auto playerSquare = sfc->spriteFrameByName("playerSquare_001.png")->getOriginalSize();
         auto objs = CCArray::create();
         CCMenuItemSpriteExtra* current = nullptr;
         int i = 1;
         auto hasAnimProf = Loader::get()->isModLoaded("thesillydoggo.animatedprofiles");
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
-        for (auto name : getPage()) {
+        auto active = MoreIconsClass::activeIcon(m_iconType, dual);
+        for (auto& info : getPage()) {
             auto itemIcon = GJItemIcon::createBrowserItem(unlockType, 1);
             itemIcon->setScale(GJItemIcon::scaleForType(unlockType));
             auto simplePlayer = static_cast<SimplePlayer*>(itemIcon->m_player);
-            MoreIconsAPI::updateSimplePlayer(simplePlayer, name, m_iconType);
+            MoreIconsAPI::updateSimplePlayer(simplePlayer, info.name, m_iconType);
             if (hasAnimProf) {
                 if (auto robotSprite = simplePlayer->m_robotSprite) robotSprite->runAnimation("idle01");
                 if (auto spiderSprite = simplePlayer->m_spiderSprite) spiderSprite->runAnimation("idle01");
             }
             auto iconButton = CCMenuItemSpriteExtra::create(itemIcon, this, menu_selector(GJGarageLayer::onSelect));
-            iconButton->setUserObject("name"_spr, CCString::create(name));
-            iconButton->setContentSize(playerSquare->getContentSize());
-            itemIcon->setPosition(iconButton->getContentSize() / 2);
+            iconButton->setUserObject("name"_spr, CCString::create(info.name));
+            iconButton->setContentSize(playerSquare);
+            itemIcon->setPosition(playerSquare / 2);
             iconButton->setTag(i++);
             objs->addObject(iconButton);
-            if (name == MoreIconsAPI::activeForType(m_iconType, dual)) current = iconButton;
+            if (info.name == active) current = iconButton;
         }
 
         f->m_pageBar = ListButtonBar::create(objs, CCDirector::get()->getWinSize() / 2 - CCPoint { 0.0f, 65.0f }, 12, 3, 5.0f, 5.0f, 25.0f, 220.0f, 1);
@@ -324,7 +347,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         if (current) m_cursor1->setPosition(current->getParent()->convertToWorldSpace(current->getPosition()));
     }
 
-    void onCustomSelect(CCMenuItemSpriteExtra* sender) {
+    void onCustomSelect(CCNode* sender) {
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
         std::string name = static_cast<CCString*>(sender->getUserObject("name"_spr))->m_sString;
@@ -336,13 +359,12 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         MoreIconsAPI::updateSimplePlayer(player, name, m_iconType);
         player->setScale(m_iconType == IconType::Jetpack ? 1.5f : 1.6f);
         auto selectedIconType = dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType;
-        if (MoreIconsAPI::setIcon(name, m_iconType, dual) == name && selectedIconType == m_iconType) {
-            auto found = MoreIconsAPI::infoForIcon(name, m_iconType);
-            if (!found.has_value()) return;
+        if (MoreIconsClass::setIcon(name, m_iconType, dual) == name && selectedIconType == m_iconType) {
+            auto info = MoreIconsAPI::getIcon(name, m_iconType);
+            if (!info) return;
 
-            auto& iconInfo = found.value();
             auto iconID = 1;
-            if (!iconInfo.packID.empty()) switch (m_iconType) {
+            if (!info->packID.empty()) switch (m_iconType) {
                 case IconType::Cube: iconID = 128; break;
                 case IconType::Ship: iconID = 44; break;
                 case IconType::Ball: iconID = 113; break;
@@ -357,7 +379,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             auto unlockType = GameManager::get()->iconTypeToUnlockType(m_iconType);
             auto popup = ItemInfoPopup::create(iconID, unlockType);
             if (auto nameLabel = static_cast<CCLabelBMFont*>(popup->m_mainLayer->getChildByID("name-label")))
-                nameLabel->setString(name.substr(name.find_first_of(':') + 1).c_str());
+                nameLabel->setString(name.substr(name.find(':') + 1).c_str());
             if (auto achLabel = static_cast<CCLabelBMFont*>(popup->m_mainLayer->getChildByID("achievement-label"))) achLabel->setString("Custom");
             if (auto popupIcon = static_cast<GJItemIcon*>(popup->m_mainLayer->getChildByIDRecursive("item-icon")))
                 MoreIconsAPI::updateSimplePlayer(static_cast<SimplePlayer*>(popupIcon->m_player), name, m_iconType);
@@ -366,10 +388,10 @@ class $modify(MIGarageLayer, GJGarageLayer) {
                     GEODE_ANDROID(std::string)(ItemInfoPopup::nameForUnlockType(1, unlockType))));
             if (auto completionMenu = popup->m_mainLayer->getChildByID("completionMenu")) completionMenu->setVisible(false);
             if (auto infoButton = popup->m_buttonMenu->getChildByID("infoButton")) infoButton->setVisible(false);
-            if (!iconInfo.packID.empty()) {
+            if (!info->packID.empty()) {
                 if (auto creditButton = static_cast<CCMenuItemSpriteExtra*>(popup->m_buttonMenu->getChildByID("author-button"))) {
                     auto creditText = static_cast<CCLabelBMFont*>(creditButton->getNormalImage());
-                    creditText->setString(iconInfo.packName.c_str());
+                    creditText->setString(info->packName.c_str());
                     creditText->limitLabelWidth(100.0f, 0.5f, 0.0f);
                     creditButton->setEnabled(false);
                     creditButton->updateSprite();
@@ -395,16 +417,16 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             f->m_pageBar = nullptr;
         }
 
-        if (MoreIconsAPI::countForType(m_iconType) <= 0 || page * 36 < GameManager::get()->countForType(m_iconType)) return createNavMenu();
+        if (MoreIconsAPI::getCount(m_iconType) <= 0 || page * 36 < GameManager::get()->countForType(m_iconType)) return createNavMenu();
 
         m_iconSelection->setVisible(false);
 
         f->m_pages[m_iconType] = wrapPage(m_iconType, page);
         createNavMenu();
 
-        auto spriteFrameCache = CCSpriteFrameCache::get();
+        auto offFrame = CCSpriteFrameCache::get()->spriteFrameByName("gj_navDotBtn_off_001.png");
         for (auto navDot : CCArrayExt<CCMenuItemSpriteExtra*>(m_navDotMenu->getChildren())) {
-            static_cast<CCSprite*>(navDot->getNormalImage())->setDisplayFrame(spriteFrameCache->spriteFrameByName("gj_navDotBtn_off_001.png"));
+            static_cast<CCSprite*>(navDot->getNormalImage())->setDisplayFrame(offFrame);
         }
 
         auto objs = CCArray::create();
@@ -412,22 +434,21 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
         int i = 1;
-        for (auto name : getPage()) {
+        auto active = MoreIconsClass::activeIcon(m_iconType, dual);
+        for (auto& info : getPage()) {
             auto square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
             square->setColor({ 150, 150, 150 });
-            auto found = MoreIconsAPI::infoForIcon(name, m_iconType);
-            auto texture = found.has_value() ? CCTextureCache::get()->addImage(found.value().textures[0].c_str(), true) : nullptr;
-            auto streak = CCSprite::createWithTexture(texture);
+            auto streak = CCSprite::createWithTexture(CCTextureCache::get()->addImage(info.textures[0].c_str(), true));
             limitNodeHeight(streak, 27.0f, 999.0f, 0.001f);
             streak->setRotation(-90.0f);
             square->addChild(streak);
             streak->setPosition(square->getContentSize() / 2);
             square->setScale(0.8f);
             auto iconButton = CCMenuItemSpriteExtra::create(square, this, menu_selector(GJGarageLayer::onSelect));
-            iconButton->setUserObject("name"_spr, CCString::create(name));
+            iconButton->setUserObject("name"_spr, CCString::create(info.name));
             iconButton->setTag(i++);
             objs->addObject(iconButton);
-            if (name == MoreIconsAPI::activeForType(m_iconType, dual)) current = iconButton;
+            if (info.name == active) current = iconButton;
         }
 
         f->m_pageBar = ListButtonBar::create(objs, CCDirector::get()->getWinSize() / 2 - CCPoint { 0.0f, 65.0f }, 12, 3, 5.0f, 5.0f, 25.0f, 220.0f, 1);
@@ -440,7 +461,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         m_cursor2->setVisible(false);
     }
 
-    void onCustomSpecialSelect(CCMenuItemSpriteExtra* sender) {
+    void onCustomSpecialSelect(CCNode* sender) {
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
         std::string name = static_cast<CCString*>(sender->getUserObject("name"_spr))->m_sString;
@@ -448,21 +469,19 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         m_cursor1->setPosition(sender->getParent()->convertToWorldSpace(sender->getPosition()));
         m_cursor1->setVisible(true);
         auto selectedIconType = dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType;
-        if (MoreIconsAPI::setIcon(name, m_iconType, dual) == name && selectedIconType == m_iconType) {
-            auto found = ranges::indexOf(MoreIconsAPI::ICONS, [this, name](const IconInfo& info) { return info.name == name && info.type == m_iconType; });
-            if (!found.has_value()) return;
+        if (MoreIconsClass::setIcon(name, m_iconType, dual) == name && selectedIconType == m_iconType) {
+            auto info = MoreIconsAPI::getIcon(name, m_iconType);
+            if (!info) return;
 
-            auto index = found.value();
-            auto& trailInfo = MoreIconsAPI::ICONS[index];
-            auto popup = ItemInfoPopup::create(!trailInfo.packID.empty() ? 128 : 1, UnlockType::Cube);
+            auto popup = ItemInfoPopup::create(!info->packID.empty() ? 128 : 1, UnlockType::Cube);
             if (auto nameLabel = static_cast<CCLabelBMFont*>(popup->m_mainLayer->getChildByID("name-label")))
-                nameLabel->setString(name.substr(name.find_first_of(':') + 1).c_str());
+                nameLabel->setString(name.substr(name.find(':') + 1).c_str());
             if (auto achLabel = static_cast<CCLabelBMFont*>(popup->m_mainLayer->getChildByID("achievement-label"))) achLabel->setString("Custom");
             if (auto popupIcon = static_cast<GJItemIcon*>(popup->m_mainLayer->getChildByIDRecursive("item-icon"))) {
                 popupIcon->setVisible(false);
                 auto square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
                 square->setColor({ 150, 150, 150 });
-                auto streak = CCSprite::createWithTexture(CCTextureCache::get()->textureForKey(trailInfo.textures[0].c_str()));
+                auto streak = CCSprite::createWithTexture(CCTextureCache::get()->textureForKey(info->textures[0].c_str()));
                 limitNodeHeight(streak, 27.0f, 999.0f, 0.001f);
                 streak->setRotation(-90.0f);
                 square->addChild(streak);
@@ -477,10 +496,10 @@ class $modify(MIGarageLayer, GJGarageLayer) {
                     GEODE_ANDROID(std::string)(ItemInfoPopup::nameForUnlockType(1, UnlockType::Streak))));
             if (auto completionMenu = popup->m_mainLayer->getChildByID("completionMenu")) completionMenu->setVisible(false);
             if (auto infoButton = popup->m_buttonMenu->getChildByID("infoButton")) infoButton->setVisible(false);
-            if (!trailInfo.packID.empty()) {
+            if (!info->packID.empty()) {
                 if (auto creditButton = static_cast<CCMenuItemSpriteExtra*>(popup->m_buttonMenu->getChildByID("author-button"))) {
                     auto creditText = static_cast<CCLabelBMFont*>(creditButton->getNormalImage());
-                    creditText->setString(trailInfo.packName.c_str());
+                    creditText->setString(info->packName.c_str());
                     creditText->limitLabelWidth(100.0f, 0.5f, 0.0f);
                     creditButton->setEnabled(false);
                     creditButton->updateSprite();
@@ -494,31 +513,13 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             auto glowButton = popup->m_buttonMenu->getChildByID("gdutilsdevs.gdutils/glow-button");
             if (glowButton) glowButton->setVisible(false);
 
-            #if GEODE_COMP_GD_VERSION == 22074 // Keep this until the next Geometry Dash update
-            using namespace std::string_view_literals;
-
-            if ((!p1Button || !p2Button || !glowButton) && Loader::get()->isModLoaded("gdutilsdevs.gdutils")) {
-                for (auto child : CCArrayExt<CCNode*>(popup->m_buttonMenu->getChildren())) {
-                    if (auto button = typeinfo_cast<CCMenuItemSpriteExtra*>(child)) {
-                        if (auto normalImage = typeinfo_cast<CCSprite*>(button->getNormalImage())) {
-                            if (auto imageLabel = normalImage->getChildByType<CCLabelBMFont>(0)) {
-                                if (imageLabel->getString() == "P1"sv ||
-                                    imageLabel->getString() == "P2"sv ||
-                                    imageLabel->getString() == "G"sv) button->setVisible(false);
-                            }
-                        }
-                    }
-                }
-            }
-            #endif
-
-            if (trailInfo.trailID <= 0) {
+            if (info->trailID <= 0) {
                 auto winSize = CCDirector::get()->getWinSize();
-                auto blendToggler = CCMenuItemExt::createTogglerWithStandardSprites(0.5f, [index](CCMenuItemToggler* sender) {
-                    MoreIconsAPI::ICONS[index].blend = !sender->isToggled();
+                auto blendToggler = CCMenuItemExt::createTogglerWithStandardSprites(0.5f, [info](CCMenuItemToggler* sender) {
+                    info->blend = !sender->isToggled();
                 });
                 blendToggler->setPosition(popup->m_buttonMenu->convertToNodeSpace(winSize / 2 - CCPoint { 123.0f, 78.0f }));
-                blendToggler->toggle(trailInfo.blend);
+                blendToggler->toggle(info->blend);
                 blendToggler->setID("blend-toggler"_spr);
                 popup->m_buttonMenu->addChild(blendToggler);
                 auto blendLabel = CCLabelBMFont::create("Blend", "bigFont.fnt");
@@ -527,11 +528,11 @@ class $modify(MIGarageLayer, GJGarageLayer) {
                 blendLabel->setScale(0.3f);
                 blendLabel->setID("blend-label"_spr);
                 popup->m_mainLayer->addChild(blendLabel);
-                auto tintToggler = CCMenuItemExt::createTogglerWithStandardSprites(0.5f, [index](CCMenuItemToggler* sender) {
-                    MoreIconsAPI::ICONS[index].tint = !sender->isToggled();
+                auto tintToggler = CCMenuItemExt::createTogglerWithStandardSprites(0.5f, [info](CCMenuItemToggler* sender) {
+                    info->tint = !sender->isToggled();
                 });
                 tintToggler->setPosition(popup->m_buttonMenu->convertToNodeSpace(winSize / 2 - CCPoint { 123.0f, 98.0f }));
-                tintToggler->toggle(trailInfo.tint);
+                tintToggler->toggle(info->tint);
                 tintToggler->setID("tint-toggler"_spr);
                 popup->m_buttonMenu->addChild(tintToggler);
                 auto tintLabel = CCLabelBMFont::create("Tint", "bigFont.fnt");

@@ -14,32 +14,35 @@ class $modify(MIMenuGameLayer, MenuGameLayer) {
     void resetPlayer() {
         MenuGameLayer::resetPlayer();
 
-        auto iconType = MoreIconsAPI::getIconType(m_playerObject);
+        auto iconType = MoreIconsClass::getIconType(m_playerObject);
         auto gameManager = GameManager::get();
         auto iconCount = gameManager->countForType(iconType);
-        auto cubeCount = iconType == IconType::Cube ? iconCount : gameManager->countForType(IconType::Cube);
-        auto vec = MoreIconsAPI::vectorForType(iconType);
-        auto cubes = iconType == IconType::Cube ? vec : MoreIconsAPI::vectorForType(IconType::Cube);
+        auto hasCube = m_playerObject->m_isShip || m_playerObject->m_isBird;
+        auto cubeCount = hasCube ? gameManager->countForType(IconType::Cube) : 0;
 
-        auto randomIcon = (int)roundf((rand() / (float)RAND_MAX) * (iconCount + vec.size() - 1)) + 1;
-        auto randomCube = m_playerObject->m_isShip || m_playerObject->m_isBird ? (int)roundf((rand() / (float)RAND_MAX) * (cubeCount + cubes.size() - 1)) + 1 : 0;
+        auto randomIcon = (int)roundf((rand() / (float)RAND_MAX) * (iconCount + MoreIconsAPI::getCount(iconType) - 1)) + 1;
+        auto randomCube = hasCube ? (int)roundf((rand() / (float)RAND_MAX) * (cubeCount + MoreIconsAPI::getCount(IconType::Cube) - 1)) + 1 : 0;
 
         if (randomIcon > iconCount) {
-            MoreIconsAPI::updatePlayerObject(m_playerObject, vec[randomIcon - iconCount - 1], iconType);
-            if (m_playerObject->m_isShip || m_playerObject->m_isBird) {
-                if (randomCube > cubeCount) MoreIconsAPI::updatePlayerObject(m_playerObject, cubes[randomCube - cubeCount - 1], IconType::Cube);
+            MoreIconsAPI::updatePlayerObject(m_playerObject,
+                MoreIconsAPI::ICONS[MoreIconsAPI::ICON_INDICES[iconType].first + randomIcon - iconCount - 1].name, iconType);
+            if (hasCube) {
+                if (randomCube > cubeCount)
+                    MoreIconsAPI::updatePlayerObject(m_playerObject, MoreIconsAPI::ICONS[randomCube - cubeCount - 1].name, IconType::Cube);
                 else m_playerObject->updatePlayerFrame(randomCube);
             }
         }
         else if (m_playerObject->m_isShip) {
             m_playerObject->updatePlayerShipFrame(randomIcon);
-            if (randomCube > cubeCount) MoreIconsAPI::updatePlayerObject(m_playerObject, cubes[randomCube - cubeCount - 1], IconType::Cube);
+            if (randomCube > cubeCount)
+                MoreIconsAPI::updatePlayerObject(m_playerObject, MoreIconsAPI::ICONS[randomCube - cubeCount - 1].name, IconType::Cube);
             else m_playerObject->updatePlayerFrame(randomCube);
         }
         else if (m_playerObject->m_isBall) m_playerObject->updatePlayerRollFrame(randomIcon);
         else if (m_playerObject->m_isBird) {
             m_playerObject->updatePlayerBirdFrame(randomIcon);
-            if (randomCube > cubeCount) MoreIconsAPI::updatePlayerObject(m_playerObject, cubes[randomCube - cubeCount - 1], IconType::Cube);
+            if (randomCube > cubeCount)
+                MoreIconsAPI::updatePlayerObject(m_playerObject, MoreIconsAPI::ICONS[randomCube - cubeCount - 1].name, IconType::Cube);
             else m_playerObject->updatePlayerFrame(randomCube);
         }
         else if (m_playerObject->m_isDart) m_playerObject->updatePlayerDartFrame(randomIcon);

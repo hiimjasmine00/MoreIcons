@@ -1,4 +1,5 @@
-#include "api/MoreIconsAPI.hpp"
+#include <filesystem>
+#include <Geode/Enums.hpp>
 #include <Geode/loader/Types.hpp>
 
 struct IconPack {

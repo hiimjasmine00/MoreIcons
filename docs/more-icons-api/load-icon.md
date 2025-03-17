@@ -1,6 +1,6 @@
 ---
 title: Loading a Custom Icon
-order: 5
+order: 6
 ---
 
 # Loading a Custom Icon

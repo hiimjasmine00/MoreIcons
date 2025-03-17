@@ -9,7 +9,12 @@ order: 3
 #include <hiimjustin000.more_icons/include/MoreIcons.hpp>
 
 // List all loaded icons
-for (auto icon : MoreIcons::vectorForType(IconType::Cube)) {
+for (std::vector<MoreIcons::IconInfo*> icon : MoreIcons::getIcons()) {
+    // Do something with the icon
+}
+
+// List all loaded icons of a specific type
+for (std::vector<MoreIcons::IconInfo*> icon : MoreIcons::getIcons(IconType::Cube)) {
     // Do something with the icon
 }
 ```

@@ -5,14 +5,16 @@ const files = fs.readdirSync(__dirname, { recursive: true }).filter(x => x.endsW
 for (const file of files) {
     const content = fs.readFileSync(file, "utf8");
     fs.writeFileSync(file, content
-        .replace("&LTMoreIcons.hpp>", "&LThiimjustin000.more_icons/include/MoreIcons.hpp>")
+        .replace(/&LTMoreIcons\.hpp>/g, "&LThiimjustin000.more_icons/include/MoreIcons.hpp>")
         .replace(/(\/classes\/[^'"]+)/g, "https://docs.geode-sdk.org$1")
-        .replace("https://docs.geode-sdk.org/classes/MoreIcons", "/classes/MoreIcons")
-        .replace(/\/en.cppreference.com/g, "https://en.cppreference.com")
+        .replace(/https:\/\/docs\.geode-sdk\.org\/classes\/IconInfo/g, "/classes/IconInfo")
+        .replace(/https:\/\/docs\.geode-sdk\.org\/classes\/MoreIcons/g, "/classes/MoreIcons")
+        .replace(/<span class="struct name">IconInfo/g, "<span class=\"namespace name\">MoreIcons</span><span class=\"scope\">::</span><span class=\"struct name\">IconInfo")
+        .replace(/\/en\.cppreference\.com/g, "https://en.cppreference.com")
         .replace(/\/w\/cpp\/vector\/vector/g, "/w/cpp/container/vector")
         .replace(/\/w\/cpp\/xstring\/string/g, "/w/cpp/string/basic_string")
-        .replace(/\/w\/cpp\/string.h\/string/g, "/w/cpp/string/basic_string")
+        .replace(/\/w\/cpp\/string\.h\/string/g, "/w/cpp/string/basic_string")
         .replace(/\/w\/cpp\/xstring\/string_view/g, "/w/cpp/string/basic_string_view")
-        .replace(/\/w\/cpp\/__msvc_string_view.hpp\/string_view/g, "/w/cpp/string/basic_string_view")
-        .replace(/\/w\/cpp\/string_view.h\/string_view/g, "/w/cpp/string/basic_string_view"));
+        .replace(/\/w\/cpp\/__msvc_string_view\.hpp\/string_view/g, "/w/cpp/string/basic_string_view")
+        .replace(/\/w\/cpp\/string_view\.h\/string_view/g, "/w/cpp/string/basic_string_view"));
 }

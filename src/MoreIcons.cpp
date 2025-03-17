@@ -1,4 +1,5 @@
 #include "MoreIcons.hpp"
+#include "api/MoreIconsAPI.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>
@@ -9,10 +10,11 @@
 using namespace geode::prelude;
 
 $on_mod(Loaded) {
-    MoreIcons::DEBUG_LOGS = Mod::get()->getSettingValue<bool>("debug-logs");
-    MoreIcons::TRADITIONAL_PACKS = Mod::get()->getSettingValue<bool>("traditional-packs");
+    auto mod = Mod::get();
+    MoreIcons::DEBUG_LOGS = mod->getSettingValue<bool>("debug-logs");
+    MoreIcons::TRADITIONAL_PACKS = mod->getSettingValue<bool>("traditional-packs");
     #ifdef GEODE_IS_ANDROID
-    auto tempDir = Mod::get()->getTempDir();
+    auto tempDir = mod->getTempDir();
     if (std::filesystem::exists(tempDir / "assets")) {
         std::error_code cleanCode;
         std::filesystem::remove_all(tempDir / "assets", cleanCode);
@@ -84,8 +86,8 @@ std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuff
 }
 
 bool naturalSorter(const std::string& aStr, const std::string& bStr) {
-    auto a = aStr.substr(aStr.find_first_of(':') + 1);
-    auto b = bStr.substr(bStr.find_first_of(':') + 1);
+    auto a = aStr.substr(aStr.find(':') + 1);
+    auto b = bStr.substr(bStr.find(':') + 1);
     auto aIt = a.begin();
     auto bIt = b.begin();
 
@@ -113,23 +115,26 @@ bool naturalSorter(const std::string& aStr, const std::string& bStr) {
     return a.size() < b.size();
 }
 
-void naturalSort(IconType type) {
-    auto packs = ranges::reduce<std::map<std::string, std::vector<IconInfo>>>(MoreIconsAPI::ICONS,
-        [type](std::map<std::string, std::vector<IconInfo>>& acc, const IconInfo& info) {
-            if (info.type != type) return acc;
-            acc[info.name.substr(0, string::contains(info.name, ':') ? info.name.find_first_of(':') : 0)].push_back(info);
-            return acc;
-        });
+struct NaturalSorter {
+    bool operator()(const std::string& a, const std::string& b) const {
+        return naturalSorter(a, b);
+    }
+};
 
-    auto packIDs = ranges::map<std::vector<std::string>>(packs, [](const std::pair<std::string, std::vector<IconInfo>>& pair) {
-        return pair.first;
+void naturalSort(IconType type) {
+    using PackMap = std::map<std::string, std::vector<IconInfo>, NaturalSorter>;
+    auto packs = ranges::reduce<PackMap>(MoreIconsAPI::ICONS, [type](PackMap& acc, const IconInfo& info) {
+        if (info.type != type) return acc;
+        auto index = info.name.find(':');
+        acc[index != std::string::npos ? info.name.substr(0, index) : ""].push_back(info);
+        return acc;
     });
-    std::ranges::sort(packIDs, naturalSorter);
 
     ranges::remove(MoreIconsAPI::ICONS, [type](const IconInfo& icon) { return icon.type == type; });
-    ranges::push(MoreIconsAPI::ICONS, ranges::reduce<std::vector<IconInfo>>(packIDs, [&packs](std::vector<IconInfo>& acc, const std::string& packID) {
-        std::ranges::sort(packs[packID], [](const IconInfo& a, const IconInfo& b) { return naturalSorter(a.name, b.name); });
-        return ranges::push(acc, packs[packID]);
+    ranges::push(MoreIconsAPI::ICONS, ranges::reduce<std::vector<IconInfo>>(packs, [](std::vector<IconInfo>& acc, const PackMap::value_type& pack) {
+        auto vec = pack.second;
+        std::ranges::sort(vec, [](const IconInfo& a, const IconInfo& b) { return naturalSorter(a.name, b.name); });
+        return ranges::push(acc, vec);
     }));
 }
 
@@ -142,7 +147,6 @@ void printLog(Severity severity, fmt::format_string<Args...> message, Args&&... 
     log::vlogImpl(severity, Mod::get(), message, fmt::make_format_args(args...));
     MoreIcons::LOGS.push_back({ fmt::vformat(message, fmt::make_format_args(args...)), severity });
     if (MoreIcons::HIGHEST_SEVERITY < severity) MoreIcons::HIGHEST_SEVERITY = severity;
-
 }
 
 template <typename... Args>
@@ -156,8 +160,7 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
 
     safeDebug("Pre-loading folder icon {} from {}", name, pack.name);
 
-    if (std::ranges::any_of(MoreIconsAPI::ICONS, [name, type](const IconInfo& icon) { return icon.name == name && icon.type == type; }) > 0)
-        return printLog(Severity::Warning, "{}: Duplicate icon name", path);
+    if (MoreIconsAPI::hasIcon(name, type)) return printLog(Severity::Warning, "{}: Duplicate icon name", path);
 
     std::vector<std::string> textures;
     std::vector<std::string> frameNames;
@@ -242,8 +245,7 @@ void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconT
 
     safeDebug("Pre-loading file icon {} from {}", name, pack.name);
 
-    if (std::ranges::any_of(MoreIconsAPI::ICONS, [name, type](const IconInfo& icon) { return icon.name == name && icon.type == type; }) > 0)
-        return printLog(Severity::Warning, "{}: Duplicate icon name", path);
+    if (MoreIconsAPI::hasIcon(name, type)) return printLog(Severity::Warning, "{}: Duplicate icon name", path);
 
     auto fullTexturePath = replaceEnd(path.string(), 6, ".png");
     if (!std::filesystem::exists(fullTexturePath)) return printLog(Severity::Error, "{}: Texture file {}.png not found", path, path.stem());
@@ -315,8 +317,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     safeDebug("Pre-loading trail {} from {}", name, pack.name);
 
-    if (std::ranges::any_of(MoreIconsAPI::ICONS, [name](const IconInfo& icon) { return icon.name == name && icon.type == IconType::Special; }) > 0)
-        return printLog(Severity::Warning, "{}: Duplicate trail name", path);
+    if (MoreIconsAPI::hasIcon(name, IconType::Special)) return printLog(Severity::Warning, "{}: Duplicate trail name", path);
 
     auto json = file::readJson(replaceEnd(path.string(), 4, ".json")).unwrapOr(matjson::makeObject({
         { "blend", false },
@@ -344,8 +345,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
     auto name = fmt::format("{}:{}", pack.id, pathStem);
 
     safeDebug("Pre-loading vanilla trail {} from {}", name, pack.name);
-    auto trailID = numFromString<int>(pathStem.substr(pathStem.find_first_of('_') + 1,
-        pathStem.find_last_of('_') - pathStem.find_first_of('_') - 1)).unwrapOr(0);
+    auto trailID = numFromString<int>(pathStem.substr(pathStem.find('_') + 1, pathStem.rfind('_') - pathStem.find('_') - 1)).unwrapOr(0);
     if (trailID <= 0) return;
 
     ranges::remove(MoreIconsAPI::ICONS, [name](const IconInfo& icon) { return icon.name == name && icon.type == IconType::Special; });
@@ -367,6 +367,8 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
 }
 
 void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view suffix, IconType type) {
+    MoreIconsAPI::ICON_INDICES[type].first = MoreIconsAPI::ICONS.size();
+
     for (int i = 0; i < packs.size(); i++) {
         auto& pack = packs[i];
 
@@ -425,9 +427,13 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
     }
 
     naturalSort(type);
+
+    MoreIconsAPI::ICON_INDICES[type].second = MoreIconsAPI::ICONS.size();
 }
 
 void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
+    MoreIconsAPI::ICON_INDICES[IconType::Special].first = MoreIconsAPI::ICONS.size();
+
     for (int i = 0; i < packs.size(); i++) {
         auto& pack = packs[i];
 
@@ -479,6 +485,8 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
     }
 
     naturalSort(IconType::Special);
+
+    MoreIconsAPI::ICON_INDICES[IconType::Special].second = MoreIconsAPI::ICONS.size();
 }
 
 void MoreIcons::saveTrails() {
@@ -494,6 +502,11 @@ void MoreIcons::saveTrails() {
 }
 
 void MoreIcons::showInfoPopup(bool folderButton) {
+    auto counts = ranges::reduce<std::map<IconType, int>>(MoreIconsAPI::ICONS, [](std::map<IconType, int>& acc, const IconInfo& info) {
+        acc[info.type]++;
+        return acc;
+    });
+
     createQuickPopup(
         "More Icons",
         fmt::format(std::locale(""),
@@ -507,16 +520,16 @@ void MoreIcons::showInfoPopup(bool folderButton) {
             "<cy>Swings</c>: {:L}\n"
             "<cd>Jetpacks</c>: {:L}\n"
             "<cb>Trails</c>: {:L}",
-            MoreIconsAPI::countForType(IconType::Cube),
-            MoreIconsAPI::countForType(IconType::Ship),
-            MoreIconsAPI::countForType(IconType::Ball),
-            MoreIconsAPI::countForType(IconType::Ufo),
-            MoreIconsAPI::countForType(IconType::Wave),
-            MoreIconsAPI::countForType(IconType::Robot),
-            MoreIconsAPI::countForType(IconType::Spider),
-            MoreIconsAPI::countForType(IconType::Swing),
-            MoreIconsAPI::countForType(IconType::Jetpack),
-            MoreIconsAPI::countForType(IconType::Special)
+            counts[IconType::Cube],
+            counts[IconType::Ship],
+            counts[IconType::Ball],
+            counts[IconType::Ufo],
+            counts[IconType::Wave],
+            counts[IconType::Robot],
+            counts[IconType::Spider],
+            counts[IconType::Swing],
+            counts[IconType::Jetpack],
+            counts[IconType::Special]
         ),
         "OK",
         folderButton ? "Folder" : nullptr,

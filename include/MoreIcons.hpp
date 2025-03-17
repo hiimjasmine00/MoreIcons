@@ -10,22 +10,64 @@
 #define MORE_ICONS_ROBOT_SPRITE(...) MoreIcons::RobotSpriteEvent(MORE_ICONS_EXPAND("robot-sprite"), __VA_ARGS__).post()
 #define MORE_ICONS_PLAYER_OBJECT(...) MoreIcons::PlayerObjectEvent(MORE_ICONS_EXPAND("player-object"), __VA_ARGS__).post()
 #define MORE_ICONS_ALL_ICONS(...) MoreIcons::AllIconsEvent(MORE_ICONS_EXPAND("all-icons"), __VA_ARGS__).post()
+#define MORE_ICONS_GET_ICONS(...) MoreIcons::GetIconsEvent(MORE_ICONS_EXPAND("get-icons"), __VA_ARGS__).post()
+#define MORE_ICONS_GET_ICON(...) MoreIcons::GetIconEvent(MORE_ICONS_EXPAND("get-icon"), __VA_ARGS__).post()
 #define MORE_ICONS_LOAD_ICON(...) MoreIcons::LoadIconEvent(MORE_ICONS_EXPAND("load-icon"), __VA_ARGS__).post()
 #define MORE_ICONS_UNLOAD_ICON(...) MoreIcons::UnloadIconEvent(MORE_ICONS_EXPAND("unload-icon"), __VA_ARGS__).post()
+
+#ifdef MORE_ICONS_BUILDING_DOCS
+/**
+ * A struct that contains information about a custom icon.
+ */
+struct IconInfo {
+    std::string name;
+    std::vector<std::string> textures;
+    std::vector<std::string> frameNames;
+    std::string sheetName;
+    std::string packName;
+    std::string packID;
+    IconType type;
+    int trailID;
+    bool blend;
+    bool tint;
+};
+#endif
 
 /**
  * A class that provides an API for interacting with the More Icons mod.
  */
 class MoreIcons {
 public:
+    #ifndef MORE_ICONS_BUILDING_DOCS
+    /**
+     * A struct that contains information about a custom icon.
+     */
+    struct IconInfo {
+        std::string name;
+        std::vector<std::string> textures;
+        std::vector<std::string> frameNames;
+        std::string sheetName;
+        std::string packName;
+        std::string packID;
+        IconType type;
+        int trailID;
+        bool blend;
+        bool tint;
+    };
+    #endif
+
     using SimplePlayerEvent = geode::DispatchEvent<SimplePlayer*, std::string, IconType>;
     using SimplePlayerFilter = geode::DispatchFilter<SimplePlayer*, std::string, IconType>;
     using RobotSpriteEvent = geode::DispatchEvent<GJRobotSprite*, std::string, IconType>;
     using RobotSpriteFilter = geode::DispatchFilter<GJRobotSprite*, std::string, IconType>;
     using PlayerObjectEvent = geode::DispatchEvent<PlayerObject*, std::string, IconType>;
     using PlayerObjectFilter = geode::DispatchFilter<PlayerObject*, std::string, IconType>;
-    using AllIconsEvent = geode::DispatchEvent<std::vector<std::string>*, IconType>;
-    using AllIconsFilter = geode::DispatchFilter<std::vector<std::string>*, IconType>;
+    using AllIconsEvent = geode::DispatchEvent<std::vector<IconInfo*>*>;
+    using AllIconsFilter = geode::DispatchFilter<std::vector<IconInfo*>*>;
+    using GetIconsEvent = geode::DispatchEvent<std::vector<IconInfo*>*, IconType>;
+    using GetIconsFilter = geode::DispatchFilter<std::vector<IconInfo*>*, IconType>;
+    using GetIconEvent = geode::DispatchEvent<IconInfo*, std::string, IconType>;
+    using GetIconFilter = geode::DispatchFilter<IconInfo*, std::string, IconType>;
     using LoadIconEvent = geode::DispatchEvent<std::string, IconType>;
     using LoadIconFilter = geode::DispatchFilter<std::string, IconType>;
     using UnloadIconEvent = geode::DispatchEvent<std::string, IconType>;
@@ -77,7 +119,7 @@ public:
      */
     static void updateSimplePlayer(SimplePlayer* player, IconType type, bool dual = false) {
         if (!player || !loaded()) return;
-        MORE_ICONS_SIMPLE_PLAYER(player, activeForType(type, dual), type);
+        MORE_ICONS_SIMPLE_PLAYER(player, activeIcon(type, dual), type);
     }
 
     /**
@@ -98,7 +140,7 @@ public:
      */
     static void updateRobotSprite(GJRobotSprite* sprite, bool dual = false) {
         if (!sprite || !loaded()) return;
-        MORE_ICONS_ROBOT_SPRITE(sprite, activeForType(sprite->m_iconType, dual), sprite->m_iconType);
+        MORE_ICONS_ROBOT_SPRITE(sprite, activeIcon(sprite->m_iconType, dual), sprite->m_iconType);
     }
 
     /**
@@ -119,7 +161,7 @@ public:
      */
     static void updateRobotSprite(GJRobotSprite* sprite, IconType type, bool dual = false) {
         if (!sprite || !loaded()) return;
-        MORE_ICONS_ROBOT_SPRITE(sprite, activeForType(type, dual), type);
+        MORE_ICONS_ROBOT_SPRITE(sprite, activeIcon(type, dual), type);
     }
 
     /**
@@ -162,7 +204,7 @@ public:
     static void updatePlayerObject(PlayerObject* object, bool dual = false) {
         if (!object || !loaded()) return;
         auto type = getIconType(object);
-        MORE_ICONS_PLAYER_OBJECT(object, activeForType(type, dual), type);
+        MORE_ICONS_PLAYER_OBJECT(object, activeIcon(type, dual), type);
     }
 
     /**
@@ -183,7 +225,7 @@ public:
      */
     static void updatePlayerObject(PlayerObject* object, IconType type, bool dual = false) {
         if (!object || !loaded()) return;
-        MORE_ICONS_PLAYER_OBJECT(object, activeForType(type, dual), type);
+        MORE_ICONS_PLAYER_OBJECT(object, activeIcon(type, dual), type);
     }
 
     /**
@@ -198,15 +240,39 @@ public:
     }
 
     /**
+     * Returns a vector of all custom icons.
+     * @returns A vector of all custom icons.
+     */
+    static std::vector<IconInfo*> getIcons() {
+        std::vector<IconInfo*> vec;
+        if (!loaded()) return vec;
+        MORE_ICONS_ALL_ICONS(&vec);
+        return vec;
+    }
+
+    /**
      * Returns a vector of all icons for a specific type.
      * @param type The type of icon to get all icons for.
      * @returns A vector of all icons for the specified type.
      */
-    static std::vector<std::string> vectorForType(IconType type) {
-        std::vector<std::string> vec;
+    static std::vector<IconInfo*> getIcons(IconType type) {
+        std::vector<IconInfo*> vec;
         if (!loaded()) return vec;
-        MORE_ICONS_ALL_ICONS(&vec, type);
+        MORE_ICONS_GET_ICONS(&vec, type);
         return vec;
+    }
+
+    /**
+     * Returns the icon info for a specific icon.
+     * @param name The name of the icon to get the info for.
+     * @param type The type of icon to get the info for.
+     * @returns The icon info for the specified icon, or nullptr if the icon is not found.
+     */
+    static IconInfo* getIcon(const std::string& name, IconType type) {
+        IconInfo* info = nullptr;
+        if (!loaded()) return info;
+        MORE_ICONS_GET_ICON(info, name, type);
+        return info;
     }
 
     /**
@@ -215,7 +281,7 @@ public:
      * @param dual Whether or not to use the icon for the dual player.
      * @returns The save key for the given icon type, or an empty string if there is none.
      */
-    static std::string_view savedForType(IconType type, bool dual) {
+    static std::string_view saveKey(IconType type, bool dual) {
         auto isDual = geode::Loader::get()->isModLoaded("weebify.separate_dual_icons") && dual;
         switch (type) {
             case IconType::Cube: return isDual ? "icon-dual" : "icon";
@@ -238,9 +304,9 @@ public:
      * @param dual Whether or not to get the active icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
      * @returns The active icon for the specified type, or an empty string if the icon is not set.
      */
-    static std::string activeForType(IconType type, bool dual = false) {
+    static std::string activeIcon(IconType type, bool dual = false) {
         if (!loaded()) return "";
-        auto savedType = savedForType(type, dual);
+        auto savedType = saveKey(type, dual);
         return !savedType.empty() ? get()->getSavedValue<std::string>(savedType, "") : "";
     }
 
@@ -253,12 +319,12 @@ public:
      */
     static std::string setIcon(const std::string& icon, IconType type, bool dual = false) {
         if (!loaded()) return "";
-        auto savedType = savedForType(type, dual);
+        auto savedType = saveKey(type, dual);
         return !savedType.empty() ? get()->setSavedValue(savedType, icon) : "";
     }
 
     /**
-     * Return the custom icon name of a node. (cocos2d::CCMotionStreak, GJRobotSprite, PlayerObject, SimplePlayer)
+     * Return the custom icon name of a node. (cocos2d::CCMotionStreak, CCMenuItemSpriteExtra, GJRobotSprite, PlayerObject, SimplePlayer)
      * @param node The node to get the icon name of.
      * @returns The icon name of the specified node, or an empty string if the icon name is not set.
      */

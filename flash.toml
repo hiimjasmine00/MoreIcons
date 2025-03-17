@@ -15,9 +15,10 @@ include = [
     "*.hpp"
 ]
 
-[ignore]
+[include]
 patterns-name = [
-    "^[^M]|^.[^o]|^..[^r]|[^o]..$|[^n].$|[^s]$"
+    "IconInfo",
+    "MoreIcons"
 ]
 
 [cmake]
@@ -26,7 +27,8 @@ config-args = [
     "-DCMAKE_CXX_COMPILER=clang++",
     "-DCMAKE_C_COMPILER=clang",
     "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-    "-DGEODE_CODEGEN_CMAKE_ARGS=-DCMAKE_CXX_COMPILER=clang++;-DCMAKE_C_COMPILER=clang"
+    "-DGEODE_CODEGEN_CMAKE_ARGS=-DCMAKE_CXX_COMPILER=clang++;-DCMAKE_C_COMPILER=clang",
+    "-DMORE_ICONS_BUILDING_DOCS=ON"
 ]
 build-dir = "build-docs"
 infer-args-from = "src/api/MoreIconsAPI.cpp"

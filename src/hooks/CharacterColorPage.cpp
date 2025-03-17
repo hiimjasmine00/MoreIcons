@@ -26,7 +26,7 @@ class $modify(MICharacterColorPage, CharacterColorPage) {
         CharacterColorPage::toggleShip(sender);
 
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        MoreIconsAPI::updateSimplePlayer(static_cast<SimplePlayer*>(static_cast<CCMenuItemSpriteExtra*>(sender)->getNormalImage()),
+        MoreIconsAPI::updateSimplePlayer(static_cast<SimplePlayer*>(static_cast<CCMenuItemSprite*>(sender)->getNormalImage()),
             (IconType)sender->getTag(), sdi && sdi->getSavedValue("2pselected", false));
     }
 };

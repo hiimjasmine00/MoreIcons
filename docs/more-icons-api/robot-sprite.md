@@ -1,6 +1,6 @@
 ---
 title: Changing a GJRobotSprite's Icon
-order: 8
+order: 9
 ---
 
 # Changing a GJRobotSprite's Icon

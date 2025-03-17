@@ -9,14 +9,14 @@ order: 1
 #include <hiimjustin000.more_icons/include/MoreIcons.hpp>
 
 // Get the current icon
-auto icon = MoreIcons::activeForType(IconType::Cube);
+std::string icon = MoreIcons::activeIcon(IconType::Cube);
 
 // Get the current icon (Separate Dual Icons)
-auto dualIcon = MoreIcons::activeForType(IconType::Cube, true);
+std::string dualIcon = MoreIcons::activeIcon(IconType::Cube, true);
 
 // Get the current icon (Internal behavior)
-if (auto MI = MoreIcons::get()) {
-    auto icon = MI->getSavedValue(MoreIcons::savedForType(IconType::Cube), "");
-    auto dualIcon = MI->getSavedValue(MoreIcons::savedForType(IconType::Cube, true), "");
+if (geode::Mod* MI = MoreIcons::get()) {
+    std::string icon = MI->getSavedValue(MoreIcons::saveKey(IconType::Cube), "");
+    std::string dualIcon = MI->getSavedValue(MoreIcons::saveKey(IconType::Cube, true), "");
 }
 ```
