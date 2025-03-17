@@ -108,14 +108,15 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             return m_iconType == IconType::Special ? onCustomSpecialSelect(btn) : onCustomSelect(btn);
         }
 
+        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+        auto dual = sdi && sdi->getSavedValue("2pselected", false);
+        if (MoreIconsAPI::hasIcon(MoreIconsClass::activeIcon(m_iconType, dual), m_iconType)) m_iconID = 0;
+
         GJGarageLayer::onSelect(sender);
 
         if (!GameManager::get()->isIconUnlocked(sender->getTag(), btn->m_iconType)) return;
 
         m_cursor1->setOpacity(255);
-
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto dual = sdi && sdi->getSavedValue("2pselected", false);
         MoreIconsClass::setIcon("", dual ? (IconType)Loader::get()->getLoadedMod(
             "weebify.separate_dual_icons")->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
     }
