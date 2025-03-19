@@ -9,7 +9,6 @@ for (const file of files) {
         .replace(/(\/classes\/[^'"]+)/g, "https://docs.geode-sdk.org$1")
         .replace(/https:\/\/docs\.geode-sdk\.org\/classes\/IconInfo/g, "/classes/IconInfo")
         .replace(/https:\/\/docs\.geode-sdk\.org\/classes\/MoreIcons/g, "/classes/MoreIcons")
-        .replace(/<span class="struct name">IconInfo/g, "<span class=\"namespace name\">MoreIcons</span><span class=\"scope\">::</span><span class=\"struct name\">IconInfo")
         .replace(/\/en\.cppreference\.com/g, "https://en.cppreference.com")
         .replace(/\/w\/cpp\/vector\/vector/g, "/w/cpp/container/vector")
         .replace(/\/w\/cpp\/xstring\/string/g, "/w/cpp/string/basic_string")

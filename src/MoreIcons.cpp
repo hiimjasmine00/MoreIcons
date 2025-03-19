@@ -1,5 +1,7 @@
 #include "MoreIcons.hpp"
+#define MoreIcons MoreIconsClass
 #include "api/MoreIconsAPI.hpp"
+#undef MoreIcons
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>

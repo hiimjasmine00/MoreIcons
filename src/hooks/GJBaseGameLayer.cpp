@@ -9,8 +9,8 @@ class $modify(MIBaseGameLayer, GJBaseGameLayer) {
         GJBaseGameLayer::playExitDualEffect(object);
 
         if (auto player = findFirstChildRecursive<SimplePlayer>(this, [](SimplePlayer* node) { return node->getZOrder() == 100; })) {
-            if (!m_player1 || m_player1 == object) MoreIconsAPI::updateSimplePlayer(player, MoreIconsClass::getIconType(object), false);
-            else if (!m_player2 || m_player2 == object) MoreIconsAPI::updateSimplePlayer(player, MoreIconsClass::getIconType(object), true);
+            if (!m_player1 || m_player1 == object) MoreIconsAPI::updateSimplePlayer(player, MoreIcons::getIconType(object), false);
+            else if (!m_player2 || m_player2 == object) MoreIconsAPI::updateSimplePlayer(player, MoreIcons::getIconType(object), true);
         }
     }
 };

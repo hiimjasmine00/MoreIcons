@@ -15,7 +15,6 @@
 #define MORE_ICONS_LOAD_ICON(...) MoreIcons::LoadIconEvent(MORE_ICONS_EXPAND("load-icon"), __VA_ARGS__).post()
 #define MORE_ICONS_UNLOAD_ICON(...) MoreIcons::UnloadIconEvent(MORE_ICONS_EXPAND("unload-icon"), __VA_ARGS__).post()
 
-#ifdef MORE_ICONS_BUILDING_DOCS
 /**
  * A struct that contains information about a custom icon.
  */
@@ -30,56 +29,41 @@ struct IconInfo {
     int trailID;
     bool blend;
     bool tint;
+
+    bool operator==(const IconInfo& other) const {
+        return name == other.name && type == other.type;
+    }
 };
-#endif
 
 /**
  * A class that provides an API for interacting with the More Icons mod.
  */
 class MoreIcons {
 public:
-    #ifndef MORE_ICONS_BUILDING_DOCS
-    /**
-     * A struct that contains information about a custom icon.
-     */
-    struct IconInfo {
-        std::string name;
-        std::vector<std::string> textures;
-        std::vector<std::string> frameNames;
-        std::string sheetName;
-        std::string packName;
-        std::string packID;
-        IconType type;
-        int trailID;
-        bool blend;
-        bool tint;
-    };
-    #endif
-
-    using SimplePlayerEvent = geode::DispatchEvent<SimplePlayer*, std::string, IconType>;
     using SimplePlayerFilter = geode::DispatchFilter<SimplePlayer*, std::string, IconType>;
-    using RobotSpriteEvent = geode::DispatchEvent<GJRobotSprite*, std::string, IconType>;
     using RobotSpriteFilter = geode::DispatchFilter<GJRobotSprite*, std::string, IconType>;
-    using PlayerObjectEvent = geode::DispatchEvent<PlayerObject*, std::string, IconType>;
     using PlayerObjectFilter = geode::DispatchFilter<PlayerObject*, std::string, IconType>;
-    using AllIconsEvent = geode::DispatchEvent<std::vector<IconInfo*>*>;
     using AllIconsFilter = geode::DispatchFilter<std::vector<IconInfo*>*>;
-    using GetIconsEvent = geode::DispatchEvent<std::vector<IconInfo*>*, IconType>;
     using GetIconsFilter = geode::DispatchFilter<std::vector<IconInfo*>*, IconType>;
-    using GetIconEvent = geode::DispatchEvent<IconInfo*, std::string, IconType>;
-    using GetIconFilter = geode::DispatchFilter<IconInfo*, std::string, IconType>;
-    using LoadIconEvent = geode::DispatchEvent<std::string, IconType>;
+    using GetIconFilter = geode::DispatchFilter<IconInfo**, std::string, IconType>;
     using LoadIconFilter = geode::DispatchFilter<std::string, IconType>;
-    using UnloadIconEvent = geode::DispatchEvent<std::string, IconType>;
     using UnloadIconFilter = geode::DispatchFilter<std::string, IconType>;
+
+    using SimplePlayerEvent = SimplePlayerFilter::Event;
+    using RobotSpriteEvent = RobotSpriteFilter::Event;
+    using PlayerObjectEvent = PlayerObjectFilter::Event;
+    using AllIconsEvent = AllIconsFilter::Event;
+    using GetIconsEvent = GetIconsFilter::Event;
+    using GetIconEvent = GetIconFilter::Event;
+    using LoadIconEvent = LoadIconFilter::Event;
+    using UnloadIconEvent = UnloadIconFilter::Event;
 
     /**
      * Checks if the More Icons mod is loaded.
      * @returns Whether or not the More Icons mod is loaded.
      */
     static bool loaded() {
-        static auto loaded = geode::Loader::get()->isModLoaded(MORE_ICONS_ID);
-        return loaded;
+        return geode::Loader::get()->isModLoaded(MORE_ICONS_ID);
     }
 
     /**
@@ -271,7 +255,7 @@ public:
     static IconInfo* getIcon(const std::string& name, IconType type) {
         IconInfo* info = nullptr;
         if (!loaded()) return info;
-        MORE_ICONS_GET_ICON(info, name, type);
+        MORE_ICONS_GET_ICON(&info, name, type);
         return info;
     }
 

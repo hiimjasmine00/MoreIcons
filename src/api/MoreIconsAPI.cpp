@@ -8,8 +8,6 @@
 
 using namespace geode::prelude;
 
-using MoreIcons = MoreIconsClass;
-
 $execute {
     new EventListener(+[](SimplePlayer* player, const std::string& icon, IconType type) {
         MoreIconsAPI::updateSimplePlayer(player, icon, type);
@@ -40,8 +38,8 @@ $execute {
         return ListenerResult::Propagate;
     }, MoreIcons::GetIconsFilter("get-icons"_spr));
 
-    new EventListener(+[](IconInfo* info, std::string name, IconType type) {
-        info = MoreIconsAPI::getIcon(name, type);
+    new EventListener(+[](IconInfo** info, std::string name, IconType type) {
+        *info = MoreIconsAPI::getIcon(name, type);
         return ListenerResult::Propagate;
     }, MoreIcons::GetIconFilter("get-icon"_spr));
 

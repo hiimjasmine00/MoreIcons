@@ -1,5 +1,7 @@
 #include "../MoreIcons.hpp"
+#define MoreIcons MoreIconsClass
 #include "../api/MoreIconsAPI.hpp"
+#undef MoreIcons
 #include <Geode/binding/GJBaseGameLayer.hpp>
 #include <Geode/modify/PlayerObject.hpp>
 

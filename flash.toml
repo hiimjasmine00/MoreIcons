@@ -27,8 +27,7 @@ config-args = [
     "-DCMAKE_CXX_COMPILER=clang++",
     "-DCMAKE_C_COMPILER=clang",
     "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
-    "-DGEODE_CODEGEN_CMAKE_ARGS=-DCMAKE_CXX_COMPILER=clang++;-DCMAKE_C_COMPILER=clang",
-    "-DMORE_ICONS_BUILDING_DOCS=ON"
+    "-DGEODE_CODEGEN_CMAKE_ARGS=-DCMAKE_CXX_COMPILER=clang++;-DCMAKE_C_COMPILER=clang"
 ]
 build-dir = "build-docs"
 infer-args-from = "src/api/MoreIconsAPI.cpp"

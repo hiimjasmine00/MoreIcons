@@ -1,10 +1,4 @@
-#define MoreIcons MoreIconsClass
 #include <MoreIcons.hpp>
-#undef MoreIcons
-
-#ifndef MORE_ICONS_BUILDING_DOCS
-using IconInfo = MoreIconsClass::IconInfo;
-#endif
 
 class MoreIconsAPI {
 public:
