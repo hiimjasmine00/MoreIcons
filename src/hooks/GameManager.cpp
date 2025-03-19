@@ -85,15 +85,13 @@ class $modify(MIGameManager, GameManager) {
         if (!dict) return ret;
 
         auto frames = static_cast<CCDictionary*>(dict->objectForKey("frames"));
-        if (!frames) return ret;
+        if (!frames) return dict->release(), ret;
 
         auto sfc = CCSpriteFrameCache::get();
         for (auto [frameName, _] : CCDictionaryExt<std::string, CCDictionary*>(frames)) {
             if (auto frame = sfc->spriteFrameByName(frameName.c_str())) frame->setTexture(ret);
         }
 
-        dict->release();
-
-        return ret;
+        return dict->release(), ret;
     }
 };

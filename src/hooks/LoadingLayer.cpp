@@ -57,19 +57,24 @@ class $modify(MILoadingLayer, LoadingLayer) {
 
         if (f->m_iconLoadStep < 11) {
             f->m_iconLoadStep++;
-            if (auto smallLabel2 = static_cast<CCLabelBMFont*>(getChildByID("geode-small-label-2"))) switch (m_fields->m_iconLoadStep) {
-                case 1: smallLabel2->setString("More Icons: Loading Icons"); break;
-                case 2: smallLabel2->setString("More Icons: Loading Ships"); break;
-                case 3: smallLabel2->setString("More Icons: Loading Balls"); break;
-                case 4: smallLabel2->setString("More Icons: Loading UFOs"); break;
-                case 5: smallLabel2->setString("More Icons: Loading Waves"); break;
-                case 6: smallLabel2->setString("More Icons: Loading Robots"); break;
-                case 7: smallLabel2->setString("More Icons: Loading Spiders"); break;
-                case 8: smallLabel2->setString("More Icons: Loading Swings"); break;
-                case 9: smallLabel2->setString("More Icons: Loading Jetpacks"); break;
-                case 10: smallLabel2->setString("More Icons: Loading Trails"); break;
-                case 11: smallLabel2->setString(""); break;
+
+            if (auto smallLabel2 = static_cast<CCLabelBMFont*>(getChildByID("geode-small-label-2"))) {
+                auto label = "";
+                switch (f->m_iconLoadStep) {
+                    case 1: label = "More Icons: Loading Icons"; break;
+                    case 2: label = "More Icons: Loading Ships"; break;
+                    case 3: label = "More Icons: Loading Balls"; break;
+                    case 4: label = "More Icons: Loading UFOs"; break;
+                    case 5: label = "More Icons: Loading Waves"; break;
+                    case 6: label = "More Icons: Loading Robots"; break;
+                    case 7: label = "More Icons: Loading Spiders"; break;
+                    case 8: label = "More Icons: Loading Swings"; break;
+                    case 9: label = "More Icons: Loading Jetpacks"; break;
+                    case 10: label = "More Icons: Loading Trails"; break;
+                }
+                smallLabel2->setString(label);
             }
+
             queueInMainThread([this] { loadAssets(); });
         }
     }
