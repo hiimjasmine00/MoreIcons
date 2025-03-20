@@ -1,5 +1,8 @@
 # More Icons Changelog
-## v1.11.0 (2025-03-17)
+## v1.11.1 (2025-03-19)
+- Are you serious? (Reported by [NelsonGD54](user:11922670))
+
+## v1.11.0 (2025-03-19)
 - Revamped the API, renaming many methods and adding new ones
 - Lowered the opacity of the cursor in the icon kit for vanilla selected icons
 - Fixed MoreIcons::loadIcon and MoreIcons::unloadIcon not working properly
