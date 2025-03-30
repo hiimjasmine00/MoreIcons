@@ -1,36 +1,19 @@
 #include "../MoreIcons.hpp"
-#define MoreIcons MoreIconsClass
 #include "../api/MoreIconsAPI.hpp"
-#undef MoreIcons
 #include <Geode/modify/GameManager.hpp>
-#include <Geode/utils/ranges.hpp>
 
 using namespace geode::prelude;
 
 class $modify(MIGameManager, GameManager) {
-    struct Fields {
-        inline static uintptr_t SHEET_ADDRESS = 0;
-        inline static uintptr_t LOAD_ADDRESS = 0;
-    };
+    inline static Hook* sheetHook = nullptr;
 
     static void onModify(ModifyBase<ModifyDerive<MIGameManager, GameManager>>& self) {
-        auto traditionalPacks = Mod::get()->getSettingValue<bool>("traditional-packs");
-
-        auto sheetHook = self.getHook("GameManager::sheetNameForIcon").mapErr([](const std::string& err) {
+        (void)self.getHook("GameManager::sheetNameForIcon").map([](Hook* hook) {
+            hook->setAutoEnable(Mod::get()->getSettingValue<bool>("traditional-packs"));
+            return sheetHook = hook;
+        }).mapErr([](const std::string& err) {
             return log::error("Failed to get GameManager::sheetNameForIcon hook: {}", err), err;
-        }).unwrapOr(nullptr);
-        if (sheetHook) {
-            Fields::SHEET_ADDRESS = sheetHook->getAddress();
-            sheetHook->setAutoEnable(traditionalPacks);
-        }
-
-        auto loadHook = self.getHook("GameManager::loadIcon").mapErr([](const std::string& err) {
-            return log::error("Failed to get GameManager::loadIcon hook: {}", err), err;
-        }).unwrapOr(nullptr);
-        if (loadHook) {
-            Fields::LOAD_ADDRESS = loadHook->getAddress();
-            loadHook->setAutoEnable(traditionalPacks);
-        }
+        });
     }
 
     void reloadAllStep2() {
@@ -39,44 +22,46 @@ class $modify(MIGameManager, GameManager) {
         if (!m_unkBool1) return;
 
         MoreIcons::saveTrails();
-        MoreIconsAPI::ICONS.clear();
-        MoreIconsAPI::LOADED_ICONS.clear();
-        MoreIcons::LOGS.clear();
-        MoreIcons::HIGHEST_SEVERITY = Severity::Debug;
+        MoreIconsAPI::icons.clear();
+        MoreIconsAPI::iconIndices.clear();
+        MoreIconsAPI::requestedIcons.clear();
+        MoreIconsAPI::loadedIcons.clear();
+        MoreIcons::logs.clear();
+        MoreIcons::severity = Severity::Debug;
 
         auto mod = Mod::get();
-        MoreIcons::DEBUG_LOGS = mod->getSettingValue<bool>("debug-logs");
-        MoreIcons::TRADITIONAL_PACKS = mod->getSettingValue<bool>("traditional-packs");
+        MoreIcons::debugLogs = mod->getSettingValue<bool>("debug-logs");
+        MoreIcons::traditionalPacks = mod->getSettingValue<bool>("traditional-packs");
 
         auto hooks = mod->getHooks();
 
-        if (auto sheetHook = ranges::find(hooks, [](Hook* hook) { return hook->getAddress() == Fields::SHEET_ADDRESS; }))
-            (void)(MoreIcons::TRADITIONAL_PACKS ? sheetHook.value()->enable().mapErr([](const std::string& err) {
-                return log::error("Failed to enable GameManager::sheetNameForIcon hook: {}", err), err;
-            }) : sheetHook.value()->disable().mapErr([](const std::string& err) {
-                return log::error("Failed to disable GameManager::sheetNameForIcon hook: {}", err), err;
-            }));
-        else log::error("Failed to find GameManager::sheetNameForIcon hook");
-
-        if (auto loadHook = ranges::find(hooks, [](Hook* hook) { return hook->getAddress() == Fields::LOAD_ADDRESS; }))
-            (void)(MoreIcons::TRADITIONAL_PACKS ? loadHook.value()->enable().mapErr([](const std::string& err) {
-                return log::error("Failed to enable GameManager::loadIcon hook: {}", err), err;
-            }) : loadHook.value()->disable().mapErr([](const std::string& err) {
-                return log::error("Failed to disable GameManager::loadIcon hook: {}", err), err;
-            }));
-        else log::error("Failed to find GameManager::loadIcon hook");
+        if (sheetHook) (void)(MoreIcons::traditionalPacks ? sheetHook->enable().mapErr([](const std::string& err) {
+            return log::error("Failed to enable GameManager::sheetNameForIcon hook: {}", err), err;
+        }) : sheetHook->disable().mapErr([](const std::string& err) {
+            return log::error("Failed to disable GameManager::sheetNameForIcon hook: {}", err), err;
+        }));
     }
 
     gd::string sheetNameForIcon(int id, int type) {
         auto ret = GameManager::sheetNameForIcon(id, type);
-        if (ret.empty() || !MoreIcons::TRADITIONAL_PACKS) return ret;
+        if (ret.empty() || !MoreIcons::traditionalPacks) return ret;
         return MoreIcons::vanillaTexturePath(ret, false);
     }
 
     CCTexture2D* loadIcon(int id, int type, int requestID) {
-        auto iconExists = m_loadIcon[keyForIcon(id, type)] > 0;
+        auto iconKey = keyForIcon(id, type);
+        auto iconExists = m_loadIcon.contains(iconKey) && m_loadIcon[iconKey] > 0;
+
         auto ret = GameManager::loadIcon(id, type, requestID);
-        if (!ret || iconExists || !MoreIcons::TRADITIONAL_PACKS) return ret;
+        if (!ret) return ret;
+
+        if (MoreIconsAPI::requestedIcons.contains(requestID)) {
+            auto iconType = (IconType)type;
+            if (auto& icons = MoreIconsAPI::requestedIcons[requestID]; icons.contains(iconType))
+                MoreIconsAPI::unloadIcon(icons[iconType], iconType, requestID);
+        }
+
+        if (iconExists || !MoreIcons::traditionalPacks) return ret;
 
         auto sheetName = GameManager::sheetNameForIcon(id, type);
         if (sheetName.empty()) return ret;
@@ -93,5 +78,10 @@ class $modify(MIGameManager, GameManager) {
         }
 
         return dict->release(), ret;
+    }
+
+    void unloadIcons(int requestID) {
+        GameManager::unloadIcons(requestID);
+        MoreIconsAPI::unloadIcons(requestID);
     }
 };

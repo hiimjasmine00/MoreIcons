@@ -1,6 +1,12 @@
 # More Icons Changelog
+## v1.12.0 (2025-03-31)
+- Added more trail customization options (Always Show, Fade Time, Stroke Width)
+- Reworked the icon info display in the icon kit
+- Reworked the icon loading system to more resemble the vanilla icon loading system
+- Added node IDs to the log viewer in the icon kit
+
 ## v1.11.1 (2025-03-19)
-- Are you serious? (Reported by [NelsonGD54](user:11922670))
+- Fixed a bug where icons would not load properly (Reported by [NelsonGD54](user:11922670))
 
 ## v1.11.0 (2025-03-19)
 - Revamped the API, renaming many methods and adding new ones

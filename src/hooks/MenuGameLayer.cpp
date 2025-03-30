@@ -25,24 +25,24 @@ class $modify(MIMenuGameLayer, MenuGameLayer) {
 
         if (randomIcon > iconCount) {
             MoreIconsAPI::updatePlayerObject(m_playerObject,
-                MoreIconsAPI::ICONS[MoreIconsAPI::ICON_INDICES[iconType].first + randomIcon - iconCount - 1].name, iconType);
+                MoreIconsAPI::icons[MoreIconsAPI::iconIndices[iconType].first + randomIcon - iconCount - 1].name, iconType);
             if (hasCube) {
                 if (randomCube > cubeCount)
-                    MoreIconsAPI::updatePlayerObject(m_playerObject, MoreIconsAPI::ICONS[randomCube - cubeCount - 1].name, IconType::Cube);
+                    MoreIconsAPI::updatePlayerObject(m_playerObject, MoreIconsAPI::icons[randomCube - cubeCount - 1].name, IconType::Cube);
                 else m_playerObject->updatePlayerFrame(randomCube);
             }
         }
         else if (m_playerObject->m_isShip) {
             m_playerObject->updatePlayerShipFrame(randomIcon);
             if (randomCube > cubeCount)
-                MoreIconsAPI::updatePlayerObject(m_playerObject, MoreIconsAPI::ICONS[randomCube - cubeCount - 1].name, IconType::Cube);
+                MoreIconsAPI::updatePlayerObject(m_playerObject, MoreIconsAPI::icons[randomCube - cubeCount - 1].name, IconType::Cube);
             else m_playerObject->updatePlayerFrame(randomCube);
         }
         else if (m_playerObject->m_isBall) m_playerObject->updatePlayerRollFrame(randomIcon);
         else if (m_playerObject->m_isBird) {
             m_playerObject->updatePlayerBirdFrame(randomIcon);
             if (randomCube > cubeCount)
-                MoreIconsAPI::updatePlayerObject(m_playerObject, MoreIconsAPI::ICONS[randomCube - cubeCount - 1].name, IconType::Cube);
+                MoreIconsAPI::updatePlayerObject(m_playerObject, MoreIconsAPI::icons[randomCube - cubeCount - 1].name, IconType::Cube);
             else m_playerObject->updatePlayerFrame(randomCube);
         }
         else if (m_playerObject->m_isDart) m_playerObject->updatePlayerDartFrame(randomIcon);

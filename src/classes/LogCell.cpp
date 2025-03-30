@@ -17,6 +17,7 @@ LogCell* LogCell::create(const std::string& message, Severity severity, int inde
 bool LogCell::init(const std::string& message, Severity severity, int index, int total, bool dark) {
     if (!CCLayer::init()) return false;
 
+    setID("LogCell");
     ignoreAnchorPointForPosition(false);
     setContentSize({ 400.0f, 70.0f });
 
@@ -39,6 +40,7 @@ bool LogCell::init(const std::string& message, Severity severity, int index, int
         bg->setContentSize({ 400.0f, 70.0f });
         bg->setPosition({ 200.0f, 35.0f });
     }
+    bg->setID("background");
     addChild(bg, -1);
 
     if (index % 25 == 0 || index % 25 == 24 || index == total - 1) {
@@ -46,18 +48,13 @@ bool LogCell::init(const std::string& message, Severity severity, int index, int
         bgBg->setContentSize({ 400.0f, 70.0f });
         bgBg->setPosition({ 200.0f, 35.0f });
         bgBg->setColor(bg->getColor());
+        bgBg->setID("background-corners");
         addChild(bgBg, -2);
     }
 
-    auto infoFrame = "";
-    switch (severity) {
-        case Severity::Info: infoFrame = "GJ_infoIcon_001.png"; break;
-        case Severity::Warning: infoFrame = "geode.loader/info-warning.png"; break;
-        case Severity::Error: infoFrame = "geode.loader/info-alert.png"; break;
-    }
-
-    auto infoIcon = CCSprite::createWithSpriteFrameName(infoFrame);
+    auto infoIcon = CCSprite::createWithSpriteFrameName(frames[severity - 1]);
     infoIcon->setPosition({ 20.0f, 35.0f });
+    infoIcon->setID("info-icon");
     addChild(infoIcon);
 
     auto textArea = TextArea::create(message, "bigFont.fnt", 0.25f, 350.0f, { 0.0f, 1.0f }, 10.0f, true);
@@ -65,6 +62,7 @@ bool LogCell::init(const std::string& message, Severity severity, int index, int
     textArea->m_label->setPosition({ 0.0f, textArea->getContentHeight() });
     textArea->setPosition({ 40.0f, 35.0f });
     textArea->setAnchorPoint({ 0.0f, 0.5f });
+    textArea->setID("text-area");
     addChild(textArea);
 
     return true;

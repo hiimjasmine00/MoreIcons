@@ -1,7 +1,5 @@
 #include "../MoreIcons.hpp"
-#define MoreIcons MoreIconsClass
 #include "../api/MoreIconsAPI.hpp"
-#undef MoreIcons
 #include <Geode/binding/GJBaseGameLayer.hpp>
 #include <Geode/modify/PlayerObject.hpp>
 
@@ -9,19 +7,19 @@ using namespace geode::prelude;
 
 #define UPDATE_HOOK(funcName, type) \
     void funcName(int frame) { \
+        std::string iconName; \
+        if (frame != 0 && isMainPlayer() && MoreIconsAPI::requestedIcons.contains(m_iconRequestID)) { \
+            auto& iconRequests = MoreIconsAPI::requestedIcons[m_iconRequestID]; \
+            if (iconRequests.contains(type)) iconName = iconRequests[type]; \
+        } \
+        if (!iconName.empty()) MoreIconsAPI::loadedIcons[{ iconName, type }]++; \
         PlayerObject::funcName(frame); \
-        if (frame == 0) return resetPlayer(!isMainPlayer()); \
+        if (frame == 0 || !isMainPlayer()) return setUserObject("name"_spr, nullptr); \
         updateIcon(type); \
+        if (!iconName.empty()) MoreIconsAPI::loadedIcons[{ iconName, type }]--; \
     }
 
 class $modify(MIPlayerObject, PlayerObject) {
-    struct Fields {
-        std::set<std::pair<std::string, IconType>> m_icons;
-        ~Fields() {
-            for (auto& [name, type] : m_icons) MoreIconsAPI::unloadIcon(name, type);
-        }
-    };
-
     static void onModify(ModifyBase<ModifyDerive<MIPlayerObject, PlayerObject>>& self) {
         (void)self.setHookPriorityAfterPost("PlayerObject::setupStreak", "weebify.separate_dual_icons");
     }
@@ -30,31 +28,20 @@ class $modify(MIPlayerObject, PlayerObject) {
         return m_gameLayer && ((!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) || (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this));
     }
 
-    void resetPlayer(bool unload) {
-        if (auto name = static_cast<CCString*>(getUserObject("name"_spr))) {
-            if (auto type = static_cast<CCInteger*>(getUserObject("type"_spr))) {
-                if (unload) MoreIconsAPI::unloadIcon(name->m_sString, (IconType)type->m_nValue);
-                setUserObject("type"_spr, nullptr);
-            }
-            setUserObject("name"_spr, nullptr);
-        }
-    }
-
     void updateIcon(IconType type) {
-        if (!isMainPlayer()) return resetPlayer(true);
-
         std::string icon;
-        if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) icon = MoreIconsClass::activeIcon(type, false);
-        else if (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this) icon = MoreIconsClass::activeIcon(type, true);
+        if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) icon = _MoreIcons::activeIcon(type, false);
+        else if (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this) icon = _MoreIcons::activeIcon(type, true);
 
-        if (icon.empty() || !MoreIconsAPI::hasIcon(icon, type)) return resetPlayer(true);
+        if (icon.empty() || !MoreIconsAPI::hasIcon(icon, type)) return setUserObject("name"_spr, nullptr);
 
-        m_fields->m_icons.insert({ icon, type });
         MoreIconsAPI::updatePlayerObject(this, icon, type);
     }
 
     bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool ignoreDamage) {
         if (!PlayerObject::init(player, ship, gameLayer, layer, ignoreDamage)) return false;
+
+        if (!isMainPlayer()) return true;
 
         updateIcon(IconType::Cube);
         updateIcon(IconType::Ship);
@@ -74,7 +61,7 @@ class $modify(MIPlayerObject, PlayerObject) {
 
     void resetTrail() {
         if (m_regularTrail->getUserObject("name"_spr)) m_regularTrail->setUserObject("name"_spr, nullptr);
-        if (!MoreIcons::TRADITIONAL_PACKS || (Loader::get()->isModLoaded("acaruso.pride") && m_playerStreak == 2)) return;
+        if (!MoreIcons::traditionalPacks || (Loader::get()->isModLoaded("acaruso.pride") && m_playerStreak == 2)) return;
         m_regularTrail->setTexture(CCTextureCache::get()->addImage(
             MoreIcons::vanillaTexturePath(fmt::format("streak_{:02}_001.png", m_playerStreak), true).c_str(), false));
         if (m_playerStreak == 6) m_regularTrail->enableRepeatMode(0.1f);
@@ -86,8 +73,8 @@ class $modify(MIPlayerObject, PlayerObject) {
         if (!isMainPlayer()) return resetTrail();
 
         std::string trailFile;
-        if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) trailFile = MoreIconsClass::activeIcon(IconType::Special, false);
-        else if (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this) trailFile = MoreIconsClass::activeIcon(IconType::Special, true);
+        if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) trailFile = _MoreIcons::activeIcon(IconType::Special, false);
+        else if (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this) trailFile = _MoreIcons::activeIcon(IconType::Special, true);
 
         if (trailFile.empty() || !MoreIconsAPI::hasIcon(trailFile, IconType::Special)) return resetTrail();
 
@@ -127,16 +114,33 @@ class $modify(MIPlayerObject, PlayerObject) {
                 m_streakStrokeWidth = 10.0f;
                 break;
         } else {
-            m_streakStrokeWidth = 14.0f;
+            fade = info->fade;
+            stroke = info->stroke;
+            m_streakStrokeWidth = stroke;
             m_disableStreakTint = !info->tint;
-            m_alwaysShowStreak = false;
-            fade = 0.3f;
-            stroke = 14.0f;
+            m_alwaysShowStreak = info->show;
         }
 
         m_regularTrail->initWithFade(fade, 5.0f, stroke, { 255, 255, 255 }, CCTextureCache::get()->addImage(info->textures[0].c_str(), true));
         if (info->trailID == 6) m_regularTrail->enableRepeatMode(0.1f);
         if (info->trailID > 0 || info->blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
         m_regularTrail->setUserObject("name"_spr, CCString::create(trailFile));
+    }
+
+    void updateStreakBlend(bool blend) {
+        PlayerObject::updateStreakBlend(blend);
+
+        if (!isMainPlayer()) return;
+
+        std::string trailFile;
+        if (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) trailFile = _MoreIcons::activeIcon(IconType::Special, false);
+        else if (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this) trailFile = _MoreIcons::activeIcon(IconType::Special, true);
+
+        if (trailFile.empty() || !MoreIconsAPI::hasIcon(trailFile, IconType::Special)) return;
+
+        auto info = MoreIconsAPI::getIcon(trailFile, IconType::Special);
+        if (!info || info->trailID > 0) return;
+
+        m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)GL_ONE_MINUS_SRC_ALPHA - info->blend * (uint32_t)GL_SRC_ALPHA });
     }
 };

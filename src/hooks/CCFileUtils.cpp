@@ -6,6 +6,7 @@ class $modify(MIFileUtils, CCFileUtils) {
     gd::string fullPathForFilename(const char* filename, bool skipSuffix) {
         auto ret = CCFileUtils::fullPathForFilename(filename, skipSuffix);
         if (ret.empty() || skipSuffix) return ret;
+
         auto scaleFactor = CCDirector::get()->getContentScaleFactor();
         if (scaleFactor >= 4.0f) {
             auto uhdSuffix = addSuffix(ret, "-uhd");
@@ -15,6 +16,7 @@ class $modify(MIFileUtils, CCFileUtils) {
             auto hdSuffix = addSuffix(ret, "-hd");
             if (isFileExist(hdSuffix)) return hdSuffix;
         }
+
         return ret;
     }
 };

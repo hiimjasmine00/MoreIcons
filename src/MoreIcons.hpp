@@ -1,3 +1,5 @@
+#define MORE_ICONS_NO_ALIAS
+
 #include <filesystem>
 #include <Geode/Enums.hpp>
 #include <Geode/loader/Types.hpp>
@@ -16,10 +18,10 @@ struct LogData {
 
 class MoreIcons {
 public:
-    static inline std::vector<LogData> LOGS;
-    static inline geode::Severity HIGHEST_SEVERITY = geode::Severity::Debug;
-    static inline bool DEBUG_LOGS = true;
-    static inline bool TRADITIONAL_PACKS = true;
+    inline static std::vector<LogData> logs;
+    inline static geode::Severity severity = geode::Severity::Debug;
+    inline static bool debugLogs = true;
+    inline static bool traditionalPacks = true;
 
     static std::vector<IconPack> getTexturePacks();
     static std::string vanillaTexturePath(const std::string& path, bool skipSuffix);

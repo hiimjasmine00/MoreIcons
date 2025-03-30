@@ -2,38 +2,39 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/MenuLayer.hpp>
-#include <Geode/utils/ranges.hpp>
 
 using namespace geode::prelude;
 
 class $modify(MIMenuLayer, MenuLayer) {
     static void onModify(ModifyBase<ModifyDerive<MIMenuLayer, MenuLayer>>& self) {
-        auto initHook = self.getHook("MenuLayer::init").mapErr([](const std::string& err) {
+        (void)self.getHook("MenuLayer::init").map([](Hook* hook) {
+            hook->setAutoEnable(false);
+            if (auto iconProfile = Loader::get()->getInstalledMod("capeling.icon_profile")) {
+                if (iconProfile->isEnabled()) {
+                    hook->setAutoEnable(true);
+                    afterPriority(hook, iconProfile);
+                }
+                else new EventListener([hook](ModStateEvent* e) {
+                    afterPriority(hook, e->getMod());
+                    (void)hook->enable().mapErr([](const std::string& err) {
+                        return log::error("Failed to enable MenuLayer::init hook: {}", err), err;
+                    });
+                }, ModStateFilter(iconProfile, ModEventType::Loaded));
+            }
+            return hook;
+        }).mapErr([](const std::string& err) {
             return log::error("Failed to get MenuLayer::init hook: {}", err), err;
-        }).unwrapOr(nullptr);
-        if (!initHook) return;
+        });
+    }
 
-        initHook->setAutoEnable(false);
+    static void afterPriority(Hook* hook, Mod* mod) {
+        auto address = hook->getAddress();
+        auto modHooks = mod->getHooks();
+        auto modHook = std::ranges::find_if(modHooks, [address](Hook* h) { return h->getAddress() == address; });
+        if (modHook == modHooks.end()) return log::error("Failed to find MenuLayer::init hook in capeling.icon_profile");
 
-        if (auto iconProfile = Loader::get()->getInstalledMod("capeling.icon_profile")) {
-            auto func = [iconProfile, initHook](ModStateEvent* event) {
-                if (!event) initHook->setAutoEnable(true);
-
-                auto address = initHook->getAddress();
-                auto modHook = ranges::find(iconProfile->getHooks(), [address](Hook* hook) { return hook->getAddress() == address; });
-                if (!modHook.has_value()) return log::error("Failed to find MenuLayer::init hook in capeling.icon_profile");
-
-                auto hookPriority = modHook.value()->getPriority();
-                if (initHook->getPriority() >= hookPriority) initHook->setPriority(hookPriority - 1);
-
-                if (event) (void)initHook->enable().mapErr([](const std::string& err) {
-                    return log::error("Failed to enable MenuLayer::init hook: {}", err), err;
-                });
-            };
-
-            if (iconProfile->isEnabled()) func(nullptr);
-            else new EventListener(func, ModStateFilter(iconProfile, ModEventType::Loaded));
-        }
+        auto priority = (*modHook)->getPriority();
+        if (hook->getPriority() >= priority) hook->setPriority(priority - 1);
     }
 
     bool init() {

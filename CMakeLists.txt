@@ -5,7 +5,7 @@ set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
 
-project(MoreIcons VERSION 1.11.1)
+project(MoreIcons VERSION 1.12.0)
 
 add_library(${PROJECT_NAME} SHARED
     src/api/MoreIconsAPI.cpp
@@ -13,6 +13,8 @@ add_library(${PROJECT_NAME} SHARED
     src/classes/DummyNode.cpp
     src/classes/LogCell.cpp
     src/classes/LogLayer.cpp
+    src/classes/MoreInfoPopup.cpp
+    src/classes/SpecialSettingsPopup.cpp
     src/hooks/CCFileUtils.cpp
     src/hooks/CharacterColorPage.cpp
     src/hooks/GameManager.cpp

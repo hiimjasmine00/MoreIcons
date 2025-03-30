@@ -14,6 +14,7 @@
 #define MORE_ICONS_GET_ICON(...) MoreIcons::GetIconEvent(MORE_ICONS_EXPAND("get-icon"), __VA_ARGS__).post()
 #define MORE_ICONS_LOAD_ICON(...) MoreIcons::LoadIconEvent(MORE_ICONS_EXPAND("load-icon"), __VA_ARGS__).post()
 #define MORE_ICONS_UNLOAD_ICON(...) MoreIcons::UnloadIconEvent(MORE_ICONS_EXPAND("unload-icon"), __VA_ARGS__).post()
+#define MORE_ICONS_UNLOAD_ICONS(...) MoreIcons::UnloadIconsEvent(MORE_ICONS_EXPAND("unload-icons"), __VA_ARGS__).post()
 
 /**
  * A struct that contains information about a custom icon.
@@ -29,6 +30,9 @@ struct IconInfo {
     int trailID;
     bool blend;
     bool tint;
+    bool show;
+    float fade;
+    float stroke;
 
     bool operator==(const IconInfo& other) const {
         return name == other.name && type == other.type;
@@ -46,8 +50,9 @@ public:
     using AllIconsFilter = geode::DispatchFilter<std::vector<IconInfo*>*>;
     using GetIconsFilter = geode::DispatchFilter<std::vector<IconInfo*>*, IconType>;
     using GetIconFilter = geode::DispatchFilter<IconInfo**, std::string, IconType>;
-    using LoadIconFilter = geode::DispatchFilter<std::string, IconType>;
-    using UnloadIconFilter = geode::DispatchFilter<std::string, IconType>;
+    using LoadIconFilter = geode::DispatchFilter<std::string, IconType, int>;
+    using UnloadIconFilter = geode::DispatchFilter<std::string, IconType, int>;
+    using UnloadIconsFilter = geode::DispatchFilter<int>;
 
     using SimplePlayerEvent = SimplePlayerFilter::Event;
     using RobotSpriteEvent = RobotSpriteFilter::Event;
@@ -57,6 +62,7 @@ public:
     using GetIconEvent = GetIconFilter::Event;
     using LoadIconEvent = LoadIconFilter::Event;
     using UnloadIconEvent = UnloadIconFilter::Event;
+    using UnloadIconsEvent = UnloadIconsFilter::Event;
 
     /**
      * Checks if the More Icons mod is loaded.
@@ -79,20 +85,31 @@ public:
      * Loads a custom icon into the texture cache.
      * @param name The name of the icon to load.
      * @param type The type of icon to load.
+     * @param requestID The request ID of the icon to load.
      */
-    static void loadIcon(const std::string& name, IconType type) {
+    static void loadIcon(const std::string& name, IconType type, int requestID) {
         if (!loaded()) return;
-        MORE_ICONS_LOAD_ICON(name, type);
+        MORE_ICONS_LOAD_ICON(name, type, requestID);
     }
 
     /**
      * Unloads a custom icon from the texture cache.
      * @param name The name of the icon to unload.
      * @param type The type of icon to unload.
+     * @param requestID The request ID of the icon to unload.
      */
-    static void unloadIcon(const std::string& name, IconType type) {
+    static void unloadIcon(const std::string& name, IconType type, int requestID) {
         if (!loaded()) return;
-        MORE_ICONS_UNLOAD_ICON(name, type);
+        MORE_ICONS_UNLOAD_ICON(name, type, requestID);
+    }
+
+    /**
+     * Unloads all custom icons associated with a request ID.
+     * @param requestID The request ID of the icons to unload.
+     */
+    static void unloadIcons(int requestID) {
+        if (!loaded()) return;
+        MORE_ICONS_UNLOAD_ICONS(requestID);
     }
 
     /**
@@ -308,7 +325,7 @@ public:
     }
 
     /**
-     * Return the custom icon name of a node. (cocos2d::CCMotionStreak, CCMenuItemSpriteExtra, GJRobotSprite, PlayerObject, SimplePlayer)
+     * Returns the custom icon name of a node. (cocos2d::CCMotionStreak, CCMenuItemSpriteExtra, GJRobotSprite, PlayerObject, SimplePlayer)
      * @param node The node to get the icon name of.
      * @returns The icon name of the specified node, or an empty string if the icon name is not set.
      */

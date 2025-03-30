@@ -4,6 +4,14 @@
 using namespace geode::prelude;
 
 class $modify(MILoadingLayer, LoadingLayer) {
+    inline static constexpr std::array labels = {
+        "More Icons: Loading Icons", "More Icons: Loading Ships",
+        "More Icons: Loading Balls", "More Icons: Loading UFOs",
+        "More Icons: Loading Waves", "More Icons: Loading Robots",
+        "More Icons: Loading Spiders", "More Icons: Loading Swings",
+        "More Icons: Loading Jetpacks", "More Icons: Loading Trails"
+    };
+
     struct Fields {
         int m_iconLoadStep;
         std::vector<IconPack> m_iconPacks;
@@ -55,27 +63,10 @@ class $modify(MILoadingLayer, LoadingLayer) {
                 return LoadingLayer::loadAssets();
         }
 
-        if (f->m_iconLoadStep < 11) {
-            f->m_iconLoadStep++;
+        if (auto smallLabel2 = static_cast<CCLabelBMFont*>(getChildByID("geode-small-label-2")))
+            smallLabel2->setString(f->m_iconLoadStep < labels.size() ? labels[f->m_iconLoadStep] : "");
 
-            if (auto smallLabel2 = static_cast<CCLabelBMFont*>(getChildByID("geode-small-label-2"))) {
-                auto label = "";
-                switch (f->m_iconLoadStep) {
-                    case 1: label = "More Icons: Loading Icons"; break;
-                    case 2: label = "More Icons: Loading Ships"; break;
-                    case 3: label = "More Icons: Loading Balls"; break;
-                    case 4: label = "More Icons: Loading UFOs"; break;
-                    case 5: label = "More Icons: Loading Waves"; break;
-                    case 6: label = "More Icons: Loading Robots"; break;
-                    case 7: label = "More Icons: Loading Spiders"; break;
-                    case 8: label = "More Icons: Loading Swings"; break;
-                    case 9: label = "More Icons: Loading Jetpacks"; break;
-                    case 10: label = "More Icons: Loading Trails"; break;
-                }
-                smallLabel2->setString(label);
-            }
-
-            queueInMainThread([this] { loadAssets(); });
-        }
+        f->m_iconLoadStep++;
+        queueInMainThread([this] { loadAssets(); });
     }
 };
