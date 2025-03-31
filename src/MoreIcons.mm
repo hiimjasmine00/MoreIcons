@@ -14,8 +14,15 @@ std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuff
         return path;
     }
 
-    auto pathString = [NSString stringWithUTF8String:path.c_str()];
-    auto fullpath = [[NSBundle mainBundle] pathForResource:pathString ofType:nil inDirectory:pathString];
+    std::filesystem::path filePath = path;
+    auto fullpath = [[NSBundle mainBundle]
+        pathForResource:[NSString stringWithUTF8String:filePath.filename().c_str()]
+        ofType:filePath.has_extension() ? nil : [NSString stringWithUTF8String:".plist"]
+        inDirectory:[NSString stringWithUTF8String:(filePath.parent_path().string() + '/').c_str()]];
 
-    return fullpath ? [fullpath UTF8String] : path;
+    if (fullpath != nil) {
+        std::filesystem::path resolvedPath = [fullpath UTF8String];
+        return filePath.has_extension() ? resolvedPath : resolvedPath.parent_path() / resolvedPath.stem();
+    }
+    else return path;
 }
