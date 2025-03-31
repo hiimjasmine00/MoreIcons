@@ -69,7 +69,7 @@ std::vector<IconPack> MoreIcons::getTexturePacks() {
 
     return packs;
 }
-
+#ifndef GEODE_IS_IOS
 std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuffix) {
     #ifdef GEODE_IS_ANDROID
     if (CCDirector::get()->getContentScaleFactor() >= 4.0f && !skipSuffix) {
@@ -84,7 +84,7 @@ std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuff
     return (dirs::getGameDir() / "Resources" / path).string();
     #endif
 }
-
+#endif
 bool naturalSorter(const std::string& aStr, const std::string& bStr) {
     auto a = aStr.substr(aStr.find(':') + 1);
     auto b = bStr.substr(bStr.find(':') + 1);
