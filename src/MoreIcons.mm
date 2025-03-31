@@ -18,7 +18,7 @@ std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuff
     auto fullpath = [[NSBundle mainBundle]
         pathForResource:[NSString stringWithUTF8String:filePath.filename().c_str()]
         ofType:filePath.has_extension() ? nil : [NSString stringWithUTF8String:".plist"]
-        inDirectory:[NSString stringWithUTF8String:(filePath.parent_path().string() + '/').c_str()]];
+        inDirectory:[NSString stringWithUTF8String:filePath.parent_path().c_str()]];
 
     if (fullpath != nil) {
         std::filesystem::path resolvedPath = [fullpath UTF8String];
