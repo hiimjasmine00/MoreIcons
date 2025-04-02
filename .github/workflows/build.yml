@@ -19,6 +19,10 @@ jobs:
         - name: macOS
           os: macos-latest
 
+        - name: iOS
+          os: macos-latest
+          target: iOS
+
         - name: Android32
           os: ubuntu-latest
           target: Android32
@@ -36,6 +40,7 @@ jobs:
       - name: Build the mod
         uses: hiimjasmine00/build-geode-mod@main
         with:
+          sdk: nightly
           build-config: ${{ matrix.config.build-config || 'Release' }}
           export-pdb: true
           export-symbols: true
