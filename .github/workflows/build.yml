@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build the mod
-        uses: hiimjasmine00/build-geode-mod@main
+        uses: hiimjasmine00/build-geode-mod@ubuntu-stuff-i-guess
         with:
           sdk: nightly
           build-config: ${{ matrix.config.build-config || 'Release' }}
