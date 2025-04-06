@@ -14,10 +14,10 @@ $on_mod(Loaded) {
     MoreIcons::debugLogs = mod->getSettingValue<bool>("debug-logs");
     MoreIcons::traditionalPacks = mod->getSettingValue<bool>("traditional-packs");
     #ifdef GEODE_IS_ANDROID
-    auto tempDir = mod->getTempDir();
-    if (std::filesystem::exists(tempDir / "assets")) {
+    auto assetsDir = mod->getTempDir() / "assets";
+    if (std::filesystem::exists(assetsDir)) {
         std::error_code cleanCode;
-        std::filesystem::remove_all(tempDir / "assets", cleanCode);
+        std::filesystem::remove_all(assetsDir, cleanCode);
         if (cleanCode) return log::error("Failed to clean assets folder: {}", cleanCode.message());
     }
     #endif
@@ -81,8 +81,7 @@ std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuff
         }
         return path;
     }
-    GEODE_ANDROID(return fmt::format("assets/{}", path);)
-    GEODE_IOS(return iosResourcePath(path.c_str());)
+    return GEODE_ANDROID(fmt::format("assets/{}", path)) GEODE_IOS(iosResourcePath(path.c_str()));
     #else
     return (dirs::getGameDir() / "Resources" / path).string();
     #endif
