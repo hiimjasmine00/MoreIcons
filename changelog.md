@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v1.12.1 (2025-04-06)
+- Fixed a possible crash when opening the icon info display on iOS
+
 ## v1.12.0 (2025-03-31)
 - Added support for iOS
 - Added more trail customization options (Always Show, Fade Time, Stroke Width)

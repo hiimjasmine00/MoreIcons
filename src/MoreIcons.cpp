@@ -69,22 +69,25 @@ std::vector<IconPack> MoreIcons::getTexturePacks() {
 
     return packs;
 }
-#ifndef GEODE_IS_IOS
+
+GEODE_IOS(const char* iosResourcePath(const char*);)
+
 std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuffix) {
-    #ifdef GEODE_IS_ANDROID
+    #ifdef GEODE_IS_MOBILE
     if (CCDirector::get()->getContentScaleFactor() >= 4.0f && !skipSuffix) {
-        if (auto highGraphicsAndroid = Loader::get()->getLoadedMod("weebify.high-graphics-android")) {
-            auto configDir = highGraphicsAndroid->getConfigDir(false) / Loader::get()->getGameVersion();
+        if (auto highGraphicsMobile = Loader::get()->getLoadedMod("weebify.high-graphics-android")) {
+            auto configDir = highGraphicsMobile->getConfigDir(false) / Loader::get()->getGameVersion();
             if (std::filesystem::exists(configDir)) return configDir / path;
         }
         return path;
     }
-    return fmt::format("assets/{}", path);
+    GEODE_ANDROID(return fmt::format("assets/{}", path);)
+    GEODE_IOS(return iosResourcePath(path.c_str());)
     #else
     return (dirs::getGameDir() / "Resources" / path).string();
     #endif
 }
-#endif
+
 bool naturalSorter(const std::string& aStr, const std::string& bStr) {
     auto a = aStr.substr(aStr.find(':') + 1);
     auto b = bStr.substr(bStr.find(':') + 1);
