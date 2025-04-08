@@ -19,7 +19,7 @@ class $modify(MIGameManager, GameManager) {
     void reloadAllStep2() {
         GameManager::reloadAllStep2();
 
-        if (!m_unkBool1) return;
+        if (!m_reloadTextures) return;
 
         MoreIcons::saveTrails();
         MoreIconsAPI::icons.clear();
@@ -50,7 +50,7 @@ class $modify(MIGameManager, GameManager) {
 
     CCTexture2D* loadIcon(int id, int type, int requestID) {
         auto iconKey = keyForIcon(id, type);
-        auto iconExists = m_loadIcon.contains(iconKey) && m_loadIcon[iconKey] > 0;
+        auto iconExists = m_iconLoadCounts.contains(iconKey) && m_iconLoadCounts[iconKey] > 0;
 
         auto ret = GameManager::loadIcon(id, type, requestID);
         if (!ret) return ret;
