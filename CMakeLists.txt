@@ -10,7 +10,7 @@ endif()
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
 
-project(MoreIcons VERSION 1.12.1)
+project(MoreIcons VERSION 1.12.2)
 
 add_library(${PROJECT_NAME} SHARED
     src/api/MoreIconsAPI.cpp

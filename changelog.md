@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v1.12.2 (2025-04-24)
+- Fixed a bug where the game would crash when opening the log viewer on 32-bit Android
+
 ## v1.12.1 (2025-04-06)
 - Fixed a possible crash when opening the icon info display on iOS
 
