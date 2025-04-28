@@ -7,7 +7,7 @@ using namespace geode::prelude;
 
 class $modify(MIMenuLayer, MenuLayer) {
     static void onModify(ModifyBase<ModifyDerive<MIMenuLayer, MenuLayer>>& self) {
-        (void)self.getHook("MenuLayer::init").map([](Hook* hook) {
+        (void)self.getHook("MenuLayer::init").inspect([](Hook* hook) {
             hook->setAutoEnable(false);
             if (auto iconProfile = Loader::get()->getInstalledMod("capeling.icon_profile")) {
                 if (iconProfile->isEnabled()) {
@@ -16,15 +16,12 @@ class $modify(MIMenuLayer, MenuLayer) {
                 }
                 else new EventListener([hook](ModStateEvent* e) {
                     afterPriority(hook, e->getMod());
-                    (void)hook->enable().mapErr([](const std::string& err) {
-                        return log::error("Failed to enable MenuLayer::init hook: {}", err), err;
+                    (void)hook->enable().inspectErr([](const std::string& err) {
+                        log::error("Failed to enable MenuLayer::init hook: {}", err);
                     });
                 }, ModStateFilter(iconProfile, ModEventType::Loaded));
             }
-            return hook;
-        }).mapErr([](const std::string& err) {
-            return log::error("Failed to get MenuLayer::init hook: {}", err), err;
-        });
+        }).inspectErr([](const std::string& err) { log::error("Failed to get MenuLayer::init hook: {}", err); });
     }
 
     static void afterPriority(Hook* hook, Mod* mod) {

@@ -375,9 +375,11 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
     safeDebug("Finished pre-loading vanilla trail {} from {}", name, pack.name);
 }
 
-constexpr std::array prefixes = { "player_", "ship_", "player_ball_", "bird_", "dart_", "robot_", "spider_", "swing_", "jetpack_" };
-
 void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view suffix, IconType type) {
+    constexpr std::array prefixes = {
+        "player_", "ship_", "player_ball_", "bird_", "dart_", "robot_", "spider_", "swing_", "jetpack_"
+    };
+
     MoreIconsAPI::iconIndices[type].first = MoreIconsAPI::icons.size();
 
     for (int i = 0; i < packs.size(); i++) {
@@ -498,9 +500,7 @@ void MoreIcons::saveTrails() {
             { "show", info.show },
             { "fade", info.fade },
             { "stroke", info.stroke }
-        })).mapErr([](const std::string& err) {
-            return log::error("Failed to save trail JSON: {}", err), err;
-        });
+        })).inspectErr([](const std::string& err) { log::error("Failed to save trail JSON: {}", err); });
     }
 }
 

@@ -8,12 +8,10 @@ class $modify(MIGameManager, GameManager) {
     inline static Hook* sheetHook = nullptr;
 
     static void onModify(ModifyBase<ModifyDerive<MIGameManager, GameManager>>& self) {
-        (void)self.getHook("GameManager::sheetNameForIcon").map([](Hook* hook) {
+        (void)self.getHook("GameManager::sheetNameForIcon").inspect([](Hook* hook) {
             hook->setAutoEnable(Mod::get()->getSettingValue<bool>("traditional-packs"));
-            return sheetHook = hook;
-        }).mapErr([](const std::string& err) {
-            return log::error("Failed to get GameManager::sheetNameForIcon hook: {}", err), err;
-        });
+            sheetHook = hook;
+        }).inspectErr([](const std::string& err) { log::error("Failed to get GameManager::sheetNameForIcon hook: {}", err); });
     }
 
     void reloadAllStep2() {
@@ -35,10 +33,10 @@ class $modify(MIGameManager, GameManager) {
 
         auto hooks = mod->getHooks();
 
-        if (sheetHook) (void)(MoreIcons::traditionalPacks ? sheetHook->enable().mapErr([](const std::string& err) {
-            return log::error("Failed to enable GameManager::sheetNameForIcon hook: {}", err), err;
-        }) : sheetHook->disable().mapErr([](const std::string& err) {
-            return log::error("Failed to disable GameManager::sheetNameForIcon hook: {}", err), err;
+        if (sheetHook) (void)(MoreIcons::traditionalPacks ? sheetHook->enable().inspectErr([](const std::string& err) {
+            log::error("Failed to enable GameManager::sheetNameForIcon hook: {}", err);
+        }) : sheetHook->disable().inspectErr([](const std::string& err) {
+            log::error("Failed to disable GameManager::sheetNameForIcon hook: {}", err);
         }));
     }
 

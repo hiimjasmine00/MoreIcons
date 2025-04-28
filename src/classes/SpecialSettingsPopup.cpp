@@ -127,9 +127,7 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     showLabel->setID("show-label");
     m_mainLayer->addChild(showLabel);
 
-    auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", 0, 0, 0.8f, false, "goldFont.fnt", "GJ_button_01.png", 0.0f), [
-        this, blendToggle, tintToggle, showToggle, info
-    ](auto) {
+    auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", 0.8f), [this, blendToggle, tintToggle, showToggle, info](auto) {
         info->fade = m_fadeTime;
         info->stroke = m_strokeWidth;
         info->blend = blendToggle->m_toggled;

@@ -4,7 +4,7 @@
 
 using namespace geode::prelude;
 
-LogCell* LogCell::create(const std::string& message, Severity severity, int index, int total, bool dark) {
+LogCell* LogCell::create(const std::string& message, int severity, int index, int total, bool dark) {
     auto ret = new LogCell();
     if (ret->init(message, severity, index, total, dark)) {
         ret->autorelease();
@@ -14,7 +14,7 @@ LogCell* LogCell::create(const std::string& message, Severity severity, int inde
     return nullptr;
 }
 
-bool LogCell::init(const std::string& message, Severity severity, int index, int total, bool dark) {
+bool LogCell::init(const std::string& message, int severity, int index, int total, bool dark) {
     if (!CCLayer::init()) return false;
 
     setID("LogCell");

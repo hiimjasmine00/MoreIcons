@@ -4,14 +4,6 @@
 using namespace geode::prelude;
 
 class $modify(MILoadingLayer, LoadingLayer) {
-    inline static constexpr std::array labels = {
-        "More Icons: Loading Icons", "More Icons: Loading Ships",
-        "More Icons: Loading Balls", "More Icons: Loading UFOs",
-        "More Icons: Loading Waves", "More Icons: Loading Robots",
-        "More Icons: Loading Spiders", "More Icons: Loading Swings",
-        "More Icons: Loading Jetpacks", "More Icons: Loading Trails"
-    };
-
     struct Fields {
         int m_iconLoadStep;
         std::vector<IconPack> m_iconPacks;
@@ -62,6 +54,14 @@ class $modify(MILoadingLayer, LoadingLayer) {
             default:
                 return LoadingLayer::loadAssets();
         }
+
+        constexpr std::array labels = {
+            "More Icons: Loading Icons", "More Icons: Loading Ships",
+            "More Icons: Loading Balls", "More Icons: Loading UFOs",
+            "More Icons: Loading Waves", "More Icons: Loading Robots",
+            "More Icons: Loading Spiders", "More Icons: Loading Swings",
+            "More Icons: Loading Jetpacks", "More Icons: Loading Trails"
+        };
 
         if (auto smallLabel2 = static_cast<CCLabelBMFont*>(getChildByID("geode-small-label-2")))
             smallLabel2->setString(f->m_iconLoadStep < labels.size() ? labels[f->m_iconLoadStep] : "");

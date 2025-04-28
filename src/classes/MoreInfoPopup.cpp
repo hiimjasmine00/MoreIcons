@@ -121,7 +121,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
         }
     }
 
-    auto okButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("OK", 0, 0, 1.0f, false, "goldFont.fnt", "GJ_button_01.png", 0.0f), [this](auto) {
+    auto okButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("OK"), [this](auto) {
         onClose(nullptr);
     });
     okButton->setPosition({ 150.0f, 25.0f });

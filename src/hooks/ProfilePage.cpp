@@ -6,12 +6,6 @@
 using namespace geode::prelude;
 
 class $modify(MIProfilePage, ProfilePage) {
-    inline static constexpr std::array icons = {
-        "player-icon", "player-ship", "player-ball",
-        "player-ufo", "player-wave", "player-robot",
-        "player-spider", "player-swing", "player-jetpack"
-    };
-
     static void onModify(ModifyBase<ModifyDerive<MIProfilePage, ProfilePage>>& self) {
         (void)self.setHookPriorityAfterPost("ProfilePage::loadPageFromUserInfo", "weebify.separate_dual_icons");
     }
@@ -26,6 +20,13 @@ class $modify(MIProfilePage, ProfilePage) {
 
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
+
+        constexpr std::array icons = {
+            "player-icon", "player-ship", "player-ball",
+            "player-ufo", "player-wave", "player-robot",
+            "player-spider", "player-swing", "player-jetpack"
+        };
+
         for (int i = 0; i < icons.size(); i++) {
             if (auto player = playerMenu->getChildByID(icons[i]))
                 updatePlayer(player, i == 1 && player->getTag() != -1 ? (IconType)player->getTag() : (IconType)i, dual);

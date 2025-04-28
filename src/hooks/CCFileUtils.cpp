@@ -5,7 +5,7 @@ using namespace geode::prelude;
 class $modify(MIFileUtils, CCFileUtils) {
     gd::string fullPathForFilename(const char* filename, bool skipSuffix) {
         auto ret = CCFileUtils::fullPathForFilename(filename, skipSuffix);
-        if (ret.empty() || skipSuffix) return ret;
+        if (ret.empty() || skipSuffix || !isAbsolutePath(filename)) return ret;
 
         auto scaleFactor = CCDirector::get()->getContentScaleFactor();
         if (scaleFactor >= 4.0f) {

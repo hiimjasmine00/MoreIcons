@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v1.12.3 (2025-04-28)
+- Fixed a few issues with mass loading, especially when opening the level editor
+
 ## v1.12.2 (2025-04-24)
 - Fixed a bug where the game would crash when opening the log viewer on 32-bit Android
 
