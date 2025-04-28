@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build the mod
-        uses: hiimjasmine00/build-geode-mod@main
+        uses: geode-sdk/build-geode-mod@main
         with:
           sdk: nightly
           build-config: ${{ matrix.config.build-config || 'Release' }}
@@ -53,7 +53,7 @@ jobs:
     needs: ['build']
 
     steps:
-      - uses: hiimjasmine00/build-geode-mod/combine@main
+      - uses: geode-sdk/build-geode-mod/combine@main
         id: build
 
       - uses: actions/upload-artifact@v4
