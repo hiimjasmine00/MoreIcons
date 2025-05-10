@@ -3,6 +3,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS" OR IOS)
     set(CMAKE_OSX_ARCHITECTURES "arm64")
+    add_definitions(-DGLES_SILENCE_DEPRECATION)
 else()
     set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
 endif()
@@ -41,6 +42,9 @@ add_library(${PROJECT_NAME} SHARED
 
 if (APPLE)
     target_sources(${PROJECT_NAME} PRIVATE src/MoreIcons.mm)
+    if ("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS" OR IOS)
+        target_link_libraries(${PROJECT_NAME} "-framework CoreGraphics")
+    endif()
 endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
