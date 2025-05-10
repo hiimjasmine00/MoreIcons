@@ -121,7 +121,7 @@ class $modify(MIPlayerObject, PlayerObject) {
             m_alwaysShowStreak = info->show;
         }
 
-        m_regularTrail->initWithFade(fade, 5.0f, stroke, { 255, 255, 255 }, CCTextureCache::get()->addImage(info->textures[0].c_str(), true));
+        m_regularTrail->initWithFade(fade, 5.0f, stroke, { 255, 255, 255 }, info->textures[0].c_str());
         if (info->trailID == 6) m_regularTrail->enableRepeatMode(0.1f);
         if (info->trailID > 0 || info->blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
         m_regularTrail->setUserObject("name"_spr, CCString::create(trailFile));

@@ -24,4 +24,5 @@ public:
     static void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type);
     static void updatePlayerObject(PlayerObject* object, IconType type, bool dual);
     static void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type);
+    static cocos2d::CCSpriteFrame* createSpriteFrame(cocos2d::CCDictionary* dict, cocos2d::CCTexture2D* texture, int format);
 };

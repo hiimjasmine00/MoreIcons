@@ -3,21 +3,25 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS" OR IOS)
     set(CMAKE_OSX_ARCHITECTURES "arm64")
-    add_definitions(-DGLES_SILENCE_DEPRECATION)
 else()
     set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
 endif()
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
 
-project(MoreIcons VERSION 1.12.3)
+project(MoreIcons VERSION 1.13.0)
 
 add_library(${PROJECT_NAME} SHARED
     src/api/MoreIconsAPI.cpp
+    src/classes/BiggerContentLayer.cpp
+    src/classes/BiggerScrollLayer.cpp
     src/classes/ButtonHooker.cpp
     src/classes/DummyNode.cpp
+    src/classes/EditIconPopup.cpp
+    src/classes/IconViewPopup.cpp
     src/classes/LogCell.cpp
     src/classes/LogLayer.cpp
+    src/classes/MoreIconsPopup.cpp
     src/classes/MoreInfoPopup.cpp
     src/classes/SpecialSettingsPopup.cpp
     src/hooks/CCFileUtils.cpp
@@ -35,7 +39,7 @@ add_library(${PROJECT_NAME} SHARED
     src/MoreIcons.cpp
 )
 
-if ("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS" OR IOS)
+if (APPLE)
     target_sources(${PROJECT_NAME} PRIVATE src/MoreIcons.mm)
 endif()
 
@@ -48,5 +52,12 @@ else()
 endif()
 
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
+
+CPMAddPackage("gh:bshoshany/thread-pool@5.0.0")
+CPMAddPackage("gh:TeamHypersomnia/rectpack2D#3344bf5")
+target_include_directories(${PROJECT_NAME} PRIVATE ${thread-pool_SOURCE_DIR}/include ${rectpack2D_SOURCE_DIR}/src)
+
+CPMAddPackage("gh:matcool/gd-render-texture#ec05bb6")
+target_link_libraries(${PROJECT_NAME} gd-render-texture)
 
 setup_geode_mod(${PROJECT_NAME})

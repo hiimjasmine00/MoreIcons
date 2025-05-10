@@ -4,10 +4,18 @@
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Popup.hpp>
-#include <geode.texture-loader/include/TextureLoader.hpp>
 #include <Geode/utils/ranges.hpp>
+#include <geode.texture-loader/include/TextureLoader.hpp>
+#include <RenderTexture.hpp>
 
 using namespace geode::prelude;
+
+bool doesExist(const std::filesystem::path& path) {
+    std::error_code code;
+    auto exists = std::filesystem::exists(path, code);
+    if (code) log::error("Error checking existence of {}: {}", path, code.message());
+    return exists;
+}
 
 $on_mod(Loaded) {
     auto mod = Mod::get();
@@ -15,10 +23,10 @@ $on_mod(Loaded) {
     MoreIcons::traditionalPacks = mod->getSettingValue<bool>("traditional-packs");
     #ifdef GEODE_IS_ANDROID
     auto assetsDir = mod->getTempDir() / "assets";
-    if (std::filesystem::exists(assetsDir)) {
+    if (doesExist(assetsDir)) {
         std::error_code cleanCode;
         std::filesystem::remove_all(assetsDir, cleanCode);
-        if (cleanCode) return log::error("Failed to clean assets folder: {}", cleanCode.message());
+        if (cleanCode) log::error("Failed to clean assets folder: {}", cleanCode.message());
     }
     #endif
 }
@@ -37,8 +45,8 @@ std::vector<IconPack> MoreIcons::getTexturePacks() {
         .vanilla = false
     });
     for (auto& pack : texture_loader::getAppliedPacks()) {
-        if (MoreIcons::traditionalPacks) {
-            if (std::filesystem::exists(pack.resourcesPath / "icons")) packs.push_back({
+        if (traditionalPacks) {
+            if (doesExist(pack.resourcesPath / "icons")) packs.push_back({
                 .name = pack.name,
                 .id = pack.id,
                 .path = pack.resourcesPath,
@@ -47,7 +55,7 @@ std::vector<IconPack> MoreIcons::getTexturePacks() {
             else {
                 auto trailCount = GameManager::get()->countForType(IconType::Special);
                 for (int i = 1; i <= trailCount; i++) {
-                    if (std::filesystem::exists(pack.resourcesPath / fmt::format("streak_{:02}_001.png", i))) {
+                    if (doesExist(pack.resourcesPath / fmt::format("streak_{:02}_001.png", i))) {
                         packs.push_back({
                             .name = pack.name,
                             .id = pack.id,
@@ -59,7 +67,7 @@ std::vector<IconPack> MoreIcons::getTexturePacks() {
                 }
             }
         }
-        if (std::filesystem::exists(pack.resourcesPath / "config" / GEODE_MOD_ID)) packs.push_back({
+        if (doesExist(pack.resourcesPath / "config" / GEODE_MOD_ID)) packs.push_back({
             .name = pack.name,
             .id = pack.id,
             .path = pack.resourcesPath,
@@ -70,21 +78,17 @@ std::vector<IconPack> MoreIcons::getTexturePacks() {
     return packs;
 }
 
-GEODE_IOS(const char* iosResourcePath(const char*);)
-
 std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuffix) {
     #ifdef GEODE_IS_MOBILE
     if (CCDirector::get()->getContentScaleFactor() >= 4.0f && !skipSuffix) {
         if (auto highGraphicsMobile = Loader::get()->getLoadedMod("weebify.high-graphics-android")) {
-            auto configDir = highGraphicsMobile->getConfigDir(false) / Loader::get()->getGameVersion();
-            if (std::filesystem::exists(configDir)) return configDir / path;
+            auto configDir = highGraphicsMobile->getConfigDir(false) / GEODE_STR(GEODE_GD_VERSION);
+            if (doesExist(configDir)) return configDir / path;
         }
         return path;
     }
-    return GEODE_ANDROID(fmt::format("assets/{}", path)) GEODE_IOS(iosResourcePath(path.c_str()));
-    #else
-    return (dirs::getGameDir() / "Resources" / path).string();
     #endif
+    return (dirs::getResourcesDir() / path).string();
 }
 
 bool naturalSorter(const std::string& aStr, const std::string& bStr) {
@@ -93,7 +97,7 @@ bool naturalSorter(const std::string& aStr, const std::string& bStr) {
     auto aIt = a.begin();
     auto bIt = b.begin();
 
-    while (aIt != a.end() && bIt != b.end()) {
+    while (aIt < a.end() && bIt < b.end()) {
         if (std::isdigit(*aIt) && std::isdigit(*bIt)) {
             std::string aNum, bNum;
             while (std::isdigit(*aIt)) aNum += *aIt++;
@@ -141,14 +145,17 @@ void naturalSort(IconType type) {
 }
 
 std::string replaceEnd(const std::string& str, size_t end, std::string_view replace) {
-    return fmt::format("{}{}", str.substr(0, str.size() - end), replace);
+    return str.substr(0, str.size() - end).append(replace);
 }
 
 template <typename... Args>
-void printLog(Severity severity, fmt::format_string<Args...> message, Args&&... args) {
+void printLog(const std::string& name, int severity, fmt::format_string<Args...> message, Args&&... args) {
     auto formatArgs = fmt::make_format_args(args...);
-    log::vlogImpl(severity, Mod::get(), message, formatArgs);
-    MoreIcons::logs.push_back({ fmt::vformat(message, formatArgs), severity });
+    auto logMessage = fmt::vformat(message, formatArgs);
+    log::logImpl(Severity::cast(severity), Mod::get(), "{}: {}", name, logMessage);
+    MoreIcons::logs.push_back({ name, MoreIcons::currentType, logMessage, severity });
+    auto& currentSeverity = MoreIcons::severities[MoreIcons::currentType];
+    if (currentSeverity < severity) currentSeverity = severity;
     if (MoreIcons::severity < severity) MoreIcons::severity = severity;
 }
 
@@ -158,51 +165,64 @@ void safeDebug(fmt::format_string<Args...> message, Args&&... args) {
 }
 
 void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, IconType type) {
-    auto scaleFactor = CCDirector::get()->getContentScaleFactor();
     auto name = pack.id.empty() ? path.stem().string() : fmt::format("{}:{}", pack.id, path.stem());
 
     safeDebug("Pre-loading folder icon {} from {}", name, pack.name);
 
-    if (MoreIconsAPI::hasIcon(name, type)) return printLog(Severity::Warning, "{}: Duplicate icon name", path);
+    if (MoreIconsAPI::hasIcon(name, type)) return printLog(name, Severity::Warning, "Duplicate icon name");
+
+    std::error_code code;
+    std::filesystem::directory_iterator it(path, code);
+    if (code) return printLog(name, Severity::Error, "Failed to create directory iterator: {}", code.message());
 
     std::vector<std::string> textures;
     std::vector<std::string> frameNames;
-    for (auto& subEntry : std::filesystem::directory_iterator(path)) {
+    auto scaleFactor = CCDirector::get()->getContentScaleFactor();
+
+    for (; it != std::filesystem::end(it); it.increment(code)) {
+        auto& subEntry = *it;
         if (!subEntry.is_regular_file()) continue;
 
         auto subEntryPath = subEntry.path();
         if (subEntryPath.extension() != ".png") continue;
 
         auto pathFilename = subEntryPath.filename().string();
-        auto fileQuality = kTextureQualityLow;
+        std::string frameName;
         if (pathFilename.ends_with("-uhd.png")) {
-            if (scaleFactor < 4.0f) {
-                printLog(Severity::Info, "{}: Ignoring high-quality PNG file for {} texture quality",
-                    subEntryPath, scaleFactor >= 2.0f ? "medium" : "low");
+            frameName = replaceEnd(subEntryPath.filename().string(), 8, ".png");
+            auto logName = fmt::format("{}/{}", name, frameName);
+
+            if (scaleFactor < 4.0f && scaleFactor >= 2.0f) {
+                printLog(logName, Severity::Warning, "Ignoring high-quality PNG file for medium texture quality");
                 continue;
             }
-
-            fileQuality = kTextureQualityHigh;
+            else if (scaleFactor < 2.0f) {
+                printLog(logName, Severity::Warning, "Ignoring high-quality PNG file for low texture quality");
+                continue;
+            }
         }
         else if (pathFilename.ends_with("-hd.png")) {
+            frameName = replaceEnd(subEntryPath.filename().string(), 7, ".png");
+            auto logName = fmt::format("{}/{}", name, frameName);
+
             if (scaleFactor < 2.0f) {
-                printLog(Severity::Info, "{}: Ignoring medium-quality PNG file for low texture quality", subEntryPath);
+                printLog(logName, Severity::Warning, "Ignoring medium-quality PNG file for low texture quality");
                 continue;
             }
 
-            if (std::filesystem::exists(replaceEnd(subEntryPath.string(), 7, "-uhd.png")) && scaleFactor >= 4.0f) continue;
-            else fileQuality = kTextureQualityMedium;
+            if (doesExist(replaceEnd(subEntryPath.string(), 7, "-uhd.png")) && scaleFactor >= 4.0f) continue;
         }
         else {
-            if (std::filesystem::exists(replaceEnd(subEntryPath.string(), 4, "-uhd.png")) && scaleFactor >= 4.0f) continue;
-            else if (std::filesystem::exists(replaceEnd(subEntryPath.string(), 4, "-hd.png")) && scaleFactor >= 2.0f) continue;
-            else fileQuality = kTextureQualityLow;
+            frameName = subEntryPath.filename().string();
+
+            if (doesExist(replaceEnd(subEntryPath.string(), 4, "-uhd.png")) && scaleFactor >= 4.0f) continue;
+            else if (doesExist(replaceEnd(subEntryPath.string(), 4, "-hd.png")) && scaleFactor >= 2.0f) continue;
         }
 
         textures.push_back(subEntryPath.string());
-        frameNames.push_back(MoreIconsAPI::getFrameName(fileQuality == kTextureQualityHigh ? replaceEnd(subEntryPath.filename().string(), 8, ".png") :
-            fileQuality == kTextureQualityMedium ? replaceEnd(subEntryPath.filename().string(), 7, ".png") : subEntryPath.filename().string(), name, type));
+        frameNames.push_back(MoreIconsAPI::getFrameName(frameName, name, type));
     }
+    if (code) printLog(name, Severity::Warning, "Failed to iterate over directory: {}", code.message());
 
     if (!textures.empty()) MoreIconsAPI::icons.push_back({
         .name = name,
@@ -223,35 +243,38 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
 void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconType type) {
     auto scaleFactor = CCDirector::get()->getContentScaleFactor();
     auto pathFilename = path.filename().string();
-    auto fileQuality = kTextureQualityLow;
+    std::string name;
     if (pathFilename.ends_with("-uhd.plist")) {
-        if (scaleFactor < 4.0f) return printLog(Severity::Info, "{}: Ignoring high-quality plist file for {} texture quality",
-                path, scaleFactor >= 2.0f ? "medium" : "low");
+        name = replaceEnd(path.stem().string(), 4, "");
+        if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
 
-        fileQuality = kTextureQualityHigh;
+        if (scaleFactor < 4.0f && scaleFactor >= 2.0f)
+            return printLog(name, Severity::Warning, "Ignoring high-quality plist file for medium texture quality");
+        else if (scaleFactor < 2.0f)
+            return printLog(name, Severity::Warning, "Ignoring high-quality plist file for low texture quality");
     }
     else if (pathFilename.ends_with("-hd.plist")) {
-        if (scaleFactor < 2.0f) return printLog(Severity::Info, "{}: Ignoring medium-quality plist file for low texture quality", path);
+        name = replaceEnd(path.stem().string(), 3, "");
+        if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
 
-        if (std::filesystem::exists(replaceEnd(path.string(), 9, "-uhd.plist")) && scaleFactor >= 4.0f) return;
-        else fileQuality = kTextureQualityMedium;
+        if (scaleFactor < 2.0f) return printLog(name, Severity::Warning, "Ignoring medium-quality plist file for low texture quality");
+
+        if (doesExist(replaceEnd(path.string(), 9, "-uhd.plist")) && scaleFactor >= 4.0f) return;
     }
     else {
-        if (std::filesystem::exists(replaceEnd(path.string(), 6, "-uhd.plist")) && scaleFactor >= 4.0f) return;
-        else if (std::filesystem::exists(replaceEnd(path.string(), 6, "-hd.plist")) && scaleFactor >= 2.0f) return;
-        else fileQuality = kTextureQualityLow;
-    }
+        name = path.stem().string();
+        if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
 
-    auto name = fileQuality == kTextureQualityHigh ? replaceEnd(path.stem().string(), 4, "") :
-        fileQuality == kTextureQualityMedium ? replaceEnd(path.stem().string(), 3, "") : path.stem().string();
-    if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
+        if (doesExist(replaceEnd(path.string(), 6, "-uhd.plist")) && scaleFactor >= 4.0f) return;
+        else if (doesExist(replaceEnd(path.string(), 6, "-hd.plist")) && scaleFactor >= 2.0f) return;
+    }
 
     safeDebug("Pre-loading file icon {} from {}", name, pack.name);
 
-    if (MoreIconsAPI::hasIcon(name, type)) return printLog(Severity::Warning, "{}: Duplicate icon name", path);
+    if (MoreIconsAPI::hasIcon(name, type)) return printLog(name, Severity::Warning, "Duplicate icon name");
 
     auto fullTexturePath = replaceEnd(path.string(), 6, ".png");
-    if (!std::filesystem::exists(fullTexturePath)) return printLog(Severity::Error, "{}: Texture file {}.png not found", path, path.stem());
+    if (!doesExist(fullTexturePath)) return printLog(name, Severity::Error, "Texture file {}.png not found", path.stem());
 
     MoreIconsAPI::icons.push_back({
         .name = name,
@@ -272,30 +295,27 @@ void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconT
 void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack, IconType type) {
     auto scaleFactor = CCDirector::get()->getContentScaleFactor();
     auto pathFilename = path.filename().string();
-    auto fileQuality = kTextureQualityLow;
+    std::string name;
     if (pathFilename.ends_with("-uhd.png")) {
         if (scaleFactor < 4.0f) return;
-        fileQuality = kTextureQualityHigh;
+        name = fmt::format("{}:{}", pack.id, replaceEnd(path.stem().string(), 4, ""));
     }
     else if (pathFilename.ends_with("-hd.png")) {
         if (scaleFactor < 2.0f) return;
-        if (std::filesystem::exists(replaceEnd(path.string(), 7, "-uhd.png")) && scaleFactor >= 4.0f) return;
-        else fileQuality = kTextureQualityMedium;
+        if (doesExist(replaceEnd(path.string(), 7, "-uhd.png")) && scaleFactor >= 4.0f) return;
+        name = fmt::format("{}:{}", pack.id, replaceEnd(path.stem().string(), 3, ""));
     }
     else {
-        if (std::filesystem::exists(replaceEnd(path.string(), 4, "-uhd.png")) && scaleFactor >= 4.0f) return;
-        else if (std::filesystem::exists(replaceEnd(path.string(), 4, "-hd.png")) && scaleFactor >= 2.0f) return;
-        else fileQuality = kTextureQualityLow;
+        if (doesExist(replaceEnd(path.string(), 4, "-uhd.png")) && scaleFactor >= 4.0f) return;
+        else if (doesExist(replaceEnd(path.string(), 4, "-hd.png")) && scaleFactor >= 2.0f) return;
+        name = fmt::format("{}:{}", pack.id, path.stem().string());
     }
-
-    auto name = fmt::format("{}:{}", pack.id, fileQuality == kTextureQualityHigh ? replaceEnd(path.stem().string(), 4, "") :
-        fileQuality == kTextureQualityMedium ? replaceEnd(path.stem().string(), 3, "") : path.stem().string());
 
     safeDebug("Pre-loading vanilla icon {} from {}", name, pack.name);
 
     auto plistPath = replaceEnd(path.string(), 4, ".plist");
-    if (!std::filesystem::exists(plistPath)) plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", path.stem()), false);
-    if (!CCFileUtils::get()->isFileExist(plistPath)) return printLog(Severity::Error, "{}: Plist file not found (Last attempt: {})", path, plistPath);
+    if (!doesExist(plistPath)) plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", path.stem()), false);
+    if (!CCFileUtils::get()->isFileExist(plistPath)) return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
 
     ranges::remove(MoreIconsAPI::icons, [name, type](const IconInfo& icon) { return icon.name == name && icon.type == type; });
 
@@ -320,7 +340,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     safeDebug("Pre-loading trail {} from {}", name, pack.name);
 
-    if (MoreIconsAPI::hasIcon(name, IconType::Special)) return printLog(Severity::Warning, "{}: Duplicate trail name", path);
+    if (MoreIconsAPI::hasIcon(name, IconType::Special)) return printLog(name, Severity::Warning, "Duplicate trail name");
 
     auto json = file::readJson(replaceEnd(path.string(), 4, ".json")).unwrapOr(matjson::makeObject({
         { "blend", false },
@@ -367,52 +387,66 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
         .packName = pack.name,
         .packID = pack.id,
         .type = IconType::Special,
-        .trailID = trailID,
-        .blend = false,
-        .tint = false
+        .trailID = trailID
     });
 
     safeDebug("Finished pre-loading vanilla trail {} from {}", name, pack.name);
 }
 
-void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view suffix, IconType type) {
-    constexpr std::array prefixes = {
-        "player_", "ship_", "player_ball_", "bird_", "dart_", "robot_", "spider_", "swing_", "jetpack_"
-    };
+void createDirectories(const std::filesystem::path& path) {
+    std::error_code code;
+    std::filesystem::create_directories(path, code);
+    if (code) log::error("Failed to create directory {}: {}", path, code.message());
+}
 
+#define DIRECTORY_ITERATOR(path) \
+    std::error_code code; \
+    std::filesystem::directory_iterator it(path, code); \
+    if (code) { \
+        log::error("{}: Failed to create directory iterator for: {}", path, code.message()); \
+        continue; \
+    } \
+    for (; it != std::filesystem::end(it); it.increment(code))
+
+#define DIRECTORY_ITERATOR_END(path) \
+    if (code) log::error("{}: Failed to iterate over directory: {}", path, code.message());
+
+void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view suffix, IconType type) {
     MoreIconsAPI::iconIndices[type].first = MoreIconsAPI::icons.size();
+    currentType = type;
 
     for (int i = 0; i < packs.size(); i++) {
         auto& pack = packs[i];
 
         if (!pack.vanilla) {
             auto path = pack.path / "config" / GEODE_MOD_ID / suffix;
-            if (!std::filesystem::exists(path)) {
-                if (i == 0) std::filesystem::create_directories(path);
+            if (!doesExist(path)) {
+                if (i == 0) createDirectories(path);
                 continue;
             }
 
             log::info("Pre-loading {}s from {}", suffix, path);
-            for (auto& entry : std::filesystem::directory_iterator(path)) {
-                if (entry.is_regular_file()) {
-                    auto& entryPath = entry.path();
-                    if (entryPath.extension() != ".plist") continue;
 
-                    loadFileIcon(entryPath, pack, type);
+            DIRECTORY_ITERATOR(path) {
+                auto& entry = *it;
+                auto& entryPath = entry.path();
+                if (entry.is_regular_file()) {
+                    if (entryPath.extension() == ".plist") loadFileIcon(entryPath, pack, type);
                 }
-                else if (entry.is_directory()) loadFolderIcon(entry.path(), pack, type);
+                else if (entry.is_directory()) loadFolderIcon(entryPath, pack, type);
             }
+            DIRECTORY_ITERATOR_END(path)
 
             log::info("Finished pre-loading {}s from {}", suffix, path);
         }
-        else {
-            if (!traditionalPacks) continue;
-
+        else if (traditionalPacks) {
             auto path = pack.path / "icons";
-            if (!std::filesystem::exists(path)) continue;
+            if (!doesExist(path)) continue;
 
             log::info("Pre-loading {}s from {}", suffix, path);
-            for (auto& entry : std::filesystem::directory_iterator(path)) {
+
+            DIRECTORY_ITERATOR(path) {
+                auto& entry = *it;
                 if (!entry.is_regular_file()) continue;
 
                 auto& entryPath = entry.path();
@@ -423,6 +457,7 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
 
                 loadVanillaIcon(entryPath, pack, type);
             }
+            DIRECTORY_ITERATOR_END(path)
 
             log::info("Finished pre-loading {}s from {}", suffix, path);
         }
@@ -435,19 +470,22 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
 
 void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
     MoreIconsAPI::iconIndices[IconType::Special].first = MoreIconsAPI::icons.size();
+    currentType = IconType::Special;
 
     for (int i = 0; i < packs.size(); i++) {
         auto& pack = packs[i];
 
         if (!pack.vanilla) {
             auto path = pack.path / "config" / GEODE_MOD_ID / "trail";
-            if (!std::filesystem::exists(path)) {
-                if (i == 0) std::filesystem::create_directories(path);
+            if (!doesExist(path)) {
+                if (i == 0) createDirectories(path);
                 continue;
             }
 
             log::info("Pre-loading trails from {}", path);
-            for (auto& entry : std::filesystem::directory_iterator(path)) {
+
+            DIRECTORY_ITERATOR(path) {
+                auto& entry = *it;
                 if (!entry.is_regular_file()) continue;
 
                 auto& entryPath = entry.path();
@@ -458,15 +496,16 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
                     .id = pack.id
                 });
             }
+            DIRECTORY_ITERATOR_END(path)
 
             log::info("Finished pre-loading trails from {}", path);
         }
-        else {
-            if (!traditionalPacks) continue;
-
+        else if (traditionalPacks) {
             log::info("Pre-loading trails from {}", pack.path);
+
             auto trailCount = GameManager::get()->countForType(IconType::Special);
-            for (auto& entry : std::filesystem::directory_iterator(pack.path)) {
+            DIRECTORY_ITERATOR(pack.path) {
+                auto& entry = *it;
                 if (!entry.is_regular_file()) continue;
 
                 auto& entryPath = entry.path();
@@ -481,6 +520,7 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
                     }
                 }
             }
+            DIRECTORY_ITERATOR_END(pack.path)
 
             log::info("Finished pre-loading trails from {}", pack.path);
         }
@@ -504,41 +544,24 @@ void MoreIcons::saveTrails() {
     }
 }
 
-void MoreIcons::showInfoPopup(bool folderButton) {
-    auto counts = ranges::reduce<std::map<IconType, int>>(MoreIconsAPI::icons, [](std::map<IconType, int>& acc, const IconInfo& info) {
-        acc[info.type]++;
-        return acc;
-    });
+#if defined(GEODE_IS_WINDOWS) || defined(GEODE_IS_ANDROID)
+bool MoreIcons::imageToFile(cocos2d::CCImage* image, const std::filesystem::path& path) {
+    return image->saveToFile(path.string().c_str(), false);
+}
+#endif
 
-    createQuickPopup(
-        "More Icons",
-        fmt::format(std::locale(""),
-            "<cg>Icons</c>: {:L}\n"
-            "<cp>Ships</c>: {:L}\n"
-            "<cr>Balls</c>: {:L}\n"
-            "<co>UFOs</c>: {:L}\n"
-            "<cj>Waves</c>: {:L}\n"
-            "Robots: {:L}\n"
-            "<ca>Spiders</c>: {:L}\n"
-            "<cy>Swings</c>: {:L}\n"
-            "<cd>Jetpacks</c>: {:L}\n"
-            "<cb>Trails</c>: {:L}",
-            counts[IconType::Cube],
-            counts[IconType::Ship],
-            counts[IconType::Ball],
-            counts[IconType::Ufo],
-            counts[IconType::Wave],
-            counts[IconType::Robot],
-            counts[IconType::Spider],
-            counts[IconType::Swing],
-            counts[IconType::Jetpack],
-            counts[IconType::Special]
-        ),
-        "OK",
-        folderButton ? "Folder" : nullptr,
-        300.0f,
-        [folderButton](auto, bool btn2) {
-            if (folderButton && btn2) file::openFolder(Mod::get()->getConfigDir());
-        }
-    );
+bool MoreIcons::saveTexture(cocos2d::CCTexture2D* texture, const std::filesystem::path& path) {
+    auto factor = CCDirector::get()->getContentScaleFactor();
+    auto size = texture->getContentSize() * factor;
+    auto sprite = CCSprite::createWithTexture(texture);
+    sprite->setPosition(size / (factor * 2.0f));
+    auto data = RenderTexture(size.width, size.height, GL_RGBA, GL_RGBA).captureData(sprite);
+    auto image = new CCImage();
+    if (!image->initWithImageData(data.get(), size.width * size.height * 4, CCImage::kFmtRawData, size.width, size.height)) {
+        image->release();
+        return false;
+    }
+    auto ret = imageToFile(image, path);
+    image->release();
+    return ret;
 }

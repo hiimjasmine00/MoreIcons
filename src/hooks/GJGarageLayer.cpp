@@ -1,8 +1,7 @@
 #include "../MoreIcons.hpp"
 #include "../api/MoreIconsAPI.hpp"
 #include "../classes/ButtonHooker.hpp"
-#include "../classes/LogCell.hpp"
-#include "../classes/LogLayer.hpp"
+#include "../classes/MoreIconsPopup.hpp"
 #include "../classes/MoreInfoPopup.hpp"
 #include <Geode/binding/BoomScrollLayer.hpp>
 #include <Geode/binding/GameManager.hpp>
@@ -68,7 +67,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         auto moreIconsSprite = CircleButtonSprite::createWithSprite("MI_moreIcons_001.png"_spr, 1.0f, CircleBaseColor::Gray, CircleBaseSize::Small);
         if (MoreIcons::severity > Severity::Debug) {
-            auto severitySprite = CCSprite::createWithSpriteFrameName(LogCell::frames[MoreIcons::severity - 1]);
+            auto severitySprite = CCSprite::createWithSpriteFrameName(MoreIcons::severityFrames[MoreIcons::severity]);
             severitySprite->setPosition(moreIconsSprite->getContentSize() - CCPoint { 6.0f, 6.0f });
             severitySprite->setScale(0.6f);
             moreIconsSprite->addChild(severitySprite, 1);
@@ -84,8 +83,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     }
 
     void onMoreIcons(CCObject* sender) {
-        if (MoreIcons::severity > Severity::Debug) LogLayer::create()->show();
-        else MoreIcons::showInfoPopup(true);
+        MoreIconsPopup::create()->show();
     }
 
     static int findIconPage(IconType type) {
@@ -170,8 +168,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         if (!f->m_navMenu) {
             f->m_navMenu = CCMenu::create();
             f->m_navMenu->setPosition({ winSize.width / 2, 15.0f });
-            f->m_navMenu->setLayout(RowLayout::create()->setGap(6.0f)->setAxisAlignment(AxisAlignment::Center));
             f->m_navMenu->setContentSize({ winSize.width - 60.0f, 20.0f });
+            f->m_navMenu->setLayout(RowLayout::create()->setGap(6.0f)->setAxisAlignment(AxisAlignment::Center));
             f->m_navMenu->setID("navdot-menu"_spr);
             addChild(f->m_navMenu, 1);
         }
@@ -408,7 +406,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         for (auto& info : getPage()) {
             auto square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
             square->setColor({ 150, 150, 150 });
-            auto streak = CCSprite::createWithTexture(CCTextureCache::get()->addImage(info.textures[0].c_str(), true));
+            auto streak = CCSprite::create(info.textures[0].c_str());
             limitNodeHeight(streak, 27.0f, 999.0f, 0.001f);
             streak->setRotation(-90.0f);
             square->addChild(streak);

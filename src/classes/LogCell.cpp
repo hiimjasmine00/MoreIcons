@@ -1,4 +1,5 @@
 #include "LogCell.hpp"
+#include "../MoreIcons.hpp"
 #include <Geode/binding/MultilineBitmapFont.hpp>
 #include <Geode/binding/TextArea.hpp>
 
@@ -52,7 +53,7 @@ bool LogCell::init(const std::string& message, int severity, int index, int tota
         addChild(bgBg, -2);
     }
 
-    auto infoIcon = CCSprite::createWithSpriteFrameName(frames[severity - 1]);
+    auto infoIcon = CCSprite::createWithSpriteFrameName(MoreIcons::severityFrames[severity - 1]);
     infoIcon->setPosition({ 20.0f, 35.0f });
     infoIcon->setID("info-icon");
     addChild(infoIcon);

@@ -4,6 +4,7 @@
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/utils/ranges.hpp>
 
 using namespace geode::prelude;
 
@@ -98,30 +99,6 @@ std::string MoreIconsAPI::getFrameName(const std::string& name, const std::strin
     return name;
 }
 
-// Adapted from https://github.com/GlobedGD/globed2/blob/v1.7.2/src/util/cocos.cpp#L82
-
-using AddSpriteFramesWithDictionaryType = void(CCSpriteFrameCache::*)(CCDictionary*, CCTexture2D*);
-template <AddSpriteFramesWithDictionaryType func>
-struct AddSpriteFramesWithDictionaryCaller {
-    friend void addSpriteFrames(CCSpriteFrameCache* cache, CCDictionary* dict, CCTexture2D* texture) {
-        (cache->*func)(dict, texture);
-    }
-};
-
-template struct AddSpriteFramesWithDictionaryCaller<&CCSpriteFrameCache::addSpriteFramesWithDictionary>;
-void addSpriteFrames(CCSpriteFrameCache* cache, CCDictionary* dict, CCTexture2D* texture);
-
-using RemoveSpriteFramesFromDictionaryType = void(CCSpriteFrameCache::*)(CCDictionary*);
-template <RemoveSpriteFramesFromDictionaryType func>
-struct RemoveSpriteFramesFromDictionaryCaller {
-    friend void removeSpriteFrames(CCSpriteFrameCache* cache, CCDictionary* dict) {
-        (cache->*func)(dict);
-    }
-};
-
-template struct RemoveSpriteFramesFromDictionaryCaller<&CCSpriteFrameCache::removeSpriteFramesFromDictionary>;
-void removeSpriteFrames(CCSpriteFrameCache* cache, CCDictionary* dict);
-
 void MoreIconsAPI::loadIcon(const std::string& name, IconType type, int requestID) {
     if (!hasIcon(name, type)) return;
 
@@ -141,12 +118,13 @@ void MoreIconsAPI::loadIcon(const std::string& name, IconType type, int requestI
 
             if (!info->sheetName.empty()) {
                 if (auto dict = CCDictionary::createWithContentsOfFileThreadSafe(info->sheetName.c_str())) {
-                    auto frames = CCDictionary::create();
+                    auto metadata = static_cast<CCDictionary*>(dict->objectForKey("metadata"));
+                    auto formatStr = metadata ? metadata->valueForKey("format") : nullptr;
+                    auto format = formatStr ? numFromString<int>(formatStr->m_sString).unwrapOr(0) : 0;
                     for (auto [frameName, frame] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(dict->objectForKey("frames")))) {
-                        frames->setObject(frame, getFrameName(frameName, name, type));
+                        if (auto spriteFrame = createSpriteFrame(frame, texture, format))
+                            spriteFrameCache->addSpriteFrame(spriteFrame, getFrameName(frameName, name, type).c_str());
                     }
-                    dict->setObject(frames, "frames");
-                    addSpriteFrames(spriteFrameCache, dict, texture);
                     dict->release();
                 }
             }
@@ -174,12 +152,9 @@ void MoreIconsAPI::unloadIcon(const std::string& name, IconType type, int reques
 
             if (!info->sheetName.empty()) {
                 if (auto dict = CCDictionary::createWithContentsOfFileThreadSafe(info->sheetName.c_str())) {
-                    auto frames = CCDictionary::create();
                     for (auto [frameName, frame] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(dict->objectForKey("frames")))) {
-                        frames->setObject(frame, getFrameName(frameName, name, type));
+                        spriteFrameCache->removeSpriteFrameByName(getFrameName(frameName, name, type).c_str());
                     }
-                    dict->setObject(frames, "frames");
-                    removeSpriteFrames(spriteFrameCache, dict);
                     dict->release();
                 }
             }
@@ -369,4 +344,110 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& i
         detailSprite->setDisplayFrame(extraFrame);
         detailSprite->setPosition(firstCenter);
     }
+}
+
+std::vector<float> floatsFromString(const std::string& str) {
+    return ranges::map<std::vector<float>>(string::split(string::replace(string::replace(str, "{", ""), "}", ""), ","),
+        [](const std::string& s) { return numFromString<float>(s).unwrapOr(0.0f); });
+}
+
+CCPoint pointFromString(const CCString* str) {
+    if (!str) return { 0.0f, 0.0f };
+    auto floats = floatsFromString(str->m_sString);
+    return {
+        floats.size() > 0 ? floats[0] : 0.0f,
+        floats.size() > 1 ? floats[1] : 0.0f
+    };
+}
+
+CCSize sizeFromString(const CCString* str) {
+    if (!str) return { 0.0f, 0.0f };
+    auto floats = floatsFromString(str->m_sString);
+    return {
+        floats.size() > 0 ? floats[0] : 0.0f,
+        floats.size() > 1 ? floats[1] : 0.0f
+    };
+}
+
+CCRect rectFromString(const CCString* str) {
+    if (!str) return { 0.0f, 0.0f, 0.0f, 0.0f };
+    auto floats = floatsFromString(str->m_sString);
+    return {
+        floats.size() > 0 ? floats[0] : 0.0f,
+        floats.size() > 1 ? floats[1] : 0.0f,
+        floats.size() > 2 ? floats[2] : 0.0f,
+        floats.size() > 3 ? floats[3] : 0.0f
+    };
+}
+
+bool boolValue(const CCString* str) {
+    if (!str) return false;
+    return str->m_sString != "0" && str->m_sString != "false";
+}
+
+int intValue(const CCString* str) {
+    if (!str) return 0;
+    return numFromString<int>(str->m_sString).unwrapOr(0);
+}
+
+float floatValue(const CCString* str) {
+    if (!str) return 0.0f;
+    return numFromString<float>(str->m_sString).unwrapOr(0.0f);
+}
+
+CCSpriteFrame* MoreIconsAPI::createSpriteFrame(CCDictionary* dict, CCTexture2D* texture, int format) {
+    CCSpriteFrame* spriteFrame = nullptr;
+    switch (format) {
+        case 0:
+            spriteFrame = CCSpriteFrame::createWithTexture(
+                texture,
+                {
+                    floatValue(dict->valueForKey("x")),
+                    floatValue(dict->valueForKey("y")),
+                    floatValue(dict->valueForKey("width")),
+                    floatValue(dict->valueForKey("height"))
+                },
+                false,
+                {
+                    floatValue(dict->valueForKey("offsetX")),
+                    floatValue(dict->valueForKey("offsetY"))
+                },
+                {
+                    (float)abs(intValue(dict->valueForKey("originalWidth"))),
+                    (float)abs(intValue(dict->valueForKey("originalHeight")))
+                }
+            );
+            break;
+        case 1:
+            spriteFrame = CCSpriteFrame::createWithTexture(
+                texture,
+                rectFromString(dict->valueForKey("frame")),
+                false,
+                pointFromString(dict->valueForKey("offset")),
+                sizeFromString(dict->valueForKey("sourceSize"))
+            );
+            break;
+        case 2:
+            spriteFrame = CCSpriteFrame::createWithTexture(
+                texture,
+                rectFromString(dict->valueForKey("frame")),
+                boolValue(dict->valueForKey("rotated")),
+                pointFromString(dict->valueForKey("offset")),
+                sizeFromString(dict->valueForKey("sourceSize"))
+            );
+            break;
+        case 3:
+            spriteFrame = CCSpriteFrame::createWithTexture(
+                texture,
+                {
+                    pointFromString(dict->valueForKey("textureRect")),
+                    sizeFromString(dict->valueForKey("spriteSize"))
+                },
+                boolValue(dict->valueForKey("textureRotated")),
+                pointFromString(dict->valueForKey("spriteOffset")),
+                sizeFromString(dict->valueForKey("spriteSourceSize"))
+            );
+            break;
+    }
+    return spriteFrame;
 }

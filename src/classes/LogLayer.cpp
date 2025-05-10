@@ -72,32 +72,6 @@ bool LogLayer::setup() {
 
     page(0);
 
-    auto topButtons = CCMenu::create();
-    topButtons->setPosition({ 420.0f, 270.0f });
-    topButtons->setContentSize({ 100.0f, 30.0f });
-    topButtons->setAnchorPoint({ 1.0f, 0.5f });
-    topButtons->setLayout(
-        RowLayout::create()
-            ->setAxisAlignment(AxisAlignment::End)
-            ->setAxisReverse(true)
-    );
-    topButtons->setID("top-buttons");
-    m_mainLayer->addChild(topButtons);
-
-    auto infoButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_infoIcon_001.png", 1.0f, [this](auto) {
-        MoreIcons::showInfoPopup();
-    });
-    infoButton->setID("info-button");
-    topButtons->addChild(infoButton);
-
-    auto folderButton = CCMenuItemExt::createSpriteExtraWithFrameName("folderIcon_001.png", 0.7f, [this](auto) {
-        file::openFolder(Mod::get()->getConfigDir());
-    });
-    folderButton->setID("folder-button");
-    topButtons->addChild(folderButton);
-
-    topButtons->updateLayout();
-
     return true;
 }
 

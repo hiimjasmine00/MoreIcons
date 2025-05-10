@@ -105,7 +105,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
         square->setID("trail-square");
         m_mainLayer->addChild(square);
 
-        auto streak = CCSprite::createWithTexture(CCTextureCache::get()->textureForKey(info->textures[0].c_str()));
+        auto streak = CCSprite::create(info->textures[0].c_str());
         limitNodeHeight(streak, 27.0f, 999.0f, 0.001f);
         streak->setRotation(-90.0f);
         streak->setPosition(square->getContentSize() / 2);
