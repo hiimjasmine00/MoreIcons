@@ -245,7 +245,7 @@ void EditIconPopup::pickFile(int index, int type, bool plist) {
             if ((plist && m_path.extension() != ".plist") || (!plist && m_path.extension() != ".png")) return;
 
             if (plist) {
-                if (auto dict = CCDictionary::createWithContentsOfFileThreadSafe(m_path.c_str())) {
+                if (auto dict = CCDictionary::createWithContentsOfFileThreadSafe(m_path.string().c_str())) {
                     auto metadata = static_cast<CCDictionary*>(dict->objectForKey("metadata"));
                     auto formatStr = metadata ? metadata->valueForKey("format") : nullptr;
                     auto format = formatStr ? numFromString<int>(formatStr->m_sString).unwrapOr(0) : 0;
@@ -275,7 +275,7 @@ void EditIconPopup::pickFile(int index, int type, bool plist) {
             }
             else {
                 auto image = new CCImage();
-                if (!image->initWithImageFile(m_path.c_str())) {
+                if (!image->initWithImageFile(m_path.string().c_str())) {
                     image->release();
                     return;
                 }

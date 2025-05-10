@@ -57,7 +57,7 @@ CPMAddPackage("gh:bshoshany/thread-pool@5.0.0")
 CPMAddPackage("gh:TeamHypersomnia/rectpack2D#3344bf5")
 target_include_directories(${PROJECT_NAME} PRIVATE ${thread-pool_SOURCE_DIR}/include ${rectpack2D_SOURCE_DIR}/src)
 
-CPMAddPackage("gh:matcool/gd-render-texture#ec05bb6")
+CPMAddPackage("gh:undefined06855/gd-render-texture#5f14d0b")
 target_link_libraries(${PROJECT_NAME} gd-render-texture)
 
 setup_geode_mod(${PROJECT_NAME})
