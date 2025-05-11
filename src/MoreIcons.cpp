@@ -545,23 +545,14 @@ void MoreIcons::saveTrails() {
 }
 
 #if defined(GEODE_IS_WINDOWS) || defined(GEODE_IS_ANDROID)
-bool MoreIcons::imageToFile(cocos2d::CCImage* image, const std::filesystem::path& path) {
-    return image->saveToFile(path.string().c_str(), false);
-}
-#endif
-
-bool MoreIcons::saveTexture(cocos2d::CCTexture2D* texture, const std::filesystem::path& path) {
-    auto factor = CCDirector::get()->getContentScaleFactor();
-    auto size = texture->getContentSize() * factor;
-    auto sprite = CCSprite::createWithTexture(texture);
-    sprite->setPosition(size / (factor * 2.0f));
-    auto data = RenderTexture(size.width, size.height, GL_RGBA, GL_RGBA).captureData(sprite);
+bool MoreIcons::saveToFile(const std::filesystem::path& path, uint8_t* data, int width, int height) {
     auto image = new CCImage();
-    if (!image->initWithImageData(data.get(), size.width * size.height * 4, CCImage::kFmtRawData, size.width, size.height)) {
+    if (!image->initWithImageData(data, width * height * 4, CCImage::kFmtRawData, width, height)) {
         image->release();
         return false;
     }
-    auto ret = imageToFile(image, path);
+    auto ret = image->saveToFile(path.string().c_str(), false);
     image->release();
     return ret;
 }
+#endif

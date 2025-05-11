@@ -25,7 +25,9 @@ class $modify(MIPlayerObject, PlayerObject) {
     }
 
     bool isMainPlayer() {
-        return m_gameLayer && ((!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) || (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this));
+        return m_gameLayer &&
+            ((!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this) ||
+            (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this));
     }
 
     void updateIcon(IconType type) {

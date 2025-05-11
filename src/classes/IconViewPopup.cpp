@@ -178,8 +178,8 @@ void IconViewPopup::loadCustomIcons() {
                 if (!dict) return;
 
                 frames = new CCDictionary();
-                for (auto [frameName, frame] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(dict->objectForKey("frames")))) {
-                    frames->setObject(frame, MoreIconsAPI::getFrameName(frameName, icon.name, type));
+                for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(dict->objectForKey("frames")))) {
+                    frames->setObject(dict, MoreIconsAPI::getFrameName(frame, icon.name, type));
                 }
 
                 auto metadata = static_cast<CCDictionary*>(dict->objectForKey("metadata"));
@@ -234,10 +234,10 @@ void IconViewPopup::finishLoadIcons() {
         }
 
         if (icon.frames) {
-            for (auto [frameName, frame] : CCDictionaryExt<std::string, CCDictionary*>(icon.frames)) {
-                if (auto spriteFrame = MoreIconsAPI::createSpriteFrame(frame, texture, icon.format)) {
-                    spriteFrameCache->addSpriteFrame(spriteFrame, frameName.c_str());
-                    m_frames.push_back(frameName);
+            for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(icon.frames)) {
+                if (auto spriteFrame = MoreIconsAPI::createSpriteFrame(dict, texture, icon.format)) {
+                    spriteFrameCache->addSpriteFrame(spriteFrame, frame.c_str());
+                    m_frames.push_back(frame);
                 }
             }
             icon.frames->release();

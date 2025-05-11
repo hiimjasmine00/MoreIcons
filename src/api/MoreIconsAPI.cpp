@@ -117,15 +117,15 @@ void MoreIconsAPI::loadIcon(const std::string& name, IconType type, int requestI
             }
 
             if (!info->sheetName.empty()) {
-                if (auto dict = CCDictionary::createWithContentsOfFileThreadSafe(info->sheetName.c_str())) {
-                    auto metadata = static_cast<CCDictionary*>(dict->objectForKey("metadata"));
+                if (auto sheet = CCDictionary::createWithContentsOfFileThreadSafe(info->sheetName.c_str())) {
+                    auto metadata = static_cast<CCDictionary*>(sheet->objectForKey("metadata"));
                     auto formatStr = metadata ? metadata->valueForKey("format") : nullptr;
                     auto format = formatStr ? numFromString<int>(formatStr->m_sString).unwrapOr(0) : 0;
-                    for (auto [frameName, frame] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(dict->objectForKey("frames")))) {
-                        if (auto spriteFrame = createSpriteFrame(frame, texture, format))
-                            spriteFrameCache->addSpriteFrame(spriteFrame, getFrameName(frameName, name, type).c_str());
+                    for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(sheet->objectForKey("frames")))) {
+                        if (auto spriteFrame = createSpriteFrame(dict, texture, format))
+                            spriteFrameCache->addSpriteFrame(spriteFrame, getFrameName(frame, name, type).c_str());
                     }
-                    dict->release();
+                    sheet->release();
                 }
             }
         }
@@ -151,11 +151,11 @@ void MoreIconsAPI::unloadIcon(const std::string& name, IconType type, int reques
             auto spriteFrameCache = CCSpriteFrameCache::get();
 
             if (!info->sheetName.empty()) {
-                if (auto dict = CCDictionary::createWithContentsOfFileThreadSafe(info->sheetName.c_str())) {
-                    for (auto [frameName, frame] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(dict->objectForKey("frames")))) {
-                        spriteFrameCache->removeSpriteFrameByName(getFrameName(frameName, name, type).c_str());
+                if (auto sheet = CCDictionary::createWithContentsOfFileThreadSafe(info->sheetName.c_str())) {
+                    for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(sheet->objectForKey("frames")))) {
+                        spriteFrameCache->removeSpriteFrameByName(getFrameName(frame, name, type).c_str());
                     }
-                    dict->release();
+                    sheet->release();
                 }
             }
 

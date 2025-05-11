@@ -7,10 +7,8 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
-#include <Geode/binding/ItemInfoPopup.hpp>
 #include <Geode/binding/ListButtonBar.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
-#include <Geode/binding/TextArea.hpp>
 #include <Geode/modify/GJGarageLayer.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
 
@@ -40,7 +38,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         MoreIconsAPI::updateSimplePlayer(m_playerObject, GameManager::get()->m_playerIconType, false);
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        if (sdi) MoreIconsAPI::updateSimplePlayer(static_cast<SimplePlayer*>(getChildByID("player2-icon")), (IconType)sdi->getSavedValue("lastmode", 0), true);
+        if (sdi) MoreIconsAPI::updateSimplePlayer(
+            static_cast<SimplePlayer*>(getChildByID("player2-icon")), (IconType)sdi->getSavedValue("lastmode", 0), true);
 
         auto customIcon = _MoreIcons::activeIcon(IconType::Cube, false);
         if (!customIcon.empty() && MoreIconsAPI::hasIcon(customIcon, IconType::Cube)) setupCustomPage(findIconPage(IconType::Cube));
