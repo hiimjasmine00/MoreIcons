@@ -53,7 +53,7 @@ bool LogCell::init(const std::string& message, int severity, int index, int tota
         addChild(bgBg, -2);
     }
 
-    auto infoIcon = CCSprite::createWithSpriteFrameName(MoreIcons::severityFrames[severity - 1]);
+    auto infoIcon = CCSprite::createWithSpriteFrameName(MoreIcons::severityFrames[severity]);
     infoIcon->setPosition({ 20.0f, 35.0f });
     infoIcon->setID("info-icon");
     addChild(infoIcon);

@@ -73,7 +73,7 @@ bool MoreIconsPopup::setup() {
 
         auto& severity = MoreIcons::severities[type];
         if (severity > Severity::Debug) {
-            auto severityIcon = CCSprite::createWithSpriteFrameName(MoreIcons::severityFrames[3]);
+            auto severityIcon = CCSprite::createWithSpriteFrameName(MoreIcons::severityFrames[severity]);
             severityIcon->setPosition({ 50.0f, 115.0f });
             severityIcon->setScale(0.6f);
             severityIcon->setID("severity-icon");
