@@ -150,8 +150,7 @@ std::string replaceEnd(const std::string& str, size_t end, std::string_view repl
 
 template <typename... Args>
 void printLog(const std::string& name, int severity, fmt::format_string<Args...> message, Args&&... args) {
-    auto formatArgs = fmt::make_format_args(args...);
-    auto logMessage = fmt::vformat(message, formatArgs);
+    auto logMessage = fmt::format(message, std::forward<Args>(args)...);
     log::logImpl(Severity::cast(severity), Mod::get(), "{}: {}", name, logMessage);
     MoreIcons::logs.push_back({ name, MoreIcons::currentType, logMessage, severity });
     auto& currentSeverity = MoreIcons::severities[MoreIcons::currentType];
