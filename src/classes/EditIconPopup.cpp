@@ -1,3 +1,4 @@
+#include <pugixml.hpp>
 #include "EditIconPopup.hpp"
 #include "../MoreIcons.hpp"
 #include "../api/MoreIconsAPI.hpp"
@@ -10,7 +11,6 @@
 #include <Geode/ui/Notification.hpp>
 #include <Geode/utils/ranges.hpp>
 #include <rectpack2D/finders_interface.h>
-#include <RenderTexture.hpp>
 
 using namespace geode::prelude;
 using namespace rectpack2D;
@@ -291,6 +291,7 @@ void EditIconPopup::pickFile(int index, int type, bool plist) {
                     auto suffix = suffixes[type + (m_iconType != IconType::Ufo && type > 2) - 1];
                     auto key = index > 0 ? fmt::format("_{:02}{}", index, suffix) : suffix;
                     auto spriteFrame = CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() });
+                    texture->release();
                     m_frames->setObject(spriteFrame, key);
                     updateSprites();
                 }
@@ -394,36 +395,60 @@ std::vector<std::vector<uint8_t>> getRows(const uint8_t* data, int width, int he
     std::vector<std::vector<uint8_t>> rows(height);
     for (int y = 0; y < height; y++) {
         rows[y].resize(width * 4);
-        for (int x = 0; x < width * 4; x += 4) {
-            rows[y][x] = data[y * width + x];
-            rows[y][x + 1] = data[y * width + x + 1];
-            rows[y][x + 2] = data[y * width + x + 2];
-            rows[y][x + 3] = data[y * width + x + 3];
+        for (int x = 0; x < width * 4; x++) {
+            rows[y][x] = data[y * width * 4 + x];
         }
     }
     return rows;
 }
 
-std::vector<std::vector<uint8_t>> getRows90(const uint8_t* data, int width, int height) {
-    std::vector<std::vector<uint8_t>> rows(width);
-    for (int y = 0; y < width; y++) {
-        rows[y].resize(height * 4);
-        for (int x = 0; x < height * 4; x += 4) {
-            rows[y][x] = data[(height - x / 4 - 1) * width + y];
-            rows[y][x + 1] = data[(height - x / 4 - 1) * width + y + 1];
-            rows[y][x + 2] = data[(height - x / 4 - 1) * width + y + 2];
-            rows[y][x + 3] = data[(height - x / 4 - 1) * width + y + 3];
+std::vector<std::vector<uint8_t>> rotate90(const std::vector<std::vector<uint8_t>>& data) {
+    auto width = data.size();
+    auto height = data[0].size() / 4;
+    std::vector<std::vector<uint8_t>> rotated(height);
+    for (int y = 0; y < height; y++) {
+        rotated[y].resize(width * 4);
+        for (int x = 0; x < width; x++) {
+            rotated[y][x * 4] = data[width - x - 1][y * 4];
+            rotated[y][x * 4 + 1] = data[width - x - 1][y * 4 + 1];
+            rotated[y][x * 4 + 2] = data[width - x - 1][y * 4 + 2];
+            rotated[y][x * 4 + 3] = data[width - x - 1][y * 4 + 3];
         }
     }
-    return rows;
+    return rotated;
+}
+
+CCImage* clampImage(CCImage* image, const CCSize& size) {
+    auto originalData = image->getData();
+    auto originalWidth = image->getWidth();
+    int width = size.width;
+    int height = size.height;
+    auto data = new uint8_t[width * height * 4];
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width * 4; x++) {
+            data[y * width * 4 + x] = originalData[y * originalWidth * 4 + x];
+        }
+    }
+    auto newImage = new CCImage();
+    if (!newImage->initWithImageData(data, width * height * 4, CCImage::kFmtRawData, width, height)) {
+        delete[] data;
+        image->release();
+        newImage->release();
+        return nullptr;
+    }
+    image->release();
+    delete[] data;
+    return newImage;
 }
 
 void EditIconPopup::saveIcon() {
     auto iconName = m_textInput->getString();
     if (iconName.empty()) return Notification::create("Please enter a name.", NotificationIcon::Info)->show();
 
+    auto mod = Mod::get();
+    auto configDir = mod->getConfigDir();
     if (m_iconType == IconType::Special) {
-        auto path = Mod::get()->getConfigDir() / "trail" / fmt::format("{}.png", iconName);
+        auto path = configDir / "trail" / fmt::format("{}.png", iconName);
         std::error_code code;
         if (std::filesystem::exists(path, code)) {
             createQuickPopup(
@@ -441,12 +466,23 @@ void EditIconPopup::saveIcon() {
             return;
         }
 
-        auto texture = m_streak->getTexture();
-        auto sprite = CCSprite::createWithTexture(texture);
-        auto width = texture->getPixelsWide();
-        auto height = texture->getPixelsHigh();
-        auto result = MoreIcons::saveToFile(path, RenderTexture(width, height, GL_RGBA, GL_RGBA).captureData(sprite).get(), width, height);
+        auto displayFrame = m_streak->displayFrame();
+        auto sprite = CCSprite::createWithSpriteFrame(displayFrame);
+        auto& size = displayFrame->getOriginalSize();
+        sprite->setPosition({ 0.0f, ceilf(size.height) });
+        sprite->setAnchorPoint({ 0.0f, 1.0f });
+        auto renderTexture = CCRenderTexture::create(ceilf(size.width), ceilf(size.height));
+        renderTexture->begin();
+        sprite->visit();
+        renderTexture->end();
+
+        auto image = clampImage(renderTexture->newCCImage(), displayFrame->getOriginalSizeInPixels());
+        renderTexture->release();
         sprite->release();
+        if (!image) return Notification::create("Failed to save image.", NotificationIcon::Error)->show();
+
+        auto result = MoreIcons::saveToFile(path, image);
+        image->release();
         Notification::create(
             result ? fmt::format("{} saved!", iconName) : fmt::format("Failed to save {}.", iconName),
             result ? NotificationIcon::Success : NotificationIcon::Error
@@ -454,7 +490,7 @@ void EditIconPopup::saveIcon() {
     }
     else if (m_iconType <= IconType::Jetpack) {
         constexpr std::array directories = { "icon", "ship", "ball", "ufo", "wave", "robot", "spider", "swing", "jetpack" };
-        auto directory = Mod::get()->getConfigDir() / directories[(int)m_iconType];
+        auto directory = configDir / directories[(int)m_iconType];
         auto plistPath = directory / fmt::format("{}.plist", iconName);
         auto pngPath = directory / fmt::format("{}.png", iconName);
         std::error_code code;
@@ -467,7 +503,10 @@ void EditIconPopup::saveIcon() {
                 [this, iconName, plistPath, pngPath](auto, bool btn2) {
                     if (!btn2) return;
                     std::error_code code;
-                    if (std::filesystem::remove(plistPath, code) || std::filesystem::remove(pngPath, code)) saveIcon();
+                    if (
+                        (!std::filesystem::exists(plistPath, code) || std::filesystem::remove(plistPath, code)) &&
+                        (!std::filesystem::exists(pngPath, code) || std::filesystem::remove(pngPath, code))
+                    ) saveIcon();
                     else Notification::create(fmt::format("Failed to delete {}.", iconName), NotificationIcon::Error)->show();
                 }
             );
@@ -515,34 +554,43 @@ void EditIconPopup::saveIcon() {
         for (auto& key : keys) {
             auto displayFrame = static_cast<CCSprite*>(m_sprites->objectForKey(key))->displayFrame();
             auto sprite = CCSprite::createWithSpriteFrame(displayFrame);
-            auto& size = displayFrame->getOriginalSizeInPixels();
-            auto data = RenderTexture(size.width, size.height, GL_RGBA, GL_RGBA).captureData(sprite);
+            auto& size = displayFrame->getOriginalSize();
+            sprite->setPosition({ 0.0f, ceilf(size.height) });
+            sprite->setAnchorPoint({ 0.0f, 1.0f });
+            auto renderTexture = CCRenderTexture::create(ceilf(size.width), ceilf(size.height));
+            renderTexture->begin();
+            sprite->visit();
+            renderTexture->end();
+            auto image = clampImage(renderTexture->newCCImage(), displayFrame->getOriginalSizeInPixels());
+            renderTexture->release();
             sprite->release();
+            if (!image) return Notification::create(fmt::format("Failed to render {}{}.", iconName, key), NotificationIcon::Error)->show();
             ImageInfo info;
-            info.data = getRows(data.get(), size.width, size.height);
-            info.data90 = getRows90(data.get(), size.width, size.height);
-            info.width = size.width;
-            info.height = size.height;
+            info.width = image->getWidth();
+            info.height = image->getHeight();
+            info.data = getRows(image->getData(), info.width, info.height);
+            image->release();
+            info.data90 = rotate90(info.data);
             info.left = std::distance(info.data90.begin(), std::ranges::find_if(info.data90, [](const std::vector<uint8_t>& col) {
-                for (int i = 0; i < col.size() * 4; i += 4) {
+                for (int i = 0; i < col.size(); i += 4) {
                     if (col[i + 3] > 0) return true;
                 }
                 return false;
             }));
             info.right = std::distance(info.data90.begin(), std::find_if(info.data90.rbegin(), info.data90.rend(), [](const std::vector<uint8_t>& col) {
-                for (int i = 0; i < col.size() * 4; i += 4) {
+                for (int i = 0; i < col.size(); i += 4) {
                     if (col[i + 3] > 0) return true;
                 }
                 return false;
             }).base());
             info.top = std::distance(info.data.begin(), std::ranges::find_if(info.data, [](const std::vector<uint8_t>& row) {
-                for (int i = 0; i < row.size() * 4; i += 4) {
+                for (int i = 0; i < row.size(); i += 4) {
                     if (row[i + 3] > 0) return true;
                 }
                 return false;
             }));
             info.bottom = std::distance(info.data.begin(), std::find_if(info.data.rbegin(), info.data.rend(), [](const std::vector<uint8_t>& row) {
-                for (int i = 0; i < row.size() * 4; i += 4) {
+                for (int i = 0; i < row.size(); i += 4) {
                     if (row[i + 3] > 0) return true;
                 }
                 return false;
@@ -573,13 +621,14 @@ void EditIconPopup::saveIcon() {
             auto right = rect.flipped ? info.height - info.top : info.right;
             auto top = rect.flipped ? info.left : info.top;
             auto bottom = rect.flipped ? info.right : info.bottom;
-            for (int y = top; y < bottom; y++) {
-                for (int x = left; x < right * 4; x += 4) {
+            for (int y = 0; y < bottom - top; y++) {
+                for (int x = 0; x < (right - left) * 4; x += 4) {
+                    if (data[y + top][x + left * 4 + 3] == 0) continue;
                     auto index = (rect.x + x / 4) * 4 + (rect.y + y) * packed.w * 4;
-                    finalData[index] = data[y][x];
-                    finalData[index + 1] = data[y][x + 1];
-                    finalData[index + 2] = data[y][x + 2];
-                    finalData[index + 3] = data[y][x + 3];
+                    finalData[index] = data[y + top][x + left * 4];
+                    finalData[index + 1] = data[y + top][x + left * 4 + 1];
+                    finalData[index + 2] = data[y + top][x + left * 4 + 2];
+                    finalData[index + 3] = data[y + top][x + left * 4 + 3];
                 }
             }
         }
@@ -588,82 +637,77 @@ void EditIconPopup::saveIcon() {
             return Notification::create("Failed to save image.", NotificationIcon::Error)->show();
 
         struct ImageFrame {
-            CCPoint offset;
-            CCSize size;
-            CCSize source;
-            CCRect rect;
+            int offsetX;
+            int offsetY;
+            int sizeW;
+            int sizeH;
+            int sourceW;
+            int sourceH;
+            int rectX;
+            int rectY;
+            int rectW;
+            int rectH;
             bool rotated;
         };
 
-        std::vector<ImageFrame> frames;
+        std::vector<ImageFrame> imageFrames;
         for (int i = 0; i < rectangles.size(); i++) {
             auto& rect = rectangles[i];
             auto& info = images[i];
             auto width = rect.flipped ? rect.h : rect.w;
             auto height = rect.flipped ? rect.w : rect.h;
-            ImageFrame frame;
-            frame.offset.x = info.right - width - round((info.width - width) / 2.0);
-            frame.offset.y = info.bottom - height - round((info.height - height) / 2.0);
-            frame.size.width = width;
-            frame.size.height = height;
-            frame.source.width = info.width;
-            frame.source.height = info.height;
-            frame.rect.origin.x = rect.x;
-            frame.rect.origin.y = rect.y;
-            frame.rect.size.width = width;
-            frame.rect.size.height = height;
-            frame.rotated = rect.flipped;
-            frames.push_back(frame);
+            imageFrames.push_back({
+                info.right - width - (int)round((info.width - width) / 2.0),
+                height - info.bottom + (int)round((info.height - height) / 2.0),
+                width, height, info.width, info.height,
+                rect.x, rect.y, width, height,
+                rect.flipped
+            });
         }
 
-        auto plist = new DS_Dictionary();
-        plist->compatible = true;
-        plist->setSubDictForKey("metadata");
-        if (plist->stepIntoSubDictWithKey("metadata")) {
-            plist->setIntegerForKey("format", 3);
-            plist->setStringForKey("textureFileName", fmt::format("icons/{}.png", iconName));
-            plist->setStringForKey("size", fmt::format("{{{},{}}}", packed.w, packed.h));
-            plist->setStringForKey("textureFileName", fmt::format("icons/{}.png", iconName));
-            plist->stepOutOfSubDict();
-        }
-        else {
-            delete plist;
-            return Notification::create("Failed to create metadata.", NotificationIcon::Error)->show();
+        pugi::xml_document doc;
+        auto plist = doc.append_child("plist");
+        plist.append_attribute("version") = "1.0";
+
+        auto root = plist.append_child("dict");
+        root.append_child("key").text() = "frames";
+        auto frames = root.append_child("dict");
+        for (int i = 0; i < keys.size(); i++) {
+            frames.append_child("key").text() = iconName + keys[i];
+
+            auto& [offsetX, offsetY, sizeW, sizeH, sourceW, sourceH, rectX, rectY, rectW, rectH, rotated] = imageFrames[i];
+            auto frame = frames.append_child("dict");
+            frame.append_child("key").text() = "spriteOffset";
+            frame.append_child("string").text() = fmt::format("{{{},{}}}", offsetX, offsetY);
+            frame.append_child("key").text() = "spriteSize";
+            frame.append_child("string").text() = fmt::format("{{{},{}}}", sizeW, sizeH);
+            frame.append_child("key").text() = "spriteSourceSize";
+            frame.append_child("string").text() = fmt::format("{{{},{}}}", sourceW, sourceH);
+            frame.append_child("key").text() = "textureRect";
+            frame.append_child("string").text() = fmt::format("{{{{{},{}}},{{{},{}}}}}", rectX, rectY, rectW, rectH);
+            frame.append_child("key").text() = "textureRotated";
+            frame.append_child(rotated ? "true" : "false");
         }
 
-        plist->setSubDictForKey("frames");
-        if (plist->stepIntoSubDictWithKey("frames")) {
-            for (int i = 0; i < keys.size(); i++) {
-                auto key = iconName + keys[i];
-                auto& frame = frames[i];
-                plist->setSubDictForKey(key.c_str());
-                if (plist->stepIntoSubDictWithKey(key.c_str())) {
-                    plist->setStringForKey("spriteOffset", fmt::format("{{{},{}}}", frame.offset.x, frame.offset.y));
-                    plist->setStringForKey("spriteSize", fmt::format("{{{},{}}}", frame.size.width, frame.size.height));
-                    plist->setStringForKey("spriteSourceSize", fmt::format("{{{},{}}}", frame.source.width, frame.source.height));
-                    plist->setStringForKey("textureRect", fmt::format("{{{{{},{}}},{{{},{}}}}}",
-                        frame.rect.origin.x, frame.rect.origin.y, frame.rect.size.width, frame.rect.size.height));
-                    plist->setBoolForKey("textureRotated", frame.rotated);
-                    plist->stepOutOfSubDict();
-                }
-                else {
-                    delete plist;
-                    return Notification::create(fmt::format("Failed to create {}.", key), NotificationIcon::Error)->show();
-                }
-            }
-            plist->stepOutOfSubDict();
-        }
-        else {
-            delete plist;
-            return Notification::create("Failed to create frames.", NotificationIcon::Error)->show();
-        }
+        root.append_child("key").text() = "metadata";
+        auto metadata = root.append_child("dict");
+        metadata.append_child("key").text() = "format";
+        metadata.append_child("integer").text() = 3;
+        metadata.append_child("key").text() = "realTextureFileName";
+        metadata.append_child("string").text() = fmt::format("icons/{}.png", iconName);
+        metadata.append_child("key").text() = "size";
+        metadata.append_child("string").text() = fmt::format("{{{},{}}}", packed.w, packed.h);
+        metadata.append_child("key").text() = "moreIcons";
+        metadata.append_child("string").text() = GEODE_MOD_VERSION;
+        metadata.append_child("key").text() = "geometryDash";
+        metadata.append_child("string").text() = GEODE_STR(GEODE_GD_VERSION);
+        metadata.append_child("key").text() = "textureFileName";
+        metadata.append_child("string").text() = fmt::format("icons/{}.png", iconName);
 
-        auto finalPlist = plist->saveRootSubDictToString();
-        delete plist;
-        auto result = file::writeString(plistPath, finalPlist);
+        auto result = doc.save_file(plistPath.c_str(), "    ");
         Notification::create(
-            result.isOk() ? fmt::format("{} saved!", iconName) : fmt::format("Failed to save {}: {}.", iconName, result.unwrapErr()),
-            result.isOk() ? NotificationIcon::Success : NotificationIcon::Error
+            result ? fmt::format("{} saved!", iconName) : fmt::format("Failed to save {}.", iconName),
+            result ? NotificationIcon::Success : NotificationIcon::Error
         )->show();
     }
 

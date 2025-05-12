@@ -3,10 +3,8 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>
-#include <Geode/ui/Popup.hpp>
 #include <Geode/utils/ranges.hpp>
 #include <geode.texture-loader/include/TextureLoader.hpp>
-#include <RenderTexture.hpp>
 
 using namespace geode::prelude;
 
@@ -544,14 +542,22 @@ void MoreIcons::saveTrails() {
 }
 
 #if defined(GEODE_IS_WINDOWS) || defined(GEODE_IS_ANDROID)
-bool MoreIcons::saveToFile(const std::filesystem::path& path, uint8_t* data, int width, int height) {
+bool MoreIcons::saveToFile(const std::filesystem::path& path, CCImage* image) {
+    return image->saveToFile(path.string().c_str(), false);
+}
+
+bool MoreIcons::saveToFile(const std::filesystem::path& path, void* data, int width, int height) {
     auto image = new CCImage();
     if (!image->initWithImageData(data, width * height * 4, CCImage::kFmtRawData, width, height)) {
         image->release();
         return false;
     }
-    auto ret = image->saveToFile(path.string().c_str(), false);
+    auto result = image->saveToFile(path.string().c_str(), false);
     image->release();
-    return ret;
+    return result;
+}
+#elif defined(GEODE_IS_MACOS) || defined(GEODE_IS_IOS)
+bool MoreIcons::saveToFile(const std::filesystem::path& path, CCImage* image) {
+    return saveToFile(path, image->getData(), image->getWidth(), image->getHeight());
 }
 #endif

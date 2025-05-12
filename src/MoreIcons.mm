@@ -12,7 +12,7 @@
 
 using namespace geode::prelude;
 
-bool MoreIcons::saveToFile(const std::filesystem::path& path, uint8_t* data, int width, int height) {
+bool MoreIcons::saveToFile(const std::filesystem::path& path, void* data, int width, int height) {
     auto provider = CGDataProviderCreateWithData(nullptr, data, width * height * 4, nullptr);
     auto colorSpace = CGColorSpaceCreateDeviceRGB();
     auto cgImage = CGImageCreate(width, height, 8, 32, width * 4, colorSpace,

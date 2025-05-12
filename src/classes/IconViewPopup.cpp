@@ -174,19 +174,19 @@ void IconViewPopup::loadCustomIcons() {
             CCDictionary* frames = nullptr;
             auto format = 0;
             if (!icon.sheetName.empty()) {
-                auto dict = CCDictionary::createWithContentsOfFileThreadSafe(icon.sheetName.c_str());
-                if (!dict) return;
+                auto sheet = CCDictionary::createWithContentsOfFileThreadSafe(icon.sheetName.c_str());
+                if (!sheet) return;
 
                 frames = new CCDictionary();
-                for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(dict->objectForKey("frames")))) {
+                for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(sheet->objectForKey("frames")))) {
                     frames->setObject(dict, MoreIconsAPI::getFrameName(frame, icon.name, type));
                 }
 
-                auto metadata = static_cast<CCDictionary*>(dict->objectForKey("metadata"));
+                auto metadata = static_cast<CCDictionary*>(sheet->objectForKey("metadata"));
                 auto formatStr = metadata ? metadata->valueForKey("format") : nullptr;
                 format = formatStr ? numFromString<int>(formatStr->m_sString).unwrapOr(0) : 0;
 
-                dict->release();
+                sheet->release();
             }
 
             {

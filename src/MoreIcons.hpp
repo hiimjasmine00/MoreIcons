@@ -48,5 +48,6 @@ public:
     static void loadIcons(const std::vector<IconPack>& packs, std::string_view suffix, IconType type);
     static void loadTrails(const std::vector<IconPack>& packs);
     static void saveTrails();
-    static bool saveToFile(const std::filesystem::path& path, uint8_t* data, int width, int height);
+    static bool saveToFile(const std::filesystem::path& path, cocos2d::CCImage* image);
+    static bool saveToFile(const std::filesystem::path& path, void* data, int width, int height);
 };

@@ -9,6 +9,7 @@ else()
 endif()
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
+set(GEODE_CODEGEN_EXTRA_ARGS "--skip-pugixml")
 
 project(MoreIcons VERSION 1.13.0)
 
@@ -61,7 +62,12 @@ CPMAddPackage("gh:bshoshany/thread-pool@5.0.0")
 CPMAddPackage("gh:TeamHypersomnia/rectpack2D#3344bf5")
 target_include_directories(${PROJECT_NAME} PRIVATE ${thread-pool_SOURCE_DIR}/include ${rectpack2D_SOURCE_DIR}/src)
 
-CPMAddPackage("gh:undefined06855/gd-render-texture#5f14d0b")
-target_link_libraries(${PROJECT_NAME} gd-render-texture)
+CPMAddPackage("gh:zeux/pugixml@1.15")
+target_link_libraries(${PROJECT_NAME} pugixml-static)
+
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/mod.json" MOD_JSON)
+string(JSON MOD_VERSION GET "${MOD_JSON}" "version")
+string(REGEX REPLACE "^v" "" MOD_VERSION "${MOD_VERSION}")
+target_compile_definitions(${PROJECT_NAME} PRIVATE GEODE_MOD_VERSION="${MOD_VERSION}")
 
 setup_geode_mod(${PROJECT_NAME})
