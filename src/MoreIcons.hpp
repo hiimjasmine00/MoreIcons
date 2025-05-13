@@ -40,6 +40,7 @@ public:
     };
     inline static IconType currentType = IconType::Cube;
     inline static int severity = 0;
+    inline static bool showReload = false;
     inline static bool debugLogs = true;
     inline static bool traditionalPacks = true;
 

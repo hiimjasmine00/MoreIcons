@@ -5,14 +5,15 @@
 #include "../api/MoreIconsAPI.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
+#include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
-#include <Geode/ui/SimpleAxisLayout.hpp>
+#include <Geode/ui/Notification.hpp>
 
 using namespace geode::prelude;
 
 MoreIconsPopup* MoreIconsPopup::create() {
     auto ret = new MoreIconsPopup();
-    if (ret->initAnchored(440.0f, 290.0f)) {
+    if (ret->initAnchored(440.0f, 290.0f, "geode.loader/GE_square02.png")) {
         ret->autorelease();
         return ret;
     }
@@ -37,16 +38,16 @@ bool MoreIconsPopup::setup() {
     gamemodesNode->setID("gamemodes-node");
 
     constexpr std::array gamemodes = {
-        std::tuple("Icons", IconType::Cube, ccColor3B { 64, 227, 72 }),
-        std::tuple("Ships", IconType::Ship, ccColor3B { 255, 0, 255 }),
-        std::tuple("Balls", IconType::Ball, ccColor3B { 255, 90, 90 }),
-        std::tuple("UFOs", IconType::Ufo, ccColor3B { 255, 165, 75 }),
-        std::tuple("Waves", IconType::Wave, ccColor3B { 50, 200, 255 }),
-        std::tuple("Robots", IconType::Robot, ccColor3B { 200, 200, 200 }),
-        std::tuple("Spiders", IconType::Spider, ccColor3B { 150, 50, 255 }),
-        std::tuple("Swings", IconType::Swing, ccColor3B { 255, 255, 0 }),
-        std::tuple("Jetpacks", IconType::Jetpack, ccColor3B { 255, 150, 255 }),
-        std::tuple("Trails", IconType::Special, ccColor3B { 74, 82, 225 })
+        std::tuple("Icons", IconType::Cube, ccColor3B { 64, 227, 72 }, "icon"),
+        std::tuple("Ships", IconType::Ship, ccColor3B { 255, 0, 255 }, "ship"),
+        std::tuple("Balls", IconType::Ball, ccColor3B { 255, 90, 90 }, "ball"),
+        std::tuple("UFOs", IconType::Ufo, ccColor3B { 255, 165, 75 }, "ufo"),
+        std::tuple("Waves", IconType::Wave, ccColor3B { 50, 200, 255 }, "wave"),
+        std::tuple("Robots", IconType::Robot, ccColor3B { 200, 200, 200 }, "robot"),
+        std::tuple("Spiders", IconType::Spider, ccColor3B { 150, 50, 255 }, "spider"),
+        std::tuple("Swings", IconType::Swing, ccColor3B { 255, 255, 0 }, "swing"),
+        std::tuple("Jetpacks", IconType::Jetpack, ccColor3B { 255, 150, 255 }, "jetpack"),
+        std::tuple("Trails", IconType::Special, ccColor3B { 74, 82, 225 }, "trail")
     };
 
     auto gameManager = GameManager::get();
@@ -64,18 +65,19 @@ bool MoreIconsPopup::setup() {
         background->setID("background");
         gamemodeMenu->addChild(background);
 
-        auto& [name, type, color] = gamemodes[i];
+        auto& [name, type, color, directory] = gamemodes[i];
 
         auto icon = GJItemIcon::createBrowserItem(gameManager->iconTypeToUnlockType(type), 1);
         icon->setPosition({ 35.0f, 100.0f });
+        icon->setScale(0.9f);
         icon->setID("item-icon");
         gamemodeMenu->addChild(icon);
 
         auto& severity = MoreIcons::severities[type];
         if (severity > Severity::Debug) {
             auto severityIcon = CCSprite::createWithSpriteFrameName(MoreIcons::severityFrames[severity]);
-            severityIcon->setPosition({ 50.0f, 115.0f });
-            severityIcon->setScale(0.6f);
+            severityIcon->setPosition({ 48.5f, 113.5f });
+            severityIcon->setScale(0.5f);
             severityIcon->setID("severity-icon");
             gamemodeMenu->addChild(severityIcon);
         }
@@ -116,21 +118,53 @@ bool MoreIconsPopup::setup() {
         logButton->setID("log-button");
         gamemodeMenu->addChild(logButton);
 
-        auto addSprite = ButtonSprite::create("Add", 0.8f);
-        addSprite->setScale(0.7f);
+        auto addSprite = ButtonSprite::create("Add", 0, false, "goldFont.fnt", "GJ_button_05.png", 0.0f, 0.8f);
+        addSprite->setScale(0.6f);
         auto addButton = CCMenuItemExt::createSpriteExtra(addSprite, [type](auto) {
             EditIconPopup::create(type, 0, "", false)->show();
         });
-        addButton->setPosition({ 35.0f, 15.0f });
-        addButton->setScale(1.0f);
+        addButton->setPosition({ 24.0f, 15.0f });
         addButton->setID("add-button");
         gamemodeMenu->addChild(addButton);
+
+        auto folderSprite = ButtonSprite::create(CCSprite::createWithSpriteFrameName("folderIcon_001.png"), 0, false, 0.0f, "GJ_button_05.png", 0.7f);
+        folderSprite->setScale(0.45f);
+        auto folderButton = CCMenuItemExt::createSpriteExtra(folderSprite, [directory](auto) {
+            file::openFolder(Mod::get()->getConfigDir() / directory);
+        });
+        folderButton->setPosition({ 54.0f, 15.0f });
+        folderButton->setID("folder-button");
+        gamemodeMenu->addChild(folderButton);
 
         gamemodesNode->addChild(gamemodeMenu);
     }
 
     gamemodesNode->updateLayout();
     m_mainLayer->addChild(gamemodesNode);
+
+    auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [this](auto) {
+        auto trashDir = Mod::get()->getConfigDir() / "trash";
+        std::error_code code;
+        auto exists = std::filesystem::exists(trashDir, code);
+        if (!exists) exists = std::filesystem::create_directory(trashDir, code);
+        if (!exists) return Notification::create("Failed to create trash directory", NotificationIcon::Error)->show();
+        file::openFolder(trashDir);
+    });
+    trashButton->setPosition({ 435.0f, 5.0f });
+    trashButton->setID("trash-button");
+    m_buttonMenu->addChild(trashButton);
+
+    auto reloadSprite = ButtonSprite::create("Reload Textures", 0, false, "goldFont.fnt", "GJ_button_05.png", 0.0f, 1.0f);
+    reloadSprite->setScale(0.7f);
+    m_reloadButton = CCMenuItemExt::createSpriteExtra(reloadSprite, [](auto) {
+        reloadTextures([] {
+            return GJGarageLayer::node();
+        });
+    });
+    m_reloadButton->setPosition({ 220.0f, 0.0f });
+    m_reloadButton->setVisible(MoreIcons::showReload);
+    m_reloadButton->setID("reload-button");
+    m_buttonMenu->addChild(m_reloadButton);
 
     return true;
 }

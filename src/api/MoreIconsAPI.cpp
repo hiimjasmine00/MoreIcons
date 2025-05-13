@@ -116,7 +116,8 @@ void MoreIconsAPI::loadIcon(const std::string& name, IconType type, int requestI
                     CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }), info->frameNames[i].c_str());
             }
 
-            if (!info->sheetName.empty()) {
+            std::error_code code;
+            if (!info->sheetName.empty() && std::filesystem::exists(info->sheetName, code)) {
                 if (auto sheet = CCDictionary::createWithContentsOfFileThreadSafe(info->sheetName.c_str())) {
                     auto metadata = static_cast<CCDictionary*>(sheet->objectForKey("metadata"));
                     auto formatStr = metadata ? metadata->valueForKey("format") : nullptr;
@@ -150,7 +151,8 @@ void MoreIconsAPI::unloadIcon(const std::string& name, IconType type, int reques
             auto textureCache = CCTextureCache::get();
             auto spriteFrameCache = CCSpriteFrameCache::get();
 
-            if (!info->sheetName.empty()) {
+            std::error_code code;
+            if (!info->sheetName.empty() && std::filesystem::exists(info->sheetName, code)) {
                 if (auto sheet = CCDictionary::createWithContentsOfFileThreadSafe(info->sheetName.c_str())) {
                     for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(sheet->objectForKey("frames")))) {
                         spriteFrameCache->removeSpriteFrameByName(getFrameName(frame, name, type).c_str());

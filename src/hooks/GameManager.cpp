@@ -26,6 +26,7 @@ class $modify(MIGameManager, GameManager) {
         MoreIconsAPI::loadedIcons.clear();
         MoreIcons::logs.clear();
         MoreIcons::severity = Severity::Debug;
+        MoreIcons::showReload = false;
 
         auto mod = Mod::get();
         MoreIcons::debugLogs = mod->getSettingValue<bool>("debug-logs");

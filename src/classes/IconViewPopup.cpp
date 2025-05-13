@@ -13,7 +13,7 @@ using namespace geode::prelude;
 
 IconViewPopup* IconViewPopup::create(IconType type, bool custom) {
     auto ret = new IconViewPopup();
-    if (ret->initAnchored(440.0f, 290.0f, type, custom)) {
+    if (ret->initAnchored(440.0f, 290.0f, type, custom, "geode.loader/GE_square03.png")) {
         ret->autorelease();
         return ret;
     }
@@ -110,18 +110,22 @@ void IconViewPopup::loadVanillaIcons() {
         if (textureCache->m_pTextures->objectForKey(path)) continue;
 
         sharedPool().detach_task([i, path, type] {
-            auto dict = CCDictionary::createWithContentsOfFileThreadSafe((path.substr(0, path.size() - 4) + ".plist").c_str());
-            if (!dict) return;
+            auto sheet = CCDictionary::createWithContentsOfFileThreadSafe((path.substr(0, path.size() - 4) + ".plist").c_str());
+            if (!sheet) return;
 
-            auto frames = static_cast<CCDictionary*>(dict->objectForKey("frames"));
-            if (!frames) return dict->release();
+            auto frames = new CCDictionary();
+            for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(sheet->objectForKey("frames")))) {
+                frames->setObject(dict, frame);
+            }
 
-            auto metadata = static_cast<CCDictionary*>(dict->objectForKey("metadata"));
+            auto metadata = static_cast<CCDictionary*>(sheet->objectForKey("metadata"));
             auto formatStr = metadata ? metadata->valueForKey("format") : nullptr;
             auto format = formatStr ? numFromString<int>(formatStr->m_sString).unwrapOr(0) : 0;
 
+            sheet->release();
+
             auto image = new CCImage();
-            if (!image->initWithImageFile(path.c_str())) return dict->release(), image->release();
+            if (!image->initWithImageFile(path.c_str())) return image->release();
 
             {
                 std::lock_guard lock(loadedIconsMutex);
@@ -173,7 +177,8 @@ void IconViewPopup::loadCustomIcons() {
 
             CCDictionary* frames = nullptr;
             auto format = 0;
-            if (!icon.sheetName.empty()) {
+            std::error_code code;
+            if (!icon.sheetName.empty() && std::filesystem::exists(icon.sheetName, code)) {
                 auto sheet = CCDictionary::createWithContentsOfFileThreadSafe(icon.sheetName.c_str());
                 if (!sheet) return;
 
