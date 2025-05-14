@@ -9,6 +9,7 @@ on:
       - ".github/workflows/deploy.yml"
       - "docs/**"
       - "include/**"
+      - "fix-docs.js"
 
 permissions:
   contents: read

@@ -1,4 +1,7 @@
 #include "../api/MoreIconsAPI.hpp"
+#ifdef GEODE_IS_WINDOWS
+#include <Geode/binding/PlayerObject.hpp>
+#endif
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/GJBaseGameLayer.hpp>
 

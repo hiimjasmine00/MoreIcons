@@ -51,14 +51,25 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
     auto gameManager = GameManager::get();
     auto unlock = (int)gameManager->iconTypeToUnlockType(type);
     auto unlockName = uppercase[unlock];
+    auto colonIndex = name.find(':');
 
     setID("EditIconPopup");
-    setTitle(read ? name.empty() ? fmt::format("{} {:02}", unlockName, id) : name : fmt::format("{} Editor", unlockName));
+    setTitle(read ? name.empty() ? fmt::format("{} {:02}", unlockName, id) : name.substr(colonIndex + 1) : fmt::format("{} Editor", unlockName));
     m_title->setID("edit-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
     m_bgSprite->setID("background");
     m_closeBtn->setID("close-button");
+
+    if (read && colonIndex != std::string::npos) {
+        if (auto icon = MoreIconsAPI::getIcon(name, type)) {
+            auto subTitle = CCLabelBMFont::create(icon->packName.c_str(), "goldFont.fnt");
+            subTitle->setPosition(m_title->getPosition() - CCPoint { 0.0f, 15.0f });
+            subTitle->setScale(0.4f);
+            subTitle->setID("edit-icon-sub-title");
+            m_mainLayer->addChild(subTitle);
+        }
+    }
 
     m_frames = CCDictionary::create();
     m_frames->retain();
@@ -298,30 +309,36 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
     m_textInput->setID("text-input");
     m_mainLayer->addChild(m_textInput);
 
+    auto bottomMenu = CCMenu::create();
+    bottomMenu->setPosition({ 175.0f, 30.0f });
+    bottomMenu->setContentSize({ 350.0f, 30.0f });
+    bottomMenu->setLayout(RowLayout::create()->setGap(25.0f));
+    bottomMenu->setID("bottom-menu");
+
     auto pngButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("PNG", 0, false, "goldFont.fnt", "GJ_button_05.png", 0.0f, 1.0f), [this](auto) {
         pickFile(0, 0, false);
     });
-    pngButton->setPosition({ 130.0f - isIcon * 45.0f, 30.0f });
     pngButton->setID("png-button");
-    m_buttonMenu->addChild(pngButton);
+    bottomMenu->addChild(pngButton);
 
     m_saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", 0, false, "goldFont.fnt", "GJ_button_05.png", 0.0f, 1.0f), [this](auto) {
         saveIcon();
     });
-    m_saveButton->setPosition({ 215.0f - isIcon * 40.0f, 30.0f });
     m_saveButton->setID("save-button");
-    m_buttonMenu->addChild(m_saveButton);
+    bottomMenu->addChild(m_saveButton);
 
     if (isIcon) {
         auto plistSprite = ButtonSprite::create("Plist", 0, false, "goldFont.fnt", "GJ_button_05.png", 0.0f, 1.0f);
         plistSprite->m_BGSprite->setOpacity(105);
         plistSprite->m_label->setOpacity(105);
         m_plistButton = CCMenuItemExt::createSpriteExtra(plistSprite, [this](auto) { pickFile(0, 0, true); });
-        m_plistButton->setPosition({ 270.0f, 30.0f });
         m_plistButton->setEnabled(false);
         m_plistButton->setID("plist-button");
-        m_buttonMenu->addChild(m_plistButton);
+        bottomMenu->addChild(m_plistButton);
     }
+
+    bottomMenu->updateLayout();
+    m_mainLayer->addChild(bottomMenu);
 
     return true;
 }
