@@ -1,12 +1,14 @@
 #include "MoreIconsPopup.hpp"
 #include "EditIconPopup.hpp"
 #include "IconViewPopup.hpp"
+#include "LogLayer.hpp"
 #include "../MoreIcons.hpp"
 #include "../api/MoreIconsAPI.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
+#include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/ui/Notification.hpp>
 
 using namespace geode::prelude;
@@ -67,7 +69,24 @@ bool MoreIconsPopup::setup() {
 
         auto& [name, type, color, directory] = gamemodes[i];
 
-        auto icon = GJItemIcon::createBrowserItem(gameManager->iconTypeToUnlockType(type), 1);
+        auto unlock = gameManager->iconTypeToUnlockType(type);
+        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+        auto dual = sdi && sdi->getSavedValue("2pselected", false);
+        constexpr std::array types = {
+            "", "cube", "color1", "color2", "ship", "roll", "bird", "dart",
+            "robot", "spider", "trail", "death", "", "swing", "jetpack", "shiptrail"
+        };
+
+        auto icon = GJItemIcon::createBrowserItem(unlock, dual ? sdi->getSavedValue<int>(types[(int)unlock]) : gameManager->activeIconForType(type));
+        if (type <= IconType::Jetpack) queueInMainThread([icon = Ref(icon), type, dual, gameManager, sdi] {
+            auto player = static_cast<SimplePlayer*>(icon->m_player);
+            MoreIconsAPI::updateSimplePlayer(player, type, dual);
+            player->setColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color1") : gameManager->m_playerColor));
+            player->setSecondColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color2") : gameManager->m_playerColor2));
+            player->enableCustomGlowColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("colorglow") : gameManager->m_playerGlowColor));
+            player->m_hasGlowOutline = dual ? sdi->getSavedValue<bool>("glow") : gameManager->m_playerGlow;
+            player->updateColors();
+        });
         icon->setPosition({ 35.0f, 100.0f });
         icon->setScale(0.9f);
         icon->setID("item-icon");
@@ -113,7 +132,9 @@ bool MoreIconsPopup::setup() {
 
         auto logLabel = CCLabelBMFont::create(fmt::format("Logs: {}", logCount).c_str(), "goldFont.fnt");
         logLabel->limitLabelWidth(65.0f, 0.4f, 0.0f);
-        auto logButton = CCMenuItemExt::createSpriteExtra(logLabel, [](auto) {});
+        auto logButton = CCMenuItemExt::createSpriteExtra(logLabel, [type](auto) {
+            LogLayer::create(type)->show();
+        });
         logButton->setPosition({ 35.0f, 36.0f });
         logButton->setID("log-button");
         gamemodeMenu->addChild(logButton);
@@ -142,7 +163,7 @@ bool MoreIconsPopup::setup() {
     gamemodesNode->updateLayout();
     m_mainLayer->addChild(gamemodesNode);
 
-    auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [this](auto) {
+    auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [](auto) {
         auto trashDir = Mod::get()->getConfigDir() / "trash";
         std::error_code code;
         auto exists = std::filesystem::exists(trashDir, code);

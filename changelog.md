@@ -1,4 +1,11 @@
 # More Icons Changelog
+## v1.13.0 (2025-05-14)
+- Revamped the More Icons popup with a new design and more features
+- Added an icon editor, which allows you to create new icons by importing icon parts
+- Added custom and vanilla icon viewers, with clickable icons
+- Improved the log viewer and split it across the icon types
+- Added the icon trash, which can be used via the icon viewer and accessed via the More Icons popup
+
 ## v1.12.3 (2025-04-28)
 - Fixed a few issues with mass loading, especially when opening the level editor
 

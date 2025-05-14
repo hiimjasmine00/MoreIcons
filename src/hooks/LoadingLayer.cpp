@@ -6,6 +6,7 @@ using namespace geode::prelude;
 class $modify(MILoadingLayer, LoadingLayer) {
     struct Fields {
         int m_iconLoadStep;
+        bool m_finishedLoading;
         std::vector<IconPack> m_iconPacks;
     };
 
@@ -14,9 +15,9 @@ class $modify(MILoadingLayer, LoadingLayer) {
     }
 
     void loadAssets() {
-        if (Loader::get()->isModLoaded("dankmeme.blaze") ? m_loadStep < 14 : m_loadStep > 0) return LoadingLayer::loadAssets();
-
         auto f = m_fields.self();
+        if (f->m_finishedLoading) return LoadingLayer::loadAssets();
+
         switch (f->m_iconLoadStep) {
             case 0:
                 f->m_iconPacks = MoreIcons::getTexturePacks();
@@ -67,6 +68,7 @@ class $modify(MILoadingLayer, LoadingLayer) {
             smallLabel2->setString(f->m_iconLoadStep < labels.size() ? labels[f->m_iconLoadStep] : "");
 
         f->m_iconLoadStep++;
+        f->m_finishedLoading = f->m_iconLoadStep > labels.size();
         queueInMainThread([this] { loadAssets(); });
     }
 };

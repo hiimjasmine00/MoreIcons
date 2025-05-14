@@ -2,12 +2,9 @@
 
 class LogCell : public cocos2d::CCLayer {
 protected:
-    int m_index = 0;
-    int m_total = 0;
-
-    bool init(const std::string& message, int severity, int index, int total, bool dark);
+    bool init(const std::string&, const std::string&, int, int);
 public:
-    static LogCell* create(const std::string& message, int severity, int index, int total, bool dark);
+    static LogCell* create(const std::string&, const std::string&, int, int);
 
     void draw() override;
 };

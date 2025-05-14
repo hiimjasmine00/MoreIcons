@@ -7,12 +7,12 @@ class $modify(MIFileUtils, CCFileUtils) {
         auto ret = CCFileUtils::fullPathForFilename(filename, skipSuffix);
         if (ret.empty() || skipSuffix || !isAbsolutePath(filename)) return ret;
 
-        auto scaleFactor = CCDirector::get()->getContentScaleFactor();
-        if (scaleFactor >= 4.0f) {
+        auto factor = CCDirector::get()->getContentScaleFactor();
+        if (factor >= 4.0f) {
             auto uhdSuffix = addSuffix(ret, "-uhd");
             if (isFileExist(uhdSuffix)) return uhdSuffix;
         }
-        if (scaleFactor >= 2.0f) {
+        if (factor >= 2.0f) {
             auto hdSuffix = addSuffix(ret, "-hd");
             if (isFileExist(hdSuffix)) return hdSuffix;
         }

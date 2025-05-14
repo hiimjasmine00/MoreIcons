@@ -12,8 +12,8 @@ struct IconPack {
 
 struct LogData {
     std::string name;
-    IconType type;
     std::string message;
+    IconType type;
     int severity;
 };
 
@@ -46,6 +46,7 @@ public:
 
     static std::vector<IconPack> getTexturePacks();
     static std::string vanillaTexturePath(const std::string& path, bool skipSuffix);
+    static std::string string(const std::filesystem::path& path);
     static void loadIcons(const std::vector<IconPack>& packs, std::string_view suffix, IconType type);
     static void loadTrails(const std::vector<IconPack>& packs);
     static void saveTrails();

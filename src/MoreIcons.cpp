@@ -11,7 +11,7 @@ using namespace geode::prelude;
 bool doesExist(const std::filesystem::path& path) {
     std::error_code code;
     auto exists = std::filesystem::exists(path, code);
-    if (code) log::error("Error checking existence of {}: {}", path, code.message());
+    if (code) log::error("Error checking existence of {}: {}", MoreIcons::string(path), code.message());
     return exists;
 }
 
@@ -86,7 +86,15 @@ std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuff
         return path;
     }
     #endif
-    return (dirs::getResourcesDir() / path).string();
+    return string(dirs::getResourcesDir() / path);
+}
+
+std::string MoreIcons::string(const std::filesystem::path& path) {
+    #ifdef GEODE_IS_WINDOWS
+    return string::wideToUtf8(path.native());
+    #else
+    return path.native();
+    #endif
 }
 
 bool naturalSorter(const std::string& aStr, const std::string& bStr) {
@@ -150,7 +158,7 @@ template <typename... Args>
 void printLog(const std::string& name, int severity, fmt::format_string<Args...> message, Args&&... args) {
     auto logMessage = fmt::format(message, std::forward<Args>(args)...);
     log::logImpl(Severity::cast(severity), Mod::get(), "{}: {}", name, logMessage);
-    MoreIcons::logs.push_back({ name, MoreIcons::currentType, logMessage, severity });
+    MoreIcons::logs.push_back({ name, logMessage, MoreIcons::currentType, severity });
     auto& currentSeverity = MoreIcons::severities[MoreIcons::currentType];
     if (currentSeverity < severity) currentSeverity = severity;
     if (MoreIcons::severity < severity) MoreIcons::severity = severity;
@@ -158,11 +166,12 @@ void printLog(const std::string& name, int severity, fmt::format_string<Args...>
 
 template <typename... Args>
 void safeDebug(fmt::format_string<Args...> message, Args&&... args) {
-    if (MoreIcons::debugLogs) log::vlogImpl(Severity::Debug, Mod::get(), message, fmt::make_format_args(args...));
+    if (MoreIcons::debugLogs) log::debug(message, std::forward<Args>(args)...);
 }
 
 void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, IconType type) {
-    auto name = pack.id.empty() ? path.stem().string() : fmt::format("{}:{}", pack.id, path.stem());
+    auto pathStem = MoreIcons::string(path.stem());
+    auto name = pack.id.empty() ? pathStem : fmt::format("{}:{}", pack.id, pathStem);
 
     safeDebug("Pre-loading folder icon {} from {}", name, pack.name);
 
@@ -174,7 +183,7 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
 
     std::vector<std::string> textures;
     std::vector<std::string> frameNames;
-    auto scaleFactor = CCDirector::get()->getContentScaleFactor();
+    auto factor = CCDirector::get()->getContentScaleFactor();
 
     for (; it != std::filesystem::end(it); it.increment(code)) {
         auto& subEntry = *it;
@@ -183,40 +192,44 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
         auto subEntryPath = subEntry.path();
         if (subEntryPath.extension() != ".png") continue;
 
-        auto pathFilename = subEntryPath.filename().string();
+        auto pathFilename = MoreIcons::string(subEntryPath.filename());
+        auto pathString = MoreIcons::string(subEntryPath);
         std::string frameName;
         if (pathFilename.ends_with("-uhd.png")) {
-            frameName = replaceEnd(subEntryPath.filename().string(), 8, ".png");
+            frameName = replaceEnd(pathFilename, 8, ".png");
             auto logName = fmt::format("{}/{}", name, frameName);
 
-            if (scaleFactor < 4.0f && scaleFactor >= 2.0f) {
-                printLog(logName, Severity::Warning, "Ignoring high-quality PNG file for medium texture quality");
+            if (factor < 4.0f && factor >= 2.0f) {
+                if (!doesExist(replaceEnd(pathString, 8, "-hd.png")) && !doesExist(replaceEnd(pathString, 8, ".png")))
+                    printLog(logName, Severity::Warning, "Ignoring high-quality frame on medium texture quality");
                 continue;
             }
-            else if (scaleFactor < 2.0f) {
-                printLog(logName, Severity::Warning, "Ignoring high-quality PNG file for low texture quality");
+            else if (factor < 2.0f) {
+                if (!doesExist(replaceEnd(pathString, 8, ".png")))
+                    printLog(logName, Severity::Warning, "Ignoring high-quality frame on low texture quality");
                 continue;
             }
         }
         else if (pathFilename.ends_with("-hd.png")) {
-            frameName = replaceEnd(subEntryPath.filename().string(), 7, ".png");
+            frameName = replaceEnd(pathFilename, 7, ".png");
             auto logName = fmt::format("{}/{}", name, frameName);
 
-            if (scaleFactor < 2.0f) {
-                printLog(logName, Severity::Warning, "Ignoring medium-quality PNG file for low texture quality");
+            if (factor < 2.0f) {
+                if (!doesExist(replaceEnd(pathString, 7, ".png")))
+                    printLog(logName, Severity::Warning, "Ignoring medium-quality frame for low texture quality");
                 continue;
             }
 
-            if (doesExist(replaceEnd(subEntryPath.string(), 7, "-uhd.png")) && scaleFactor >= 4.0f) continue;
+            if (doesExist(replaceEnd(pathString, 7, "-uhd.png")) && factor >= 4.0f) continue;
         }
         else {
-            frameName = subEntryPath.filename().string();
+            frameName = pathFilename;
 
-            if (doesExist(replaceEnd(subEntryPath.string(), 4, "-uhd.png")) && scaleFactor >= 4.0f) continue;
-            else if (doesExist(replaceEnd(subEntryPath.string(), 4, "-hd.png")) && scaleFactor >= 2.0f) continue;
+            if (doesExist(replaceEnd(pathString, 4, "-uhd.png")) && factor >= 4.0f) continue;
+            else if (doesExist(replaceEnd(pathString, 4, "-hd.png")) && factor >= 2.0f) continue;
         }
 
-        textures.push_back(subEntryPath.string());
+        textures.push_back(pathString);
         frameNames.push_back(MoreIconsAPI::getFrameName(frameName, name, type));
     }
     if (code) printLog(name, Severity::Warning, "Failed to iterate over directory: {}", code.message());
@@ -238,46 +251,58 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
 }
 
 void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconType type) {
-    auto scaleFactor = CCDirector::get()->getContentScaleFactor();
-    auto pathFilename = path.filename().string();
+    auto factor = CCDirector::get()->getContentScaleFactor();
+    auto pathFilename = MoreIcons::string(path.filename());
+    auto pathStem = MoreIcons::string(path.stem());
+    auto pathString = MoreIcons::string(path);
     std::string name;
     if (pathFilename.ends_with("-uhd.plist")) {
-        name = replaceEnd(path.stem().string(), 4, "");
+        name = replaceEnd(pathStem, 4, "");
         if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
 
-        if (scaleFactor < 4.0f && scaleFactor >= 2.0f)
-            return printLog(name, Severity::Warning, "Ignoring high-quality plist file for medium texture quality");
-        else if (scaleFactor < 2.0f)
-            return printLog(name, Severity::Warning, "Ignoring high-quality plist file for low texture quality");
+        if (factor < 4.0f && factor >= 2.0f) {
+            if (!doesExist(replaceEnd(pathString, 10, "-hd.plist")) && !doesExist(replaceEnd(pathString, 9, ".plist")))
+                printLog(name, Severity::Warning, "Ignoring high-quality icon on medium texture quality");
+            return;
+        }
+        else if (factor < 2.0f) {
+            if (!doesExist(replaceEnd(pathString, 10, ".plist")))
+                printLog(name, Severity::Warning, "Ignoring high-quality icon on low texture quality");
+            return;
+        }
     }
     else if (pathFilename.ends_with("-hd.plist")) {
-        name = replaceEnd(path.stem().string(), 3, "");
+        name = replaceEnd(pathStem, 3, "");
         if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
 
-        if (scaleFactor < 2.0f) return printLog(name, Severity::Warning, "Ignoring medium-quality plist file for low texture quality");
+        if (factor < 2.0f) {
+            if (!doesExist(replaceEnd(pathString, 9, ".plist")))
+                printLog(name, Severity::Warning, "Ignoring medium-quality icon on low texture quality");
+            return;
+        }
 
-        if (doesExist(replaceEnd(path.string(), 9, "-uhd.plist")) && scaleFactor >= 4.0f) return;
+        if (doesExist(replaceEnd(pathString, 9, "-uhd.plist")) && factor >= 4.0f) return;
     }
     else {
-        name = path.stem().string();
+        name = pathStem;
         if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
 
-        if (doesExist(replaceEnd(path.string(), 6, "-uhd.plist")) && scaleFactor >= 4.0f) return;
-        else if (doesExist(replaceEnd(path.string(), 6, "-hd.plist")) && scaleFactor >= 2.0f) return;
+        if (doesExist(replaceEnd(pathString, 6, "-uhd.plist")) && factor >= 4.0f) return;
+        else if (doesExist(replaceEnd(pathString, 6, "-hd.plist")) && factor >= 2.0f) return;
     }
 
     safeDebug("Pre-loading file icon {} from {}", name, pack.name);
 
     if (MoreIconsAPI::hasIcon(name, type)) return printLog(name, Severity::Warning, "Duplicate icon name");
 
-    auto fullTexturePath = replaceEnd(path.string(), 6, ".png");
-    if (!doesExist(fullTexturePath)) return printLog(name, Severity::Error, "Texture file {}.png not found", path.stem());
+    auto fullTexturePath = replaceEnd(pathString, 6, ".png");
+    if (!doesExist(fullTexturePath)) return printLog(name, Severity::Error, "Texture file {}.png not found", pathStem);
 
     MoreIconsAPI::icons.push_back({
         .name = name,
         .textures = { fullTexturePath },
         .frameNames = {},
-        .sheetName = path.string(),
+        .sheetName = pathString,
         .packName = pack.name,
         .packID = pack.id,
         .type = type,
@@ -290,35 +315,37 @@ void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconT
 }
 
 void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack, IconType type) {
-    auto scaleFactor = CCDirector::get()->getContentScaleFactor();
-    auto pathFilename = path.filename().string();
+    auto factor = CCDirector::get()->getContentScaleFactor();
+    auto pathFilename = MoreIcons::string(path.filename());
+    auto pathStem = MoreIcons::string(path.stem());
+    auto pathString = MoreIcons::string(path);
     std::string name;
     if (pathFilename.ends_with("-uhd.png")) {
-        if (scaleFactor < 4.0f) return;
-        name = fmt::format("{}:{}", pack.id, replaceEnd(path.stem().string(), 4, ""));
+        if (factor < 4.0f) return;
+        name = fmt::format("{}:{}", pack.id, replaceEnd(pathStem, 4, ""));
     }
     else if (pathFilename.ends_with("-hd.png")) {
-        if (scaleFactor < 2.0f) return;
-        if (doesExist(replaceEnd(path.string(), 7, "-uhd.png")) && scaleFactor >= 4.0f) return;
-        name = fmt::format("{}:{}", pack.id, replaceEnd(path.stem().string(), 3, ""));
+        if (factor < 2.0f) return;
+        if (doesExist(replaceEnd(pathString, 7, "-uhd.png")) && factor >= 4.0f) return;
+        name = fmt::format("{}:{}", pack.id, replaceEnd(pathStem, 3, ""));
     }
     else {
-        if (doesExist(replaceEnd(path.string(), 4, "-uhd.png")) && scaleFactor >= 4.0f) return;
-        else if (doesExist(replaceEnd(path.string(), 4, "-hd.png")) && scaleFactor >= 2.0f) return;
-        name = fmt::format("{}:{}", pack.id, path.stem().string());
+        if (doesExist(replaceEnd(pathString, 4, "-uhd.png")) && factor >= 4.0f) return;
+        else if (doesExist(replaceEnd(pathString, 4, "-hd.png")) && factor >= 2.0f) return;
+        name = fmt::format("{}:{}", pack.id, pathStem);
     }
 
     safeDebug("Pre-loading vanilla icon {} from {}", name, pack.name);
 
-    auto plistPath = replaceEnd(path.string(), 4, ".plist");
-    if (!doesExist(plistPath)) plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", path.stem()), false);
+    auto plistPath = replaceEnd(pathString, 4, ".plist");
+    if (!doesExist(plistPath)) plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", pathStem), false);
     if (!CCFileUtils::get()->isFileExist(plistPath)) return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
 
     ranges::remove(MoreIconsAPI::icons, [name, type](const IconInfo& icon) { return icon.name == name && icon.type == type; });
 
     MoreIconsAPI::icons.push_back({
         .name = name,
-        .textures = { path.string() },
+        .textures = { pathString },
         .frameNames = {},
         .sheetName = plistPath,
         .packName = pack.name,
@@ -333,13 +360,15 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack, Ic
 }
 
 void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
-    auto name = pack.id.empty() ? path.stem().string() : fmt::format("{}:{}", pack.id, path.stem());
+    auto pathStem = MoreIcons::string(path.stem());
+    auto name = pack.id.empty() ? pathStem : fmt::format("{}:{}", pack.id, pathStem);
 
     safeDebug("Pre-loading trail {} from {}", name, pack.name);
 
     if (MoreIconsAPI::hasIcon(name, IconType::Special)) return printLog(name, Severity::Warning, "Duplicate trail name");
 
-    auto json = file::readJson(replaceEnd(path.string(), 4, ".json")).unwrapOr(matjson::makeObject({
+    auto pathString = MoreIcons::string(path);
+    auto json = file::readJson(replaceEnd(pathString, 4, ".json")).unwrapOr(matjson::makeObject({
         { "blend", false },
         { "tint", false },
         { "show", false },
@@ -349,7 +378,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     MoreIconsAPI::icons.push_back({
         .name = name,
-        .textures = { path.string() },
+        .textures = { pathString },
         .frameNames = {},
         .sheetName = "",
         .packName = pack.name,
@@ -367,7 +396,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 }
 
 void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
-    auto pathStem = path.stem().string();
+    auto pathStem = MoreIcons::string(path.stem());
     auto name = fmt::format("{}:{}", pack.id, pathStem);
 
     safeDebug("Pre-loading vanilla trail {} from {}", name, pack.name);
@@ -378,7 +407,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     MoreIconsAPI::icons.push_back({
         .name = name,
-        .textures = { path.string() },
+        .textures = { MoreIcons::string(path) },
         .frameNames = {},
         .sheetName = "",
         .packName = pack.name,
@@ -393,20 +422,19 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
 void createDirectories(const std::filesystem::path& path) {
     std::error_code code;
     std::filesystem::create_directories(path, code);
-    if (code) log::error("Failed to create directory {}: {}", path, code.message());
+    if (code) log::error("Failed to create directory {}: {}", MoreIcons::string(path), code.message());
 }
 
 #define DIRECTORY_ITERATOR(path) \
     std::error_code code; \
     std::filesystem::directory_iterator it(path, code); \
     if (code) { \
-        log::error("{}: Failed to create directory iterator for: {}", path, code.message()); \
+        log::error("{}: Failed to create directory iterator for: {}", pathString, code.message()); \
         continue; \
     } \
     for (; it != std::filesystem::end(it); it.increment(code))
 
-#define DIRECTORY_ITERATOR_END(path) \
-    if (code) log::error("{}: Failed to iterate over directory: {}", path, code.message());
+#define DIRECTORY_ITERATOR_END if (code) log::error("{}: Failed to iterate over directory: {}", pathString, code.message());
 
 void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view suffix, IconType type) {
     MoreIconsAPI::iconIndices[type].first = MoreIconsAPI::icons.size();
@@ -421,8 +449,9 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
                 if (i == 0) createDirectories(path);
                 continue;
             }
+            auto pathString = string(path);
 
-            log::info("Pre-loading {}s from {}", suffix, path);
+            log::info("Pre-loading {}s from {}", suffix, pathString);
 
             DIRECTORY_ITERATOR(path) {
                 auto& entry = *it;
@@ -432,15 +461,16 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
                 }
                 else if (entry.is_directory()) loadFolderIcon(entryPath, pack, type);
             }
-            DIRECTORY_ITERATOR_END(path)
+            DIRECTORY_ITERATOR_END
 
-            log::info("Finished pre-loading {}s from {}", suffix, path);
+            log::info("Finished pre-loading {}s from {}", suffix, pathString);
         }
         else if (traditionalPacks) {
             auto path = pack.path / "icons";
             if (!doesExist(path)) continue;
+            auto pathString = string(path);
 
-            log::info("Pre-loading {}s from {}", suffix, path);
+            log::info("Pre-loading {}s from {}", suffix, pathString);
 
             DIRECTORY_ITERATOR(path) {
                 auto& entry = *it;
@@ -449,14 +479,14 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
                 auto& entryPath = entry.path();
                 if (entryPath.extension() != ".png") continue;
 
-                auto entryFilename = entryPath.filename().string();
+                auto entryFilename = string(entryPath.filename());
                 if (!entryFilename.starts_with(prefixes[(int)type]) || (type == IconType::Cube && entryFilename.starts_with("player_ball_"))) continue;
 
                 loadVanillaIcon(entryPath, pack, type);
             }
-            DIRECTORY_ITERATOR_END(path)
+            DIRECTORY_ITERATOR_END
 
-            log::info("Finished pre-loading {}s from {}", suffix, path);
+            log::info("Finished pre-loading {}s from {}", suffix, pathString);
         }
     }
 
@@ -478,8 +508,9 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
                 if (i == 0) createDirectories(path);
                 continue;
             }
+            auto pathString = string(path);
 
-            log::info("Pre-loading trails from {}", path);
+            log::info("Pre-loading trails from {}", pathString);
 
             DIRECTORY_ITERATOR(path) {
                 auto& entry = *it;
@@ -488,17 +519,16 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
                 auto& entryPath = entry.path();
                 if (entryPath.extension() != ".png") continue;
 
-                loadTrail(entryPath, {
-                    .name = pack.name,
-                    .id = pack.id
-                });
+                loadTrail(entryPath, pack);
             }
-            DIRECTORY_ITERATOR_END(path)
+            DIRECTORY_ITERATOR_END
 
-            log::info("Finished pre-loading trails from {}", path);
+            log::info("Finished pre-loading trails from {}", pathString);
         }
         else if (traditionalPacks) {
-            log::info("Pre-loading trails from {}", pack.path);
+            auto pathString = string(pack.path);
+
+            log::info("Pre-loading trails from {}", pathString);
 
             auto trailCount = GameManager::get()->countForType(IconType::Special);
             DIRECTORY_ITERATOR(pack.path) {
@@ -506,20 +536,17 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
                 if (!entry.is_regular_file()) continue;
 
                 auto& entryPath = entry.path();
-                auto entryFilename = entryPath.filename().string();
+                auto entryFilename = string(entryPath.filename());
                 for (int i = 1; i <= trailCount; i++) {
                     if (entryFilename == fmt::format("streak_{:02}_001.png", i)) {
-                        loadVanillaTrail(entryPath, {
-                            .name = pack.name,
-                            .id = pack.id
-                        });
+                        loadVanillaTrail(entryPath, pack);
                         break;
                     }
                 }
             }
-            DIRECTORY_ITERATOR_END(pack.path)
+            DIRECTORY_ITERATOR_END
 
-            log::info("Finished pre-loading trails from {}", pack.path);
+            log::info("Finished pre-loading trails from {}", pathString);
         }
     }
 
@@ -543,7 +570,7 @@ void MoreIcons::saveTrails() {
 
 #if defined(GEODE_IS_WINDOWS) || defined(GEODE_IS_ANDROID)
 bool MoreIcons::saveToFile(const std::filesystem::path& path, CCImage* image) {
-    return image->saveToFile(path.string().c_str(), false);
+    return image->saveToFile(string(path).c_str(), false);
 }
 
 bool MoreIcons::saveToFile(const std::filesystem::path& path, void* data, int width, int height) {
@@ -552,7 +579,7 @@ bool MoreIcons::saveToFile(const std::filesystem::path& path, void* data, int wi
         image->release();
         return false;
     }
-    auto result = image->saveToFile(path.string().c_str(), false);
+    auto result = image->saveToFile(string(path).c_str(), false);
     image->release();
     return result;
 }

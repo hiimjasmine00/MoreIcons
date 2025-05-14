@@ -22,23 +22,14 @@ IconViewPopup* IconViewPopup::create(IconType type, bool custom) {
 }
 
 bool IconViewPopup::setup(IconType type, bool custom) {
-    auto title = "";
-    switch (type) {
-        case IconType::Cube: title = custom ? "Custom Icons" : "Vanilla Icons"; break;
-        case IconType::Ship: title = custom ? "Custom Ships" : "Vanilla Ships"; break;
-        case IconType::Ball: title = custom ? "Custom Balls" : "Vanilla Balls"; break;
-        case IconType::Ufo: title = custom ? "Custom UFOs" : "Vanilla UFOs"; break;
-        case IconType::Wave: title = custom ? "Custom Waves" : "Vanilla Waves"; break;
-        case IconType::Robot: title = custom ? "Custom Robots" : "Vanilla Robots"; break;
-        case IconType::Spider: title = custom ? "Custom Spiders" : "Vanilla Spiders"; break;
-        case IconType::Swing: title = custom ? "Custom Swings" : "Vanilla Swings"; break;
-        case IconType::Jetpack: title = custom ? "Custom Jetpacks" : "Vanilla Jetpacks"; break;
-        case IconType::Special: title = custom ? "Custom Trails" : "Vanilla Trails"; break;
-        default: title = ""; break;
-    }
+    constexpr std::array titles = {
+        "", "Icons", "", "", "Ships", "Balls", "UFOs", "Waves", "Robots",
+        "Spiders", "Trails", "Death Effects", "", "Swings", "Jetpacks", "Ship Fires"
+    };
+    auto unlock = GameManager::get()->iconTypeToUnlockType(type);
 
     setID("IconViewPopup");
-    setTitle(title);
+    setTitle(fmt::format("{} {}", custom ? "Custom" : "Vanilla", titles[(int)unlock]));
     m_title->setID("icon-view-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -48,18 +39,8 @@ bool IconViewPopup::setup(IconType type, bool custom) {
     m_iconType = type;
     m_custom = custom;
 
-    auto scrollBackground = CCScale9Sprite::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
-    scrollBackground->setPosition({ 215.0f, 135.0f });
-    scrollBackground->setContentSize({ 400.0f, 240.0f });
-    scrollBackground->setOpacity(105);
-    scrollBackground->setID("scroll-background");
-    m_mainLayer->addChild(scrollBackground);
-
-    m_scrollLayer = BiggerScrollLayer::create(400.0f, 230.0f, 5.0f);
-    m_scrollLayer->m_contentLayer->setLayout(RowLayout::create()
-        ->setGap(roundf(7.5f / GJItemIcon::scaleForType(GameManager::get()->iconTypeToUnlockType(m_iconType))))
-        ->setGrowCrossAxis(true));
-    m_scrollLayer->ignoreAnchorPointForPosition(false);
+    m_scrollLayer = BiggerScrollLayer::create(400.0f, 230.0f, 5.0f, 15.0f);
+    m_scrollLayer->m_contentLayer->setLayout(RowLayout::create()->setGap(roundf(7.5f / GJItemIcon::scaleForType(unlock)))->setGrowCrossAxis(true));
     m_scrollLayer->setPosition({ 215.0f, 135.0f });
     m_scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(m_scrollLayer);
@@ -102,8 +83,8 @@ void IconViewPopup::loadVanillaIcons() {
     auto iconCount = gameManager->countForType(type);
     if (iconCount <= 0) return;
 
-    auto scaleFactor = CCDirector::get()->getContentScaleFactor();
-    auto suffix = scaleFactor >= 4.0f ? "-uhd.png" : scaleFactor >= 2.0f ? "-hd.png" : ".png";
+    auto factor = CCDirector::get()->getContentScaleFactor();
+    auto suffix = factor >= 4.0f ? "-uhd.png" : factor >= 2.0f ? "-hd.png" : ".png";
     auto textureCache = CCTextureCache::get();
     for (int i = 1; i <= iconCount; i++) {
         auto path = MoreIcons::vanillaTexturePath(fmt::format("icons/{}{:02}{}", MoreIcons::prefixes[(int)type], i, suffix), false);
@@ -259,7 +240,7 @@ void IconViewPopup::setupIcons() {
     auto gameManager = GameManager::get();
     auto iconType = m_iconType;
     auto isIcon = iconType <= IconType::Jetpack;
-    auto unlockType = gameManager->iconTypeToUnlockType(iconType);
+    auto unlock = gameManager->iconTypeToUnlockType(iconType);
 
     if (m_custom) {
         auto& [start, end] = MoreIconsAPI::iconIndices[iconType];
@@ -267,8 +248,14 @@ void IconViewPopup::setupIcons() {
         for (auto& icon : icons) {
             CCSprite* sprite = nullptr;
             if (isIcon) {
-                auto itemIcon = GJItemIcon::createBrowserItem(unlockType, 1);
+                auto itemIcon = GJItemIcon::createBrowserItem(unlock, 1);
                 MoreIconsAPI::updateSimplePlayer(static_cast<SimplePlayer*>(itemIcon->m_player), icon.name, iconType);
+                queueInMainThread([itemIcon = Ref(itemIcon)] {
+                    auto player = static_cast<SimplePlayer*>(itemIcon->m_player);
+                    player->setColor({ 255, 255, 255 });
+                    player->setSecondColor({ 255, 255, 255 });
+                    player->setGlowOutline({ 255, 255, 255 });
+                });
                 sprite = itemIcon;
             }
             else if (iconType == IconType::Special) {
@@ -293,7 +280,13 @@ void IconViewPopup::setupIcons() {
         auto keyStart = isIcon ? gameManager->m_keyStartForIcon[(int)iconType] : 0;
         for (int i = 1; i <= iconCount; i++) {
             auto iconKey = isIcon ? keyStart + i - 1 : 0;
-            auto itemIcon = GJItemIcon::createBrowserItem(unlockType, i);
+            auto itemIcon = GJItemIcon::createBrowserItem(unlock, i);
+            if (isIcon) queueInMainThread([itemIcon = Ref(itemIcon)] {
+                auto player = static_cast<SimplePlayer*>(itemIcon->m_player);
+                player->setColor({ 255, 255, 255 });
+                player->setSecondColor({ 255, 255, 255 });
+                player->setGlowOutline({ 255, 255, 255 });
+            });
             auto button = CCMenuItemExt::createSpriteExtra(itemIcon, [i, iconType](auto) {
                 EditIconPopup::create(iconType, i, "", true)->show();
             });

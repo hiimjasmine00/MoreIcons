@@ -48,8 +48,8 @@ constexpr std::array uppercase = {
 
 bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool read) {
     auto gameManager = GameManager::get();
-    auto unlockType = (int)gameManager->iconTypeToUnlockType(type);
-    auto unlockName = uppercase[unlockType];
+    auto unlock = (int)gameManager->iconTypeToUnlockType(type);
+    auto unlockName = uppercase[unlock];
 
     setID("EditIconPopup");
     setTitle(read ? name.empty() ? fmt::format("{} {:02}", unlockName, id) : name : fmt::format("{} Editor", unlockName));
@@ -91,6 +91,14 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
             suffixes.push_back(subFrames);
         }
 
+        m_player = SimplePlayer::create(1);
+        if (!name.empty()) MoreIconsAPI::updateSimplePlayer(m_player, name, type);
+        else m_player->updatePlayerFrame(id, type);
+        m_player->setGlowOutline({ 255, 255, 255 });
+        m_player->setPosition({ 175.0f, 150.0f + isRobot * 80.0f - suffixes.size() * 30.0f - read * 70.0f });
+        m_player->setID("player-icon");
+        m_mainLayer->addChild(m_player);
+
         auto iconName = name.empty() ? fmt::format("{}{:02}", MoreIcons::prefixes[(int)type], read ? id : 1) : fmt::format("{}"_spr, name);
         auto spriteFrameCache = CCSpriteFrameCache::get();
         for (int i = 0; i < suffixes.size(); i++) {
@@ -131,6 +139,8 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
                 }
             }
             else if (read) gap = 20.0f;
+            else if (type == IconType::Ship || type == IconType::Wave || isRobot) gap = 15.0f;
+            else if (type == IconType::Ball || type == IconType::Jetpack) gap = 5.0f;
             else if (type != IconType::Ufo) gap = 10.0f;
 
             frameMenu->setLayout(RowLayout::create()->setGap(gap));
@@ -171,14 +181,6 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
             m_frameMenus->addObject(frameMenu);
             m_mainLayer->addChild(frameMenu);
         }
-
-        m_player = SimplePlayer::create(1);
-        if (!name.empty()) MoreIconsAPI::updateSimplePlayer(m_player, name, type);
-        else m_player->updatePlayerFrame(id, type);
-        m_player->setGlowOutline({ 255, 255, 255 });
-        m_player->setPosition({ 175.0f, 150.0f + isRobot * 80.0f - suffixes.size() * 30.0f - read * 70.0f });
-        m_player->setID("player-icon");
-        m_mainLayer->addChild(m_player);
     }
     else if (type == IconType::Special) {
         auto icon = name.empty() ? nullptr : MoreIconsAPI::getIcon(name, type);
@@ -228,13 +230,13 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
         auto icon = id > 0 ? nullptr : MoreIconsAPI::getIcon(name, type);
         if (!icon || !icon->packID.empty()) return true;
 
-        auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [this, icon, unlockType, unlockName](auto) {
+        auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [this, icon, unlock, unlockName](auto) {
             createQuickPopup(
                 fmt::format("Trash {}", unlockName).c_str(),
-                fmt::format("Are you sure you want to <cr>trash</c> this <cg>{}</c>?", lowercase[unlockType]),
+                fmt::format("Are you sure you want to <cr>trash</c> this <cg>{}</c>?", lowercase[unlock]),
                 "No",
                 "Yes",
-                [this, icon, unlockType](auto, bool btn2) {
+                [this, icon, unlock](auto, bool btn2) {
                     if (!btn2) return;
 
                     auto trashDir = Mod::get()->getConfigDir() / "trash";
@@ -253,10 +255,9 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
                             code ? fmt::format("Failed to trash {}.", filename) : fmt::format("Trashed {}!", icon->name),
                             code ? NotificationIcon::Error : NotificationIcon::Success
                         )->show();
-                        if (code) {
+                        if (!code) {
                             MoreIcons::showReload = true;
-                            if (auto moreIconsPopup = CCScene::get()->getChildByType<MoreIconsPopup*>(0))
-                                moreIconsPopup->m_reloadButton->setVisible(true);
+                            if (auto miPopup = CCScene::get()->getChildByType<MoreIconsPopup>(0)) miPopup->m_reloadButton->setVisible(true);
                         }
                         return onClose(nullptr);
                     }
@@ -278,7 +279,7 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
 
                     Notification::create(fmt::format("Trashed {}!", icon->name), NotificationIcon::Success)->show();
                     MoreIcons::showReload = true;
-                    if (auto moreIconsPopup = CCScene::get()->getChildByType<MoreIconsPopup*>(0)) moreIconsPopup->m_reloadButton->setVisible(true);
+                    if (auto miPopup = CCScene::get()->getChildByType<MoreIconsPopup>(0)) miPopup->m_reloadButton->setVisible(true);
                     onClose(nullptr);
                 }
             );
@@ -331,7 +332,7 @@ void EditIconPopup::pickFile(int index, int type, bool plist) {
             if ((plist && m_path.extension() != ".plist") || (!plist && m_path.extension() != ".png")) return;
 
             if (plist) {
-                if (auto sheet = CCDictionary::createWithContentsOfFileThreadSafe(m_path.string().c_str())) {
+                if (auto sheet = CCDictionary::createWithContentsOfFileThreadSafe(MoreIcons::string(m_path).c_str())) {
                     auto metadata = static_cast<CCDictionary*>(sheet->objectForKey("metadata"));
                     auto formatStr = metadata ? metadata->valueForKey("format") : nullptr;
                     auto format = formatStr ? numFromString<int>(formatStr->m_sString).unwrapOr(0) : 0;
@@ -362,7 +363,7 @@ void EditIconPopup::pickFile(int index, int type, bool plist) {
             }
             else {
                 auto image = new CCImage();
-                if (!image->initWithImageFile(m_path.string().c_str())) {
+                if (!image->initWithImageFile(MoreIcons::string(m_path).c_str())) {
                     image->release();
                     return;
                 }
@@ -578,8 +579,10 @@ void EditIconPopup::saveIcon() {
     else if (m_iconType <= IconType::Jetpack) {
         constexpr std::array directories = { "icon", "ship", "ball", "ufo", "wave", "robot", "spider", "swing", "jetpack" };
         auto directory = configDir / directories[(int)m_iconType];
-        auto plistPath = directory / fmt::format("{}.plist", iconName);
-        auto pngPath = directory / fmt::format("{}.png", iconName);
+        auto factor = CCDirector::get()->getContentScaleFactor();
+        auto quality = factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : "";
+        auto plistPath = directory / fmt::format("{}{}.plist", iconName, quality);
+        auto pngPath = directory / fmt::format("{}{}.png", iconName, quality);
         std::error_code code;
         if (std::filesystem::exists(plistPath, code) || std::filesystem::exists(pngPath, code)) {
             createQuickPopup(
@@ -708,14 +711,14 @@ void EditIconPopup::saveIcon() {
             auto right = rect.flipped ? info.height - info.top : info.right;
             auto top = rect.flipped ? info.left : info.top;
             auto bottom = rect.flipped ? info.right : info.bottom;
-            for (int y = 0; y < bottom - top; y++) {
-                for (int x = 0; x < (right - left) * 4; x += 4) {
-                    if (data[y + top][x + left * 4 + 3] == 0) continue;
-                    auto index = (rect.x + x / 4) * 4 + (rect.y + y) * packed.w * 4;
-                    finalData[index] = data[y + top][x + left * 4];
-                    finalData[index + 1] = data[y + top][x + left * 4 + 1];
-                    finalData[index + 2] = data[y + top][x + left * 4 + 2];
-                    finalData[index + 3] = data[y + top][x + left * 4 + 3];
+            for (int y = top; y < bottom; y++) {
+                for (int x = left * 4; x < right * 4; x += 4) {
+                    if (data[y][x + 3] == 0) continue;
+                    auto index = (rect.x + x / 4 - left) * 4 + (rect.y + y - top) * packed.w * 4;
+                    finalData[index] = data[y][x];
+                    finalData[index + 1] = data[y][x + 1];
+                    finalData[index + 2] = data[y][x + 2];
+                    finalData[index + 3] = data[y][x + 3];
                 }
             }
         }
@@ -781,7 +784,7 @@ void EditIconPopup::saveIcon() {
         metadata.append_child("key").text() = "format";
         metadata.append_child("integer").text() = 3;
         metadata.append_child("key").text() = "realTextureFileName";
-        metadata.append_child("string").text() = fmt::format("icons/{}.png", iconName);
+        metadata.append_child("string").text() = fmt::format("icons/{}{}.png", iconName, quality);
         metadata.append_child("key").text() = "size";
         metadata.append_child("string").text() = fmt::format("{{{},{}}}", packed.w, packed.h);
         metadata.append_child("key").text() = "moreIcons";
@@ -789,7 +792,7 @@ void EditIconPopup::saveIcon() {
         metadata.append_child("key").text() = "geometryDash";
         metadata.append_child("string").text() = GEODE_STR(GEODE_GD_VERSION);
         metadata.append_child("key").text() = "textureFileName";
-        metadata.append_child("string").text() = fmt::format("icons/{}.png", iconName);
+        metadata.append_child("string").text() = fmt::format("icons/{}{}.png", iconName, quality);
 
         auto result = doc.save_file(plistPath.c_str(), "    ");
         Notification::create(
@@ -799,7 +802,7 @@ void EditIconPopup::saveIcon() {
     }
 
     MoreIcons::showReload = true;
-    if (auto moreIconsPopup = CCScene::get()->getChildByType<MoreIconsPopup>(0)) moreIconsPopup->m_reloadButton->setVisible(true);
+    if (auto miPopup = CCScene::get()->getChildByType<MoreIconsPopup>(0)) miPopup->m_reloadButton->setVisible(true);
 
     m_path.clear();
     m_textInput->setString("");

@@ -26,6 +26,18 @@ class $modify(MIGameManager, GameManager) {
         MoreIconsAPI::loadedIcons.clear();
         MoreIcons::logs.clear();
         MoreIcons::severity = Severity::Debug;
+        MoreIcons::severities = {
+            { IconType::Cube, Severity::Debug },
+            { IconType::Ship, Severity::Debug },
+            { IconType::Ball, Severity::Debug },
+            { IconType::Ufo, Severity::Debug },
+            { IconType::Wave, Severity::Debug },
+            { IconType::Robot, Severity::Debug },
+            { IconType::Spider, Severity::Debug },
+            { IconType::Swing, Severity::Debug },
+            { IconType::Jetpack, Severity::Debug },
+            { IconType::Special, Severity::Debug }
+        };
         MoreIcons::showReload = false;
 
         auto mod = Mod::get();
