@@ -449,7 +449,13 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
                 if (i == 0) createDirectories(path);
                 continue;
             }
+
             auto pathString = string(path);
+            if (i == 0) {
+                std::error_code code;
+                std::filesystem::permissions(path, std::filesystem::perms::all, code);
+                if (code) log::error("Failed to set permissions for {}: {}", pathString, code.message());
+            }
 
             log::info("Pre-loading {}s from {}", suffix, pathString);
 
@@ -508,7 +514,13 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
                 if (i == 0) createDirectories(path);
                 continue;
             }
+
             auto pathString = string(path);
+            if (i == 0) {
+                std::error_code code;
+                std::filesystem::permissions(path, std::filesystem::perms::all, code);
+                if (code) log::error("Failed to set permissions for {}: {}", pathString, code.message());
+            }
 
             log::info("Pre-loading trails from {}", pathString);
 

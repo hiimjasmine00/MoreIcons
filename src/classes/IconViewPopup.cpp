@@ -230,10 +230,8 @@ void IconViewPopup::finishLoadIcons() {
         }
     }
 
-    if (!loadedIcons.empty()) {
-        ranges::remove(loadedIcons, [custom, type](const LoadedIcon& icon) { return icon.type == type && icon.custom == custom; });
-        setupIcons();
-    }
+    ranges::remove(loadedIcons, [custom, type](const LoadedIcon& icon) { return icon.type == type && icon.custom == custom; });
+    setupIcons();
 }
 
 void IconViewPopup::setupIcons() {

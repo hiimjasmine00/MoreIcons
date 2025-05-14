@@ -1,6 +1,5 @@
 #include "MoreIcons.hpp"
 #include <CoreGraphics/CoreGraphics.h>
-#include <Geode/loader/Log.hpp>
 #ifdef GEODE_IS_MACOS
 #define CommentType CommentTypeDummy
 #include <CoreServices/CoreServices.h>
