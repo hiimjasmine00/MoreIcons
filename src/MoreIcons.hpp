@@ -1,5 +1,3 @@
-#define MORE_ICONS_NO_ALIAS
-
 #include <cocos2d.h>
 #include <Geode/Enums.hpp>
 

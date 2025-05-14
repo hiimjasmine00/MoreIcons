@@ -5,6 +5,7 @@
 - Added custom and vanilla icon viewers, with clickable icons
 - Improved the log viewer and split it across the icon types
 - Added the icon trash, which can be used via the icon viewer and accessed via the More Icons popup
+- Added a new API method to get the icon info of the current icon
 
 ## v1.12.3 (2025-04-28)
 - Fixed a few issues with mass loading, especially when opening the level editor

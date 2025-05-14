@@ -9,8 +9,8 @@ class $modify(MIBaseGameLayer, GJBaseGameLayer) {
         GJBaseGameLayer::playExitDualEffect(object);
 
         if (auto player = findFirstChildRecursive<SimplePlayer>(this, [](SimplePlayer* node) { return node->getZOrder() == 100; })) {
-            if (!m_player1 || m_player1 == object) MoreIconsAPI::updateSimplePlayer(player, MoreIcons::getIconType(object), false);
-            else if (!m_player2 || m_player2 == object) MoreIconsAPI::updateSimplePlayer(player, MoreIcons::getIconType(object), true);
+            if (!m_player1 || m_player1 == object) MoreIconsAPI::updateSimplePlayer(player, MoreIconsAPI::getIconType(object), false);
+            else if (!m_player2 || m_player2 == object) MoreIconsAPI::updateSimplePlayer(player, MoreIconsAPI::getIconType(object), true);
         }
     }
     #ifdef GEODE_IS_WINDOWS
@@ -20,10 +20,10 @@ class $modify(MIBaseGameLayer, GJBaseGameLayer) {
 
         if (blend) return;
 
-        if (auto info = MoreIconsAPI::getIcon(_MoreIcons::activeIcon(IconType::Special, false), IconType::Special))
+        if (auto info = MoreIconsAPI::getIcon(IconType::Special, false))
             m_player1->m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)GL_ONE_MINUS_SRC_ALPHA - info->blend * (uint32_t)GL_SRC_ALPHA });
 
-        if (auto info = MoreIconsAPI::getIcon(_MoreIcons::activeIcon(IconType::Special, true), IconType::Special))
+        if (auto info = MoreIconsAPI::getIcon(IconType::Special, true))
             m_player2->m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)GL_ONE_MINUS_SRC_ALPHA - info->blend * (uint32_t)GL_SRC_ALPHA });
     }
     #endif

@@ -7,6 +7,7 @@
 #include <Geode/binding/ItemInfoPopup.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/binding/TextArea.hpp>
+#include <Geode/loader/Mod.hpp>
 
 using namespace geode::prelude;
 

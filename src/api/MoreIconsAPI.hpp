@@ -1,9 +1,7 @@
-#define MoreIcons _MoreIcons
-#include <MoreIcons.hpp>
-#undef MoreIcons
-#ifndef MORE_ICONS_NO_ALIAS
-using MoreIcons = _MoreIcons;
-#endif
+#include <cocos2d.h>
+#include <Geode/GeneratedPredeclare.hpp>
+#include <IconInfo.hpp>
+#include <map>
 
 class MoreIconsAPI {
 public:
@@ -13,6 +11,10 @@ public:
     inline static std::map<std::pair<std::string, IconType>, int> loadedIcons;
 
     static IconInfo* getIcon(const std::string& name, IconType type);
+    static IconInfo* getIcon(IconType type, bool dual);
+    static std::string activeIcon(IconType type, bool dual);
+    static std::string setIcon(const std::string& icon, IconType type, bool dual);
+    static IconType getIconType(PlayerObject* object);
     static int getCount(IconType type);
     static bool hasIcon(const std::string& icon, IconType type);
     static std::string getFrameName(const std::string& name, const std::string& prefix, IconType type);

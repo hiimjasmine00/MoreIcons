@@ -1,5 +1,5 @@
 #include <Geode/ui/Popup.hpp>
-#include <MoreIcons.hpp>
+#include <IconInfo.hpp>
 
 class SpecialSettingsPopup : public geode::Popup<IconInfo*> {
 protected:

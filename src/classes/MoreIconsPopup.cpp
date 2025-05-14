@@ -9,6 +9,7 @@
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Notification.hpp>
 
 using namespace geode::prelude;

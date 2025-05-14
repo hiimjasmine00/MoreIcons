@@ -5,6 +5,7 @@
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/utils/ranges.hpp>
+#include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 
@@ -71,6 +72,22 @@ $execute {
 IconInfo* MoreIconsAPI::getIcon(const std::string& name, IconType type) {
     auto found = std::ranges::find_if(icons, [name, type](const IconInfo& info) { return info.name == name && info.type == type; });
     return found != icons.end() ? icons.data() + (found - icons.begin()) : nullptr;
+}
+
+IconInfo* MoreIconsAPI::getIcon(IconType type, bool dual) {
+    return getIcon(activeIcon(type, dual), type);
+}
+
+std::string MoreIconsAPI::activeIcon(IconType type, bool dual) {
+    return MoreIcons::activeIcon(type, dual);
+}
+
+std::string MoreIconsAPI::setIcon(const std::string& icon, IconType type, bool dual) {
+    return MoreIcons::setIcon(icon, type, dual);
+}
+
+IconType MoreIconsAPI::getIconType(PlayerObject* object) {
+    return MoreIcons::getIconType(object);
 }
 
 bool MoreIconsAPI::hasIcon(const std::string& icon, IconType type) {
@@ -187,7 +204,7 @@ void MoreIconsAPI::unloadIcons(int requestID) {
 }
 
 void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, IconType type, bool dual) {
-    updateSimplePlayer(player, MoreIcons::activeIcon(type, dual), type);
+    updateSimplePlayer(player, activeIcon(type, dual), type);
 }
 
 void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type) {
@@ -291,7 +308,7 @@ void MoreIconsAPI::updateRobotSprite(GJRobotSprite* sprite, const std::string& i
 }
 
 void MoreIconsAPI::updatePlayerObject(PlayerObject* object, IconType type, bool dual) {
-    updatePlayerObject(object, MoreIcons::activeIcon(type, dual), type);
+    updatePlayerObject(object, activeIcon(type, dual), type);
 }
 
 void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type) {

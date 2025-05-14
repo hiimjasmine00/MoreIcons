@@ -41,7 +41,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         if (sdi) MoreIconsAPI::updateSimplePlayer(
             static_cast<SimplePlayer*>(getChildByID("player2-icon")), (IconType)sdi->getSavedValue("lastmode", 0), true);
 
-        auto customIcon = _MoreIcons::activeIcon(IconType::Cube, false);
+        auto customIcon = MoreIconsAPI::activeIcon(IconType::Cube, false);
         if (!customIcon.empty() && MoreIconsAPI::hasIcon(customIcon, IconType::Cube)) setupCustomPage(findIconPage(IconType::Cube));
         else createNavMenu();
 
@@ -88,7 +88,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     static int findIconPage(IconType type) {
         auto gameManager = GameManager::get();
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto active = _MoreIcons::activeIcon(type, sdi && sdi->getSavedValue("2pselected", false));
+        auto active = MoreIconsAPI::activeIcon(type, sdi && sdi->getSavedValue("2pselected", false));
         auto it = std::ranges::find_if(MoreIconsAPI::icons, [&active, type](const IconInfo& info) { return info.name == active && info.type == type; });
         return it != MoreIconsAPI::icons.end() && MoreIconsAPI::iconIndices.contains(type) ?
             (gameManager->countForType(type) + 35) / 36 + (it - MoreIconsAPI::iconIndices[type].first - MoreIconsAPI::icons.begin()) / 36 :
@@ -104,7 +104,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
-        if (MoreIconsAPI::hasIcon(_MoreIcons::activeIcon(m_iconType, dual), m_iconType)) m_iconID = 0;
+        if (MoreIconsAPI::hasIcon(MoreIconsAPI::activeIcon(m_iconType, dual), m_iconType)) m_iconID = 0;
 
         GJGarageLayer::onSelect(sender);
 
@@ -113,7 +113,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         if (btn->m_iconType != IconType::ShipFire) {
             m_cursor1->setOpacity(255);
             m_fields->m_selectedIcon = "";
-            _MoreIcons::setIcon("", dual ? (IconType)Loader::get()->getLoadedMod(
+            MoreIconsAPI::setIcon("", dual ? (IconType)Loader::get()->getLoadedMod(
                 "weebify.separate_dual_icons")->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
         }
     }
@@ -122,7 +122,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         CALL_BUTTON_ORIGINAL(sender);
 
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto active = _MoreIcons::activeIcon(m_iconType, sdi && sdi->getSavedValue("2pselected", false));
+        auto active = MoreIconsAPI::activeIcon(m_iconType, sdi && sdi->getSavedValue("2pselected", false));
         if (MoreIconsAPI::hasIcon(active, m_iconType)) {
             if (m_cursor1->isVisible()) m_cursor1->setOpacity(127);
             else m_cursor1->setOpacity(255);
@@ -133,7 +133,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     }
 
     static void swapDual(IconType type) {
-        _MoreIcons::setIcon(_MoreIcons::setIcon(_MoreIcons::activeIcon(type, true), type, false), type, true);
+        MoreIconsAPI::setIcon(MoreIconsAPI::setIcon(MoreIconsAPI::activeIcon(type, true), type, false), type, true);
     }
 
     void newSwap2PKit(CCObject* sender) {
@@ -219,7 +219,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         }
 
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto active = _MoreIcons::activeIcon(type, sdi && sdi->getSavedValue("2pselected", false));
+        auto active = MoreIconsAPI::activeIcon(type, sdi && sdi->getSavedValue("2pselected", false));
         if (MoreIconsAPI::hasIcon(active, type)) {
             if (m_cursor1->isVisible()) m_cursor1->setOpacity(127);
             else m_cursor1->setOpacity(255);
@@ -317,7 +317,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto hasAnimProf = Loader::get()->isModLoaded("thesillydoggo.animatedprofiles");
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
-        auto active = _MoreIcons::activeIcon(m_iconType, dual);
+        auto active = MoreIconsAPI::activeIcon(m_iconType, dual);
         for (auto& info : getPage()) {
             auto itemIcon = GJItemIcon::createBrowserItem(unlockType, 1);
             itemIcon->setScale(GJItemIcon::scaleForType(unlockType));
@@ -373,7 +373,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         }
 
         f->m_selectedIcon = name;
-        _MoreIcons::setIcon(name, m_iconType, dual);
+        MoreIconsAPI::setIcon(name, m_iconType, dual);
     }
 
     void setupCustomSpecialPage(int page) {
@@ -401,7 +401,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
         int i = 1;
-        auto active = _MoreIcons::activeIcon(m_iconType, dual);
+        auto active = MoreIconsAPI::activeIcon(m_iconType, dual);
         for (auto& info : getPage()) {
             auto square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
             square->setColor({ 150, 150, 150 });
@@ -446,6 +446,6 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         else m_selectedIconType = m_iconType;
 
         f->m_selectedIcon = name;
-        _MoreIcons::setIcon(name, m_iconType, dual);
+        MoreIconsAPI::setIcon(name, m_iconType, dual);
     }
 };

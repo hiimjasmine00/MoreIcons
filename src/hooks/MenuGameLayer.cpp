@@ -14,7 +14,7 @@ class $modify(MIMenuGameLayer, MenuGameLayer) {
     void resetPlayer() {
         MenuGameLayer::resetPlayer();
 
-        auto iconType = MoreIcons::getIconType(m_playerObject);
+        auto iconType = MoreIconsAPI::getIconType(m_playerObject);
         auto gameManager = GameManager::get();
         auto iconCount = gameManager->countForType(iconType);
         auto hasCube = m_playerObject->m_isShip || m_playerObject->m_isBird;

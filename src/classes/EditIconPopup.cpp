@@ -9,6 +9,7 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Notification.hpp>
 #include <Geode/utils/ranges.hpp>
 #include <rectpack2D/finders_interface.h>

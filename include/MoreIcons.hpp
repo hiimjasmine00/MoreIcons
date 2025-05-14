@@ -1,4 +1,5 @@
 #pragma once
+#include "IconInfo.hpp"
 #include <Geode/binding/GJRobotSprite.hpp>
 #include <Geode/binding/PlayerObject.hpp>
 #include <Geode/loader/Dispatch.hpp>
@@ -15,29 +16,6 @@
 #define MORE_ICONS_LOAD_ICON(...) MoreIcons::LoadIconEvent(MORE_ICONS_EXPAND("load-icon"), __VA_ARGS__).post()
 #define MORE_ICONS_UNLOAD_ICON(...) MoreIcons::UnloadIconEvent(MORE_ICONS_EXPAND("unload-icon"), __VA_ARGS__).post()
 #define MORE_ICONS_UNLOAD_ICONS(...) MoreIcons::UnloadIconsEvent(MORE_ICONS_EXPAND("unload-icons"), __VA_ARGS__).post()
-
-/**
- * A struct that contains information about a custom icon.
- */
-struct IconInfo {
-    std::string name;
-    std::vector<std::string> textures;
-    std::vector<std::string> frameNames;
-    std::string sheetName;
-    std::string packName;
-    std::string packID;
-    IconType type;
-    int trailID;
-    bool blend;
-    bool tint;
-    bool show;
-    float fade;
-    float stroke;
-
-    bool operator==(const IconInfo& other) const {
-        return name == other.name && type == other.type;
-    }
-};
 
 /**
  * A class that provides an API for interacting with the More Icons mod.
@@ -273,6 +251,19 @@ public:
         IconInfo* info = nullptr;
         if (!loaded()) return info;
         MORE_ICONS_GET_ICON(&info, name, type);
+        return info;
+    }
+
+    /**
+     * Returns the icon info for the active icon of a specific type.
+     * @param type The type of icon to get the info for.
+     * @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
+     * @returns The icon info for the active icon of the specified type, or nullptr if the icon is not found.
+     */
+    static IconInfo* getIcon(IconType type, bool dual = false) {
+        IconInfo* info = nullptr;
+        if (!loaded()) return nullptr;
+        MORE_ICONS_GET_ICON(&info, activeIcon(type, dual), type);
         return info;
     }
 
