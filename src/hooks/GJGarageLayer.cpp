@@ -1,8 +1,8 @@
 #include "../MoreIcons.hpp"
 #include "../api/MoreIconsAPI.hpp"
-#include "../classes/ButtonHooker.hpp"
-#include "../classes/MoreIconsPopup.hpp"
-#include "../classes/MoreInfoPopup.hpp"
+#include "../classes/misc/ButtonHooker.hpp"
+#include "../classes/popup/MoreIconsPopup.hpp"
+#include "../classes/popup/info/MoreInfoPopup.hpp"
 #include <Geode/binding/BoomScrollLayer.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJItemIcon.hpp>

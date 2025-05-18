@@ -1,7 +1,7 @@
 #include "IconViewPopup.hpp"
 #include "EditIconPopup.hpp"
-#include "../MoreIcons.hpp"
-#include "../api/MoreIconsAPI.hpp"
+#include "../../MoreIcons.hpp"
+#include "../../api/MoreIconsAPI.hpp"
 #include <BS_thread_pool.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
@@ -135,7 +135,7 @@ void IconViewPopup::loadCustomIcons() {
 
     auto gameManager = GameManager::get();
     auto& [start, end] = MoreIconsAPI::iconIndices[type];
-    std::vector<IconInfo> icons = { MoreIconsAPI::icons.begin() + start, MoreIconsAPI::icons.begin() + end };
+    std::vector icons(MoreIconsAPI::icons.begin() + start, MoreIconsAPI::icons.begin() + end);
     if (icons.empty()) return;
 
     auto textureCache = CCTextureCache::get();
@@ -242,7 +242,7 @@ void IconViewPopup::setupIcons() {
 
     if (m_custom) {
         auto& [start, end] = MoreIconsAPI::iconIndices[iconType];
-        std::vector<IconInfo> icons = { MoreIconsAPI::icons.begin() + start, MoreIconsAPI::icons.begin() + end };
+        std::vector icons(MoreIconsAPI::icons.begin() + start, MoreIconsAPI::icons.begin() + end);
         for (auto& icon : icons) {
             CCSprite* sprite = nullptr;
             if (isIcon) {

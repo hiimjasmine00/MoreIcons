@@ -1,4 +1,4 @@
-#include "../api/MoreIconsAPI.hpp"
+#include "../../../api/MoreIconsAPI.hpp"
 #include "MoreInfoPopup.hpp"
 #include "SpecialSettingsPopup.hpp"
 #include <Geode/binding/ButtonSprite.hpp>

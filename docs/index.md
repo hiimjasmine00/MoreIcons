@@ -8,7 +8,7 @@ To use the More Icons API, you must add it as a suggested dependency in your `mo
 {
     "dependencies": {
         "hiimjustin000.more_icons": {
-            "version": ">=v1.12.0",
+            "version": ">=v1.13.0",
             "importance": "suggested"
         }
     }

@@ -13,40 +13,9 @@ set(GEODE_CODEGEN_EXTRA_ARGS "--skip-pugixml")
 
 project(MoreIcons VERSION 1.13.0)
 
-add_library(${PROJECT_NAME} SHARED
-    src/api/MoreIconsAPI.cpp
-    src/classes/BiggerContentLayer.cpp
-    src/classes/BiggerScrollLayer.cpp
-    src/classes/ButtonHooker.cpp
-    src/classes/DummyNode.cpp
-    src/classes/EditIconPopup.cpp
-    src/classes/IconViewPopup.cpp
-    src/classes/LogCell.cpp
-    src/classes/LogLayer.cpp
-    src/classes/MoreIconsPopup.cpp
-    src/classes/MoreInfoPopup.cpp
-    src/classes/SpecialSettingsPopup.cpp
-    src/hooks/CCFileUtils.cpp
-    src/hooks/CharacterColorPage.cpp
-    src/hooks/GameManager.cpp
-    src/hooks/GJBaseGameLayer.cpp
-    src/hooks/GJGarageLayer.cpp
-    src/hooks/GJRobotSprite.cpp
-    src/hooks/LoadingLayer.cpp
-    src/hooks/MenuGameLayer.cpp
-    src/hooks/MenuLayer.cpp
-    src/hooks/PlayerObject.cpp
-    src/hooks/ProfilePage.cpp
-    src/hooks/SimplePlayer.cpp
-    src/MoreIcons.cpp
-)
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
-if (APPLE)
-    target_sources(${PROJECT_NAME} PRIVATE src/MoreIcons.mm)
-    if ("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS" OR IOS)
-        target_link_libraries(${PROJECT_NAME} "-framework CoreGraphics")
-    endif()
-endif()
+add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 
@@ -59,15 +28,9 @@ endif()
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
 CPMAddPackage("gh:bshoshany/thread-pool@5.0.0")
-CPMAddPackage("gh:TeamHypersomnia/rectpack2D#3344bf5")
-target_include_directories(${PROJECT_NAME} PRIVATE ${thread-pool_SOURCE_DIR}/include ${rectpack2D_SOURCE_DIR}/src)
+target_include_directories(${PROJECT_NAME} PRIVATE ${thread-pool_SOURCE_DIR}/include)
 
-CPMAddPackage("gh:zeux/pugixml@1.15")
-target_link_libraries(${PROJECT_NAME} pugixml-static)
-
-file(READ "${CMAKE_CURRENT_SOURCE_DIR}/mod.json" MOD_JSON)
-string(JSON MOD_VERSION GET "${MOD_JSON}" "version")
-string(REGEX REPLACE "^v" "" MOD_VERSION "${MOD_VERSION}")
-target_compile_definitions(${PROJECT_NAME} PRIVATE GEODE_MOD_VERSION="${MOD_VERSION}")
+CPMAddPackage("gh:hiimjasmine00/texpack@0.1.0")
+target_link_libraries(${PROJECT_NAME} texpack)
 
 setup_geode_mod(${PROJECT_NAME})

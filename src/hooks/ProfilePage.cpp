@@ -1,5 +1,5 @@
 #include "../api/MoreIconsAPI.hpp"
-#include "../classes/ButtonHooker.hpp"
+#include "../classes/misc/ButtonHooker.hpp"
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/ProfilePage.hpp>
 

@@ -1,5 +1,5 @@
 #include "LogCell.hpp"
-#include "../MoreIcons.hpp"
+#include "../../../MoreIcons.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/utils/cocos.hpp>
@@ -44,7 +44,7 @@ bool LogCell::init(const std::string& name, const std::string& message, int seve
     nameLabel->setID("name-label");
     addChild(nameLabel);
 
-    auto viewSprite = ButtonSprite::create("View", 0, false, "bigFont.fnt", "GJ_button_05.png", 0.0f, 0.8f);
+    auto viewSprite = ButtonSprite::create("View", "bigFont.fnt", "GJ_button_05.png", 0.8f);
     viewSprite->setScale(0.5f);
     auto viewButton = CCMenuItemExt::createSpriteExtra(viewSprite, [name, message, severity](auto) {
         constexpr std::array severities = { "DEBUG: ", "INFO: ", "WARNING: ", "ERROR: " };

@@ -1,5 +1,5 @@
 #include "MoreIconsAPI.hpp"
-#include "../classes/DummyNode.hpp"
+#include "../classes/misc/DummyNode.hpp"
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
@@ -99,18 +99,19 @@ int MoreIconsAPI::getCount(IconType type) {
 }
 
 std::string MoreIconsAPI::getFrameName(const std::string& name, const std::string& prefix, IconType type) {
+    auto modID = name.empty() ? "" : GEODE_MOD_ID "/";
     if (type != IconType::Robot && type != IconType::Spider) {
-        if (name.ends_with("_2_001.png")) return fmt::format("{}_2_001.png"_spr, prefix);
-        else if (name.ends_with("_3_001.png")) return fmt::format("{}_3_001.png"_spr, prefix);
-        else if (name.ends_with("_extra_001.png")) return fmt::format("{}_extra_001.png"_spr, prefix);
-        else if (name.ends_with("_glow_001.png")) return fmt::format("{}_glow_001.png"_spr, prefix);
-        else if (name.ends_with("_001.png")) return fmt::format("{}_001.png"_spr, prefix);
+        if (name.ends_with("_2_001.png")) return fmt::format("{}{}_2_001.png", modID, prefix);
+        else if (name.ends_with("_3_001.png")) return fmt::format("{}{}_3_001.png", modID, prefix);
+        else if (name.ends_with("_extra_001.png")) return fmt::format("{}{}_extra_001.png", modID, prefix);
+        else if (name.ends_with("_glow_001.png")) return fmt::format("{}{}_glow_001.png", modID, prefix);
+        else if (name.ends_with("_001.png")) return fmt::format("{}{}_001.png", modID, prefix);
     }
     else for (int i = 1; i < 5; i++) {
-        if (name.ends_with(fmt::format("_{:02}_2_001.png", i))) return fmt::format("{}_{:02}_2_001.png"_spr, prefix, i);
-        else if (i == 1 && name.ends_with(fmt::format("_{:02}_extra_001.png", i))) return fmt::format("{}_{:02}_extra_001.png"_spr, prefix, i);
-        else if (name.ends_with(fmt::format("_{:02}_glow_001.png", i))) return fmt::format("{}_{:02}_glow_001.png"_spr, prefix, i);
-        else if (name.ends_with(fmt::format("_{:02}_001.png", i))) return fmt::format("{}_{:02}_001.png"_spr, prefix, i);
+        if (name.ends_with(fmt::format("_{:02}_2_001.png", i))) return fmt::format("{}{}_{:02}_2_001.png", modID, prefix, i);
+        else if (i == 1 && name.ends_with(fmt::format("_{:02}_extra_001.png", i))) return fmt::format("{}{}_{:02}_extra_001.png", modID, prefix, i);
+        else if (name.ends_with(fmt::format("_{:02}_glow_001.png", i))) return fmt::format("{}{}_{:02}_glow_001.png", modID, prefix, i);
+        else if (name.ends_with(fmt::format("_{:02}_001.png", i))) return fmt::format("{}{}_{:02}_001.png", modID, prefix, i);
     }
 
     return name;

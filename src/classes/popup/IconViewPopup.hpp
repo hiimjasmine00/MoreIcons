@@ -1,4 +1,4 @@
-#include "BiggerScrollLayer.hpp"
+#include "../scroll/BiggerScrollLayer.hpp"
 #include <Geode/ui/Popup.hpp>
 
 class IconViewPopup : public geode::Popup<IconType, bool> {

@@ -1,9 +1,9 @@
 #include "MoreIconsPopup.hpp"
 #include "EditIconPopup.hpp"
 #include "IconViewPopup.hpp"
-#include "LogLayer.hpp"
-#include "../MoreIcons.hpp"
-#include "../api/MoreIconsAPI.hpp"
+#include "log/LogLayer.hpp"
+#include "../../MoreIcons.hpp"
+#include "../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
@@ -140,7 +140,7 @@ bool MoreIconsPopup::setup() {
         logButton->setID("log-button");
         gamemodeMenu->addChild(logButton);
 
-        auto addSprite = ButtonSprite::create("Add", 0, false, "goldFont.fnt", "GJ_button_05.png", 0.0f, 0.8f);
+        auto addSprite = ButtonSprite::create("+", "goldFont.fnt", "GJ_button_05.png");
         addSprite->setScale(0.6f);
         auto addButton = CCMenuItemExt::createSpriteExtra(addSprite, [type](auto) {
             EditIconPopup::create(type, 0, "", false)->show();
@@ -176,7 +176,7 @@ bool MoreIconsPopup::setup() {
     trashButton->setID("trash-button");
     m_buttonMenu->addChild(trashButton);
 
-    auto reloadSprite = ButtonSprite::create("Reload Textures", 0, false, "goldFont.fnt", "GJ_button_05.png", 0.0f, 1.0f);
+    auto reloadSprite = ButtonSprite::create("Reload Textures", "goldFont.fnt", "GJ_button_05.png");
     reloadSprite->setScale(0.7f);
     m_reloadButton = CCMenuItemExt::createSpriteExtra(reloadSprite, [](auto) {
         reloadTextures([] {
