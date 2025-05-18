@@ -1,3 +1,4 @@
+#include <array>
 #include <filesystem>
 #include <Geode/Enums.hpp>
 #include <map>
