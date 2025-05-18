@@ -1,7 +1,7 @@
 #include "LogLayer.hpp"
 #include "LogCell.hpp"
-#include "BiggerScrollLayer.hpp"
-#include "../MoreIcons.hpp"
+#include "../../scroll/BiggerScrollLayer.hpp"
+#include "../../../MoreIcons.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/utils/ranges.hpp>
 #include <Geode/ui/Scrollbar.hpp>
