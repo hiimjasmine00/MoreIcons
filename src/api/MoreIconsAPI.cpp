@@ -1,11 +1,18 @@
 #include "MoreIconsAPI.hpp"
-#include "../classes/misc/DummyNode.hpp"
+#include "../classes/misc/ThreadPool.hpp"
+#ifdef GEODE_IS_ANDROID
+#include <android/asset_manager_jni.h>
+#endif
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#ifdef GEODE_IS_ANDROID
+#include <Geode/cocos/platform/android/jni/JniHelper.h>
+#endif
 #include <Geode/utils/ranges.hpp>
 #include <MoreIcons.hpp>
+#include <texpack.hpp>
 
 using namespace geode::prelude;
 
@@ -117,36 +124,136 @@ std::string MoreIconsAPI::getFrameName(const std::string& name, const std::strin
     return name;
 }
 
+struct Image {
+    std::string name;
+    std::vector<uint8_t> data;
+    CCDictionary* frames;
+    uint32_t width;
+    uint32_t height;
+};
+
+std::mutex imageMutex;
+std::vector<Image> images;
+
+void loadFolderIcon(const IconInfo& info, bool async) {
+    texpack::Packer packer;
+    auto& folderName = info.folderName;
+
+    for (int i = 0; i < info.textures.size(); i++) {
+        auto& frameName = info.frameNames[i];
+        auto res = packer.frame(frameName, info.textures[i]).mapErr([&frameName](const std::string& err) {
+            return fmt::format("{}: {}", frameName, err);
+        });
+        if (res.isErr()) return log::error("{}: {}", folderName, res.unwrapErr());
+    }
+
+    auto packRes = packer.pack();
+    if (packRes.isErr()) return log::error("{}: {}", folderName, packRes.unwrapErr());
+
+    auto& image = packer.image();
+
+    if (async) {
+        auto frames = new CCDictionary();
+        for (auto& frame : packer.frames()) {
+            auto spriteFrame = new CCSpriteFrame();
+            spriteFrame->initWithTexture(
+                nullptr,
+                { (float)frame.rect.origin.x, (float)frame.rect.origin.y, (float)frame.rect.size.width, (float)frame.rect.size.height },
+                frame.rotated,
+                { (float)frame.offset.x, (float)frame.offset.y },
+                { (float)frame.size.width, (float)frame.size.height }
+            );
+            frames->setObject(spriteFrame, frame.name);
+            spriteFrame->release();
+        }
+
+        std::unique_lock lock(imageMutex);
+
+        return images.push_back({ info.folderName, image.data, frames, image.width, image.height });
+    }
+
+    auto texture = new CCTexture2D();
+    if (!texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+        (float)image.width,
+        (float)image.height
+    })) return texture->release(), log::error("{}: Failed to load texture", folderName);
+
+    CCTextureCache::get()->m_pTextures->setObject(texture, folderName);
+    texture->release();
+
+    auto spriteFrameCache = CCSpriteFrameCache::get();
+    for (auto& frame : packer.frames()) {
+        spriteFrameCache->addSpriteFrame(CCSpriteFrame::createWithTexture(
+            texture,
+            { (float)frame.rect.origin.x, (float)frame.rect.origin.y, (float)frame.rect.size.width, (float)frame.rect.size.height },
+            frame.rotated,
+            { (float)frame.offset.x, (float)frame.offset.y },
+            { (float)frame.size.width, (float)frame.size.height }
+        ), frame.name.c_str());
+    }
+}
+
+void loadFileIcon(const IconInfo& info, bool async) {
+    auto& textureName = info.textures[0];
+
+    auto imageRes = texpack::fromPNG(textureName);
+    if (imageRes.isErr()) return log::error("{}: {}", textureName, imageRes.unwrapErr());
+
+    auto image = imageRes.unwrap();
+
+    auto sheet = MoreIconsAPI::createDictionary(info.sheetName, async);
+    if (!sheet) return log::error("{}: Failed to load sheet", info.sheetName);
+
+    auto frames = static_cast<CCDictionary*>(sheet->objectForKey("frames"));
+    if (!frames) return sheet->release(), log::error("{}: Failed to load frames", info.sheetName);
+
+    auto metadata = static_cast<CCDictionary*>(sheet->objectForKey("metadata"));
+    auto formatStr = metadata ? metadata->valueForKey("format") : nullptr;
+    auto format = formatStr ? numFromString<int>(formatStr->m_sString).unwrapOr(0) : 0;
+
+    if (async) {
+        auto newFrames = new CCDictionary();
+        for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(frames)) {
+            if (auto spriteFrame = MoreIconsAPI::createSpriteFrame(dict, nullptr, format)) {
+                newFrames->setObject(spriteFrame, MoreIconsAPI::getFrameName(frame, info.name, info.type));
+                spriteFrame->release();
+            }
+        }
+
+        sheet->release();
+
+        std::unique_lock lock(imageMutex);
+
+        return images.push_back({ textureName, image.data, newFrames, image.width, image.height });
+    }
+
+    auto texture = new CCTexture2D();
+    if (!texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+        (float)image.width,
+        (float)image.height
+    })) return texture->release(), log::error("{}: Failed to load texture", info.sheetName);
+
+    CCTextureCache::get()->m_pTextures->setObject(texture, textureName);
+    texture->release();
+
+    auto spriteFrameCache = CCSpriteFrameCache::get();
+    for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(frames)) {
+        if (auto spriteFrame = MoreIconsAPI::createSpriteFrame(dict, texture, format))
+            spriteFrameCache->addSpriteFrame(spriteFrame, MoreIconsAPI::getFrameName(frame, info.name, info.type).c_str());
+    }
+
+    sheet->release();
+}
+
 void MoreIconsAPI::loadIcon(const std::string& name, IconType type, int requestID) {
-    if (!hasIcon(name, type)) return;
+    if (preloadIcons || !hasIcon(name, type)) return;
 
     auto& loadedIcon = loadedIcons[{ name, type }];
 
     if (loadedIcon < 1) {
         if (auto info = getIcon(name, type)) {
-            auto textureCache = CCTextureCache::get();
-            auto spriteFrameCache = CCSpriteFrameCache::get();
-
-            CCTexture2D* texture = nullptr;
-            for (int i = 0; i < info->textures.size(); i++) {
-                texture = textureCache->addImage(info->textures[i].c_str(), true);
-                if (info->frameNames.size() > i) spriteFrameCache->addSpriteFrame(
-                    CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }), info->frameNames[i].c_str());
-            }
-
-            std::error_code code;
-            if (!info->sheetName.empty() && std::filesystem::exists(info->sheetName, code)) {
-                if (auto sheet = CCDictionary::createWithContentsOfFileThreadSafe(info->sheetName.c_str())) {
-                    auto metadata = static_cast<CCDictionary*>(sheet->objectForKey("metadata"));
-                    auto formatStr = metadata ? metadata->valueForKey("format") : nullptr;
-                    auto format = formatStr ? numFromString<int>(formatStr->m_sString).unwrapOr(0) : 0;
-                    for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(sheet->objectForKey("frames")))) {
-                        if (auto spriteFrame = createSpriteFrame(dict, texture, format))
-                            spriteFrameCache->addSpriteFrame(spriteFrame, getFrameName(frame, name, type).c_str());
-                    }
-                    sheet->release();
-                }
-            }
+            if (!info->folderName.empty()) loadFolderIcon(*info, false);
+            else if (!info->sheetName.empty()) loadFileIcon(*info, false);
         }
     }
 
@@ -158,31 +265,88 @@ void MoreIconsAPI::loadIcon(const std::string& name, IconType type, int requestI
     }
 }
 
+void MoreIconsAPI::loadIconAsync(const IconInfo& info) {
+    auto& threadPool = ThreadPool::get();
+    if (!info.folderName.empty()) threadPool.pushTask([info] { loadFolderIcon(info, true); });
+    else if (!info.sheetName.empty()) threadPool.pushTask([info] { loadFileIcon(info, true); });
+    else if (info.textures.size() > 0) threadPool.pushTask([info] {
+        auto& textureName = info.textures[0];
+        auto imageRes = texpack::fromPNG(textureName);
+        if (imageRes.isErr()) return log::error("{}: {}", textureName, imageRes.unwrapErr());
+
+        auto image = imageRes.unwrap();
+
+        std::unique_lock lock(imageMutex);
+
+        images.push_back({ textureName, image.data, nullptr, image.width, image.height });
+    });
+}
+
+void MoreIconsAPI::finishLoadIcons() {
+    std::unique_lock lock(imageMutex);
+
+    auto textureCache = CCTextureCache::get();
+    auto spriteFrameCache = CCSpriteFrameCache::get();
+    for (auto& image : images) {
+        auto texture = new CCTexture2D();
+        if (!texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+            (float)image.width,
+            (float)image.height
+        })) {
+            texture->release();
+            continue;
+        }
+
+        textureCache->m_pTextures->setObject(texture, image.name);
+        texture->release();
+
+        if (!image.frames) continue;
+
+        for (auto [frameName, frame] : CCDictionaryExt<std::string, CCSpriteFrame*>(image.frames)) {
+            frame->setTexture(texture);
+            spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
+        }
+
+        image.frames->release();
+    }
+
+    images.clear();
+}
+
+void unloadFolderIcon(const IconInfo& info) {
+    auto spriteFrameCache = CCSpriteFrameCache::get();
+    for (auto& frame : info.frameNames) {
+        spriteFrameCache->removeSpriteFrameByName(frame.c_str());
+    }
+
+    CCTextureCache::get()->removeTextureForKey(info.folderName.c_str());
+}
+
+void unloadFileIcon(const IconInfo& info) {
+    auto sheet = MoreIconsAPI::createDictionary(info.sheetName, false);
+    if (!sheet) return log::error("{}: Failed to load sheet", info.sheetName);
+
+    auto frames = static_cast<CCDictionary*>(sheet->objectForKey("frames"));
+    if (!frames) return log::error("{}: Failed to load frames", info.sheetName);
+
+    auto spriteFrameCache = CCSpriteFrameCache::get();
+    for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(frames)) {
+        spriteFrameCache->removeSpriteFrameByName(MoreIconsAPI::getFrameName(frame, info.name, info.type).c_str());
+    }
+
+    CCTextureCache::get()->removeTextureForKey(info.textures[0].c_str());
+}
+
 void MoreIconsAPI::unloadIcon(const std::string& name, IconType type, int requestID) {
-    if (!hasIcon(name, type)) return;
+    if (preloadIcons || !hasIcon(name, type)) return;
 
     auto& loadedIcon = loadedIcons[{ name, type }];
 
     loadedIcon--;
     if (loadedIcon < 1) {
         if (auto info = getIcon(name, type)) {
-            auto textureCache = CCTextureCache::get();
-            auto spriteFrameCache = CCSpriteFrameCache::get();
-
-            std::error_code code;
-            if (!info->sheetName.empty() && std::filesystem::exists(info->sheetName, code)) {
-                if (auto sheet = CCDictionary::createWithContentsOfFileThreadSafe(info->sheetName.c_str())) {
-                    for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(sheet->objectForKey("frames")))) {
-                        spriteFrameCache->removeSpriteFrameByName(getFrameName(frame, name, type).c_str());
-                    }
-                    sheet->release();
-                }
-            }
-
-            for (int i = 0; i < info->textures.size(); i++) {
-                textureCache->removeTextureForKey(info->textures[i].c_str());
-                if (info->frameNames.size() > i) spriteFrameCache->removeSpriteFrameByName(info->frameNames[i].c_str());
-            }
+            if (!info->folderName.empty()) unloadFolderIcon(*info);
+            else if (!info->sheetName.empty()) unloadFileIcon(*info);
         }
     }
 
@@ -264,10 +428,17 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
 void MoreIconsAPI::updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type) {
     if (!sprite || icon.empty() || !hasIcon(icon, type)) return;
 
+    auto info = getIcon(icon, type);
+    if (!info) return;
+
     sprite->setUserObject("name"_spr, CCString::create(icon));
 
+    auto texture = CCTextureCache::get()->textureForKey((info->folderName.empty() ? info->textures[0] : info->folderName).c_str());
+
     sprite->setBatchNode(nullptr);
+    sprite->setTexture(texture);
     sprite->m_paSprite->setBatchNode(nullptr);
+    sprite->m_paSprite->setTexture(texture);
 
     loadIcon(icon, type, sprite->m_iconRequestID);
 
@@ -315,28 +486,24 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, IconType type, bool 
 void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type) {
     if (!object || icon.empty() || !hasIcon(icon, type)) return;
 
+    auto info = getIcon(icon, type);
+    if (!info) return;
+
     object->setUserObject("name"_spr, CCString::create(icon));
 
     if (type == IconType::Robot || type == IconType::Spider) {
-        auto robotSprite = type == IconType::Robot ? object->m_robotSprite : object->m_spiderSprite;
-        updateRobotSprite(robotSprite, icon, type);
+        auto robotSprite = type == IconType::Spider ? object->m_spiderSprite : object->m_robotSprite;
+        auto batchNode = type == IconType::Spider ? object->m_spiderBatchNode : object->m_robotBatchNode;
 
-        auto batchNode = type == IconType::Robot ? object->m_robotBatchNode : object->m_spiderBatchNode;
-        auto hasExisted = batchNode && batchNode->getParent() == object->m_mainLayer;
-        robotSprite->retain();
-        if (batchNode) {
+        if (robotSprite->getParent() == batchNode) {
+            robotSprite->retain();
             robotSprite->removeFromParentAndCleanup(false);
-            batchNode->removeFromParent();
-            batchNode->release();
+            updateRobotSprite(robotSprite, icon, type);
+            batchNode->setTexture(robotSprite->getTexture());
+            batchNode->addChild(robotSprite);
+            robotSprite->release();
         }
-        if (type == IconType::Robot) object->m_robotBatchNode = DummyNode::createWithTexture(robotSprite->getTexture(), 25);
-        else object->m_spiderBatchNode = DummyNode::createWithTexture(robotSprite->getTexture(), 25);
-        batchNode = type == IconType::Robot ? object->m_robotBatchNode : object->m_spiderBatchNode;
-        batchNode->retain();
-        batchNode->addChild(robotSprite);
-        if (hasExisted && ((type == IconType::Robot && object->m_isRobot) || (type == IconType::Spider && object->m_isSpider)))
-            object->m_mainLayer->addChild(batchNode, 2);
-        return robotSprite->release();
+        return;
     }
 
     loadIcon(icon, type, object->m_iconRequestID);
@@ -416,10 +583,12 @@ float floatValue(const CCString* str) {
 }
 
 CCSpriteFrame* MoreIconsAPI::createSpriteFrame(CCDictionary* dict, CCTexture2D* texture, int format) {
-    CCSpriteFrame* spriteFrame = nullptr;
+    if (!dict || format < 0 || format > 3) return nullptr;
+
+    auto spriteFrame = new CCSpriteFrame();
     switch (format) {
         case 0:
-            spriteFrame = CCSpriteFrame::createWithTexture(
+            spriteFrame->initWithTexture(
                 texture,
                 {
                     floatValue(dict->valueForKey("x")),
@@ -439,7 +608,7 @@ CCSpriteFrame* MoreIconsAPI::createSpriteFrame(CCDictionary* dict, CCTexture2D* 
             );
             break;
         case 1:
-            spriteFrame = CCSpriteFrame::createWithTexture(
+            spriteFrame->initWithTexture(
                 texture,
                 rectFromString(dict->valueForKey("frame")),
                 false,
@@ -448,7 +617,7 @@ CCSpriteFrame* MoreIconsAPI::createSpriteFrame(CCDictionary* dict, CCTexture2D* 
             );
             break;
         case 2:
-            spriteFrame = CCSpriteFrame::createWithTexture(
+            spriteFrame->createWithTexture(
                 texture,
                 rectFromString(dict->valueForKey("frame")),
                 boolValue(dict->valueForKey("rotated")),
@@ -457,7 +626,7 @@ CCSpriteFrame* MoreIconsAPI::createSpriteFrame(CCDictionary* dict, CCTexture2D* 
             );
             break;
         case 3:
-            spriteFrame = CCSpriteFrame::createWithTexture(
+            spriteFrame->initWithTexture(
                 texture,
                 {
                     pointFromString(dict->valueForKey("textureRect")),
@@ -469,5 +638,73 @@ CCSpriteFrame* MoreIconsAPI::createSpriteFrame(CCDictionary* dict, CCTexture2D* 
             );
             break;
     }
+
+    if (texture) spriteFrame->autorelease();
     return spriteFrame;
+}
+
+#ifdef GEODE_IS_ANDROID
+std::mutex androidMutex;
+AAssetManager* assetManager = nullptr;
+
+$on_mod(Loaded) {
+    JniMethodInfo t;
+    if (JniHelper::getStaticMethodInfo(t, "org/fmod/FMOD", "getAssetManager", "()Landroid/content/res/AssetManager;")) {
+        auto r = t.env->CallStaticObjectMethod(t.classID, t.methodID);
+        t.env->DeleteLocalRef(t.classID);
+        assetManager = AAssetManager_fromJava(t.env, r);
+    }
+    if (!assetManager) log::error("Failed to get asset manager");
+}
+
+std::vector<uint8_t> getData(const std::string& path) {
+    std::unique_lock lock(androidMutex);
+
+    unsigned long size;
+    if (auto data = CCFileUtils::get()->getFileData(path.c_str(), "rb", &size)) {
+        std::vector<uint8_t> result(data, data + size);
+        delete[] data;
+        return result;
+    }
+    return {};
+}
+#endif
+
+CCDictionary* MoreIconsAPI::createDictionary(const std::filesystem::path& path, bool async) {
+    #ifdef GEODE_IS_ANDROID
+    if (async && path.native().starts_with("assets/")) {
+        std::unique_lock lock(androidMutex);
+        return CCDictionary::createWithContentsOfFileThreadSafe(path.c_str());
+    }
+    #endif
+    return CCDictionary::createWithContentsOfFileThreadSafe(GEODE_WINDOWS(string::wideToUtf8)(path.native()).c_str());
+}
+
+std::vector<uint8_t> MoreIconsAPI::getFileData(const std::filesystem::path& path) {
+    #ifdef GEODE_IS_ANDROID
+    if (path.native().starts_with("assets/")) {
+        if (!assetManager) return getData(path);
+
+        auto asset = AAssetManager_open(assetManager, path.native().substr(7).c_str(), AASSET_MODE_BUFFER);
+        if (!asset) {
+            log::error("{}: Failed to open asset", path);
+            return getData(path);
+        }
+
+        auto size = AAsset_getLength(asset);
+        auto data = new uint8_t[size];
+        if (AAsset_read(asset, data, size) != size) {
+            delete[] data;
+            AAsset_close(asset);
+            log::error("{}: Failed to read asset", path);
+            return getData(path);
+        }
+        AAsset_close(asset);
+
+        std::vector<uint8_t> result(data, data + size);
+        delete[] data;
+        return result;
+    }
+    #endif
+    return file::readBinary(path).unwrapOr(std::vector<uint8_t>());
 }

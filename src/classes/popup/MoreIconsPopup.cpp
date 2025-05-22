@@ -1,7 +1,7 @@
 #include "MoreIconsPopup.hpp"
 #include "EditIconPopup.hpp"
-#include "IconViewPopup.hpp"
 #include "log/LogLayer.hpp"
+#include "view/IconViewPopup.hpp"
 #include "../../MoreIcons.hpp"
 #include "../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
@@ -140,30 +140,24 @@ bool MoreIconsPopup::setup() {
         logButton->setID("log-button");
         gamemodeMenu->addChild(logButton);
 
-        auto addSprite = ButtonSprite::create("+", 14, true, "goldFont.fnt", "GJ_button_05.png", 0.0f, 1.0f);
+        auto addSprite = ButtonSprite::create("Add", "goldFont.fnt", "GJ_button_05.png", 0.8f);
         addSprite->setScale(0.6f);
         auto addButton = CCMenuItemExt::createSpriteExtra(addSprite, [type](auto) {
             EditIconPopup::create(type, 0, "", false)->show();
         });
-        addButton->setPosition({ 12.0f, 15.0f });
+        addButton->setPosition({ 24.0f, 15.0f });
         addButton->setID("add-button");
         gamemodeMenu->addChild(addButton);
 
-        auto folderSprite = ButtonSprite::create(CCSprite::createWithSpriteFrameName("folderIcon_001.png"), 0, false, 0.0f, "GJ_button_05.png", 0.7f);
+        auto folderSprite = ButtonSprite::create(
+            CCSprite::createWithSpriteFrameName("folderIcon_001.png"), 0, false, 0.0f, "GJ_button_05.png", 0.7f);
         folderSprite->setScale(0.45f);
         auto folderButton = CCMenuItemExt::createSpriteExtra(folderSprite, [directory](auto) {
             file::openFolder(Mod::get()->getConfigDir() / directory);
         });
-        folderButton->setPosition({ 35.0f, 15.0f });
+        folderButton->setPosition({ 54.0f, 15.0f });
         folderButton->setID("folder-button");
         gamemodeMenu->addChild(folderButton);
-
-        auto loadSprite = ButtonSprite::create(CCSprite::createWithSpriteFrameName("GJ_downloadsIcon_001.png"), 0, false, 0.0f, "GJ_button_05.png", 1.0f);
-        loadSprite->setScale(0.45f);
-        auto loadButton = CCMenuItemExt::createSpriteExtra(loadSprite, [](auto) {});
-        loadButton->setPosition({ 8.0f, 15.0f });
-        loadButton->setID("load-button");
-        gamemodeMenu->addChild(loadButton);
 
         gamemodesNode->addChild(gamemodeMenu);
     }
@@ -177,6 +171,7 @@ bool MoreIconsPopup::setup() {
         auto exists = std::filesystem::exists(trashDir, code);
         if (!exists) exists = std::filesystem::create_directory(trashDir, code);
         if (!exists) return Notification::create("Failed to create trash directory", NotificationIcon::Error)->show();
+        else std::filesystem::permissions(trashDir, std::filesystem::perms::all, code);
         file::openFolder(trashDir);
     });
     trashButton->setPosition({ 435.0f, 5.0f });

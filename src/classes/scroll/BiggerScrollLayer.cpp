@@ -6,10 +6,12 @@ using namespace geode::prelude;
 
 int stencilBits = -1;
 
-BiggerScrollLayer::BiggerScrollLayer(float width, float height, float stencilOffset, float sizeOffset) : CCScrollLayerExt({ 0.0f, 0.0f, width, height }) {
+BiggerScrollLayer::BiggerScrollLayer(float width, float height, float cutOffset, float sizeOffset) : CCScrollLayerExt({
+    0.0f, 0.0f, width, height
+}) {
     auto background = CCScale9Sprite::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
     background->setPosition({ width / 2.0f, height / 2.0f });
-    background->setContentSize({ width, height + stencilOffset * 2.0f });
+    background->setContentSize({ width, height + cutOffset * 2.0f });
     background->setOpacity(105);
     background->setID("background");
     addChild(background);
@@ -19,11 +21,10 @@ BiggerScrollLayer::BiggerScrollLayer(float width, float height, float stencilOff
     m_stencil->setContentSize(background->getContentSize());
     m_stencil->retain();
 
-    static bool gotStencilBits = false;
-    if (!gotStencilBits) {
+    static auto _ = [] {
         glGetIntegerv(GL_STENCIL_BITS, &stencilBits);
-        gotStencilBits = true;
-    }
+        return true;
+    }();
 
     m_contentLayer->removeFromParent();
     m_contentLayer = BiggerContentLayer::create(width, height, sizeOffset);

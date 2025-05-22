@@ -20,6 +20,7 @@ struct IconInfo {
     bool show;
     float fade;
     float stroke;
+    std::string folderName;
 
     bool operator==(const IconInfo& other) const {
         return name == other.name && type == other.type;

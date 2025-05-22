@@ -89,7 +89,9 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto gameManager = GameManager::get();
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto active = MoreIconsAPI::activeIcon(type, sdi && sdi->getSavedValue("2pselected", false));
-        auto it = std::ranges::find_if(MoreIconsAPI::icons, [&active, type](const IconInfo& info) { return info.name == active && info.type == type; });
+        auto it = std::ranges::find_if(MoreIconsAPI::icons, [&active, type](const IconInfo& info) {
+            return info.name == active && info.type == type;
+        });
         return it != MoreIconsAPI::icons.end() && MoreIconsAPI::iconIndices.contains(type) ?
             (gameManager->countForType(type) + 35) / 36 + (it - MoreIconsAPI::iconIndices[type].first - MoreIconsAPI::icons.begin()) / 36 :
             (gameManager->activeIconForType(type) - 1) / 36;
@@ -337,7 +339,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             if (info.name == active) current = iconButton;
         }
 
-        f->m_pageBar = ListButtonBar::create(objs, CCDirector::get()->getWinSize() / 2 - CCPoint { 0.0f, 65.0f }, 12, 3, 5.0f, 5.0f, 25.0f, 220.0f, 1);
+        f->m_pageBar = ListButtonBar::create(objs, CCDirector::get()->getWinSize() / 2 - CCPoint { 0.0f, 65.0f },
+            12, 3, 5.0f, 5.0f, 25.0f, 220.0f, 1);
         f->m_pageBar->m_scrollLayer->togglePageIndicators(false);
         f->m_pageBar->setID("icon-selection-bar"_spr);
         addChild(f->m_pageBar, 101);
@@ -419,7 +422,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             if (info.name == active) current = iconButton;
         }
 
-        f->m_pageBar = ListButtonBar::create(objs, CCDirector::get()->getWinSize() / 2 - CCPoint { 0.0f, 65.0f }, 12, 3, 5.0f, 5.0f, 25.0f, 220.0f, 1);
+        f->m_pageBar = ListButtonBar::create(objs, CCDirector::get()->getWinSize() / 2 - CCPoint { 0.0f, 65.0f },
+            12, 3, 5.0f, 5.0f, 25.0f, 220.0f, 1);
         f->m_pageBar->m_scrollLayer->togglePageIndicators(false);
         f->m_pageBar->setID("icon-selection-bar"_spr);
         addChild(f->m_pageBar, 101);

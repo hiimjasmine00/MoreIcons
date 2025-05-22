@@ -19,6 +19,10 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 
+if (ANDROID)
+    target_link_libraries(${PROJECT_NAME} android)
+endif()
+
 if (NOT DEFINED ENV{GEODE_SDK})
     message(FATAL_ERROR "Unable to find Geode SDK! Please define GEODE_SDK environment variable to point to Geode")
 else()
@@ -27,10 +31,7 @@ endif()
 
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
-CPMAddPackage("gh:bshoshany/thread-pool@5.0.0")
-target_include_directories(${PROJECT_NAME} PRIVATE ${thread-pool_SOURCE_DIR}/include)
-
-CPMAddPackage("gh:hiimjasmine00/texpack@0.1.0")
+CPMAddPackage("gh:hiimjasmine00/texpack@0.1.1")
 target_link_libraries(${PROJECT_NAME} texpack)
 
 setup_geode_mod(${PROJECT_NAME})

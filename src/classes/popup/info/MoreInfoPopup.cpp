@@ -1,6 +1,6 @@
-#include "../../../api/MoreIconsAPI.hpp"
 #include "MoreInfoPopup.hpp"
 #include "SpecialSettingsPopup.hpp"
+#include "../../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJItemIcon.hpp>

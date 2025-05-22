@@ -216,7 +216,8 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
             case 6:
                 stroke = 3.0f;
                 break;
-        } else {
+        }
+        else {
             stroke = icon ? icon->stroke : 14.0f;
             tint = icon && icon->tint;
         }
@@ -227,7 +228,7 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
             GL_SRC_ALPHA,
             (uint32_t)GL_ONE_MINUS_SRC_ALPHA - (trailID > 0 || (icon && icon->blend)) * (uint32_t)GL_SRC_ALPHA
         });
-        m_streak->setPosition({ 175.0f, 120.0f - read * 70.0f });
+        m_streak->setPosition({ 175.0f, 120.0f + (read && icon && icon->packID.empty()) * 20.0f - read * 70.0f });
         m_streak->setRotation(-90.0f);
         m_streak->setScaleX(stroke / m_streak->getContentWidth());
         m_streak->setScaleY(320.0f / m_streak->getContentHeight());
@@ -254,6 +255,7 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
                     auto exists = std::filesystem::exists(trashDir, code);
                     if (!exists) exists = std::filesystem::create_directory(trashDir, code);
                     if (!exists) return Notification::create("Failed to create trash directory.", NotificationIcon::Error)->show();
+                    else std::filesystem::permissions(trashDir, std::filesystem::perms::all, code);
 
                     if (icon->sheetName.empty()) {
                         auto folderPath = std::filesystem::path(icon->textures[0]).parent_path();
@@ -348,28 +350,31 @@ void EditIconPopup::pickFile(int index, int type, bool plist) {
             if ((plist && m_path.extension() != ".plist") || (!plist && m_path.extension() != ".png")) return;
 
             if (plist) {
-                if (auto sheet = CCDictionary::createWithContentsOfFileThreadSafe(GEODE_WINDOWS(string::wideToUtf8)(m_path.native()).c_str())) {
-                    auto metadata = static_cast<CCDictionary*>(sheet->objectForKey("metadata"));
-                    auto formatStr = metadata ? metadata->valueForKey("format") : nullptr;
-                    auto format = formatStr ? numFromString<int>(formatStr->m_sString).unwrapOr(0) : 0;
-                    m_frames->removeAllObjects();
-                    for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(static_cast<CCDictionary*>(sheet->objectForKey("frames")))) {
-                        if (auto spriteFrame = MoreIconsAPI::createSpriteFrame(dict, m_texture, format)) {
-                            m_frames->setObject(spriteFrame, MoreIconsAPI::getFrameName(frame, "", m_iconType));
+                if (auto sheet = MoreIconsAPI::createDictionary(m_path, false)) {
+                    if (auto frames = static_cast<CCDictionary*>(sheet->objectForKey("frames"))) {
+                        auto metadata = static_cast<CCDictionary*>(sheet->objectForKey("metadata"));
+                        auto formatStr = metadata ? metadata->valueForKey("format") : nullptr;
+                        auto format = formatStr ? numFromString<int>(formatStr->m_sString).unwrapOr(0) : 0;
+                        m_frames->removeAllObjects();
+                        for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(frames)) {
+                            if (auto spriteFrame = MoreIconsAPI::createSpriteFrame(dict, m_texture, format)) {
+                                if (!m_texture) spriteFrame->autorelease();
+                                m_frames->setObject(spriteFrame, MoreIconsAPI::getFrameName(frame, "", m_iconType));
+                            }
                         }
-                    }
-                    updateSprites();
+                        updateSprites();
 
-                    auto saveSprite = static_cast<ButtonSprite*>(m_saveButton->getNormalImage());
-                    saveSprite->m_BGSprite->setOpacity(255);
-                    saveSprite->m_label->setOpacity(255);
-                    m_saveButton->setEnabled(true);
-                    auto plistSprite = static_cast<ButtonSprite*>(m_plistButton->getNormalImage());
-                    plistSprite->m_BGSprite->setOpacity(105);
-                    plistSprite->m_label->setOpacity(105);
-                    m_plistButton->setEnabled(false);
-                    for (auto frameMenu : CCArrayExt<CCMenu*>(m_frameMenus)) {
-                        frameMenu->setEnabled(true);
+                        auto saveSprite = static_cast<ButtonSprite*>(m_saveButton->getNormalImage());
+                        saveSprite->m_BGSprite->setOpacity(255);
+                        saveSprite->m_label->setOpacity(255);
+                        m_saveButton->setEnabled(true);
+                        auto plistSprite = static_cast<ButtonSprite*>(m_plistButton->getNormalImage());
+                        plistSprite->m_BGSprite->setOpacity(105);
+                        plistSprite->m_label->setOpacity(105);
+                        m_plistButton->setEnabled(false);
+                        for (auto frameMenu : CCArrayExt<CCMenu*>(m_frameMenus)) {
+                            frameMenu->setEnabled(true);
+                        }
                     }
 
                     sheet->release();
@@ -642,7 +647,7 @@ void EditIconPopup::saveIcon() {
 
         if (auto res = packer.png(pngPath); res.isErr())
             return Notification::create(fmt::format("Failed to save image: {}", res.unwrapErr()), NotificationIcon::Error)->show();
-        
+
         if (auto res = packer.plist(plistPath, "    "); res.isErr())
             return Notification::create(fmt::format("Failed to save {}: {}", iconName, res.unwrapErr()), NotificationIcon::Error)->show();
 

@@ -43,6 +43,7 @@ class $modify(MIGameManager, GameManager) {
         auto mod = Mod::get();
         MoreIcons::debugLogs = mod->getSettingValue<bool>("debug-logs");
         MoreIcons::traditionalPacks = mod->getSettingValue<bool>("traditional-packs");
+        MoreIconsAPI::preloadIcons = mod->getSettingValue<bool>("preload-icons");
 
         auto hooks = mod->getHooks();
 
@@ -60,39 +61,51 @@ class $modify(MIGameManager, GameManager) {
     }
 
     CCTexture2D* loadIcon(int id, int type, int requestID) {
-        auto iconKey = keyForIcon(id, type);
-        auto iconExists = m_iconLoadCounts.contains(iconKey) && m_iconLoadCounts[iconKey] > 0;
-
         auto ret = GameManager::loadIcon(id, type, requestID);
         if (!ret) return ret;
 
         if (MoreIconsAPI::requestedIcons.contains(requestID)) {
             auto iconType = (IconType)type;
-            if (auto& icons = MoreIconsAPI::requestedIcons[requestID]; icons.contains(iconType))
-                MoreIconsAPI::unloadIcon(icons[iconType], iconType, requestID);
+            auto& icons = MoreIconsAPI::requestedIcons[requestID];
+            if (icons.contains(iconType)) MoreIconsAPI::unloadIcon(icons[iconType], iconType, requestID);
         }
 
-        if (iconExists || !MoreIcons::traditionalPacks) return ret;
-
-        auto sheetName = GameManager::sheetNameForIcon(id, type);
-        if (sheetName.empty()) return ret;
-
-        auto dict = CCDictionary::createWithContentsOfFileThreadSafe(fmt::format("{}.plist", GEODE_ANDROID(std::string)(sheetName)).c_str());
-        if (!dict) return ret;
-
-        auto frames = static_cast<CCDictionary*>(dict->objectForKey("frames"));
-        if (!frames) return dict->release(), ret;
-
-        auto sfc = CCSpriteFrameCache::get();
-        for (auto [frameName, _] : CCDictionaryExt<std::string, CCDictionary*>(frames)) {
-            if (auto frame = sfc->spriteFrameByName(frameName.c_str())) frame->setTexture(ret);
-        }
-
-        return dict->release(), ret;
+        return ret;
     }
 
     void unloadIcons(int requestID) {
         GameManager::unloadIcons(requestID);
         MoreIconsAPI::unloadIcons(requestID);
+    }
+};
+
+class $modify(MIGameManager2, GameManager) {
+    static void onModify(ModifyBase<ModifyDerive<MIGameManager2, GameManager>>& self) {
+        (void)self.setHookPriority("GameManager::loadIcon", Priority::Replace);
+    }
+
+    CCTexture2D* loadIcon(int id, int type, int requestID) {
+        std::string sheetName = sheetNameForIcon(id, type);
+        if (sheetName.empty()) return nullptr;
+    
+        CCTexture2D* texture = nullptr;
+        auto iconKey = keyForIcon(id, type);
+
+        auto pngName = fmt::format("{}.png", sheetName);
+        auto textureCache = CCTextureCache::get();
+        if (m_iconLoadCounts[iconKey] < 1) {
+            texture = textureCache->addImage(pngName.c_str(), false);
+            CCSpriteFrameCache::get()->addSpriteFramesWithFile(fmt::format("{}.plist", sheetName).c_str(), texture);
+        }
+        else texture = textureCache->textureForKey(pngName.c_str());
+
+        auto loadedIcon = m_iconRequests[requestID][type];
+        if (loadedIcon != id) {
+            m_iconLoadCounts[iconKey]++;
+            if (loadedIcon > 0) unloadIcon(loadedIcon, type, requestID);
+            m_iconRequests[requestID][type] = id;
+        }
+
+        return texture;
     }
 };

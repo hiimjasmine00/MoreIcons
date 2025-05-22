@@ -106,7 +106,8 @@ class $modify(MIPlayerObject, PlayerObject) {
             default:
                 m_streakStrokeWidth = 10.0f;
                 break;
-        } else {
+        }
+        else {
             fade = info->fade;
             stroke = info->stroke;
             m_streakStrokeWidth = stroke;

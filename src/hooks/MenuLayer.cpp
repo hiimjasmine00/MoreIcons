@@ -43,7 +43,8 @@ class $modify(MIMenuLayer, MenuLayer) {
         auto profileButton = static_cast<CCMenuItemSprite*>(profileMenu->getChildByID("profile-button"));
         if (!profileButton) return true;
 
-        MoreIconsAPI::updateSimplePlayer(profileButton->getNormalImage()->getChildByType<SimplePlayer>(0), GameManager::get()->m_playerIconType, false);
+        MoreIconsAPI::updateSimplePlayer(profileButton->getNormalImage()->getChildByType<SimplePlayer>(0),
+            GameManager::get()->m_playerIconType, false);
 
         return true;
     }

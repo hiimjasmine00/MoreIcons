@@ -40,6 +40,12 @@
             "description": "Whether to load icons from traditional icon packs.",
             "type": "bool",
             "default": true
+        },
+        "preload-icons": {
+            "name": "Preload Icon Textures",
+            "description": "Whether to preload icon textures on startup.",
+            "type": "bool",
+            "default": false
         }
     },
     "links": {
