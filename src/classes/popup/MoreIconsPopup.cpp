@@ -78,13 +78,14 @@ bool MoreIconsPopup::setup() {
             "robot", "spider", "trail", "death", "", "swing", "jetpack", "shiptrail"
         };
 
-        auto icon = GJItemIcon::createBrowserItem(unlock, dual ? sdi->getSavedValue<int>(types[(int)unlock]) : gameManager->activeIconForType(type));
+        auto icon = GJItemIcon::createBrowserItem(unlock,
+            dual ? sdi->getSavedValue<int>(types[(int)unlock], 1) : gameManager->activeIconForType(type));
         if (type <= IconType::Jetpack) queueInMainThread([icon = Ref(icon), type, dual, gameManager, sdi] {
             auto player = static_cast<SimplePlayer*>(icon->m_player);
             MoreIconsAPI::updateSimplePlayer(player, type, dual);
-            player->setColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color1") : gameManager->m_playerColor));
-            player->setSecondColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color2") : gameManager->m_playerColor2));
-            player->enableCustomGlowColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("colorglow") : gameManager->m_playerGlowColor));
+            player->setColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color1", 0) : gameManager->m_playerColor));
+            player->setSecondColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color2", 0) : gameManager->m_playerColor2));
+            player->enableCustomGlowColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("colorglow", 0) : gameManager->m_playerGlowColor));
             player->m_hasGlowOutline = dual ? sdi->getSavedValue<bool>("glow") : gameManager->m_playerGlow;
             player->updateColors();
         });

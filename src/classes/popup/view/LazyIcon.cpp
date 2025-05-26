@@ -262,6 +262,7 @@ void LazyIcon::createIcon(const std::string& err, const std::string& texture, co
         m_loadingSprite->stopAllActions();
         m_loadingSprite->setDisplayFrame(CCSpriteFrameCache::get()->spriteFrameByName("GJ_deleteIcon_001.png"));
         m_loadingSprite->setScale(1.1f);
+        m_loadingSprite->setRotation(0.0f);
     }
 }
 
@@ -314,11 +315,10 @@ void loadSheet(const std::string& png, const std::string& plist, const std::stri
 
         queueInMainThread([png, image = image.unwrap(), frames = Ref(frames), callback = std::move(callback)] {
             auto texture = new CCTexture2D();
-            if (!texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+            texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
                 (float)image.width,
                 (float)image.height
-            })) return texture->release(), callback("Failed to load texture", "", {});
-
+            });
             CCTextureCache::get()->m_pTextures->setObject(texture, png);
             texture->release();
 
@@ -373,11 +373,10 @@ void loadImages(IconInfo* info, Callback callback) {
 
         queueInMainThread([info, image = packer.image(), frames = Ref(frames), callback = std::move(callback)] {
             auto texture = new CCTexture2D();
-            if (!texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+            texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
                 (float)image.width,
                 (float)image.height
-            })) return texture->release(), callback("Failed to load texture", "", {});
-
+            });
             CCTextureCache::get()->m_pTextures->setObject(texture, info->folderName);
             texture->release();
 

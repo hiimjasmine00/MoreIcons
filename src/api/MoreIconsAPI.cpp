@@ -106,10 +106,10 @@ int MoreIconsAPI::getCount(IconType type) {
 }
 
 std::string MoreIconsAPI::getFrameName(const std::string& name, const std::string& prefix, IconType type) {
-    auto modID = name.empty() ? "" : GEODE_MOD_ID "/";
+    auto modID = prefix.empty() ? "" : GEODE_MOD_ID "/";
     if (type != IconType::Robot && type != IconType::Spider) {
         if (name.ends_with("_2_001.png")) return fmt::format("{}{}_2_001.png", modID, prefix);
-        else if (name.ends_with("_3_001.png")) return fmt::format("{}{}_3_001.png", modID, prefix);
+        else if (type == IconType::Ufo && name.ends_with("_3_001.png")) return fmt::format("{}{}_3_001.png", modID, prefix);
         else if (name.ends_with("_extra_001.png")) return fmt::format("{}{}_extra_001.png", modID, prefix);
         else if (name.ends_with("_glow_001.png")) return fmt::format("{}{}_glow_001.png", modID, prefix);
         else if (name.ends_with("_001.png")) return fmt::format("{}{}_001.png", modID, prefix);
@@ -173,11 +173,10 @@ void loadFolderIcon(const IconInfo& info, bool async) {
     }
 
     auto texture = new CCTexture2D();
-    if (!texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+    texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
         (float)image.width,
         (float)image.height
-    })) return texture->release(), log::error("{}: Failed to load texture", folderName);
-
+    });
     CCTextureCache::get()->m_pTextures->setObject(texture, folderName);
     texture->release();
 
@@ -228,11 +227,10 @@ void loadFileIcon(const IconInfo& info, bool async) {
     }
 
     auto texture = new CCTexture2D();
-    if (!texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+    texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
         (float)image.width,
         (float)image.height
-    })) return texture->release(), log::error("{}: Failed to load texture", info.sheetName);
-
+    });
     CCTextureCache::get()->m_pTextures->setObject(texture, textureName);
     texture->release();
 
@@ -269,7 +267,7 @@ void MoreIconsAPI::loadIconAsync(const IconInfo& info) {
     auto& threadPool = ThreadPool::get();
     if (!info.folderName.empty()) threadPool.pushTask([info] { loadFolderIcon(info, true); });
     else if (!info.sheetName.empty()) threadPool.pushTask([info] { loadFileIcon(info, true); });
-    else if (info.textures.size() > 0) threadPool.pushTask([info] {
+    else if (!info.textures.empty()) threadPool.pushTask([info] {
         auto& textureName = info.textures[0];
         auto imageRes = texpack::fromPNG(textureName);
         if (imageRes.isErr()) return log::error("{}: {}", textureName, imageRes.unwrapErr());
@@ -289,14 +287,10 @@ void MoreIconsAPI::finishLoadIcons() {
     auto spriteFrameCache = CCSpriteFrameCache::get();
     for (auto& image : images) {
         auto texture = new CCTexture2D();
-        if (!texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+        texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
             (float)image.width,
             (float)image.height
-        })) {
-            texture->release();
-            continue;
-        }
-
+        });
         textureCache->m_pTextures->setObject(texture, image.name);
         texture->release();
 
@@ -672,37 +666,35 @@ std::vector<uint8_t> getData(const std::string& path) {
 
 CCDictionary* MoreIconsAPI::createDictionary(const std::filesystem::path& path, bool async) {
     #ifdef GEODE_IS_ANDROID
-    if (async && path.native().starts_with("assets/")) {
+    if (async && path.string().starts_with("assets/")) {
         std::unique_lock lock(androidMutex);
         return CCDictionary::createWithContentsOfFileThreadSafe(path.c_str());
     }
     #endif
-    return CCDictionary::createWithContentsOfFileThreadSafe(GEODE_WINDOWS(string::wideToUtf8)(path.native()).c_str());
+    return CCDictionary::createWithContentsOfFileThreadSafe(GEODE_WINDOWS(string::wideToUtf8)(path).c_str());
 }
 
-std::vector<uint8_t> MoreIconsAPI::getFileData(const std::filesystem::path& path) {
+std::vector<uint8_t> MoreIconsAPI::getFileData(const std::string& path) {
     #ifdef GEODE_IS_ANDROID
-    if (path.native().starts_with("assets/")) {
+    if (path.starts_with("assets/")) {
         if (!assetManager) return getData(path);
 
-        auto asset = AAssetManager_open(assetManager, path.native().substr(7).c_str(), AASSET_MODE_BUFFER);
+        auto asset = AAssetManager_open(assetManager, path.substr(7).c_str(), AASSET_MODE_BUFFER);
         if (!asset) {
             log::error("{}: Failed to open asset", path);
             return getData(path);
         }
 
         auto size = AAsset_getLength(asset);
-        auto data = new uint8_t[size];
-        if (AAsset_read(asset, data, size) != size) {
-            delete[] data;
-            AAsset_close(asset);
+        std::vector<uint8_t> result(size);
+
+        auto read = AAsset_read(asset, result.data(), size);
+        AAsset_close(asset);
+        if (read != size) {
             log::error("{}: Failed to read asset", path);
             return getData(path);
         }
-        AAsset_close(asset);
 
-        std::vector<uint8_t> result(data, data + size);
-        delete[] data;
         return result;
     }
     #endif

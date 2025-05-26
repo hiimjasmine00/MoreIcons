@@ -30,5 +30,5 @@ public:
     static void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type);
     static cocos2d::CCSpriteFrame* createSpriteFrame(cocos2d::CCDictionary* dict, cocos2d::CCTexture2D* texture, int format);
     static cocos2d::CCDictionary* createDictionary(const std::filesystem::path& path, bool async);
-    static std::vector<uint8_t> getFileData(const std::filesystem::path& path);
+    static std::vector<uint8_t> getFileData(const std::string& path);
 };

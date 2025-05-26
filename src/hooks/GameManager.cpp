@@ -81,13 +81,13 @@ class $modify(MIGameManager, GameManager) {
 
 class $modify(MIGameManager2, GameManager) {
     static void onModify(ModifyBase<ModifyDerive<MIGameManager2, GameManager>>& self) {
-        (void)self.setHookPriority("GameManager::loadIcon", Priority::Replace);
+        (void)self.setHookPriority("GameManager::loadIcon", 999999999);
     }
 
     CCTexture2D* loadIcon(int id, int type, int requestID) {
         std::string sheetName = sheetNameForIcon(id, type);
         if (sheetName.empty()) return nullptr;
-    
+
         CCTexture2D* texture = nullptr;
         auto iconKey = keyForIcon(id, type);
 

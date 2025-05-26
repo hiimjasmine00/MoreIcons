@@ -21,7 +21,9 @@ protected:
 
     void pickFile(int, int, bool);
     void updateSprites();
-    void saveIcon();
+    void saveTrail(const std::filesystem::path& path);
+    void saveIcon(const std::filesystem::path& png, const std::filesystem::path& plist);
+    void finishSave();
     void onClose(cocos2d::CCObject* sender) override;
 public:
     static EditIconPopup* create(IconType, int, const std::string&, bool);

@@ -127,9 +127,9 @@ void BiggerScrollLayer::visit() {
 
     glEnable(GL_STENCIL_TEST);
     glStencilMask(1);
-	glClear(GL_STENCIL_BUFFER_BIT);
+    glClear(GL_STENCIL_BUFFER_BIT);
 
-    GLboolean currentDepthWriteMask = GL_TRUE;
+    uint8_t currentDepthWriteMask = GL_TRUE;
     glGetBooleanv(GL_DEPTH_WRITEMASK, &currentDepthWriteMask);
     glDepthMask(GL_FALSE);
 

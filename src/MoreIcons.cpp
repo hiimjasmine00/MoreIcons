@@ -10,13 +10,13 @@
 using namespace geode::prelude;
 
 std::string toString(const std::filesystem::path& path) {
-    return GEODE_WINDOWS(string::wideToUtf8)(path.native());
+    return GEODE_WINDOWS(string::wideToUtf8)(path);
 }
 
 bool doesExist(const std::filesystem::path& path) {
     std::error_code code;
     auto exists = std::filesystem::exists(path, code);
-    if (code) log::error("Error checking existence of {}: {}", toString(path), code.message());
+    if (code) log::error("{}: Failed to check existence: {}", path, code.message());
     return exists;
 }
 
@@ -30,7 +30,7 @@ $on_mod(Loaded) {
     if (doesExist(assetsDir)) {
         std::error_code code;
         std::filesystem::remove_all(assetsDir, code);
-        if (code) log::error("Failed to clean assets folder: {}", code.message());
+        if (code) log::error("{}: Failed to delete: {}", assetsDir, code.message());
     }
     #endif
 }
@@ -146,12 +146,46 @@ void safeDebug(fmt::format_string<Args...> message, Args&&... args) {
 }
 
 void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, IconType type) {
-    auto pathStem = toString(path.stem());
-    auto name = pack.id.empty() ? pathStem : fmt::format("{}:{}", pack.id, pathStem);
+    auto factor = CCDirector::get()->getContentScaleFactor();
+    auto pathFilename = toString(path.filename());
+    auto pathString = toString(path);
+    std::string name;
+    if (pathFilename.ends_with("-uhd")) {
+        name = replaceEnd(pathFilename, 4, "");
+        if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
+
+        if (factor < 4.0f && factor >= 2.0f) {
+            if (!doesExist(replaceEnd(pathString, 4, "-hd")) && !doesExist(replaceEnd(pathString, 4, "")))
+                return printLog(name, Severity::Warning, "Ignoring high-quality icon on medium texture quality");
+            return;
+        }
+        else if (factor < 2.0f) {
+            if (!doesExist(replaceEnd(pathString, 4, "")))
+                return printLog(name, Severity::Warning, "Ignoring high-quality icon on low texture quality");
+            return;
+        }
+    }
+    else if (pathFilename.ends_with("-hd")) {
+        name = replaceEnd(pathFilename, 3, "");
+        if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
+
+        if (factor < 2.0f) {
+            if (!doesExist(replaceEnd(pathString, 3, "")))
+                return printLog(name, Severity::Warning, "Ignoring medium-quality icon on low texture quality");
+            return;
+        }
+
+        if (doesExist(replaceEnd(pathString, 3, "-uhd")) && factor >= 4.0f) return;
+    }
+    else {
+        name = pathFilename;
+        if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
+
+        if (doesExist(pathString + "-uhd") && factor >= 4.0f) return;
+        else if (doesExist(pathString + "-hd") && factor >= 2.0f) return;
+    }
 
     safeDebug("Pre-loading folder icon {} from {}", name, pack.name);
-
-    if (MoreIconsAPI::hasIcon(name, type)) return printLog(name, Severity::Warning, "Duplicate icon name");
 
     std::error_code code;
     std::filesystem::directory_iterator it(path, code);
@@ -159,73 +193,39 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
 
     std::vector<std::string> textures;
     std::vector<std::string> frameNames;
-    auto factor = CCDirector::get()->getContentScaleFactor();
 
     for (; it != std::filesystem::end(it); it.increment(code)) {
-        auto& subEntry = *it;
-        if (!subEntry.is_regular_file()) continue;
+        auto& entry = *it;
+        if (!entry.is_regular_file()) continue;
 
-        auto subEntryPath = subEntry.path();
-        if (subEntryPath.extension() != ".png") continue;
+        auto& entryPath = entry.path();
+        if (entryPath.extension() != ".png") continue;
 
-        auto pathFilename = toString(subEntryPath.filename());
-        auto pathString = toString(subEntryPath);
-        std::string frameName;
-        if (pathFilename.ends_with("-uhd.png")) {
-            frameName = replaceEnd(pathFilename, 8, ".png");
-            auto logName = fmt::format("{}/{}", name, frameName);
-
-            if (factor < 4.0f && factor >= 2.0f) {
-                if (!doesExist(replaceEnd(pathString, 8, "-hd.png")) && !doesExist(replaceEnd(pathString, 8, ".png")))
-                    printLog(logName, Severity::Warning, "Ignoring high-quality frame on medium texture quality");
-                continue;
-            }
-            else if (factor < 2.0f) {
-                if (!doesExist(replaceEnd(pathString, 8, ".png")))
-                    printLog(logName, Severity::Warning, "Ignoring high-quality frame on low texture quality");
-                continue;
-            }
-        }
-        else if (pathFilename.ends_with("-hd.png")) {
-            frameName = replaceEnd(pathFilename, 7, ".png");
-            auto logName = fmt::format("{}/{}", name, frameName);
-
-            if (factor < 2.0f) {
-                if (!doesExist(replaceEnd(pathString, 7, ".png")))
-                    printLog(logName, Severity::Warning, "Ignoring medium-quality frame for low texture quality");
-                continue;
-            }
-
-            if (doesExist(replaceEnd(pathString, 7, "-uhd.png")) && factor >= 4.0f) continue;
-        }
-        else {
-            frameName = pathFilename;
-
-            if (doesExist(replaceEnd(pathString, 4, "-uhd.png")) && factor >= 4.0f) continue;
-            else if (doesExist(replaceEnd(pathString, 4, "-hd.png")) && factor >= 2.0f) continue;
-        }
-
-        textures.push_back(pathString);
-        frameNames.push_back(MoreIconsAPI::getFrameName(frameName, name, type));
+        textures.push_back(toString(entryPath));
+        frameNames.push_back(MoreIconsAPI::getFrameName(toString(entryPath.filename()), name, type));
     }
     if (code) printLog(name, Severity::Warning, "Failed to iterate over directory: {}", code.message());
 
-    if (!textures.empty()) MoreIconsAPI::icons.push_back({
-        .name = name,
-        .textures = textures,
-        .frameNames = frameNames,
-        .sheetName = "",
-        .packName = pack.name,
-        .packID = pack.id,
-        .type = type,
-        .trailID = 0,
-        .blend = false,
-        .tint = false,
-        .show = false,
-        .fade = 0.0f,
-        .stroke = 0.0f,
-        .folderName = toString(path)
-    });
+    if (!textures.empty()) {
+        if (MoreIconsAPI::hasIcon(name, type)) return printLog(name, Severity::Warning, "Duplicate icon name");
+
+        MoreIconsAPI::icons.push_back({
+            .name = name,
+            .textures = textures,
+            .frameNames = frameNames,
+            .sheetName = "",
+            .packName = pack.name,
+            .packID = pack.id,
+            .type = type,
+            .trailID = 0,
+            .blend = false,
+            .tint = false,
+            .show = false,
+            .fade = 0.0f,
+            .stroke = 0.0f,
+            .folderName = toString(path)
+        });
+    }
 
     safeDebug("Finished pre-loading folder icon {} from {}", name, pack.name);
 }
@@ -273,14 +273,14 @@ void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconT
 
     safeDebug("Pre-loading file icon {} from {}", name, pack.name);
 
-    if (MoreIconsAPI::hasIcon(name, type)) return printLog(name, Severity::Warning, "Duplicate icon name");
+    auto texturePath = replaceEnd(pathString, 6, ".png");
+    if (!doesExist(texturePath)) return printLog(name, Severity::Error, "Texture file {}.png not found", pathStem);
 
-    auto fullTexturePath = replaceEnd(pathString, 6, ".png");
-    if (!doesExist(fullTexturePath)) return printLog(name, Severity::Error, "Texture file {}.png not found", pathStem);
+    if (MoreIconsAPI::hasIcon(name, type)) return printLog(name, Severity::Warning, "Duplicate icon name");
 
     MoreIconsAPI::icons.push_back({
         .name = name,
-        .textures = { fullTexturePath },
+        .textures = { texturePath },
         .frameNames = {},
         .sheetName = pathString,
         .packName = pack.name,
@@ -355,8 +355,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     if (MoreIconsAPI::hasIcon(name, IconType::Special)) return printLog(name, Severity::Warning, "Duplicate trail name");
 
-    auto pathString = toString(path);
-    auto json = file::readJson(replaceEnd(pathString, 4, ".json")).unwrapOr(matjson::makeObject({
+    auto json = file::readJson(std::filesystem::path(path).replace_extension(".json")).unwrapOr(matjson::makeObject({
         { "blend", false },
         { "tint", false },
         { "show", false },
@@ -366,7 +365,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     MoreIconsAPI::icons.push_back({
         .name = name,
-        .textures = { pathString },
+        .textures = { toString(path) },
         .frameNames = {},
         .sheetName = "",
         .packName = pack.name,
@@ -417,19 +416,19 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
 void createDirectories(const std::filesystem::path& path) {
     std::error_code code;
     std::filesystem::create_directories(path, code);
-    if (code) log::error("Failed to create directory {}: {}", toString(path), code.message());
+    if (code) log::error("{}: Failed to create directory: {}", path, code.message());
 }
 
 #define DIRECTORY_ITERATOR \
     std::error_code code; \
     std::filesystem::directory_iterator it(path, code); \
     if (code) { \
-        log::error("{}: Failed to create directory iterator for: {}", pathString, code.message()); \
+        log::error("{}: Failed to create directory iterator: {}", path, code.message()); \
         continue; \
     } \
     for (; it != std::filesystem::end(it); it.increment(code))
 
-#define DIRECTORY_ITERATOR_END if (code) log::error("{}: Failed to iterate over directory: {}", pathString, code.message());
+#define DIRECTORY_ITERATOR_END if (code) log::error("{}: Failed to iterate over directory: {}", path, code.message());
 
 void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view suffix, IconType type) {
     auto begin = MoreIconsAPI::icons.size();
@@ -446,14 +445,13 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
                 continue;
             }
 
-            auto pathString = toString(path);
             if (i == 0) {
                 std::error_code code;
                 std::filesystem::permissions(path, std::filesystem::perms::all, code);
-                if (code) log::error("Failed to set permissions for {}: {}", pathString, code.message());
+                if (code) log::error("{}: Failed to change permissions: {}", path, code.message());
             }
 
-            log::info("Pre-loading {}s from {}", suffix, pathString);
+            log::info("Pre-loading {}s from {}", suffix, path);
 
             DIRECTORY_ITERATOR {
                 auto& entry = *it;
@@ -465,14 +463,13 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
             }
             DIRECTORY_ITERATOR_END
 
-            log::info("Finished pre-loading {}s from {}", suffix, pathString);
+            log::info("Finished pre-loading {}s from {}", suffix, path);
         }
         else if (traditionalPacks) {
             auto path = pack.path / "icons";
             if (!doesExist(path)) continue;
-            auto pathString = toString(path);
 
-            log::info("Pre-loading {}s from {}", suffix, pathString);
+            log::info("Pre-loading {}s from {}", suffix, path);
 
             DIRECTORY_ITERATOR {
                 auto& entry = *it;
@@ -488,7 +485,7 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
             }
             DIRECTORY_ITERATOR_END
 
-            log::info("Finished pre-loading {}s from {}", suffix, pathString);
+            log::info("Finished pre-loading {}s from {}", suffix, path);
         }
     }
 
@@ -527,14 +524,13 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
                 continue;
             }
 
-            auto pathString = toString(path);
             if (i == 0) {
                 std::error_code code;
                 std::filesystem::permissions(path, std::filesystem::perms::all, code);
-                if (code) log::error("Failed to set permissions for {}: {}", pathString, code.message());
+                if (code) log::error("{}: Failed to change permissions: {}", path, code.message());
             }
 
-            log::info("Pre-loading trails from {}", pathString);
+            log::info("Pre-loading trails from {}", path);
 
             DIRECTORY_ITERATOR {
                 auto& entry = *it;
@@ -547,13 +543,12 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
             }
             DIRECTORY_ITERATOR_END
 
-            log::info("Finished pre-loading trails from {}", pathString);
+            log::info("Finished pre-loading trails from {}", path);
         }
         else if (traditionalPacks) {
             auto& path = pack.path;
-            auto pathString = toString(path);
 
-            log::info("Pre-loading trails from {}", pathString);
+            log::info("Pre-loading trails from {}", path);
 
             auto trailCount = GameManager::get()->countForType(IconType::Special);
             DIRECTORY_ITERATOR {
@@ -571,7 +566,7 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
             }
             DIRECTORY_ITERATOR_END
 
-            log::info("Finished pre-loading trails from {}", pathString);
+            log::info("Finished pre-loading trails from {}", path);
         }
     }
 
@@ -598,12 +593,12 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
 void MoreIcons::saveTrails() {
     for (auto& info : MoreIconsAPI::icons) {
         if (info.type != IconType::Special || info.trailID > 0) continue;
-        (void)file::writeToJson(replaceEnd(info.textures[0], 4, ".json"), matjson::makeObject({
+        (void)file::writeToJson(std::filesystem::path(info.textures[0]).replace_extension(".json"), matjson::makeObject({
             { "blend", info.blend },
             { "tint", info.tint },
             { "show", info.show },
             { "fade", info.fade },
             { "stroke", info.stroke }
-        })).inspectErr([](const std::string& err) { log::error("Failed to save trail JSON: {}", err); });
+        })).inspectErr([info](const std::string& err) { log::error("{}: Failed to save trail info: {}", info.name, err); });
     }
 }
