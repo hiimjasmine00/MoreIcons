@@ -371,7 +371,8 @@ void EditIconPopup::pickFile(int index, int type, bool plist) {
     m_listener.bind([this, index, type, plist](Task<Result<std::filesystem::path>>::Event* e) {
         if (auto res = e->getValue(); res && res->isOk()) {
             m_path = res->unwrap();
-            if ((plist && m_path.extension() != ".plist") || (!plist && m_path.extension() != ".png")) return;
+            if ((plist && m_path.extension() != ".plist") || (!plist && m_path.extension() != ".png"))
+                return Notification::create(fmt::format("Please select a {} file.", plist ? "Plist" : "PNG"), NotificationIcon::Info)->show();
 
             if (plist) {
                 if (auto sheet = MoreIconsAPI::createDictionary(m_path, false)) {
@@ -403,13 +404,16 @@ void EditIconPopup::pickFile(int index, int type, bool plist) {
                         CC_SAFE_RELEASE(m_texture);
                         m_texture = nullptr;
                     }
+                    else Notification::create("Failed to load frames.", NotificationIcon::Error)->show();
 
                     sheet->release();
                 }
+                else Notification::create("Failed to load sheet.", NotificationIcon::Error)->show();
             }
             else {
                 auto imageRes = texpack::fromPNG(m_path);
-                if (imageRes.isErr()) return;
+                if (imageRes.isErr())
+                    return Notification::create(fmt::format("Failed to load image: {}", imageRes.unwrapErr()), NotificationIcon::Error)->show();
 
                 auto image = imageRes.unwrap();
                 auto texture = new CCTexture2D();
@@ -523,15 +527,13 @@ void EditIconPopup::updateSprites() {
     }
 }
 
-std::tuple<std::vector<uint8_t>, int, int> getImageData(cocos2d::CCSprite* sprite) {
+texpack::Image getImage(cocos2d::CCSprite* sprite) {
     auto director = CCDirector::get();
     auto size = sprite->getContentSize() * director->getContentScaleFactor();
-    int width = size.width;
-    int height = size.height;
-    auto texture = 0u;
-    auto oldFBO = 0;
-    auto fbo = 0u;
+    uint32_t width = size.width;
+    uint32_t height = size.height;
 
+    auto texture = 0u;
     glPixelStorei(GL_PACK_ALIGNMENT, 8);
     glGenTextures(1, &texture);
     ccGLBindTexture2D(texture);
@@ -539,6 +541,8 @@ std::tuple<std::vector<uint8_t>, int, int> getImageData(cocos2d::CCSprite* sprit
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
+    auto oldFBO = 0;
+    auto fbo = 0u;
     glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFBO);
     glGenFramebuffers(1, &fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo);
@@ -547,7 +551,10 @@ std::tuple<std::vector<uint8_t>, int, int> getImageData(cocos2d::CCSprite* sprit
     auto winSize = director->getWinSizeInPixels();
     glViewport(0, 0, winSize.width, winSize.height);
 
+    auto blendFunc = sprite->getBlendFunc();
+    sprite->setBlendFunc({ GL_ONE, GL_ZERO });
     sprite->draw();
+    sprite->setBlendFunc(blendFunc);
 
     std::vector<uint8_t> data(width * height * 4);
     glPixelStorei(GL_PACK_ALIGNMENT, 1);
@@ -559,9 +566,7 @@ std::tuple<std::vector<uint8_t>, int, int> getImageData(cocos2d::CCSprite* sprit
     glDeleteFramebuffers(1, &fbo);
 
     for (int y = 0; y < height / 2; y++) {
-        for (int x = 0; x < width * 4; x++) {
-            std::swap(data[y * width * 4 + x], data[(height - y - 1) * width * 4 + x]);
-        }
+        std::swap_ranges(data.begin() + y * width * 4, data.begin() + (y + 1) * width * 4, data.end() - (y + 1) * width * 4);
     }
 
     return { data, width, height };
@@ -570,9 +575,7 @@ std::tuple<std::vector<uint8_t>, int, int> getImageData(cocos2d::CCSprite* sprit
 void EditIconPopup::saveTrail(const std::filesystem::path& path) {
     auto iconName = m_textInput->getString();
 
-    auto [data, width, height] = getImageData(m_streak);
-
-    if (auto res = texpack::toPNG(path, data.data(), width, height); res.isErr())
+    if (auto res = texpack::toPNG(path, getImage(m_streak)); res.isErr())
         return Notification::create(fmt::format("Failed to save {}: {}", iconName, res.unwrapErr()), NotificationIcon::Error)->show();
 
     Notification::create(fmt::format("{} saved!", iconName), NotificationIcon::Success)->show();
@@ -603,8 +606,7 @@ void EditIconPopup::saveIcon(const std::filesystem::path& png, const std::filesy
 
     texpack::Packer packer;
     for (auto [key, _] : CCDictionaryExt<std::string, CCSpriteFrame*>(m_frames)) {
-        auto [data, width, height] = getImageData(static_cast<CCSprite*>(m_sprites->objectForKey(key)));
-        packer.frame(iconName + key, data.data(), width, height);
+        packer.frame(iconName + key, getImage(static_cast<CCSprite*>(m_sprites->objectForKey(key))));
     }
 
     if (auto res = packer.pack(); res.isErr())

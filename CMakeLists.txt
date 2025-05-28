@@ -3,13 +3,11 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if ("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS" OR IOS)
     set(CMAKE_OSX_ARCHITECTURES "arm64")
-    add_definitions(-DGLES_SILENCE_DEPRECATION)
 else()
     set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64")
 endif()
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
-set(GEODE_CODEGEN_EXTRA_ARGS "--skip-pugixml")
 
 project(MoreIcons VERSION 1.13.1)
 
@@ -31,7 +29,7 @@ endif()
 
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
-CPMAddPackage("gh:hiimjasmine00/texpack@0.1.1")
+CPMAddPackage("gh:hiimjasmine00/texpack@0.2.0")
 target_link_libraries(${PROJECT_NAME} texpack)
 
 setup_geode_mod(${PROJECT_NAME})

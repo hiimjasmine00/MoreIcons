@@ -20,7 +20,7 @@ public:
     static std::string getFrameName(const std::string& name, const std::string& prefix, IconType type);
     static void loadIcon(const std::string& name, IconType type, int requestID);
     static void loadIconAsync(const IconInfo& info);
-    static void finishLoadIcons();
+    static int finishLoadIcons();
     static void unloadIcon(const std::string& name, IconType type, int requestID);
     static void unloadIcons(int requestID);
     static void updateSimplePlayer(SimplePlayer* player, IconType type, bool dual);

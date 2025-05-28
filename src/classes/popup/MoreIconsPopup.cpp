@@ -80,7 +80,9 @@ bool MoreIconsPopup::setup() {
 
         auto icon = GJItemIcon::createBrowserItem(unlock,
             dual ? sdi->getSavedValue<int>(types[(int)unlock], 1) : gameManager->activeIconForType(type));
-        if (type <= IconType::Jetpack) queueInMainThread([icon = Ref(icon), type, dual, gameManager, sdi] {
+        if (type <= IconType::Jetpack) queueInMainThread([iconref = WeakRef(icon), type, dual, gameManager, sdi] {
+            auto icon = iconref.lock();
+            if (!icon) return;
             auto player = static_cast<SimplePlayer*>(icon->m_player);
             MoreIconsAPI::updateSimplePlayer(player, type, dual);
             player->setColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color1", 0) : gameManager->m_playerColor));

@@ -1,9 +1,9 @@
 # More Icons Changelog
-## v1.13.1 (2025-05-26)
+## v1.13.1 (2025-05-28)
 - Added a setting to preload all icon textures ([#30](https://github.com/hiimjasmine00/MoreIcons/issues/30))
 - Improved the loading of the icon viewer
 - Added notifications to the icon viewer when files cannot be imported
-- Added info buttons to the More Icons popup, the icon viewer, and the log viewer
+- Fixed blending issues while exporting icons in the icon editor
 - Fixed a possible crash with the vanilla icon viewer on Android while using medium or low texture quality
 - Fixed a crash when opening the More Icons popup after installing Separate Dual Icons (Reported by [Zilko](user:10300913))
 - Fixed a crash when importing a malformed plist file into the icon editor

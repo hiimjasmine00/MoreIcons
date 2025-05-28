@@ -14,7 +14,8 @@ private:
     std::queue<std::function<void()>> m_tasks;
     std::unique_ptr<std::thread[]> m_threads;
     std::unique_ptr<std::atomic_bool[]> m_threadsBusy;
-    std::condition_variable m_condvar;
+    //std::condition_variable m_condvar;
+    std::atomic_size_t m_spinCount = 0;
     std::atomic_bool m_requestedStop;
 
     void threadFunc(size_t idx);

@@ -9,10 +9,6 @@
 
 using namespace geode::prelude;
 
-std::string toString(const std::filesystem::path& path) {
-    return GEODE_WINDOWS(string::wideToUtf8)(path);
-}
-
 bool doesExist(const std::filesystem::path& path) {
     std::error_code code;
     auto exists = std::filesystem::exists(path, code);
@@ -70,7 +66,7 @@ std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuff
         return path;
     }
     #endif
-    return toString(dirs::getResourcesDir() / path);
+    return string::pathToString(dirs::getResourcesDir() / path);
 }
 
 bool naturalSorter(const std::string& aStr, const std::string& bStr) {
@@ -147,8 +143,8 @@ void safeDebug(fmt::format_string<Args...> message, Args&&... args) {
 
 void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, IconType type) {
     auto factor = CCDirector::get()->getContentScaleFactor();
-    auto pathFilename = toString(path.filename());
-    auto pathString = toString(path);
+    auto pathFilename = string::pathToString(path.filename());
+    auto pathString = string::pathToString(path);
     std::string name;
     if (pathFilename.ends_with("-uhd")) {
         name = replaceEnd(pathFilename, 4, "");
@@ -201,8 +197,8 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
         auto& entryPath = entry.path();
         if (entryPath.extension() != ".png") continue;
 
-        textures.push_back(toString(entryPath));
-        frameNames.push_back(MoreIconsAPI::getFrameName(toString(entryPath.filename()), name, type));
+        textures.push_back(string::pathToString(entryPath));
+        frameNames.push_back(MoreIconsAPI::getFrameName(string::pathToString(entryPath.filename()), name, type));
     }
     if (code) printLog(name, Severity::Warning, "Failed to iterate over directory: {}", code.message());
 
@@ -223,7 +219,7 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
             .show = false,
             .fade = 0.0f,
             .stroke = 0.0f,
-            .folderName = toString(path)
+            .folderName = string::pathToString(path)
         });
     }
 
@@ -232,9 +228,9 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
 
 void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconType type) {
     auto factor = CCDirector::get()->getContentScaleFactor();
-    auto pathFilename = toString(path.filename());
-    auto pathStem = toString(path.stem());
-    auto pathString = toString(path);
+    auto pathFilename = string::pathToString(path.filename());
+    auto pathStem = string::pathToString(path.stem());
+    auto pathString = string::pathToString(path);
     std::string name;
     if (pathFilename.ends_with("-uhd.plist")) {
         name = replaceEnd(pathStem, 4, "");
@@ -300,9 +296,9 @@ void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconT
 
 void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack, IconType type) {
     auto factor = CCDirector::get()->getContentScaleFactor();
-    auto pathFilename = toString(path.filename());
-    auto pathStem = toString(path.stem());
-    auto pathString = toString(path);
+    auto pathFilename = string::pathToString(path.filename());
+    auto pathStem = string::pathToString(path.stem());
+    auto pathString = string::pathToString(path);
     std::string name;
     if (pathFilename.ends_with("-uhd.png")) {
         if (factor < 4.0f) return;
@@ -348,7 +344,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack, Ic
 }
 
 void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
-    auto pathStem = toString(path.stem());
+    auto pathStem = string::pathToString(path.stem());
     auto name = pack.id.empty() ? pathStem : fmt::format("{}:{}", pack.id, pathStem);
 
     safeDebug("Pre-loading trail {} from {}", name, pack.name);
@@ -365,7 +361,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     MoreIconsAPI::icons.push_back({
         .name = name,
-        .textures = { toString(path) },
+        .textures = { string::pathToString(path) },
         .frameNames = {},
         .sheetName = "",
         .packName = pack.name,
@@ -384,7 +380,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 }
 
 void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
-    auto pathStem = toString(path.stem());
+    auto pathStem = string::pathToString(path.stem());
     auto name = fmt::format("{}:{}", pack.id, pathStem);
 
     safeDebug("Pre-loading vanilla trail {} from {}", name, pack.name);
@@ -395,7 +391,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     MoreIconsAPI::icons.push_back({
         .name = name,
-        .textures = { toString(path) },
+        .textures = { string::pathToString(path) },
         .frameNames = {},
         .sheetName = "",
         .packName = pack.name,
@@ -478,7 +474,7 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
                 auto& entryPath = entry.path();
                 if (entryPath.extension() != ".png") continue;
 
-                auto filename = toString(entryPath.filename());
+                auto filename = string::pathToString(entryPath.filename());
                 if (!filename.starts_with(prefixes[(int)type]) || (type == IconType::Cube && filename.starts_with("player_ball_"))) continue;
 
                 loadVanillaIcon(entryPath, pack, type);
@@ -503,9 +499,9 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
         }
 
         ThreadPool::get().wait();
-        MoreIconsAPI::finishLoadIcons();
 
-        log::info("Finished pre-loading {} {} textures", size, suffix);
+        auto loaded = MoreIconsAPI::finishLoadIcons();
+        log::info("Finished pre-loading {} {} textures, {} remaining", loaded, suffix, size - loaded);
     }
 }
 
@@ -556,7 +552,7 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
                 if (!entry.is_regular_file()) continue;
 
                 auto& entryPath = entry.path();
-                auto filename = toString(entryPath.filename());
+                auto filename = string::pathToString(entryPath.filename());
                 for (int i = 1; i <= trailCount; i++) {
                     if (filename == fmt::format("streak_{:02}_001.png", i)) {
                         loadVanillaTrail(entryPath, pack);
@@ -584,9 +580,9 @@ void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
         }
 
         ThreadPool::get().wait();
-        MoreIconsAPI::finishLoadIcons();
 
-        log::info("Finished pre-loading {} trail textures", size);
+        auto loaded = MoreIconsAPI::finishLoadIcons();
+        log::info("Finished pre-loading {} trail textures, {} remaining", loaded, size - loaded);
     }
 }
 

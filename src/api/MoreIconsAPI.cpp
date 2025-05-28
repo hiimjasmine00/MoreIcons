@@ -280,9 +280,10 @@ void MoreIconsAPI::loadIconAsync(const IconInfo& info) {
     });
 }
 
-void MoreIconsAPI::finishLoadIcons() {
+int MoreIconsAPI::finishLoadIcons() {
     std::unique_lock lock(imageMutex);
 
+    auto loaded = 0;
     auto textureCache = CCTextureCache::get();
     auto spriteFrameCache = CCSpriteFrameCache::get();
     for (auto& image : images) {
@@ -294,7 +295,10 @@ void MoreIconsAPI::finishLoadIcons() {
         textureCache->m_pTextures->setObject(texture, image.name);
         texture->release();
 
-        if (!image.frames) continue;
+        if (!image.frames) {
+            loaded++;
+            continue;
+        }
 
         for (auto [frameName, frame] : CCDictionaryExt<std::string, CCSpriteFrame*>(image.frames)) {
             frame->setTexture(texture);
@@ -302,9 +306,11 @@ void MoreIconsAPI::finishLoadIcons() {
         }
 
         image.frames->release();
+        loaded++;
     }
 
     images.clear();
+    return loaded;
 }
 
 void unloadFolderIcon(const IconInfo& info) {
@@ -671,7 +677,7 @@ CCDictionary* MoreIconsAPI::createDictionary(const std::filesystem::path& path, 
         return CCDictionary::createWithContentsOfFileThreadSafe(path.c_str());
     }
     #endif
-    return CCDictionary::createWithContentsOfFileThreadSafe(GEODE_WINDOWS(string::wideToUtf8)(path).c_str());
+    return CCDictionary::createWithContentsOfFileThreadSafe(string::pathToString(path).c_str());
 }
 
 std::vector<uint8_t> MoreIconsAPI::getFileData(const std::string& path) {

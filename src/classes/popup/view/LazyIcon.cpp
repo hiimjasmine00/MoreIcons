@@ -281,7 +281,7 @@ void loadSheet(const std::string& png, const std::string& plist, const std::stri
             callback("Failed to read image", "", {});
         });
 
-        auto image = texpack::fromPNG(data.data(), data.size());
+        auto image = texpack::fromPNG(data);
         if (image.isErr()) return queueInMainThread([err = image.unwrapErr(), callback = std::move(callback)] {
             callback(err, "", {});
         });
@@ -409,15 +409,15 @@ void LazyIcon::visit() {
             textureNames.second,
             m_info ? m_info->name : "",
             m_type,
-            [self = Ref(this)](const std::string& err, const std::string& texture, const std::vector<std::string>& frames) {
-                self->createIcon(err, texture, frames);
+            [selfref = WeakRef(this)](const std::string& err, const std::string& texture, const std::vector<std::string>& frames) {
+                if (auto self = selfref.lock()) self->createIcon(err, texture, frames);
             }
         );
     }
     else if (!m_info->folderName.empty()) loadImages(
         m_info,
-        [self = Ref(this)](const std::string& err, const std::string& texture, const std::vector<std::string>& frames) {
-            self->createIcon(err, texture, frames);
+        [selfref = WeakRef(this)](const std::string& err, const std::string& texture, const std::vector<std::string>& frames) {
+            if (auto self = selfref.lock()) self->createIcon(err, texture, frames);
         }
     );
 }
