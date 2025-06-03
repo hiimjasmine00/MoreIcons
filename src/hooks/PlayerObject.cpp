@@ -9,7 +9,7 @@ using namespace geode::prelude;
     void funcName(int frame) { \
         auto mainPlayer = frame != 0 && (p1() || p2()); \
         std::string iconName; \
-        if (mainPlayer && MoreIconsAPI::requestedIcons.contains(m_iconRequestID)) { \
+        if (mainPlayer && !MoreIconsAPI::preloadIcons && MoreIconsAPI::requestedIcons.contains(m_iconRequestID)) { \
             auto& iconRequests = MoreIconsAPI::requestedIcons[m_iconRequestID]; \
             if (iconRequests.contains(type)) iconName = iconRequests[type]; \
         } \
@@ -42,10 +42,10 @@ class $modify(MIPlayerObject, PlayerObject) {
     bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool ignoreDamage) {
         if (!PlayerObject::init(player, ship, gameLayer, layer, ignoreDamage)) return false;
 
-        if (!p1() && !p2()) return true;
-
-        updateIcon(IconType::Cube);
-        updateIcon(IconType::Ship);
+        if (p1() || p2()) {
+            updateIcon(IconType::Cube);
+            updateIcon(IconType::Ship);
+        }
 
         return true;
     }
@@ -61,7 +61,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     UPDATE_HOOK(updatePlayerJetpackFrame, IconType::Jetpack)
 
     void resetTrail() {
-        if (m_regularTrail->getUserObject("name"_spr)) m_regularTrail->setUserObject("name"_spr, nullptr);
+        m_regularTrail->setUserObject("name"_spr, nullptr);
         if (!MoreIcons::traditionalPacks || (Loader::get()->isModLoaded("acaruso.pride") && m_playerStreak == 2)) return;
         m_regularTrail->setTexture(CCTextureCache::get()->addImage(
             MoreIcons::vanillaTexturePath(fmt::format("streak_{:02}_001.png", m_playerStreak), true).c_str(), false));

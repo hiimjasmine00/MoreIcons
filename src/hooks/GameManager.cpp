@@ -12,6 +12,7 @@ class $modify(MIGameManager, GameManager) {
             hook->setAutoEnable(Mod::get()->getSettingValue<bool>("traditional-packs"));
             sheetHook = hook;
         }).inspectErr([](const std::string& err) { log::error("Failed to get GameManager::sheetNameForIcon hook: {}", err); });
+        (void)self.setHookPriority("GameManager::loadIcon", 999999999);
     }
 
     void reloadAllStep2() {
@@ -61,31 +62,7 @@ class $modify(MIGameManager, GameManager) {
     }
 
     CCTexture2D* loadIcon(int id, int type, int requestID) {
-        auto ret = GameManager::loadIcon(id, type, requestID);
-        if (!ret) return ret;
-
-        if (MoreIconsAPI::requestedIcons.contains(requestID)) {
-            auto iconType = (IconType)type;
-            auto& icons = MoreIconsAPI::requestedIcons[requestID];
-            if (icons.contains(iconType)) MoreIconsAPI::unloadIcon(icons[iconType], iconType, requestID);
-        }
-
-        return ret;
-    }
-
-    void unloadIcons(int requestID) {
-        GameManager::unloadIcons(requestID);
-        MoreIconsAPI::unloadIcons(requestID);
-    }
-};
-
-class $modify(MIGameManager2, GameManager) {
-    static void onModify(ModifyBase<ModifyDerive<MIGameManager2, GameManager>>& self) {
-        (void)self.setHookPriority("GameManager::loadIcon", 999999999);
-    }
-
-    CCTexture2D* loadIcon(int id, int type, int requestID) {
-        std::string sheetName = sheetNameForIcon(id, type);
+        std::string sheetName = GameManager::sheetNameForIcon(id, type);
         if (sheetName.empty()) return nullptr;
 
         CCTexture2D* texture = nullptr;
@@ -106,6 +83,17 @@ class $modify(MIGameManager2, GameManager) {
             m_iconRequests[requestID][type] = id;
         }
 
+        if (MoreIconsAPI::requestedIcons.contains(requestID)) {
+            auto iconType = (IconType)type;
+            auto& icons = MoreIconsAPI::requestedIcons[requestID];
+            if (icons.contains(iconType)) MoreIconsAPI::unloadIcon(icons[iconType], iconType, requestID);
+        }
+
         return texture;
+    }
+
+    void unloadIcons(int requestID) {
+        GameManager::unloadIcons(requestID);
+        MoreIconsAPI::unloadIcons(requestID);
     }
 };

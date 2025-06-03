@@ -9,7 +9,7 @@ endif()
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
 
-project(MoreIcons VERSION 1.13.1)
+project(MoreIcons VERSION 1.13.2)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
@@ -29,7 +29,7 @@ endif()
 
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
-CPMAddPackage("gh:hiimjasmine00/texpack@0.2.0")
+CPMAddPackage("gh:hiimjasmine00/texpack@0.2.1")
 target_link_libraries(${PROJECT_NAME} texpack)
 
 setup_geode_mod(${PROJECT_NAME})

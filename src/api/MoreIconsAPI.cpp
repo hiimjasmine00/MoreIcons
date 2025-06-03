@@ -236,8 +236,10 @@ void loadFileIcon(const IconInfo& info, bool async) {
 
     auto spriteFrameCache = CCSpriteFrameCache::get();
     for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(frames)) {
-        if (auto spriteFrame = MoreIconsAPI::createSpriteFrame(dict, texture, format))
+        if (auto spriteFrame = MoreIconsAPI::createSpriteFrame(dict, texture, format)) {
             spriteFrameCache->addSpriteFrame(spriteFrame, MoreIconsAPI::getFrameName(frame, info.name, info.type).c_str());
+            spriteFrame->release();
+        }
     }
 
     sheet->release();
@@ -533,113 +535,107 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& i
     }
 }
 
-std::vector<float> floatsFromString(const std::string& str) {
-    return ranges::map<std::vector<float>>(string::split(string::replace(string::replace(str, "{", ""), "}", ""), ","),
-        [](const std::string& s) { return numFromString<float>(s).unwrapOr(0.0f); });
+std::vector<float> floatsFromString(const std::string& str, int count) {
+    std::vector<float> result;
+    std::string temp;
+    for (auto& c : str) {
+        if (c == '{' || c == '}') continue;
+        else if (c == ',') {
+            if (!temp.empty()) {
+                result.push_back(numFromString<float>(temp).unwrapOr(0.0f));
+                temp.clear();
+                if (result.size() >= count) break;
+            }
+        }
+        else temp += c;
+    }
+    if (!temp.empty()) result.push_back(numFromString<float>(temp).unwrapOr(0.0f));
+    if (result.size() < count) result.resize(count, 0.0f);
+    return result;
 }
 
-CCPoint pointFromString(const CCString* str) {
+CCPoint pointFromString(CCDictionary* dict, std::string_view key) {
+    auto str = dict ? dict->valueForKey(std::string(key)) : nullptr;
     if (!str) return { 0.0f, 0.0f };
-    auto floats = floatsFromString(str->m_sString);
-    return {
-        floats.size() > 0 ? floats[0] : 0.0f,
-        floats.size() > 1 ? floats[1] : 0.0f
-    };
+    auto floats = floatsFromString(str->m_sString, 2);
+    return { floats[0], floats[1] };
 }
 
-CCSize sizeFromString(const CCString* str) {
+CCSize sizeFromString(CCDictionary* dict, std::string_view key) {
+    auto str = dict ? dict->valueForKey(std::string(key)) : nullptr;
     if (!str) return { 0.0f, 0.0f };
-    auto floats = floatsFromString(str->m_sString);
-    return {
-        floats.size() > 0 ? floats[0] : 0.0f,
-        floats.size() > 1 ? floats[1] : 0.0f
-    };
+    auto floats = floatsFromString(str->m_sString, 2);
+    return { floats[0], floats[1] };
 }
 
-CCRect rectFromString(const CCString* str) {
+CCRect rectFromString(CCDictionary* dict, std::string_view key) {
+    auto str = dict ? dict->valueForKey(std::string(key)) : nullptr;
     if (!str) return { 0.0f, 0.0f, 0.0f, 0.0f };
-    auto floats = floatsFromString(str->m_sString);
-    return {
-        floats.size() > 0 ? floats[0] : 0.0f,
-        floats.size() > 1 ? floats[1] : 0.0f,
-        floats.size() > 2 ? floats[2] : 0.0f,
-        floats.size() > 3 ? floats[3] : 0.0f
-    };
+    auto floats = floatsFromString(str->m_sString, 4);
+    return { floats[0], floats[1], floats[2], floats[3] };
 }
 
-bool boolValue(const CCString* str) {
-    if (!str) return false;
-    return str->m_sString != "0" && str->m_sString != "false";
+bool boolValue(CCDictionary* dict, std::string_view key) {
+    auto str = dict ? dict->valueForKey(std::string(key)) : nullptr;
+    return str && !str->m_sString.empty() && str->m_sString != "0" && str->m_sString != "false";
 }
 
-int intValue(const CCString* str) {
-    if (!str) return 0;
-    return numFromString<int>(str->m_sString).unwrapOr(0);
+int intValue(CCDictionary* dict, std::string_view key) {
+    auto str = dict ? dict->valueForKey(std::string(key)) : nullptr;
+    return str ? numFromString<int>(str->m_sString).unwrapOr(0) : 0;
 }
 
-float floatValue(const CCString* str) {
-    if (!str) return 0.0f;
-    return numFromString<float>(str->m_sString).unwrapOr(0.0f);
+float floatValue(CCDictionary* dict, std::string_view key) {
+    auto str = dict ? dict->valueForKey(std::string(key)) : nullptr;
+    return str ? numFromString<float>(str->m_sString).unwrapOr(0.0f) : 0.0f;
 }
 
 CCSpriteFrame* MoreIconsAPI::createSpriteFrame(CCDictionary* dict, CCTexture2D* texture, int format) {
     if (!dict || format < 0 || format > 3) return nullptr;
 
     auto spriteFrame = new CCSpriteFrame();
+
     switch (format) {
         case 0:
-            spriteFrame->initWithTexture(
-                texture,
-                {
-                    floatValue(dict->valueForKey("x")),
-                    floatValue(dict->valueForKey("y")),
-                    floatValue(dict->valueForKey("width")),
-                    floatValue(dict->valueForKey("height"))
-                },
-                false,
-                {
-                    floatValue(dict->valueForKey("offsetX")),
-                    floatValue(dict->valueForKey("offsetY"))
-                },
-                {
-                    (float)abs(intValue(dict->valueForKey("originalWidth"))),
-                    (float)abs(intValue(dict->valueForKey("originalHeight")))
-                }
-            );
+            spriteFrame->m_obRectInPixels.origin.x = floatValue(dict, "x");
+            spriteFrame->m_obRectInPixels.origin.y = floatValue(dict, "y");
+            spriteFrame->m_obRectInPixels.size.width = floatValue(dict, "width");
+            spriteFrame->m_obRectInPixels.size.height = floatValue(dict, "height");
+            spriteFrame->m_bRotated = false;
+            spriteFrame->m_obOffsetInPixels.x = floatValue(dict, "offsetX");
+            spriteFrame->m_obOffsetInPixels.y = floatValue(dict, "offsetY");
+            spriteFrame->m_obOriginalSizeInPixels.width = abs(intValue(dict, "originalWidth"));
+            spriteFrame->m_obOriginalSizeInPixels.height = abs(intValue(dict, "originalHeight"));
             break;
         case 1:
-            spriteFrame->initWithTexture(
-                texture,
-                rectFromString(dict->valueForKey("frame")),
-                false,
-                pointFromString(dict->valueForKey("offset")),
-                sizeFromString(dict->valueForKey("sourceSize"))
-            );
+            spriteFrame->m_obRectInPixels = rectFromString(dict, "frame");
+            spriteFrame->m_bRotated = false;
+            spriteFrame->m_obOffsetInPixels = pointFromString(dict, "offset");
+            spriteFrame->m_obOriginalSizeInPixels = sizeFromString(dict, "sourceSize");
             break;
         case 2:
-            spriteFrame->createWithTexture(
-                texture,
-                rectFromString(dict->valueForKey("frame")),
-                boolValue(dict->valueForKey("rotated")),
-                pointFromString(dict->valueForKey("offset")),
-                sizeFromString(dict->valueForKey("sourceSize"))
-            );
+            spriteFrame->m_obRectInPixels = rectFromString(dict, "frame");
+            spriteFrame->m_bRotated = boolValue(dict, "rotated");
+            spriteFrame->m_obOffsetInPixels = pointFromString(dict, "offset");
+            spriteFrame->m_obOriginalSizeInPixels = sizeFromString(dict, "sourceSize");
             break;
         case 3:
-            spriteFrame->initWithTexture(
-                texture,
-                {
-                    pointFromString(dict->valueForKey("textureRect")),
-                    sizeFromString(dict->valueForKey("spriteSize"))
-                },
-                boolValue(dict->valueForKey("textureRotated")),
-                pointFromString(dict->valueForKey("spriteOffset")),
-                sizeFromString(dict->valueForKey("spriteSourceSize"))
-            );
+            spriteFrame->m_obRectInPixels.origin = pointFromString(dict, "textureRect");
+            spriteFrame->m_obRectInPixels.size = sizeFromString(dict, "spriteSize");
+            spriteFrame->m_bRotated = boolValue(dict, "textureRotated");
+            spriteFrame->m_obOffsetInPixels = pointFromString(dict, "spriteOffset");
+            spriteFrame->m_obOriginalSizeInPixels = sizeFromString(dict, "spriteSourceSize");
             break;
     }
 
-    if (texture) spriteFrame->autorelease();
+    auto factor = CCDirector::get()->getContentScaleFactor();
+    spriteFrame->m_obOffset = spriteFrame->m_obOffsetInPixels / factor;
+    spriteFrame->m_obOriginalSize = spriteFrame->m_obOriginalSizeInPixels / factor;
+    spriteFrame->m_obRect.origin = spriteFrame->m_obRectInPixels.origin / factor;
+    spriteFrame->m_obRect.size = spriteFrame->m_obRectInPixels.size / factor;
+    spriteFrame->m_pobTexture = texture;
+    CC_SAFE_RETAIN(texture);
+
     return spriteFrame;
 }
 

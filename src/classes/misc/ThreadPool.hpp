@@ -3,7 +3,7 @@
 #include <thread>
 #include <mutex>
 
-// https://github.com/geode-sdk/geode/blob/v4.4.0/loader/src/ui/nodes/LazySprite.cpp
+// https://github.com/geode-sdk/geode/blob/v4.5.0/loader/src/ui/nodes/LazySprite.cpp
 
 class ThreadPool {
 private:
@@ -14,7 +14,6 @@ private:
     std::queue<std::function<void()>> m_tasks;
     std::unique_ptr<std::thread[]> m_threads;
     std::unique_ptr<std::atomic_bool[]> m_threadsBusy;
-    //std::condition_variable m_condvar;
     std::atomic_size_t m_spinCount = 0;
     std::atomic_bool m_requestedStop;
 

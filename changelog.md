@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v1.13.2 (2025-06-02)
+- Fixed some image processing issues
+
 ## v1.13.1 (2025-05-28)
 - Added a setting to preload all icon textures ([#30](https://github.com/hiimjasmine00/MoreIcons/issues/30))
 - Improved the loading of the icon viewer
