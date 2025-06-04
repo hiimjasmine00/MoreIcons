@@ -18,7 +18,7 @@ public:
     static int getCount(IconType type);
     static bool hasIcon(const std::string& icon, IconType type);
     static std::string getFrameName(const std::string& name, const std::string& prefix, IconType type);
-    static void loadIcon(const std::string& name, IconType type, int requestID);
+    static cocos2d::CCTexture2D* loadIcon(const std::string& name, IconType type, int requestID);
     static void loadIconAsync(const IconInfo& info);
     static int finishLoadIcons();
     static void unloadIcon(const std::string& name, IconType type, int requestID);

@@ -135,7 +135,7 @@ struct Image {
 std::mutex imageMutex;
 std::vector<Image> images;
 
-void loadFolderIcon(const IconInfo& info, bool async) {
+CCTexture2D* loadFolderIcon(const IconInfo& info, bool async) {
     texpack::Packer packer;
     auto& folderName = info.folderName;
 
@@ -144,11 +144,17 @@ void loadFolderIcon(const IconInfo& info, bool async) {
         auto res = packer.frame(frameName, info.textures[i]).mapErr([&frameName](const std::string& err) {
             return fmt::format("{}: {}", frameName, err);
         });
-        if (res.isErr()) return log::error("{}: {}", folderName, res.unwrapErr());
+        if (res.isErr()) {
+            log::error("{}: {}", folderName, res.unwrapErr());
+            return nullptr;
+        }
     }
 
     auto packRes = packer.pack();
-    if (packRes.isErr()) return log::error("{}: {}", folderName, packRes.unwrapErr());
+    if (packRes.isErr()) {
+        log::error("{}: {}", folderName, packRes.unwrapErr());
+        return nullptr;
+    }
 
     auto& image = packer.image();
 
@@ -169,7 +175,8 @@ void loadFolderIcon(const IconInfo& info, bool async) {
 
         std::unique_lock lock(imageMutex);
 
-        return images.push_back({ info.folderName, image.data, frames, image.width, image.height });
+        images.push_back({ info.folderName, image.data, frames, image.width, image.height });
+        return nullptr;
     }
 
     auto texture = new CCTexture2D();
@@ -190,21 +197,33 @@ void loadFolderIcon(const IconInfo& info, bool async) {
             { (float)frame.size.width, (float)frame.size.height }
         ), frame.name.c_str());
     }
+
+    return texture;
 }
 
-void loadFileIcon(const IconInfo& info, bool async) {
+CCTexture2D* loadFileIcon(const IconInfo& info, bool async) {
     auto& textureName = info.textures[0];
 
     auto imageRes = texpack::fromPNG(textureName);
-    if (imageRes.isErr()) return log::error("{}: {}", textureName, imageRes.unwrapErr());
+    if (imageRes.isErr()) {
+        log::error("{}: {}", textureName, imageRes.unwrapErr());
+        return nullptr;
+    }
 
     auto image = imageRes.unwrap();
 
     auto sheet = MoreIconsAPI::createDictionary(info.sheetName, async);
-    if (!sheet) return log::error("{}: Failed to load sheet", info.sheetName);
+    if (!sheet) {
+        log::error("{}: Failed to load sheet", info.sheetName);
+        return nullptr;
+    }
 
     auto frames = static_cast<CCDictionary*>(sheet->objectForKey("frames"));
-    if (!frames) return sheet->release(), log::error("{}: Failed to load frames", info.sheetName);
+    if (!frames) {
+        sheet->release();
+        log::error("{}: Failed to load frames", info.sheetName);
+        return nullptr;
+    }
 
     auto metadata = static_cast<CCDictionary*>(sheet->objectForKey("metadata"));
     auto formatStr = metadata ? metadata->valueForKey("format") : nullptr;
@@ -223,7 +242,8 @@ void loadFileIcon(const IconInfo& info, bool async) {
 
         std::unique_lock lock(imageMutex);
 
-        return images.push_back({ textureName, image.data, newFrames, image.width, image.height });
+        images.push_back({ textureName, image.data, newFrames, image.width, image.height });
+        return nullptr;
     }
 
     auto texture = new CCTexture2D();
@@ -243,17 +263,20 @@ void loadFileIcon(const IconInfo& info, bool async) {
     }
 
     sheet->release();
+
+    return texture;
 }
 
-void MoreIconsAPI::loadIcon(const std::string& name, IconType type, int requestID) {
-    if (preloadIcons || !hasIcon(name, type)) return;
+CCTexture2D* MoreIconsAPI::loadIcon(const std::string& name, IconType type, int requestID) {
+    if (preloadIcons || !hasIcon(name, type)) return nullptr;
 
     auto& loadedIcon = loadedIcons[{ name, type }];
 
+    CCTexture2D* texture = nullptr;
     if (loadedIcon < 1) {
         if (auto info = getIcon(name, type)) {
-            if (!info->folderName.empty()) loadFolderIcon(*info, false);
-            else if (!info->sheetName.empty()) loadFileIcon(*info, false);
+            if (!info->folderName.empty()) texture = loadFolderIcon(*info, false);
+            else if (!info->sheetName.empty()) texture = loadFileIcon(*info, false);
         }
     }
 
@@ -263,6 +286,8 @@ void MoreIconsAPI::loadIcon(const std::string& name, IconType type, int requestI
         if (!requestedIcon.empty()) unloadIcon(requestedIcon, type, requestID);
         requestedIcon = name;
     }
+
+    return texture;
 }
 
 void MoreIconsAPI::loadIconAsync(const IconInfo& info) {
@@ -389,7 +414,7 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
         player->m_robotSprite->m_color = player->m_firstLayer->getColor();
         player->m_robotSprite->m_secondColor = player->m_secondLayer->getColor();
         player->m_robotSprite->updateColors();
-        return updateRobotSprite(player->m_robotSprite, icon, type);
+        updateRobotSprite(player->m_robotSprite, icon, type);
     }
     else if (player->m_robotSprite) player->m_robotSprite->setVisible(false);
 
@@ -399,9 +424,11 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
         player->m_spiderSprite->m_color = player->m_firstLayer->getColor();
         player->m_spiderSprite->m_secondColor = player->m_secondLayer->getColor();
         player->m_spiderSprite->updateColors();
-        return updateRobotSprite(player->m_spiderSprite, icon, type);
+        updateRobotSprite(player->m_spiderSprite, icon, type);
     }
     else if (player->m_spiderSprite) player->m_spiderSprite->setVisible(false);
+
+    if (type == IconType::Robot || type == IconType::Spider) return;
 
     loadIcon(icon, type, player->m_iconRequestID);
 
@@ -430,19 +457,14 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
 void MoreIconsAPI::updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type) {
     if (!sprite || icon.empty() || !hasIcon(icon, type)) return;
 
-    auto info = getIcon(icon, type);
-    if (!info) return;
-
     sprite->setUserObject("name"_spr, CCString::create(icon));
 
-    auto texture = CCTextureCache::get()->textureForKey((info->folderName.empty() ? info->textures[0] : info->folderName).c_str());
+    auto texture = loadIcon(icon, type, sprite->m_iconRequestID);
 
     sprite->setBatchNode(nullptr);
     sprite->setTexture(texture);
     sprite->m_paSprite->setBatchNode(nullptr);
     sprite->m_paSprite->setTexture(texture);
-
-    loadIcon(icon, type, sprite->m_iconRequestID);
 
     auto spriteParts = sprite->m_paSprite->m_spriteParts;
     auto sfc = CCSpriteFrameCache::get();
@@ -494,16 +516,21 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& i
     object->setUserObject("name"_spr, CCString::create(icon));
 
     if (type == IconType::Robot || type == IconType::Spider) {
-        auto robotSprite = type == IconType::Spider ? object->m_spiderSprite : object->m_robotSprite;
-        auto batchNode = type == IconType::Spider ? object->m_spiderBatchNode : object->m_robotBatchNode;
+        auto sprite = type == IconType::Spider ? object->m_spiderSprite : object->m_robotSprite;
+        auto node = type == IconType::Spider ? object->m_spiderBatchNode : object->m_robotBatchNode;
+        auto useBatchNode = node && sprite && sprite->getParent() == node;
 
-        if (robotSprite->getParent() == batchNode) {
-            robotSprite->retain();
-            robotSprite->removeFromParentAndCleanup(false);
-            updateRobotSprite(robotSprite, icon, type);
-            batchNode->setTexture(robotSprite->getTexture());
-            batchNode->addChild(robotSprite);
-            robotSprite->release();
+        if (useBatchNode) {
+            sprite->retain();
+            sprite->removeFromParentAndCleanup(false);
+        }
+
+        updateRobotSprite(sprite, icon, type);
+
+        if (useBatchNode) {
+            node->setTexture(sprite->getTexture());
+            node->addChild(sprite);
+            sprite->release();
         }
         return;
     }

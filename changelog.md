@@ -1,11 +1,15 @@
 # More Icons Changelog
+## v1.13.3 (2025-06-03)
+- Fixed a bug where the robot and spider would overlap in the icon kit (Reported by [d4rkn](user:25413733))
+- Fixed a bug where custom robots and spiders would not work properly (Fingers crossed)
+
 ## v1.13.2 (2025-06-02)
-- Fixed some image processing issues
+- Fixed some image processing issues ([#35](https://github.com/hiimjasmine00/MoreIcons/issues/35))
 
 ## v1.13.1 (2025-05-28)
 - Added a setting to preload all icon textures ([#30](https://github.com/hiimjasmine00/MoreIcons/issues/30))
 - Improved the loading of the icon viewer
-- Added notifications to the icon viewer when files cannot be imported
+- Added notifications to the icon editor when files cannot be imported
 - Fixed blending issues while exporting icons in the icon editor
 - Fixed a possible crash with the vanilla icon viewer on Android while using medium or low texture quality
 - Fixed a crash when opening the More Icons popup after installing Separate Dual Icons (Reported by [Zilko](user:10300913))
