@@ -516,21 +516,21 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& i
     object->setUserObject("name"_spr, CCString::create(icon));
 
     if (type == IconType::Robot || type == IconType::Spider) {
-        auto sprite = type == IconType::Spider ? object->m_spiderSprite : object->m_robotSprite;
-        auto node = type == IconType::Spider ? object->m_spiderBatchNode : object->m_robotBatchNode;
-        auto useBatchNode = node && sprite && sprite->getParent() == node;
+        auto robotSprite = type == IconType::Spider ? object->m_spiderSprite : object->m_robotSprite;
+        auto batchNode = type == IconType::Spider ? object->m_spiderBatchNode : object->m_robotBatchNode;
+        auto useBatchNode = batchNode && robotSprite && robotSprite->getParent() == batchNode;
 
         if (useBatchNode) {
-            sprite->retain();
-            sprite->removeFromParentAndCleanup(false);
+            robotSprite->retain();
+            robotSprite->removeFromParentAndCleanup(false);
         }
 
-        updateRobotSprite(sprite, icon, type);
+        updateRobotSprite(robotSprite, icon, type);
 
         if (useBatchNode) {
-            node->setTexture(sprite->getTexture());
-            node->addChild(sprite);
-            sprite->release();
+            batchNode->setTexture(robotSprite->getTexture());
+            batchNode->addChild(robotSprite);
+            robotSprite->release();
         }
         return;
     }
