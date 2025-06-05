@@ -176,19 +176,25 @@ void LazyIcon::createComplexIcon() {
         ccColor3B spriteColor3B = { spriteColor, spriteColor, spriteColor };
 
         auto description = static_cast<SpriteDescription*>(idleFrames->objectAtIndex(i));
+        auto& position = description->m_position;
+        auto rotation = description->m_rotation;
+        auto scaleX = description->m_scale.x;
+        auto scaleY = description->m_scale.y;
+        auto flipX = description->m_flipped.x != 0.0f;
+        auto flipY = description->m_flipped.y != 0.0f;
 
         auto partNode = CCNode::create();
-        partNode->setPosition(description->m_position + center);
-        partNode->setRotation(description->m_rotation);
-        partNode->setScaleX(description->m_scale.x);
-        partNode->setScaleY(description->m_scale.y);
+        partNode->setPosition(position + center);
+        partNode->setRotation(rotation);
+        partNode->setScaleX(scaleX);
+        partNode->setScaleY(scaleY);
         partNode->setAnchorPoint({ 0.5f, 0.5f });
         partNode->setID(fmt::format("part-node-{}", i + 1));
 
         if (primaryFrame) {
             auto sprite = CCSprite::createWithSpriteFrame(primaryFrame);
-            sprite->setFlipX(description->m_flipped.x != 0.0f);
-            sprite->setFlipY(description->m_flipped.y != 0.0f);
+            sprite->setFlipX(flipX);
+            sprite->setFlipY(flipY);
             sprite->setColor(spriteColor3B);
             sprite->setID(fmt::format("primary-sprite-{}", i + 1));
             partNode->addChild(sprite, 0);
@@ -196,8 +202,8 @@ void LazyIcon::createComplexIcon() {
 
         if (secondaryFrame) {
             auto sprite = CCSprite::createWithSpriteFrame(secondaryFrame);
-            sprite->setFlipX(description->m_flipped.x != 0.0f);
-            sprite->setFlipY(description->m_flipped.y != 0.0f);
+            sprite->setFlipX(flipX);
+            sprite->setFlipY(flipY);
             sprite->setColor(spriteColor3B);
             sprite->setID(fmt::format("secondary-sprite-{}", i + 1));
             partNode->addChild(sprite, -1);
@@ -205,20 +211,20 @@ void LazyIcon::createComplexIcon() {
 
         if (glowFrame) {
             auto sprite = CCSprite::createWithSpriteFrame(glowFrame);
-            sprite->setPosition(description->m_position);
-            sprite->setRotation(description->m_rotation);
-            sprite->setScaleX(description->m_scale.x);
-            sprite->setScaleY(description->m_scale.y);
-            sprite->setFlipX(description->m_flipped.x != 0.0f);
-            sprite->setFlipY(description->m_flipped.y != 0.0f);
+            sprite->setPosition(position);
+            sprite->setRotation(rotation);
+            sprite->setScaleX(scaleX);
+            sprite->setScaleY(scaleY);
+            sprite->setFlipX(flipX);
+            sprite->setFlipY(flipY);
             sprite->setID(fmt::format("glow-sprite-{}", i + 1));
             glowNode->addChild(sprite, -1);
         }
 
         if (extraFrame) {
             auto sprite = CCSprite::createWithSpriteFrame(extraFrame);
-            sprite->setFlipX(description->m_flipped.x != 0.0f);
-            sprite->setFlipY(description->m_flipped.y != 0.0f);
+            sprite->setFlipX(flipX);
+            sprite->setFlipY(flipY);
             sprite->setID(fmt::format("extra-sprite-{}", i + 1));
             partNode->addChild(sprite, 1);
         }

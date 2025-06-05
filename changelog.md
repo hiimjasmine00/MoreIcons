@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v1.13.4 (2025-06-05)
+- Actually fixed the bug where custom robots and spiders would not display properly (This better work)
+
 ## v1.13.3 (2025-06-03)
 - Fixed a bug where the robot and spider would overlap in the icon kit (Reported by [d4rkn](user:25413733))
 - Fixed a bug where custom robots and spiders would not work properly (Fingers crossed)

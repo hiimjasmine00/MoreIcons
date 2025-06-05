@@ -1,5 +1,5 @@
 # More Icons
-A mod that loads custom icons.
+Custom icons without the hassle.
 
 **Hang tight! The tutorial videos will be updated soon!**\
 [~~Windows Tutorial~~](https://youtu.be/Dn0S3DPuq08)\

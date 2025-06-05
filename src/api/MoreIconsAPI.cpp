@@ -78,7 +78,7 @@ $execute {
 
 IconInfo* MoreIconsAPI::getIcon(const std::string& name, IconType type) {
     auto found = std::ranges::find_if(icons, [name, type](const IconInfo& info) { return info.name == name && info.type == type; });
-    return found != icons.end() ? icons.data() + (found - icons.begin()) : nullptr;
+    return found < icons.end() ? icons.data() + (found - icons.begin()) : nullptr;
 }
 
 IconInfo* MoreIconsAPI::getIcon(IconType type, bool dual) {
@@ -268,16 +268,17 @@ CCTexture2D* loadFileIcon(const IconInfo& info, bool async) {
 }
 
 CCTexture2D* MoreIconsAPI::loadIcon(const std::string& name, IconType type, int requestID) {
-    if (preloadIcons || !hasIcon(name, type)) return nullptr;
+    auto info = getIcon(name, type);
+    if (!info) return nullptr;
+
+    auto texture = CCTextureCache::get()->textureForKey((info->folderName.empty() ? info->textures[0] : info->folderName).c_str());
+    if (preloadIcons) return texture;
 
     auto& loadedIcon = loadedIcons[{ name, type }];
 
-    CCTexture2D* texture = nullptr;
     if (loadedIcon < 1) {
-        if (auto info = getIcon(name, type)) {
-            if (!info->folderName.empty()) texture = loadFolderIcon(*info, false);
-            else if (!info->sheetName.empty()) texture = loadFileIcon(*info, false);
-        }
+        if (!info->folderName.empty()) texture = loadFolderIcon(*info, false);
+        else if (!info->sheetName.empty()) texture = loadFileIcon(*info, false);
     }
 
     auto& requestedIcon = requestedIcons[requestID][type];
@@ -365,16 +366,17 @@ void unloadFileIcon(const IconInfo& info) {
 }
 
 void MoreIconsAPI::unloadIcon(const std::string& name, IconType type, int requestID) {
-    if (preloadIcons || !hasIcon(name, type)) return;
+    if (preloadIcons) return;
+
+    auto info = getIcon(name, type);
+    if (!info) return;
 
     auto& loadedIcon = loadedIcons[{ name, type }];
 
     loadedIcon--;
     if (loadedIcon < 1) {
-        if (auto info = getIcon(name, type)) {
-            if (!info->folderName.empty()) unloadFolderIcon(*info);
-            else if (!info->sheetName.empty()) unloadFileIcon(*info);
-        }
+        if (!info->folderName.empty()) unloadFolderIcon(*info);
+        else if (!info->sheetName.empty()) unloadFileIcon(*info);
     }
 
     requestedIcons[requestID].erase(type);
@@ -510,9 +512,6 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, IconType type, bool 
 void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type) {
     if (!object || icon.empty() || !hasIcon(icon, type)) return;
 
-    auto info = getIcon(icon, type);
-    if (!info) return;
-
     object->setUserObject("name"_spr, CCString::create(icon));
 
     if (type == IconType::Robot || type == IconType::Spider) {
@@ -562,10 +561,11 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& i
     }
 }
 
-std::vector<float> floatsFromString(const std::string& str, int count) {
+std::vector<float> floatsFromString(const gd::string& str, int count) {
     std::vector<float> result;
     std::string temp;
-    for (auto& c : str) {
+    for (auto it = str.data(), end = str.data() + str.size(); it < end; ++it) {
+        auto& c = *it;
         if (c == '{' || c == '}') continue;
         else if (c == ',') {
             if (!temp.empty()) {
@@ -582,38 +582,38 @@ std::vector<float> floatsFromString(const std::string& str, int count) {
 }
 
 CCPoint pointFromString(CCDictionary* dict, std::string_view key) {
-    auto str = dict ? dict->valueForKey(std::string(key)) : nullptr;
+    auto str = dict ? dict->valueForKey(gd::string(key.data(), key.size())) : nullptr;
     if (!str) return { 0.0f, 0.0f };
     auto floats = floatsFromString(str->m_sString, 2);
     return { floats[0], floats[1] };
 }
 
 CCSize sizeFromString(CCDictionary* dict, std::string_view key) {
-    auto str = dict ? dict->valueForKey(std::string(key)) : nullptr;
+    auto str = dict ? dict->valueForKey(gd::string(key.data(), key.size())) : nullptr;
     if (!str) return { 0.0f, 0.0f };
     auto floats = floatsFromString(str->m_sString, 2);
     return { floats[0], floats[1] };
 }
 
 CCRect rectFromString(CCDictionary* dict, std::string_view key) {
-    auto str = dict ? dict->valueForKey(std::string(key)) : nullptr;
+    auto str = dict ? dict->valueForKey(gd::string(key.data(), key.size())) : nullptr;
     if (!str) return { 0.0f, 0.0f, 0.0f, 0.0f };
     auto floats = floatsFromString(str->m_sString, 4);
     return { floats[0], floats[1], floats[2], floats[3] };
 }
 
 bool boolValue(CCDictionary* dict, std::string_view key) {
-    auto str = dict ? dict->valueForKey(std::string(key)) : nullptr;
+    auto str = dict ? dict->valueForKey(gd::string(key.data(), key.size())) : nullptr;
     return str && !str->m_sString.empty() && str->m_sString != "0" && str->m_sString != "false";
 }
 
 int intValue(CCDictionary* dict, std::string_view key) {
-    auto str = dict ? dict->valueForKey(std::string(key)) : nullptr;
+    auto str = dict ? dict->valueForKey(gd::string(key.data(), key.size())) : nullptr;
     return str ? numFromString<int>(str->m_sString).unwrapOr(0) : 0;
 }
 
 float floatValue(CCDictionary* dict, std::string_view key) {
-    auto str = dict ? dict->valueForKey(std::string(key)) : nullptr;
+    auto str = dict ? dict->valueForKey(gd::string(key.data(), key.size())) : nullptr;
     return str ? numFromString<float>(str->m_sString).unwrapOr(0.0f) : 0.0f;
 }
 
