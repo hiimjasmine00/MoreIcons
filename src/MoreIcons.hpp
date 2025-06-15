@@ -24,7 +24,8 @@ public:
         "cc_2x2_white_image", "GJ_infoIcon_001.png", "geode.loader/info-warning.png", "geode.loader/info-alert.png"
     };
     inline static constexpr std::array prefixes = {
-        "player_", "ship_", "player_ball_", "bird_", "dart_", "robot_", "spider_", "swing_", "jetpack_"
+        "", "player_", "", "", "ship_", "player_ball_", "bird_", "dart_",
+        "robot_", "spider_", "streak_", "PlayerExplosion_", "", "swing_", "jetpack_", "shipfire"
     };
     inline static std::map<IconType, int> severities = {
         { IconType::Cube, 0 },

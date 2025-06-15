@@ -6,8 +6,6 @@
 #include <Geode/binding/CCAnimateFrameCache.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SpriteDescription.hpp>
-#include <Geode/utils/file.hpp>
-#include <texpack.hpp>
 
 using namespace geode::prelude;
 
@@ -26,9 +24,13 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info) {
     normalImage->setContentSize(CCSpriteFrameCache::get()->spriteFrameByName("playerSquare_001.png")->getOriginalSize());
     if (!CCMenuItemSpriteExtra::init(normalImage, nullptr, nullptr, nullptr)) return false;
 
+    auto gameManager = GameManager::get();
+
     m_type = type;
     m_id = id;
     m_info = info;
+    m_name = info ? info->name : fmt::format("{}{:02}", MoreIcons::prefixes[(int)gameManager->iconTypeToUnlockType(type)], id);
+    setID(m_name);
 
     if (type == IconType::Special && !info) {
         m_visited = true;
@@ -39,11 +41,22 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info) {
         return true;
     }
 
+    if (info) {
+        m_texture = info->folderName.empty() ? info->textures[0] : info->folderName;
+        m_sheet = info->sheetName;
+    }
+    else {
+        std::string fullName = gameManager->sheetNameForIcon(id, (int)type);
+        auto fileUtils = CCFileUtils::get();
+        m_texture = fileUtils->fullPathForFilename(fmt::format("{}.png", fullName).c_str(), false);
+        m_sheet = fileUtils->fullPathForFilename(fmt::format("{}.plist", fullName).c_str(), false);
+    }
+
     if (type <= IconType::Jetpack || (type == IconType::Special && info)) {
-        auto textureName = getTextureNames().first;
-        if (CCTextureCache::get()->textureForKey(textureName.c_str())) {
+        if (CCTextureCache::get()->textureForKey(m_texture.c_str())) {
             m_visited = true;
-            createIcon("", "", {});
+            m_texture = "";
+            createIcon("", {});
         }
         else {
             setEnabled(false);
@@ -59,22 +72,8 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info) {
     return true;
 }
 
-std::pair<std::string, std::string> LazyIcon::getTextureNames() {
-    if (m_info) return { m_info->folderName.empty() ? m_info->textures[0] : m_info->folderName, m_info->sheetName };
-    std::string fullName = GameManager::get()->sheetNameForIcon(m_id, (int)m_type);
-    auto fileUtils = CCFileUtils::get();
-    return {
-        fileUtils->fullPathForFilename(fmt::format("{}.png", fullName).c_str(), false),
-        fileUtils->fullPathForFilename(fmt::format("{}.plist", fullName).c_str(), false)
-    };
-}
-
-std::string LazyIcon::getIconName() {
-    return m_info ? m_info->name : fmt::format("{}{:02}", MoreIcons::prefixes[(int)m_type], m_id);
-}
-
 void LazyIcon::createSimpleIcon() {
-    auto iconName = fmt::format("{}{}", m_info ? GEODE_MOD_ID "/" : "", getIconName());
+    auto iconName = fmt::format("{}{}", m_info ? GEODE_MOD_ID "/" : "", m_name);
     auto spriteFrameCache = CCSpriteFrameCache::get();
 
     auto primaryFrame = spriteFrameCache->spriteFrameByName(fmt::format("{}_001.png", iconName).c_str());
@@ -136,7 +135,7 @@ void LazyIcon::createComplexIcon() {
     auto afc = CCAnimateFrameCache::get();
     auto type = spider ? "Spider" : "Robot";
     auto idleFrames = afc->spriteFrameByName(fmt::format("{}_idle_001.png", type).c_str());
-    auto iconName = fmt::format("{}{}", m_info ? GEODE_MOD_ID "/" : "", getIconName());
+    auto iconName = fmt::format("{}{}", m_info ? GEODE_MOD_ID "/" : "", m_name);
     auto sfc = CCSpriteFrameCache::get();
     auto normalImage = getNormalImage();
     auto center = normalImage->getContentSize() / 2.0f;
@@ -235,10 +234,10 @@ void LazyIcon::createComplexIcon() {
     normalImage->addChild(glowNode, -1);
 }
 
-void LazyIcon::createIcon(const std::string& err, const std::string& texture, const std::vector<std::string>& frames) {
+void LazyIcon::createIcon(const std::string& err, const std::vector<std::string>& frames) {
+    m_error = err;
+    setEnabled(true);
     if (err.empty()) {
-        setEnabled(true);
-        m_texture = texture;
         m_frames = frames;
         if (m_loadingSprite) {
             m_loadingSprite->removeFromParent();
@@ -264,7 +263,7 @@ void LazyIcon::createIcon(const std::string& err, const std::string& texture, co
         }
     }
     else {
-        log::error("{}: {}", getIconName(), err);
+        log::error("{}: {}", m_name, err);
         m_loadingSprite->stopAllActions();
         m_loadingSprite->setDisplayFrame(CCSpriteFrameCache::get()->spriteFrameByName("GJ_deleteIcon_001.png"));
         m_loadingSprite->setScale(1.1f);
@@ -275,130 +274,8 @@ void LazyIcon::createIcon(const std::string& err, const std::string& texture, co
 void LazyIcon::activate() {
     if (!m_bEnabled) return;
     CCMenuItemSpriteExtra::activate();
-    EditIconPopup::create(m_type, m_id, m_info ? m_info->name : "", true)->show();
-}
-
-typedef std::function<void(std::string, std::string, std::vector<std::string>)> Callback;
-
-void loadSheet(const std::string& png, const std::string& plist, const std::string& name, IconType type, Callback callback) {
-    ThreadPool::get().pushTask([png, plist, name, type, callback = std::move(callback)] {
-        auto data = MoreIconsAPI::getFileData(png);
-        if (data.empty()) return queueInMainThread([callback = std::move(callback)] {
-            callback("Failed to read image", "", {});
-        });
-
-        auto image = texpack::fromPNG(data);
-        if (image.isErr()) return queueInMainThread([err = image.unwrapErr(), callback = std::move(callback)] {
-            callback(err, "", {});
-        });
-
-        CCDictionary* frames = nullptr;
-        if (!plist.empty()) {
-            auto sheet = MoreIconsAPI::createDictionary(plist, true);
-            if (!sheet) return queueInMainThread([callback = std::move(callback)] {
-                callback("Failed to load sheet", "", {});
-            });
-
-            auto originalFrames = static_cast<CCDictionary*>(sheet->objectForKey("frames"));
-            if (!originalFrames) return sheet->release(), queueInMainThread([callback = std::move(callback)] {
-                callback("Failed to load frames", "", {});
-            });
-
-            auto metadata = static_cast<CCDictionary*>(sheet->objectForKey("metadata"));
-            auto formatStr = metadata ? metadata->valueForKey("format") : nullptr;
-            auto format = formatStr ? numFromString<int>(formatStr->m_sString).unwrapOr(0) : 0;
-
-            frames = new CCDictionary();
-            for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(originalFrames)) {
-                if (auto spriteFrame = MoreIconsAPI::createSpriteFrame(dict, nullptr, format)) {
-                    frames->setObject(spriteFrame, name.empty() ? frame : MoreIconsAPI::getFrameName(frame, name, type));
-                    spriteFrame->release();
-                }
-            }
-
-            sheet->release();
-        }
-
-        queueInMainThread([png, image = image.unwrap(), frames = Ref(frames), callback = std::move(callback)] {
-            auto texture = new CCTexture2D();
-            texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
-                (float)image.width,
-                (float)image.height
-            });
-            CCTextureCache::get()->m_pTextures->setObject(texture, png);
-            texture->release();
-
-            std::vector<std::string> frameNames;
-            if (frames) {
-                auto spriteFrameCache = CCSpriteFrameCache::get();
-                for (auto [frameName, frame] : CCDictionaryExt<std::string, CCSpriteFrame*>(frames)) {
-                    frame->setTexture(texture);
-                    spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
-                    frameNames.push_back(frameName);
-                }
-            }
-
-            callback("", png, frameNames);
-        });
-
-        CC_SAFE_RELEASE(frames);
-    });
-}
-
-void loadImages(IconInfo* info, Callback callback) {
-    ThreadPool::get().pushTask([info, callback = std::move(callback)] {
-        texpack::Packer packer;
-        for (int i = 0; i < info->textures.size(); i++) {
-            auto& frameName = info->frameNames[i];
-            auto res = packer.frame(frameName, info->textures[i]).mapErr([&frameName](const std::string& err) {
-                return fmt::format("{}: {}", frameName, err);
-            });
-            if (res.isErr()) return queueInMainThread([err = res.unwrapErr(), callback = std::move(callback)] {
-                callback(err, "", {});
-            });
-        }
-
-        auto packRes = packer.pack();
-        if (packRes.isErr()) return queueInMainThread([err = packRes.unwrapErr(), callback = std::move(callback)] {
-            callback(err, "", {});
-        });
-
-        auto frames = new CCDictionary();
-        for (auto& frame : packer.frames()) {
-            auto spriteFrame = new CCSpriteFrame();
-            spriteFrame->initWithTexture(
-                nullptr,
-                { (float)frame.rect.origin.x, (float)frame.rect.origin.y, (float)frame.rect.size.width, (float)frame.rect.size.height },
-                frame.rotated,
-                { (float)frame.offset.x, (float)frame.offset.y },
-                { (float)frame.size.width, (float)frame.size.height }
-            );
-            frames->setObject(spriteFrame, frame.name);
-            spriteFrame->release();
-        }
-
-        queueInMainThread([info, image = packer.image(), frames = Ref(frames), callback = std::move(callback)] {
-            auto texture = new CCTexture2D();
-            texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
-                (float)image.width,
-                (float)image.height
-            });
-            CCTextureCache::get()->m_pTextures->setObject(texture, info->folderName);
-            texture->release();
-
-            std::vector<std::string> frameNames;
-            auto spriteFrameCache = CCSpriteFrameCache::get();
-            for (auto [frameName, frame] : CCDictionaryExt<std::string, CCSpriteFrame*>(frames)) {
-                frame->setTexture(texture);
-                spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
-                frameNames.push_back(frameName);
-            }
-
-            callback("", info->folderName, frameNames);
-        });
-
-        frames->release();
-    });
+    if (m_error.empty()) EditIconPopup::create(m_type, m_id, m_info ? m_info->name : "", true)->show();
+    else FLAlertLayer::create("Error", m_error, "OK")->show();
 }
 
 void LazyIcon::visit() {
@@ -408,31 +285,42 @@ void LazyIcon::visit() {
 
     m_visited = true;
 
-    if (!m_info || !m_info->sheetName.empty() || m_type == IconType::Special) {
-        auto textureNames = getTextureNames();
-        loadSheet(
-            textureNames.first,
-            textureNames.second,
-            m_info ? m_info->name : "",
-            m_type,
-            [selfref = WeakRef(this)](const std::string& err, const std::string& texture, const std::vector<std::string>& frames) {
-                if (auto self = selfref.lock()) self->createIcon(err, texture, frames);
-            }
-        );
+    if (!m_info || !m_info->sheetName.empty() || m_type == IconType::Special || !m_info->folderName.empty()) {
+        ThreadPool::get().pushTask([
+            selfref = WeakRef(this),
+            texture = m_texture,
+            sheet = m_sheet,
+            name = m_info ? m_info->name : "",
+            type = m_type,
+            textures = m_info ? m_info->textures : std::vector<std::string>(),
+            frameNames = m_info ? m_info->frameNames : std::vector<std::string>()
+        ] {
+            auto image = !sheet.empty() || type == IconType::Special
+                ? MoreIconsAPI::createFrames(texture, sheet, name, type)
+                : MoreIconsAPI::packFrames(textures, frameNames);
+            queueInMainThread([selfref = std::move(selfref), texture = std::move(texture), image = std::move(image)] {
+                auto self = selfref.lock();
+                if (image.isErr()) {
+                    if (self) self->createIcon(image.unwrapErr(), {});
+                    return;
+                }
+
+                auto result = image.unwrap();
+                if (self) self->createIcon("", MoreIconsAPI::addFrames(texture, result));
+                else {
+                    result.texture->release();
+                    result.frames->release();
+                }
+            });
+        });
     }
-    else if (!m_info->folderName.empty()) loadImages(
-        m_info,
-        [selfref = WeakRef(this)](const std::string& err, const std::string& texture, const std::vector<std::string>& frames) {
-            if (auto self = selfref.lock()) self->createIcon(err, texture, frames);
-        }
-    );
 }
 
 LazyIcon::~LazyIcon() {
     auto spriteFrameCache = CCSpriteFrameCache::get();
     for (auto& frame : m_frames) {
-        spriteFrameCache->removeSpriteFrameByName(frame.c_str());
+        spriteFrameCache->m_pSpriteFrames->removeObjectForKey(frame);
     }
 
-    if (!m_texture.empty()) CCTextureCache::get()->removeTextureForKey(m_texture.c_str());
+    if (!m_texture.empty()) CCTextureCache::get()->m_pTextures->removeObjectForKey(m_texture);
 }

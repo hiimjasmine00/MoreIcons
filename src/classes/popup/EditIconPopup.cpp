@@ -10,7 +10,6 @@
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Notification.hpp>
-#include <Geode/utils/ranges.hpp>
 #include <texpack.hpp>
 
 using namespace geode::prelude;
@@ -78,6 +77,7 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
     m_iconType = type;
 
     auto isIcon = type <= IconType::Jetpack;
+    auto iconID = read ? id : 1;
     if (isIcon) {
         std::vector<std::vector<std::string>> suffixes;
         auto isRobot = type == IconType::Robot || type == IconType::Spider;
@@ -109,7 +109,7 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
         m_player->setID("player-icon");
         m_mainLayer->addChild(m_player);
 
-        auto iconName = name.empty() ? fmt::format("{}{:02}", MoreIcons::prefixes[(int)type], read ? id : 1) : fmt::format("{}"_spr, name);
+        auto iconName = name.empty() ? fmt::format("{}{:02}", MoreIcons::prefixes[unlock], iconID) : Mod::get()->expandSpriteName(name).data();
         auto spriteFrameCache = CCSpriteFrameCache::get();
         for (int i = 0; i < suffixes.size(); i++) {
             auto frameMenu = CCMenu::create();
@@ -223,7 +223,7 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
         }
 
         m_streak = CCSprite::create((name.empty() ?
-            fmt::format("streak_{:02}_001.png", read ? id : 1) : icon ? icon->textures[0] : "streak_01_001.png").c_str());
+            fmt::format("streak_{:02}_001.png", iconID) : icon ? icon->textures[0] : "streak_01_001.png").c_str());
         m_streak->setBlendFunc({
             GL_SRC_ALPHA,
             (uint32_t)GL_ONE_MINUS_SRC_ALPHA - (trailID > 0 || (icon && icon->blend)) * (uint32_t)GL_SRC_ALPHA
@@ -375,18 +375,15 @@ void EditIconPopup::pickFile(int index, int type, bool plist) {
                 return Notification::create(fmt::format("Please select a {} file.", plist ? "Plist" : "PNG"), NotificationIcon::Info)->show();
 
             if (plist) {
-                if (auto sheet = MoreIconsAPI::createDictionary(m_path, false)) {
-                    if (auto frames = static_cast<CCDictionary*>(sheet->objectForKey("frames"))) {
-                        auto metadata = static_cast<CCDictionary*>(sheet->objectForKey("metadata"));
-                        auto formatStr = metadata ? metadata->valueForKey("format") : nullptr;
-                        auto format = formatStr ? numFromString<int>(formatStr->m_sString).unwrapOr(0) : 0;
+                auto framesRes = MoreIconsAPI::createFrames(string::pathToString(m_path), m_texture, "", m_iconType);
+                if (framesRes.isOk()) {
+                    auto [texture, frames] = framesRes.unwrap();
+                    if (texture == m_texture) {
                         m_frames->removeAllObjects();
-                        for (auto [frame, dict] : CCDictionaryExt<std::string, CCDictionary*>(frames)) {
-                            if (auto spriteFrame = MoreIconsAPI::createSpriteFrame(dict, m_texture, format)) {
-                                m_frames->setObject(spriteFrame, MoreIconsAPI::getFrameName(frame, "", m_iconType));
-                                spriteFrame->release();
-                            }
+                        for (auto [frameName, frame] : CCDictionaryExt<gd::string, CCSpriteFrame*>(frames)) {
+                            m_frames->setObject(frame, frameName);
                         }
+                        frames->release();
                         updateSprites();
 
                         auto saveSprite = static_cast<ButtonSprite*>(m_saveButton->getNormalImage());
@@ -400,15 +397,16 @@ void EditIconPopup::pickFile(int index, int type, bool plist) {
                         for (auto frameMenu : CCArrayExt<CCMenu*>(m_frameMenus)) {
                             frameMenu->setEnabled(true);
                         }
-
-                        CC_SAFE_RELEASE(m_texture);
-                        m_texture = nullptr;
                     }
-                    else Notification::create("Failed to load frames.", NotificationIcon::Error)->show();
+                    else {
+                        texture->release();
+                        frames->release();
+                    }
 
-                    sheet->release();
+                    CC_SAFE_RELEASE(m_texture);
+                    m_texture = nullptr;
                 }
-                else Notification::create("Failed to load sheet.", NotificationIcon::Error)->show();
+                else Notification::create(fmt::format("Failed to load frames: {}", framesRes.unwrapErr()), NotificationIcon::Error)->show();
             }
             else {
                 auto imageRes = texpack::fromPNG(m_path);
@@ -471,7 +469,7 @@ void EditIconPopup::pickFile(int index, int type, bool plist) {
 
 void EditIconPopup::updateSprites() {
     auto crossFrame = CCSpriteFrameCache::get()->spriteFrameByName("GJ_deleteIcon_001.png");
-    for (auto [prefix, sprite] : CCDictionaryExt<std::string, CCSprite*>(m_sprites)) {
+    for (auto [prefix, sprite] : CCDictionaryExt<gd::string, CCSprite*>(m_sprites)) {
         auto spriteFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(prefix));
         sprite->setDisplayFrame(spriteFrame ? spriteFrame : crossFrame);
         sprite->setPosition(sprite->getParent()->getContentSize() / 2.0f);
