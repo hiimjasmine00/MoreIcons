@@ -43,16 +43,16 @@ bool MoreIconsPopup::setup() {
     gamemodesNode->setID("gamemodes-node");
 
     constexpr std::array gamemodes = {
-        std::tuple("Icons", IconType::Cube, ccColor3B { 64, 227, 72 }, "icon"),
-        std::tuple("Ships", IconType::Ship, ccColor3B { 255, 0, 255 }, "ship"),
-        std::tuple("Balls", IconType::Ball, ccColor3B { 255, 90, 90 }, "ball"),
-        std::tuple("UFOs", IconType::Ufo, ccColor3B { 255, 165, 75 }, "ufo"),
-        std::tuple("Waves", IconType::Wave, ccColor3B { 50, 200, 255 }, "wave"),
-        std::tuple("Robots", IconType::Robot, ccColor3B { 200, 200, 200 }, "robot"),
-        std::tuple("Spiders", IconType::Spider, ccColor3B { 150, 50, 255 }, "spider"),
-        std::tuple("Swings", IconType::Swing, ccColor3B { 255, 255, 0 }, "swing"),
-        std::tuple("Jetpacks", IconType::Jetpack, ccColor3B { 255, 150, 255 }, "jetpack"),
-        std::tuple("Trails", IconType::Special, ccColor3B { 74, 82, 225 }, "trail")
+        std::make_tuple("Icons", IconType::Cube, ccColor3B { 64, 227, 72 }, "icon"),
+        std::make_tuple("Ships", IconType::Ship, ccColor3B { 255, 0, 255 }, "ship"),
+        std::make_tuple("Balls", IconType::Ball, ccColor3B { 255, 90, 90 }, "ball"),
+        std::make_tuple("UFOs", IconType::Ufo, ccColor3B { 255, 165, 75 }, "ufo"),
+        std::make_tuple("Waves", IconType::Wave, ccColor3B { 50, 200, 255 }, "wave"),
+        std::make_tuple("Robots", IconType::Robot, ccColor3B { 200, 200, 200 }, "robot"),
+        std::make_tuple("Spiders", IconType::Spider, ccColor3B { 150, 50, 255 }, "spider"),
+        std::make_tuple("Swings", IconType::Swing, ccColor3B { 255, 255, 0 }, "swing"),
+        std::make_tuple("Jetpacks", IconType::Jetpack, ccColor3B { 255, 150, 255 }, "jetpack"),
+        std::make_tuple("Trails", IconType::Special, ccColor3B { 74, 82, 225 }, "trail")
     };
 
     auto gameManager = GameManager::get();
@@ -72,7 +72,6 @@ bool MoreIconsPopup::setup() {
 
         auto& [name, type, color, directory] = gamemodes[i];
 
-        auto unlock = gameManager->iconTypeToUnlockType(type);
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
         constexpr std::array types = {
@@ -80,23 +79,44 @@ bool MoreIconsPopup::setup() {
             "robot", "spider", "trail", "death", "", "swing", "jetpack", "shiptrail"
         };
 
-        auto icon = GJItemIcon::createBrowserItem(unlock,
-            dual ? sdi->getSavedValue<int>(types[(int)unlock], 1) : gameManager->activeIconForType(type));
-        if (type <= IconType::Jetpack) queueInMainThread([iconref = WeakRef(icon), type, dual, gameManager, sdi] {
-            auto icon = iconref.lock();
-            if (!icon) return;
-            auto player = static_cast<SimplePlayer*>(icon->m_player);
-            MoreIconsAPI::updateSimplePlayer(player, type, dual);
-            player->setColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color1", 0) : gameManager->m_playerColor));
-            player->setSecondColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color2", 0) : gameManager->m_playerColor2));
-            player->enableCustomGlowColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("colorglow", 0) : gameManager->m_playerGlowColor));
-            player->m_hasGlowOutline = dual ? sdi->getSavedValue<bool>("glow") : gameManager->m_playerGlow;
-            player->updateColors();
-        });
-        icon->setPosition({ 35.0f, 100.0f });
-        icon->setScale(0.9f);
-        icon->setID("item-icon");
-        gamemodeMenu->addChild(icon);
+        auto id = dual ? sdi->getSavedValue<int>(types[(int)gameManager->iconTypeToUnlockType(type)], 1) : gameManager->activeIconForType(type);
+        if (type <= IconType::Jetpack) {
+            auto icon = SimplePlayer::create(1);
+            icon->updatePlayerFrame(id, type);
+            MoreIconsAPI::updateSimplePlayer(icon, type, dual);
+            icon->setColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color1", 0) : gameManager->m_playerColor));
+            icon->setSecondColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color2", 0) : gameManager->m_playerColor2));
+            icon->enableCustomGlowColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("colorglow", 0) : gameManager->m_playerGlowColor));
+            icon->m_hasGlowOutline = dual ? sdi->getSavedValue<bool>("glow") : gameManager->m_playerGlow;
+            icon->updateColors();
+            icon->setPosition({ 35.0f, 100.0f });
+            icon->setScale(0.9f);
+            icon->setID("player-icon");
+            gamemodeMenu->addChild(icon);
+        }
+        else if (type == IconType::Special) {
+            if (auto icon = MoreIconsAPI::getIcon(type, dual)) {
+                auto square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
+                square->setColor({ 150, 150, 150 });
+                square->setPosition({ 35.0f, 100.0f });
+                square->setScale(0.9f);
+                square->setID("player-icon");
+                gamemodeMenu->addChild(square);
+
+                auto streak = CCSprite::create(icon->textures[0].c_str());
+                limitNodeHeight(streak, 27.0f, 999.0f, 0.001f);
+                streak->setRotation(-90.0f);
+                streak->setPosition(square->getContentSize() / 2);
+                square->addChild(streak);
+            }
+            else {
+                auto sprite = CCSprite::createWithSpriteFrameName(fmt::format("player_special_{:02}_001.png", id).c_str());
+                sprite->setPosition({ 35.0f, 100.0f });
+                sprite->setScale(0.9f);
+                sprite->setID("player-icon");
+                gamemodeMenu->addChild(sprite);
+            }
+        }
 
         auto& severity = MoreIcons::severities[type];
         if (severity > Severity::Debug) {

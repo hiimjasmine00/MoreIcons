@@ -1,4 +1,11 @@
 # More Icons Changelog
+## v1.13.5 (2025-06-16)
+- Added the mod version to the More Icons popup
+- Fixed custom trails not showing in the More Icons popup
+- Fixed severity ordering in the log viewer
+- Fixed mini icons in traditional icon packs being counted as custom icons ([#36](https://github.com/hiimjasmine00/MoreIcons/issues/36))
+- Fixed even more pre-multiplied alpha issues ([#37](https://github.com/hiimjasmine00/MoreIcons/issues/37))
+
 ## v1.13.4 (2025-06-05)
 - Actually fixed the bug where custom robots and spiders would not display properly (This better work)
 

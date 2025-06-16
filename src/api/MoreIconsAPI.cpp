@@ -8,7 +8,6 @@
 #ifdef GEODE_IS_ANDROID
 #include <Geode/cocos/platform/android/jni/Java_org_cocos2dx_lib_Cocos2dxHelper.h>
 #endif
-#include <Geode/utils/ranges.hpp>
 #include <MoreIcons.hpp>
 #include <texpack.hpp>
 
@@ -76,8 +75,8 @@ $execute {
 }
 
 IconInfo* MoreIconsAPI::getIcon(const std::string& name, IconType type) {
-    auto found = std::ranges::find_if(icons, [name, type](const IconInfo& info) { return info.name == name && info.type == type; });
-    return found < icons.end() ? icons.data() + (found - icons.begin()) : nullptr;
+    auto found = std::ranges::find_if(icons, [&name, type](const IconInfo& info) { return info.name == name && info.type == type; });
+    return found < icons.end() ? std::to_address(found) : nullptr;
 }
 
 IconInfo* MoreIconsAPI::getIcon(IconType type, bool dual) {
@@ -97,7 +96,7 @@ IconType MoreIconsAPI::getIconType(PlayerObject* object) {
 }
 
 bool MoreIconsAPI::hasIcon(const std::string& icon, IconType type) {
-    return !icon.empty() && std::ranges::any_of(icons, [icon, type](const IconInfo& info) { return info.name == icon && info.type == type; });
+    return !icon.empty() && std::ranges::any_of(icons, [&icon, type](const IconInfo& info) { return info.name == icon && info.type == type; });
 }
 
 int MoreIconsAPI::getCount(IconType type) {
@@ -404,7 +403,7 @@ Result<std::vector<uint8_t>> MoreIconsAPI::getFileData(const std::string& path) 
     static thread_local ZipFile* apkFile = new ZipFile(getApkPath());
     if (path.starts_with("assets/")) {
         auto size = 0ul;
-        if (auto data = apkFile->getFileData(path.c_str(), &size)) return Ok<std::vector<uint8_t>>({ data, data + size });
+        if (auto data = apkFile->getFileData(path.c_str(), &size)) return Ok(std::vector(data, data + size));
         else return Err("Failed to read file from APK");
     }
     #endif
@@ -435,7 +434,7 @@ Result<ImageResult> MoreIconsAPI::packFrames(const std::vector<std::string>& tex
 
     for (int i = 0; i < textures.size(); i++) {
         auto& frameName = frameNames[i];
-        GEODE_UNWRAP(packer.frame(frameName, textures[i]).mapErr([&frameName](const std::string& err) {
+        GEODE_UNWRAP(packer.frame(frameName, textures[i], true).mapErr([&frameName](const std::string& err) {
             return fmt::format("Failed to load {}: {}", frameName, err);
         }));
     }
@@ -482,7 +481,7 @@ Result<ImageResult> MoreIconsAPI::createFrames(const std::string& png, const std
         return fmt::format("Failed to read image: {}", err);
     }));
 
-    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(data).mapErr([](const std::string& err) {
+    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(data, true).mapErr([](const std::string& err) {
         return fmt::format("Failed to parse image: {}", err);
     }));
 
@@ -666,7 +665,7 @@ Result<std::pair<CCTexture2D*, CCDictionary*>> MoreIconsAPI::createFrames(
         texture->retain();
     }
 
-    return Ok<std::pair<CCTexture2D*, CCDictionary*>>({ texture, frames });
+    return Ok(std::make_pair(texture, frames));
 }
 
 std::vector<std::string> MoreIconsAPI::addFrames(const std::string& name, const ImageResult& image) {
@@ -674,6 +673,7 @@ std::vector<std::string> MoreIconsAPI::addFrames(const std::string& name, const 
 
     if (texture) {
         texture->initWithData(data.data(), kCCTexture2DPixelFormat_RGBA8888, width, height, { (float)width, (float)height });
+        texture->m_bHasPremultipliedAlpha = true;
         CCTextureCache::get()->m_pTextures->setObject(texture, name);
         texture->release();
     }

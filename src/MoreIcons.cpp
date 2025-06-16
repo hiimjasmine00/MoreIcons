@@ -354,7 +354,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack, Ic
     if (!doesExist(plistPath)) plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", pathStem), false);
     if (!CCFileUtils::get()->isFileExist(plistPath)) return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
 
-    ranges::remove(MoreIconsAPI::icons, [name, type](const IconInfo& icon) { return icon.name == name && icon.type == type; });
+    ranges::remove(MoreIconsAPI::icons, [&name, type](const IconInfo& icon) { return icon.name == name && icon.type == type; });
 
     MoreIconsAPI::icons.push_back({
         .name = name,
@@ -420,7 +420,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
     auto trailID = numFromString<int>(pathStem.substr(pathStem.find('_') + 1, pathStem.rfind('_') - pathStem.find('_') - 1)).unwrapOr(0);
     if (trailID <= 0) return;
 
-    ranges::remove(MoreIconsAPI::icons, [name](const IconInfo& icon) { return icon.name == name && icon.type == IconType::Special; });
+    ranges::remove(MoreIconsAPI::icons, [&name](const IconInfo& icon) { return icon.name == name && icon.type == IconType::Special; });
 
     MoreIconsAPI::icons.push_back({
         .name = name,

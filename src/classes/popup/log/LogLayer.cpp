@@ -48,7 +48,7 @@ bool LogLayer::setup(IconType type) {
 
     auto logs = ranges::filter(MoreIcons::logs, [type](const LogData& log) { return log.type == type; });
     std::ranges::sort(logs, [](const LogData& a, const LogData& b) {
-        return a.severity == b.severity ? a.name < b.name : a.severity < b.severity;
+        return a.severity == b.severity ? a.name < b.name : a.severity > b.severity;
     });
     for (int i = 0; i < logs.size(); i++) {
         auto& log = logs[i];
