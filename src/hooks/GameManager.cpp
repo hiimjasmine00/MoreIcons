@@ -57,7 +57,7 @@ class $modify(MIGameManager, GameManager) {
 
     gd::string sheetNameForIcon(int id, int type) {
         auto ret = GameManager::sheetNameForIcon(id, type);
-        if (ret.empty() || !MoreIcons::traditionalPacks) return ret;
+        if (ret.empty() || !MoreIcons::traditionalPacks || id < 1) return ret;
         return MoreIcons::vanillaTexturePath(ret, false);
     }
 
