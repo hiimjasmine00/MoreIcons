@@ -25,8 +25,10 @@ MoreIconsPopup* MoreIconsPopup::create() {
 }
 
 bool MoreIconsPopup::setup() {
+    auto& metadata = Mod::get()->getMetadataRef();
+
     setID("MoreIconsPopup");
-    setTitle("More Icons", "goldFont.fnt", 0.7f, 17.0f);
+    setTitle(fmt::format("{} {}", metadata.getName(), metadata.getVersion().toVString()), "goldFont.fnt", 0.7f, 17.0f);
     m_title->setID("more-icons-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");

@@ -260,21 +260,25 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
                     if (icon->sheetName.empty() && !icon->folderName.empty()) {
                         auto filename = std::filesystem::path(icon->folderName).filename();
                         std::filesystem::rename(icon->folderName, trashDir / filename, code);
-                        if (code) return Notification::create(fmt::format("Failed to trash {}.", filename), NotificationIcon::Error)->show();
+                        if (code) return Notification::create(
+                            fmt::format("Failed to trash {}: {}.", filename, code.message()), NotificationIcon::Error)->show();
                     }
                     else if (icon->folderName.empty() && !icon->sheetName.empty()) {
                         auto sheetName = std::filesystem::path(icon->sheetName).filename();
                         std::filesystem::rename(icon->sheetName, trashDir / sheetName, code);
-                        if (code) return Notification::create(fmt::format("Failed to trash {}.", sheetName), NotificationIcon::Error)->show();
+                        if (code) return Notification::create(
+                            fmt::format("Failed to trash {}: {}.", sheetName, code.message()), NotificationIcon::Error)->show();
 
                         auto textureName = std::filesystem::path(icon->textures[0]).filename();
                         std::filesystem::rename(icon->textures[0], trashDir / textureName, code);
-                        if (code) return Notification::create(fmt::format("Failed to trash {}.", textureName), NotificationIcon::Error)->show();
+                        if (code) return Notification::create(
+                            fmt::format("Failed to trash {}: {}.", textureName, code.message()), NotificationIcon::Error)->show();
                     }
                     else if (!icon->textures.empty()) {
                         auto filename = std::filesystem::path(icon->textures[0]).filename();
                         std::filesystem::rename(icon->textures[0], trashDir / filename, code);
-                        if (code) return Notification::create(fmt::format("Failed to trash {}.", filename), NotificationIcon::Error)->show();
+                        if (code) return Notification::create(
+                            fmt::format("Failed to trash {}: {}.", filename, code.message()), NotificationIcon::Error)->show();
                     }
 
                     Notification::create(fmt::format("Trashed {}!", icon->name), NotificationIcon::Success)->show();
@@ -605,8 +609,8 @@ void EditIconPopup::saveIcon(const std::filesystem::path& png, const std::filesy
     }
 
     texpack::Packer packer;
-    for (auto [key, _] : CCDictionaryExt<std::string, CCSpriteFrame*>(m_frames)) {
-        packer.frame(iconName + key, getImage(static_cast<CCSprite*>(m_sprites->objectForKey(key))));
+    for (auto [frameName, frame] : CCDictionaryExt<std::string, CCSpriteFrame*>(m_frames)) {
+        packer.frame(iconName + frameName, getImage(static_cast<CCSprite*>(m_sprites->objectForKey(frameName))));
     }
 
     if (auto res = packer.pack(); res.isErr())

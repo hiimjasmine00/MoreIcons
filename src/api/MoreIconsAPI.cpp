@@ -176,11 +176,11 @@ void MoreIconsAPI::loadIconAsync(IconInfo* info) {
         auto imageRes = sheet ? createFrames(textureName, info->sheetName, info->name, info->type) : packFrames(info->textures, info->frameNames);
         if (imageRes.isErr()) return log::error("{}: {}", info->name, imageRes.unwrapErr());
 
-        auto [data, texture, frames, width, height] = imageRes.unwrap();
+        auto result = imageRes.unwrap();
 
         std::unique_lock lock(imageMutex);
 
-        images.push_back({ textureName, data, frames, texture, sheet ? info : nullptr, width, height });
+        images.push_back({ textureName, result.data, result.frames, result.texture, sheet ? info : nullptr, result.width, result.height });
     });
 }
 
@@ -446,15 +446,28 @@ Result<ImageResult> MoreIconsAPI::packFrames(const std::vector<std::string>& tex
 
     auto texture = new CCTexture2D();
     auto frames = new CCDictionary();
+    auto factor = CCDirector::get()->getContentScaleFactor();
     for (auto& frame : packer.frames()) {
         auto spriteFrame = new CCSpriteFrame();
-        spriteFrame->initWithTexture(
-            texture,
-            { (float)frame.rect.origin.x, (float)frame.rect.origin.y, (float)frame.rect.size.width, (float)frame.rect.size.height },
-            frame.rotated,
-            { (float)frame.offset.x, (float)frame.offset.y },
-            { (float)frame.size.width, (float)frame.size.height }
-        );
+        spriteFrame->m_obOffset.x = frame.offset.x / factor;
+        spriteFrame->m_obOffset.y = frame.offset.y / factor;
+        spriteFrame->m_obOriginalSize.width = frame.size.width / factor;
+        spriteFrame->m_obOriginalSize.height = frame.size.height / factor;
+        spriteFrame->m_obRectInPixels.origin.x = frame.rect.origin.x;
+        spriteFrame->m_obRectInPixels.origin.y = frame.rect.origin.y;
+        spriteFrame->m_obRectInPixels.size.width = frame.rect.size.width;
+        spriteFrame->m_obRectInPixels.size.height = frame.rect.size.height;
+        spriteFrame->m_bRotated = frame.rotated;
+        spriteFrame->m_obRect.origin.x = frame.rect.origin.x / factor;
+        spriteFrame->m_obRect.origin.y = frame.rect.origin.y / factor;
+        spriteFrame->m_obRect.size.width = frame.rect.size.width / factor;
+        spriteFrame->m_obRect.size.height = frame.rect.size.height / factor;
+        spriteFrame->m_obOffsetInPixels.x = frame.offset.x;
+        spriteFrame->m_obOffsetInPixels.y = frame.offset.y;
+        spriteFrame->m_obOriginalSizeInPixels.width = frame.size.width;
+        spriteFrame->m_obOriginalSizeInPixels.height = frame.size.height;
+        spriteFrame->m_pobTexture = texture;
+        texture->retain();
         frames->setObject(spriteFrame, frame.name);
         spriteFrame->release();
     }
