@@ -39,8 +39,8 @@ class $modify(MIPlayerObject, PlayerObject) {
         else setUserObject("name"_spr, nullptr);
     }
 
-    bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool ignoreDamage) {
-        if (!PlayerObject::init(player, ship, gameLayer, layer, ignoreDamage)) return false;
+    bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool playLayer) {
+        if (!PlayerObject::init(player, ship, gameLayer, layer, playLayer)) return false;
 
         if (p1() || p2()) {
             updateIcon(IconType::Cube);
