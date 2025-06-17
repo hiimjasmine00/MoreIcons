@@ -35,58 +35,43 @@ $on_mod(DataSaved) {
     MoreIcons::saveTrails();
 }
 
-std::map<IconType, std::vector<std::string>> vanillaNames = {
-    { IconType::Cube, {} },
-    { IconType::Ship, {} },
-    { IconType::Ball, {} },
-    { IconType::Ufo, {} },
-    { IconType::Wave, {} },
-    { IconType::Robot, {} },
-    { IconType::Spider, {} },
-    { IconType::Swing, {} },
-    { IconType::Jetpack, {} },
-    { IconType::Special, {} }
-};
+#define DIRECTORY_ITERATOR \
+    std::error_code code; \
+    std::filesystem::directory_iterator it(path, code); \
+    if (code) { \
+        log::error("{}: Failed to create directory iterator: {}", path, code.message()); \
+        continue; \
+    } \
+    for (; it != std::filesystem::end(it); it.increment(code))
 
-std::vector<IconPack> MoreIcons::getTexturePacks() {
-    constexpr std::array unlockPrefixes = {
-        "", "player_", "", "", "ship_", "player_ball_", "bird_", "dart_",
-        "robot_", "spider_", "streak_", "PlayerExplosion_", "", "swing_", "jetpack_", "shipfire"
-    };
+#define DIRECTORY_ITERATOR_END if (code) log::error("{}: Failed to iterate over directory: {}", path, code.message());
 
-    auto gameManager = GameManager::get();
-    auto factor = CCDirector::get()->getContentScaleFactor();
-    for (auto& [type, names] : vanillaNames) {
-        auto count = gameManager->countForType(type);
-        auto prefix = unlockPrefixes[(int)gameManager->iconTypeToUnlockType(type)];
-        names.clear();
-        for (int i = 1; i <= count; i++) {
-            auto name = fmt::format("{}{:02}{}", prefix, i, type == IconType::Special ? "_001" : "");
-            if (type != IconType::Special) {
-                if (factor >= 4.0f) names.push_back(name + "-uhd.png");
-                if (factor >= 2.0f) names.push_back(name + "-hd.png");
-            }
-            names.push_back(name + ".png");
-        }
-    }
-
-    std::vector<IconPack> packs = { { "More Icons", "", dirs::getGeodeDir(), false } };
+void MoreIcons::loadPacks() {
+    packs.clear();
+    packs.push_back({ "More Icons", "", dirs::getGeodeDir(), false });
     for (auto& pack : texture_loader::getAppliedPacks()) {
         if (traditionalPacks) {
             if (doesExist(pack.resourcesPath / "icons")) packs.push_back({ pack.name, pack.id, pack.resourcesPath, true });
             else {
-                for (auto& trail : vanillaNames[IconType::Special]) {
-                    if (doesExist(pack.resourcesPath / trail)) {
-                        packs.push_back({ pack.name, pack.id, pack.resourcesPath, true });
+                auto& path = pack.resourcesPath;
+                DIRECTORY_ITERATOR {
+                    auto& entry = *it;
+                    if (!entry.is_regular_file()) continue;
+
+                    auto& entryPath = entry.path();
+                    if (entryPath.extension() != ".png") continue;
+
+                    auto filename = string::pathToString(entryPath.filename());
+                    if (filename.starts_with("streak_") && filename.ends_with("_001.png")) {
+                        packs.push_back({ pack.name, pack.id, entryPath.parent_path(), true });
                         break;
                     }
                 }
+                DIRECTORY_ITERATOR_END
             }
         }
         if (doesExist(pack.resourcesPath / "config" / GEODE_MOD_ID)) packs.push_back({ pack.name, pack.id, pack.resourcesPath, false });
     }
-
-    return packs;
 }
 
 std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuffix) {
@@ -102,9 +87,7 @@ std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuff
     return string::pathToString(dirs::getResourcesDir() / path);
 }
 
-bool naturalSorter(const std::string& aStr, const std::string& bStr) {
-    auto a = aStr.substr(aStr.find(':') + 1);
-    auto b = bStr.substr(bStr.find(':') + 1);
+bool naturalSort(const std::string& a, const std::string& b) {
     auto aIt = a.begin();
     auto bIt = b.begin();
 
@@ -132,27 +115,13 @@ bool naturalSorter(const std::string& aStr, const std::string& bStr) {
     return a.size() < b.size();
 }
 
-struct NaturalSorter {
-    bool operator()(const std::string& a, const std::string& b) const {
-        return naturalSorter(a, b);
+bool naturalSort(const IconInfo& a, const IconInfo& b) {
+    if (a.packID != b.packID) {
+        if (a.packID.empty()) return true;
+        if (b.packID.empty()) return false;
+        return naturalSort(a.packID, b.packID);
     }
-};
-
-void naturalSort(IconType type) {
-    using PackMap = std::map<std::string, std::vector<IconInfo>, NaturalSorter>;
-    auto packs = ranges::reduce<PackMap>(MoreIconsAPI::icons, [type](PackMap& acc, const IconInfo& info) {
-        if (info.type != type) return acc;
-        auto index = info.name.find(':');
-        acc[index != std::string::npos ? info.name.substr(0, index) : ""].push_back(info);
-        return acc;
-    });
-
-    ranges::remove(MoreIconsAPI::icons, [type](const IconInfo& icon) { return icon.type == type; });
-    ranges::push(MoreIconsAPI::icons, ranges::reduce<std::vector<IconInfo>>(packs, [](std::vector<IconInfo>& acc, const PackMap::value_type& pack) {
-        auto vec = pack.second;
-        std::ranges::sort(vec, [](const IconInfo& a, const IconInfo& b) { return naturalSorter(a.name, b.name); });
-        return ranges::push(acc, vec);
-    }));
+    return naturalSort(a.name.substr(a.packID.empty() ? 0 : (a.packID.size() + 1)), b.name.substr(b.packID.empty() ? 0 : (b.packID.size() + 1)));
 }
 
 std::string replaceEnd(const std::string& str, size_t end, std::string_view replace) {
@@ -174,7 +143,11 @@ void safeDebug(fmt::format_string<Args...> message, Args&&... args) {
     if (MoreIcons::debugLogs) log::debug(message, std::forward<Args>(args)...);
 }
 
-void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, IconType type) {
+bool hasIcon(const std::vector<IconInfo>& icons, const std::string& name, IconType type) {
+    return std::ranges::any_of(icons, [&name, type](const IconInfo& icon) { return icon.name == name && icon.type == type; });
+}
+
+void loadFolderIcon(std::vector<IconInfo>& icons, const std::filesystem::path& path, const IconPack& pack, IconType type) {
     auto factor = CCDirector::get()->getContentScaleFactor();
     auto pathFilename = string::pathToString(path.filename());
     auto pathString = string::pathToString(path);
@@ -236,9 +209,9 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
     if (code) printLog(name, Severity::Warning, "Failed to iterate over directory: {}", code.message());
 
     if (!textures.empty()) {
-        if (MoreIconsAPI::hasIcon(name, type)) return printLog(name, Severity::Warning, "Duplicate icon name");
+        if (hasIcon(icons, name, type)) return printLog(name, Severity::Warning, "Duplicate icon name");
 
-        MoreIconsAPI::icons.push_back({
+        icons.push_back({
             .name = name,
             .textures = textures,
             .frameNames = frameNames,
@@ -259,7 +232,7 @@ void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack, Ico
     safeDebug("Finished pre-loading folder icon {} from {}", name, pack.name);
 }
 
-void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconType type) {
+void loadFileIcon(std::vector<IconInfo>& icons, const std::filesystem::path& path, const IconPack& pack, IconType type) {
     auto factor = CCDirector::get()->getContentScaleFactor();
     auto pathFilename = string::pathToString(path.filename());
     auto pathStem = string::pathToString(path.stem());
@@ -305,9 +278,9 @@ void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconT
     auto texturePath = replaceEnd(pathString, 6, ".png");
     if (!doesExist(texturePath)) return printLog(name, Severity::Error, "Texture file {}.png not found", pathStem);
 
-    if (MoreIconsAPI::hasIcon(name, type)) return printLog(name, Severity::Warning, "Duplicate icon name");
+    if (hasIcon(icons, name, type)) return printLog(name, Severity::Warning, "Duplicate icon name");
 
-    MoreIconsAPI::icons.push_back({
+    icons.push_back({
         .name = name,
         .textures = { texturePath },
         .frameNames = {},
@@ -327,7 +300,7 @@ void loadFileIcon(const std::filesystem::path& path, const IconPack& pack, IconT
     safeDebug("Finished pre-loading file icon {} from {}", name, pack.name);
 }
 
-void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack, IconType type) {
+void loadVanillaIcon(std::vector<IconInfo>& icons, const std::filesystem::path& path, const IconPack& pack, IconType type) {
     auto factor = CCDirector::get()->getContentScaleFactor();
     auto pathFilename = string::pathToString(path.filename());
     auto pathStem = string::pathToString(path.stem());
@@ -354,9 +327,9 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack, Ic
     if (!doesExist(plistPath)) plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", pathStem), false);
     if (!CCFileUtils::get()->isFileExist(plistPath)) return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
 
-    ranges::remove(MoreIconsAPI::icons, [&name, type](const IconInfo& icon) { return icon.name == name && icon.type == type; });
+    ranges::remove(icons, [&name, type](const IconInfo& icon) { return icon.name == name && icon.type == type; });
 
-    MoreIconsAPI::icons.push_back({
+    icons.push_back({
         .name = name,
         .textures = { pathString },
         .frameNames = {},
@@ -376,13 +349,13 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack, Ic
     safeDebug("Finished pre-loading vanilla icon {} from {}", name, pack.name);
 }
 
-void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
+void loadTrail(std::vector<IconInfo>& icons, const std::filesystem::path& path, const IconPack& pack) {
     auto pathStem = string::pathToString(path.stem());
     auto name = pack.id.empty() ? pathStem : fmt::format("{}:{}", pack.id, pathStem);
 
     safeDebug("Pre-loading trail {} from {}", name, pack.name);
 
-    if (MoreIconsAPI::hasIcon(name, IconType::Special)) return printLog(name, Severity::Warning, "Duplicate trail name");
+    if (hasIcon(icons, name, IconType::Special)) return printLog(name, Severity::Warning, "Duplicate trail name");
 
     auto json = file::readJson(std::filesystem::path(path).replace_extension(".json")).unwrapOr(matjson::makeObject({
         { "blend", false },
@@ -392,7 +365,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
         { "stroke", 14.0f }
     }));
 
-    MoreIconsAPI::icons.push_back({
+    icons.push_back({
         .name = name,
         .textures = { string::pathToString(path) },
         .frameNames = {},
@@ -412,17 +385,17 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
     safeDebug("Finished pre-loading trail {} from {}", name, pack.name);
 }
 
-void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
+void loadVanillaTrail(std::vector<IconInfo>& icons, const std::filesystem::path& path, const IconPack& pack) {
     auto pathStem = string::pathToString(path.stem());
     auto name = fmt::format("{}:{}", pack.id, pathStem);
 
     safeDebug("Pre-loading vanilla trail {} from {}", name, pack.name);
     auto trailID = numFromString<int>(pathStem.substr(pathStem.find('_') + 1, pathStem.rfind('_') - pathStem.find('_') - 1)).unwrapOr(0);
-    if (trailID <= 0) return;
+    if (trailID == 0) trailID = -1;
 
-    ranges::remove(MoreIconsAPI::icons, [&name](const IconInfo& icon) { return icon.name == name && icon.type == IconType::Special; });
+    ranges::remove(icons, [&name](const IconInfo& icon) { return icon.name == name && icon.type == IconType::Special; });
 
-    MoreIconsAPI::icons.push_back({
+    icons.push_back({
         .name = name,
         .textures = { string::pathToString(path) },
         .frameNames = {},
@@ -448,25 +421,20 @@ void createDirectories(const std::filesystem::path& path) {
     if (code) log::error("{}: Failed to create directory: {}", path, code.message());
 }
 
-#define DIRECTORY_ITERATOR \
-    std::error_code code; \
-    std::filesystem::directory_iterator it(path, code); \
-    if (code) { \
-        log::error("{}: Failed to create directory iterator: {}", path, code.message()); \
-        continue; \
-    } \
-    for (; it != std::filesystem::end(it); it.increment(code))
-
-#define DIRECTORY_ITERATOR_END if (code) log::error("{}: Failed to iterate over directory: {}", path, code.message());
-
-void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view suffix, IconType type) {
+void MoreIcons::loadIcons(IconType type) {
     auto begin = MoreIconsAPI::icons.size();
     MoreIconsAPI::iconIndices[type].first = begin;
     currentType = type;
 
-    constexpr std::array prefixes = {
-        "player_", "ship_", "player_ball_", "bird_", "dart_", "robot_", "spider_", "swing_", "jetpack_"
+    auto unlockType = GameManager::get()->iconTypeToUnlockType(type);
+    constexpr std::array suffixes = {
+        "", "icon", "", "", "ship", "ball", "ufo", "wave",
+        "robot", "spider", "trail", "death", "", "swing", "jetpack", "fire"
     };
+    auto prefix = prefixes[(int)unlockType];
+    auto suffix = suffixes[(int)unlockType];
+
+    std::vector<IconInfo> icons;
 
     for (int i = 0; i < packs.size(); i++) {
         auto& pack = packs[i];
@@ -490,9 +458,14 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
                 auto& entry = *it;
                 auto& entryPath = entry.path();
                 if (entry.is_regular_file()) {
-                    if (entryPath.extension() == ".plist") loadFileIcon(entryPath, pack, type);
+                    if (type <= IconType::Jetpack) {
+                        if (entryPath.extension() == ".plist") loadFileIcon(icons, entryPath, pack, type);
+                    }
+                    else if (type == IconType::Special) {
+                        if (entryPath.extension() == ".png") loadTrail(icons, entryPath, pack);
+                    }
                 }
-                else if (entry.is_directory()) loadFolderIcon(entryPath, pack, type);
+                else if (type <= IconType::Jetpack && entry.is_directory()) loadFolderIcon(icons, entryPath, pack, type);
             }
             DIRECTORY_ITERATOR_END
 
@@ -512,9 +485,17 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
                 if (entryPath.extension() != ".png") continue;
 
                 auto filename = string::pathToString(entryPath.filename());
-                if (!filename.starts_with(prefixes[(int)type]) || (type == IconType::Cube && filename.starts_with("player_ball_"))) continue;
+                if (!filename.starts_with(prefix)) continue;
 
-                if (ranges::contains(vanillaNames[type], filename)) loadVanillaIcon(entryPath, pack, type);
+                if (type <= IconType::Jetpack) {
+                    if (type != IconType::Cube || !filename.starts_with("player_ball_")) {
+                        auto subname = filename.substr(strlen(prefix));
+                        if (subname != "00.png" && subname != "00-hd.png" && subname != "00-uhd.png") loadVanillaIcon(icons, entryPath, pack, type);
+                    }
+                }
+                else if (type == IconType::Special) {
+                    if (filename.ends_with("_001.png")) loadVanillaTrail(icons, entryPath, pack);
+                }
             }
             DIRECTORY_ITERATOR_END
 
@@ -522,7 +503,8 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
         }
     }
 
-    naturalSort(type);
+    std::ranges::sort(icons, [](const IconInfo& a, const IconInfo& b) { return naturalSort(a, b); });
+    ranges::push(MoreIconsAPI::icons, icons);
 
     auto end = MoreIconsAPI::icons.size();
     MoreIconsAPI::iconIndices[type].second = end;
@@ -543,87 +525,9 @@ void MoreIcons::loadIcons(const std::vector<IconPack>& packs, std::string_view s
     }
 }
 
-void MoreIcons::loadTrails(const std::vector<IconPack>& packs) {
-    auto begin = MoreIconsAPI::icons.size();
-    MoreIconsAPI::iconIndices[IconType::Special].first = begin;
-    currentType = IconType::Special;
-
-    for (int i = 0; i < packs.size(); i++) {
-        auto& pack = packs[i];
-
-        if (!pack.vanilla) {
-            auto path = pack.path / "config" / GEODE_MOD_ID / "trail";
-            if (!doesExist(path)) {
-                if (i == 0) createDirectories(path);
-                continue;
-            }
-
-            if (i == 0) {
-                std::error_code code;
-                std::filesystem::permissions(path, std::filesystem::perms::all, code);
-                if (code) log::error("{}: Failed to change permissions: {}", path, code.message());
-            }
-
-            log::info("Pre-loading trails from {}", path);
-
-            DIRECTORY_ITERATOR {
-                auto& entry = *it;
-                if (!entry.is_regular_file()) continue;
-
-                auto& entryPath = entry.path();
-                if (entryPath.extension() != ".png") continue;
-
-                loadTrail(entryPath, pack);
-            }
-            DIRECTORY_ITERATOR_END
-
-            log::info("Finished pre-loading trails from {}", path);
-        }
-        else if (traditionalPacks) {
-            auto& path = pack.path;
-
-            log::info("Pre-loading trails from {}", path);
-
-            DIRECTORY_ITERATOR {
-                auto& entry = *it;
-                if (!entry.is_regular_file()) continue;
-
-                auto& entryPath = entry.path();
-                auto filename = string::pathToString(entryPath.filename());
-                if (!filename.starts_with("streak_") || !filename.ends_with("_001.png")) continue;
-
-                if (ranges::contains(vanillaNames[IconType::Special], filename)) loadVanillaTrail(entryPath, pack);
-            }
-            DIRECTORY_ITERATOR_END
-
-            log::info("Finished pre-loading trails from {}", path);
-        }
-    }
-
-    naturalSort(IconType::Special);
-
-    auto end = MoreIconsAPI::icons.size();
-    MoreIconsAPI::iconIndices[IconType::Special].second = end;
-
-    if (MoreIconsAPI::preloadIcons) {
-        auto size = end - begin;
-
-        log::info("Pre-loading {} trail textures", size);
-
-        for (auto it = MoreIconsAPI::icons.data() + begin; it != std::to_address(MoreIconsAPI::icons.end()); it++) {
-            MoreIconsAPI::loadIconAsync(it);
-        }
-
-        ThreadPool::get().wait();
-
-        auto loaded = MoreIconsAPI::finishLoadIcons();
-        log::info("Finished pre-loading {} trail textures, {} remaining", loaded, size - loaded);
-    }
-}
-
 void MoreIcons::saveTrails() {
     for (auto& info : MoreIconsAPI::icons) {
-        if (info.type != IconType::Special || info.trailID > 0) continue;
+        if (info.type != IconType::Special || info.trailID != 0) continue;
         (void)file::writeToJson(std::filesystem::path(info.textures[0]).replace_extension(".json"), matjson::makeObject({
             { "blend", info.blend },
             { "tint", info.tint },

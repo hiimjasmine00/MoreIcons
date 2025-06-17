@@ -112,7 +112,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
         streak->setPosition(square->getContentSize() / 2);
         square->addChild(streak);
 
-        if (info->trailID <= 0) {
+        if (info->trailID == 0) {
             auto settingsButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_optionsBtn_001.png", 0.7f, [info](auto) {
                 SpecialSettingsPopup::create(info)->show();
             });

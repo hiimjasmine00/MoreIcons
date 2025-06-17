@@ -16,11 +16,11 @@ using namespace geode::prelude;
 
 class $modify(MIGarageLayer, GJGarageLayer) {
     struct Fields {
-        ListButtonBar* m_pageBar;
-        CCMenu* m_navMenu;
+        ListButtonBar* m_pageBar = nullptr;
+        CCMenu* m_navMenu = nullptr;
         std::map<IconType, int> m_pages;
         std::string m_selectedIcon;
-        bool m_initialized;
+        bool m_initialized = false;
     };
 
     static void onModify(ModifyBase<ModifyDerive<MIGarageLayer, GJGarageLayer>>& self) {

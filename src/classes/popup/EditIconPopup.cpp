@@ -198,7 +198,7 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
         auto stroke = 10.0f;
         auto tint = true;
         auto trailID = icon ? icon->trailID : id;
-        if (trailID > 0) switch (trailID) {
+        if (trailID != 0) switch (trailID) {
             case 2:
             case 7:
                 stroke = 14.0f;
@@ -226,7 +226,7 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
             fmt::format("streak_{:02}_001.png", iconID) : icon ? icon->textures[0] : "streak_01_001.png").c_str());
         m_streak->setBlendFunc({
             GL_SRC_ALPHA,
-            (uint32_t)GL_ONE_MINUS_SRC_ALPHA - (trailID > 0 || (icon && icon->blend)) * (uint32_t)GL_SRC_ALPHA
+            (uint32_t)GL_ONE_MINUS_SRC_ALPHA - (trailID != 0 || (icon && icon->blend)) * (uint32_t)GL_SRC_ALPHA
         });
         m_streak->setPosition({ 175.0f, 120.0f + (read && icon && icon->packID.empty()) * 20.0f - read * 70.0f });
         m_streak->setRotation(-90.0f);
@@ -555,10 +555,18 @@ texpack::Image getImage(cocos2d::CCSprite* sprite) {
     auto winSize = director->getWinSizeInPixels();
     glViewport(0, 0, winSize.width, winSize.height);
 
-    auto blendFunc = sprite->getBlendFunc();
-    sprite->setBlendFunc({ GL_ONE, GL_ZERO });
-    sprite->draw();
-    sprite->setBlendFunc(blendFunc);
+    if (!sprite->getDontDraw() && sprite->getOpacity() > 0) {
+        if (auto shaderProgram = sprite->getShaderProgram()) {
+            shaderProgram->use();
+            shaderProgram->setUniformsForBuiltins();
+        }
+        ccGLBlendFunc(GL_ONE, GL_ZERO);
+        ccGLBindTexture2D(sprite->getTexture()->getName());
+        glVertexAttribPointer(kCCVertexAttrib_Position, 3, GL_FLOAT, GL_FALSE, 24, &sprite->m_sQuad.tl.vertices);
+        glVertexAttribPointer(kCCVertexAttrib_Color, 4, GL_UNSIGNED_BYTE, GL_TRUE, 24, &sprite->m_sQuad.tl.colors);
+        glVertexAttribPointer(kCCVertexAttrib_TexCoords, 2, GL_FLOAT, GL_FALSE, 24, &sprite->m_sQuad.tl.texCoords);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    }
 
     std::vector<uint8_t> data(width * height * 4);
     glPixelStorei(GL_PACK_ALIGNMENT, 1);

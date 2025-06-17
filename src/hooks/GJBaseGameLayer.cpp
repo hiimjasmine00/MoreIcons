@@ -21,10 +21,10 @@ class $modify(MIBaseGameLayer, GJBaseGameLayer) {
 
         if (blend) return;
 
-        if (auto info = MoreIconsAPI::getIcon(IconType::Special, false))
+        if (auto info = MoreIconsAPI::getIcon(IconType::Special, false); info && info->trailID == 0)
             m_player1->m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)GL_ONE_MINUS_SRC_ALPHA - info->blend * (uint32_t)GL_SRC_ALPHA });
 
-        if (auto info = MoreIconsAPI::getIcon(IconType::Special, true))
+        if (auto info = MoreIconsAPI::getIcon(IconType::Special, true); info && info->trailID == 0)
             m_player2->m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)GL_ONE_MINUS_SRC_ALPHA - info->blend * (uint32_t)GL_SRC_ALPHA });
     }
     #endif

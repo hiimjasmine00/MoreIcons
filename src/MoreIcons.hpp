@@ -19,7 +19,6 @@ struct LogData {
 
 class MoreIcons {
 public:
-    inline static std::vector<LogData> logs;
     inline static constexpr std::array severityFrames = {
         "cc_2x2_white_image", "GJ_infoIcon_001.png", "geode.loader/info-warning.png", "geode.loader/info-alert.png"
     };
@@ -27,6 +26,8 @@ public:
         "", "player_", "", "", "ship_", "player_ball_", "bird_", "dart_",
         "robot_", "spider_", "streak_", "PlayerExplosion_", "", "swing_", "jetpack_", "shipfire"
     };
+    inline static std::vector<IconPack> packs;
+    inline static std::vector<LogData> logs;
     inline static std::map<IconType, int> severities = {
         { IconType::Cube, 0 },
         { IconType::Ship, 0 },
@@ -45,9 +46,8 @@ public:
     inline static bool debugLogs = true;
     inline static bool traditionalPacks = true;
 
-    static std::vector<IconPack> getTexturePacks();
-    static std::string vanillaTexturePath(const std::string& path, bool skipSuffix);
-    static void loadIcons(const std::vector<IconPack>& packs, std::string_view suffix, IconType type);
-    static void loadTrails(const std::vector<IconPack>& packs);
+    static void loadIcons(IconType type);
+    static void loadPacks();
     static void saveTrails();
+    static std::string vanillaTexturePath(const std::string& path, bool skipSuffix);
 };

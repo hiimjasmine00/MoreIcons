@@ -5,9 +5,8 @@ using namespace geode::prelude;
 
 class $modify(MILoadingLayer, LoadingLayer) {
     struct Fields {
-        int m_iconLoadStep;
-        bool m_finishedLoading;
-        std::vector<IconPack> m_iconPacks;
+        int m_iconLoadStep = 0;
+        bool m_finishedLoading = false;
     };
 
     static void onModify(ModifyBase<ModifyDerive<MILoadingLayer, LoadingLayer>>& self) {
@@ -16,41 +15,44 @@ class $modify(MILoadingLayer, LoadingLayer) {
 
     void loadAssets() {
         auto f = m_fields.self();
-        if (f->m_finishedLoading) return LoadingLayer::loadAssets();
+        if (f->m_finishedLoading) {
+            MoreIcons::packs.clear();
+            return LoadingLayer::loadAssets();
+        }
 
         switch (f->m_iconLoadStep) {
             case 0:
-                f->m_iconPacks = MoreIcons::getTexturePacks();
+                MoreIcons::loadPacks();
                 break;
             case 1:
-                MoreIcons::loadIcons(f->m_iconPacks, "icon", IconType::Cube);
+                MoreIcons::loadIcons(IconType::Cube);
                 break;
             case 2:
-                MoreIcons::loadIcons(f->m_iconPacks, "ship", IconType::Ship);
+                MoreIcons::loadIcons(IconType::Ship);
                 break;
             case 3:
-                MoreIcons::loadIcons(f->m_iconPacks, "ball", IconType::Ball);
+                MoreIcons::loadIcons(IconType::Ball);
                 break;
             case 4:
-                MoreIcons::loadIcons(f->m_iconPacks, "ufo", IconType::Ufo);
+                MoreIcons::loadIcons(IconType::Ufo);
                 break;
             case 5:
-                MoreIcons::loadIcons(f->m_iconPacks, "wave", IconType::Wave);
+                MoreIcons::loadIcons(IconType::Wave);
                 break;
             case 6:
-                MoreIcons::loadIcons(f->m_iconPacks, "robot", IconType::Robot);
+                MoreIcons::loadIcons(IconType::Robot);
                 break;
             case 7:
-                MoreIcons::loadIcons(f->m_iconPacks, "spider", IconType::Spider);
+                MoreIcons::loadIcons(IconType::Spider);
                 break;
             case 8:
-                MoreIcons::loadIcons(f->m_iconPacks, "swing", IconType::Swing);
+                MoreIcons::loadIcons(IconType::Swing);
                 break;
             case 9:
-                MoreIcons::loadIcons(f->m_iconPacks, "jetpack", IconType::Jetpack);
+                MoreIcons::loadIcons(IconType::Jetpack);
                 break;
             case 10:
-                MoreIcons::loadTrails(f->m_iconPacks);
+                MoreIcons::loadIcons(IconType::Special);
                 break;
             default:
                 return LoadingLayer::loadAssets();

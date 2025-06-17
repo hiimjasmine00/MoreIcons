@@ -221,7 +221,7 @@ void MoreIconsAPI::unloadIcon(const std::string& name, IconType type, int reques
 }
 
 void MoreIconsAPI::unloadIcons(int requestID) {
-    if (!requestedIcons.contains(requestID)) return;
+    if (preloadIcons || !requestedIcons.contains(requestID)) return;
 
     auto& iconRequests = requestedIcons[requestID];
     for (int i = 0; i < 9; i++) {

@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v1.13.6 (2025-06-17)
+- Removed the cap on the number of icons in traditional icon packs (Suggested by [benBabies](user:9678950))
+
 ## v1.13.5 (2025-06-16)
 - Added the mod version to the More Icons popup
 - Fixed custom trails not showing in the More Icons popup

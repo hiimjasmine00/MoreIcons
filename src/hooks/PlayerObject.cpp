@@ -76,7 +76,7 @@ class $modify(MIPlayerObject, PlayerObject) {
 
         auto fade = 0.3f;
         auto stroke = 10.0f;
-        if (info->trailID > 0) switch (info->trailID) {
+        if (info->trailID != 0) switch (info->trailID) {
             case 2:
             case 7:
                 stroke = 14.0f;
@@ -117,7 +117,7 @@ class $modify(MIPlayerObject, PlayerObject) {
 
         m_regularTrail->initWithFade(fade, 5.0f, stroke, { 255, 255, 255 }, info->textures[0].c_str());
         if (info->trailID == 6) m_regularTrail->enableRepeatMode(0.1f);
-        if (info->trailID > 0 || info->blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
+        if (info->trailID != 0 || info->blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
         m_regularTrail->setUserObject("name"_spr, CCString::create(info->name));
     }
 
@@ -125,7 +125,7 @@ class $modify(MIPlayerObject, PlayerObject) {
         PlayerObject::updateStreakBlend(blend);
 
         auto info = p1() ? MoreIconsAPI::getIcon(IconType::Special, false) : p2() ? MoreIconsAPI::getIcon(IconType::Special, true) : nullptr;
-        if (info && info->trailID <= 0)
+        if (info && info->trailID == 0)
             m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)GL_ONE_MINUS_SRC_ALPHA - info->blend * (uint32_t)GL_SRC_ALPHA });
     }
 };
