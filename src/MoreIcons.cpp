@@ -123,15 +123,6 @@ bool naturalSort(const std::string& a, const std::string& b) {
     return a.size() < b.size();
 }
 
-bool naturalSort(const IconInfo& a, const IconInfo& b) {
-    if (a.packID != b.packID) {
-        if (a.packID.empty()) return true;
-        if (b.packID.empty()) return false;
-        return naturalSort(a.packID, b.packID);
-    }
-    return naturalSort(a.name.substr(a.packID.empty() ? 0 : (a.packID.size() + 1)), b.name.substr(b.packID.empty() ? 0 : (b.packID.size() + 1)));
-}
-
 std::string replaceEnd(const std::string& str, size_t end, std::string_view replace) {
     return str.substr(0, str.size() - end).append(replace);
 }
@@ -520,7 +511,16 @@ void MoreIcons::loadIcons(IconType type) {
         }
     }
 
-    std::ranges::sort(icons, [](const IconInfo& a, const IconInfo& b) { return naturalSort(a, b); });
+    std::ranges::sort(icons, [](const IconInfo& a, const IconInfo& b) {
+        auto aPackSize = a.packID.size();
+        auto bPackSize = b.packID.size();
+        if (a.packID != b.packID) {
+            if (aPackSize == 0) return true;
+            if (bPackSize == 0) return false;
+            return naturalSort(a.packID, b.packID);
+        }
+        return naturalSort(a.name.substr(aPackSize > 0 ? aPackSize + 1 : 0), b.name.substr(bPackSize > 0 ? bPackSize + 1 : 0));
+    });
     ranges::push(MoreIconsAPI::icons, icons);
 
     MoreIconsAPI::iconIndices[type].second = MoreIconsAPI::icons.size();
