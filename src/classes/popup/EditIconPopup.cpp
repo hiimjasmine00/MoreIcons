@@ -257,13 +257,7 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
                     if (!exists) return Notification::create("Failed to create trash directory.", NotificationIcon::Error)->show();
                     else std::filesystem::permissions(trashDir, std::filesystem::perms::all, code);
 
-                    if (icon->sheetName.empty() && !icon->folderName.empty()) {
-                        auto filename = std::filesystem::path(icon->folderName).filename();
-                        std::filesystem::rename(icon->folderName, trashDir / filename, code);
-                        if (code) return Notification::create(
-                            fmt::format("Failed to trash {}: {}.", filename, code.message()), NotificationIcon::Error)->show();
-                    }
-                    else if (icon->folderName.empty() && !icon->sheetName.empty()) {
+                    if (!icon->sheetName.empty()) {
                         auto sheetName = std::filesystem::path(icon->sheetName).filename();
                         std::filesystem::rename(icon->sheetName, trashDir / sheetName, code);
                         if (code) return Notification::create(

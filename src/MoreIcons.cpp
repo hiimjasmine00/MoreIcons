@@ -6,6 +6,7 @@
 #include <Geode/loader/Mod.hpp>
 #include <Geode/utils/ranges.hpp>
 #include <geode.texture-loader/include/TextureLoader.hpp>
+#include <texpack.hpp>
 
 using namespace geode::prelude;
 
@@ -43,7 +44,7 @@ void MoreIcons::loadSettings() {
     MoreIconsAPI::preloadIcons = mod->getSettingValue<bool>("preload-icons");
 }
 
-#define DIRECTORY_ITERATOR \
+#define DIRECTORY_ITERATOR(path) \
     std::error_code code; \
     std::filesystem::directory_iterator it(path, code); \
     if (code) { \
@@ -54,15 +55,127 @@ void MoreIcons::loadSettings() {
 
 #define DIRECTORY_ITERATOR_END if (code) log::error("{}: Failed to iterate over directory: {}", path, code.message());
 
+template <typename... Args>
+void safeDebug(fmt::format_string<Args...> message, Args&&... args) {
+    if (debugLogs) log::debug(message, std::forward<Args>(args)...);
+}
+
+template <typename... Args>
+void safeInfo(fmt::format_string<Args...> message, Args&&... args) {
+    if (infoLogs) log::info(message, std::forward<Args>(args)...);
+}
+
+void migrateFolderIcons(const std::filesystem::path& path) {
+    safeInfo("Beginning folder icon migration in {}", path);
+
+    constexpr std::array folders = {
+        "icon", "ship", "ball", "ufo", "wave", "robot", "spider", "swing", "jetpack"
+    };
+
+    auto& saveContainer = Mod::get()->getSaveContainer();
+    if (!saveContainer.contains("migrated-folders")) saveContainer["migrated-folders"] = std::vector<matjson::Value>();
+
+    auto& migratedFolders = saveContainer["migrated-folders"];
+
+    for (int i = 0; i < folders.size(); i++) {
+        auto& folder = folders[i];
+        auto folderPath = path / folder;
+        if (!doesExist(folderPath)) continue;
+
+        auto isRobot = i == 5 || i == 6;
+        DIRECTORY_ITERATOR(folderPath) {
+            auto& entry = *it;
+            if (!entry.is_directory()) continue;
+
+            auto& entryPath = entry.path();
+            if (migratedFolders.isArray() && ranges::contains(migratedFolders.asArray().unwrap(), entryPath)) continue;
+
+            migratedFolders.push(entryPath);
+
+            std::vector<std::string> names;
+
+            DIRECTORY_ITERATOR(entryPath) {
+                auto& entry2 = *it;
+                if (!entry2.is_regular_file()) continue;
+
+                auto& entry2Path = entry2.path();
+                if (entry2Path.extension() != ".png") continue;
+
+                auto name = string::pathToString(entry2Path.stem());
+                if (name.ends_with("_2_001")) {
+                    if (!isRobot || name.ends_with("_01_2_001") || name.ends_with("_02_2_001") ||
+                        name.ends_with("_03_2_001") || name.ends_with("_04_2_001")) names.push_back(name);
+                }
+                else if (i == 3 && name.ends_with("_3_001")) names.push_back(name);
+                else if (name.ends_with("_extra_001")) {
+                    if (!isRobot || name.ends_with("_01_extra_001")) names.push_back(name);
+                }
+                else if (name.ends_with("_glow_001")) {
+                    if (!isRobot || name.ends_with("_01_glow_001") || name.ends_with("_02_glow_001") ||
+                        name.ends_with("_03_glow_001") || name.ends_with("_04_glow_001")) names.push_back(name);
+                }
+                else if (name.ends_with("_001")) {
+                    if (!isRobot || name.ends_with("_01_001") || name.ends_with("_02_001") ||
+                        name.ends_with("_03_001") || name.ends_with("_04_001")) names.push_back(name);
+                }
+            }
+            DIRECTORY_ITERATOR_END
+
+            if (names.empty()) continue;
+
+            texpack::Packer packer;
+
+            auto frameFailed = false;
+            for (auto& name : names) {
+                auto filename = name + ".png";
+                if (auto res = packer.frame(filename, entryPath / filename); res.isErr()) {
+                    log::error("{}: Failed to load {}: {}", entryPath, filename, res.unwrapErr());
+                    frameFailed = true;
+                    break;
+                }
+            }
+
+            if (frameFailed) continue;
+
+            if (auto res = packer.pack(); res.isErr()) {
+                log::error("{}: Failed to pack frames: {}", entryPath, res.unwrapErr());
+                continue;
+            }
+
+            auto pngPath = std::filesystem::path(entryPath).replace_extension(".png");
+            if (doesExist(pngPath)) {
+                std::error_code code;
+                std::filesystem::rename(pngPath, std::filesystem::path(pngPath).replace_extension(".png.bak"), code);
+                if (code) log::error("{}: Failed to rename existing image: {}", entryPath, code.message());
+            }
+            if (auto res = packer.png(pngPath); res.isErr()) log::error("{}: Failed to save image: {}", entryPath, res.unwrapErr());
+
+            auto plistPath = std::filesystem::path(entryPath).replace_extension(".plist");
+            if (doesExist(plistPath)) {
+                std::error_code code;
+                std::filesystem::rename(plistPath, std::filesystem::path(plistPath).replace_extension(".plist.bak"), code);
+                if (code) log::error("{}: Failed to rename existing plist: {}", entryPath, code.message());
+            }
+            if (auto res = packer.plist(plistPath, fmt::format("icons/{}", entryPath.filename()), "    "); res.isErr())
+                log::error("{}: Failed to save plist: {}", entryPath, res.unwrapErr());
+        }
+        DIRECTORY_ITERATOR_END
+    }
+
+    safeInfo("Finished folder icon migration in {}", path);
+}
+
 void MoreIcons::loadPacks() {
     packs.clear();
     packs.push_back({ "More Icons", "", dirs::getGeodeDir(), false });
+    migrateFolderIcons(Mod::get()->getConfigDir());
+
     for (auto& pack : texture_loader::getAppliedPacks()) {
         if (traditionalPacks) {
             if (doesExist(pack.resourcesPath / "icons")) packs.push_back({ pack.name, pack.id, pack.resourcesPath, true });
             else {
                 auto& path = pack.resourcesPath;
-                DIRECTORY_ITERATOR {
+                DIRECTORY_ITERATOR(path) {
                     auto& entry = *it;
                     if (!entry.is_regular_file()) continue;
 
@@ -78,7 +191,12 @@ void MoreIcons::loadPacks() {
                 DIRECTORY_ITERATOR_END
             }
         }
-        if (doesExist(pack.resourcesPath / "config" / GEODE_MOD_ID)) packs.push_back({ pack.name, pack.id, pack.resourcesPath, false });
+
+        auto configPath = pack.resourcesPath / "config" / GEODE_MOD_ID;
+        if (doesExist(configPath)) {
+            packs.push_back({ pack.name, pack.id, pack.resourcesPath, false });
+            migrateFolderIcons(configPath);
+        }
     }
 }
 
@@ -139,103 +257,10 @@ void printLog(const std::string& name, int severity, fmt::format_string<Args...>
     if (MoreIcons::severity < severity) MoreIcons::severity = severity;
 }
 
-template <typename... Args>
-void safeDebug(fmt::format_string<Args...> message, Args&&... args) {
-    if (debugLogs) log::debug(message, std::forward<Args>(args)...);
-}
-
-template <typename... Args>
-void safeInfo(fmt::format_string<Args...> message, Args&&... args) {
-    if (infoLogs) log::info(message, std::forward<Args>(args)...);
-}
-
 std::vector<IconInfo> icons;
 
 bool hasIcon(const std::string& name) {
     return std::ranges::any_of(icons, [&name](const IconInfo& icon) { return icon.name == name; });
-}
-
-void loadFolderIcon(const std::filesystem::path& path, const IconPack& pack) {
-    auto factor = CCDirector::get()->getContentScaleFactor();
-    auto pathFilename = string::pathToString(path.filename());
-    auto pathString = string::pathToString(path);
-    std::string name;
-    if (pathFilename.ends_with("-uhd")) {
-        name = replaceEnd(pathFilename, 4, "");
-        if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
-
-        if (factor < 4.0f && factor >= 2.0f) {
-            if (!doesExist(replaceEnd(pathString, 4, "-hd")) && !doesExist(replaceEnd(pathString, 4, "")))
-                return printLog(name, Severity::Warning, "Ignoring high-quality icon on medium texture quality");
-            return;
-        }
-        else if (factor < 2.0f) {
-            if (!doesExist(replaceEnd(pathString, 4, "")))
-                return printLog(name, Severity::Warning, "Ignoring high-quality icon on low texture quality");
-            return;
-        }
-    }
-    else if (pathFilename.ends_with("-hd")) {
-        name = replaceEnd(pathFilename, 3, "");
-        if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
-
-        if (factor < 2.0f) {
-            if (!doesExist(replaceEnd(pathString, 3, "")))
-                return printLog(name, Severity::Warning, "Ignoring medium-quality icon on low texture quality");
-            return;
-        }
-
-        if (doesExist(replaceEnd(pathString, 3, "-uhd")) && factor >= 4.0f) return;
-    }
-    else {
-        name = pathFilename;
-        if (!pack.id.empty()) name = fmt::format("{}:{}", pack.id, name);
-
-        if (doesExist(pathString + "-uhd") && factor >= 4.0f) return;
-        else if (doesExist(pathString + "-hd") && factor >= 2.0f) return;
-    }
-
-    safeDebug("Pre-loading folder icon {} from {}", name, pack.name);
-
-    std::error_code code;
-    std::filesystem::directory_iterator it(path, code);
-    if (code) return printLog(name, Severity::Error, "Failed to create directory iterator: {}", code.message());
-
-    std::vector<std::string> textures;
-
-    for (; it != std::filesystem::end(it); it.increment(code)) {
-        auto& entry = *it;
-        if (!entry.is_regular_file()) continue;
-
-        auto& entryPath = entry.path();
-        if (entryPath.extension() != ".png") continue;
-
-        textures.push_back(string::pathToString(entryPath));
-    }
-    if (code) printLog(name, Severity::Warning, "Failed to iterate over directory: {}", code.message());
-
-    if (!textures.empty()) {
-        if (hasIcon(name)) return printLog(name, Severity::Warning, "Duplicate icon name");
-
-        icons.push_back({
-            .name = name,
-            .textures = textures,
-            .frameNames = {},
-            .sheetName = "",
-            .packName = pack.name,
-            .packID = pack.id,
-            .type = currentType,
-            .trailID = 0,
-            .blend = false,
-            .tint = false,
-            .show = false,
-            .fade = 0.0f,
-            .stroke = 0.0f,
-            .folderName = string::pathToString(path)
-        });
-    }
-
-    safeDebug("Finished pre-loading folder icon {} from {}", name, pack.name);
 }
 
 void loadFileIcon(const std::filesystem::path& path, const IconPack& pack) {
@@ -299,8 +324,7 @@ void loadFileIcon(const std::filesystem::path& path, const IconPack& pack) {
         .tint = false,
         .show = false,
         .fade = 0.0f,
-        .stroke = 0.0f,
-        .folderName = ""
+        .stroke = 0.0f
     });
 
     safeDebug("Finished pre-loading file icon {} from {}", name, pack.name);
@@ -348,8 +372,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
         .tint = false,
         .show = false,
         .fade = 0.0f,
-        .stroke = 0.0f,
-        .folderName = ""
+        .stroke = 0.0f
     });
 
     safeDebug("Finished pre-loading vanilla icon {} from {}", name, pack.name);
@@ -384,8 +407,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
         .tint = json.contains("tint") ? json["tint"].asBool().unwrapOr(false) : false,
         .show = json.contains("show") ? json["show"].asBool().unwrapOr(false) : false,
         .fade = json.contains("fade") ? (float)json["fade"].asDouble().unwrapOr(0.3) : 0.3f,
-        .stroke = json.contains("stroke") ? (float)json["stroke"].asDouble().unwrapOr(14.0) : 14.0f,
-        .folderName = ""
+        .stroke = json.contains("stroke") ? (float)json["stroke"].asDouble().unwrapOr(14.0) : 14.0f
     });
 
     safeDebug("Finished pre-loading trail {} from {}", name, pack.name);
@@ -414,8 +436,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
         .tint = false,
         .show = false,
         .fade = 0.0f,
-        .stroke = 0.0f,
-        .folderName = ""
+        .stroke = 0.0f
     });
 
     safeDebug("Finished pre-loading vanilla trail {} from {}", name, pack.name);
@@ -462,18 +483,17 @@ void MoreIcons::loadIcons(IconType type) {
 
             safeInfo("Pre-loading {}s from {}", name, path);
 
-            DIRECTORY_ITERATOR {
+            DIRECTORY_ITERATOR(path) {
                 auto& entry = *it;
+                if (!entry.is_regular_file()) continue;
+
                 auto& entryPath = entry.path();
-                if (entry.is_regular_file()) {
-                    if (type <= IconType::Jetpack) {
-                        if (entryPath.extension() == ".plist") loadFileIcon(entryPath, pack);
-                    }
-                    else if (type == IconType::Special) {
-                        if (entryPath.extension() == ".png") loadTrail(entryPath, pack);
-                    }
+                if (type <= IconType::Jetpack) {
+                    if (entryPath.extension() == ".plist") loadFileIcon(entryPath, pack);
                 }
-                else if (type <= IconType::Jetpack && entry.is_directory()) loadFolderIcon(entryPath, pack);
+                else if (type == IconType::Special) {
+                    if (entryPath.extension() == ".png") loadTrail(entryPath, pack);
+                }
             }
             DIRECTORY_ITERATOR_END
 
@@ -485,7 +505,7 @@ void MoreIcons::loadIcons(IconType type) {
 
             safeInfo("Pre-loading {}s from {}", name, path);
 
-            DIRECTORY_ITERATOR {
+            DIRECTORY_ITERATOR(path) {
                 auto& entry = *it;
                 if (!entry.is_regular_file()) continue;
 

@@ -42,7 +42,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info) {
     }
 
     if (info) {
-        m_texture = info->folderName.empty() ? info->textures[0] : info->folderName;
+        m_texture = info->textures[0];
         m_sheet = info->sheetName;
     }
     else {
@@ -285,31 +285,23 @@ void LazyIcon::visit() {
 
     m_visited = true;
 
-    if (!m_info || !m_info->sheetName.empty() || m_type == IconType::Special || !m_info->folderName.empty()) {
-        ThreadPool::get().pushTask([
-            selfref = WeakRef(this),
-            sheet = m_sheet.empty() ? m_info ? m_info->folderName : "" : m_sheet,
-            name = m_info ? m_info->name : "",
-            type = m_type,
-            textures = m_info ? m_info->textures : std::vector<std::string>({ m_texture })
-        ] {
-            auto image = MoreIconsAPI::createFrames(textures, sheet, name, type);
-            queueInMainThread([selfref = std::move(selfref), image = std::move(image)] {
-                auto self = selfref.lock();
-                if (image.isErr()) {
-                    if (self) self->createIcon(image.unwrapErr(), {});
-                    return;
-                }
+    ThreadPool::get().pushTask([selfref = WeakRef(this), texture = m_texture, sheet = m_sheet, name = m_info ? m_info->name : "", type = m_type] {
+        auto image = MoreIconsAPI::createFrames(texture, sheet, name, type);
+        queueInMainThread([selfref = std::move(selfref), image = std::move(image)] {
+            auto self = selfref.lock();
+            if (image.isErr()) {
+                if (self) self->createIcon(image.unwrapErr(), {});
+                return;
+            }
 
-                auto result = image.unwrap();
-                if (self) self->createIcon("", MoreIconsAPI::addFrames(result));
-                else {
-                    result.texture->release();
-                    result.frames->release();
-                }
-            });
+            auto result = image.unwrap();
+            if (self) self->createIcon("", MoreIconsAPI::addFrames(result));
+            else {
+                result.texture->release();
+                result.frames->release();
+            }
         });
-    }
+    });
 }
 
 LazyIcon::~LazyIcon() {

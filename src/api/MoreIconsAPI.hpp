@@ -37,9 +37,7 @@ public:
     static void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type);
     static void updatePlayerObject(PlayerObject* object, IconType type, bool dual);
     static void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type);
-    static geode::Result<ImageResult> createFrames(
-        const std::vector<std::string>& textures, const std::string& sheet, const std::string& name, IconType type
-    );
+    static geode::Result<ImageResult> createFrames(const std::string& png, const std::string& plist, const std::string& name, IconType type);
     static geode::Result<std::pair<cocos2d::CCTexture2D*, cocos2d::CCDictionary*>> createFrames(
         const std::string& path, cocos2d::CCTexture2D* texture, const std::string& name, IconType type, bool fixNames = true
     );
