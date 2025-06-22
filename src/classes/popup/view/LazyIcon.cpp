@@ -288,17 +288,13 @@ void LazyIcon::visit() {
     if (!m_info || !m_info->sheetName.empty() || m_type == IconType::Special || !m_info->folderName.empty()) {
         ThreadPool::get().pushTask([
             selfref = WeakRef(this),
-            texture = m_texture,
-            sheet = m_sheet,
+            sheet = m_sheet.empty() ? m_info ? m_info->folderName : "" : m_sheet,
             name = m_info ? m_info->name : "",
             type = m_type,
-            textures = m_info ? m_info->textures : std::vector<std::string>(),
-            frameNames = m_info ? m_info->frameNames : std::vector<std::string>()
+            textures = m_info ? m_info->textures : std::vector<std::string>({ m_texture })
         ] {
-            auto image = !sheet.empty() || type == IconType::Special
-                ? MoreIconsAPI::createFrames(texture, sheet, name, type)
-                : MoreIconsAPI::packFrames(textures, frameNames);
-            queueInMainThread([selfref = std::move(selfref), texture = std::move(texture), image = std::move(image)] {
+            auto image = MoreIconsAPI::createFrames(textures, sheet, name, type);
+            queueInMainThread([selfref = std::move(selfref), image = std::move(image)] {
                 auto self = selfref.lock();
                 if (image.isErr()) {
                     if (self) self->createIcon(image.unwrapErr(), {});
@@ -306,7 +302,7 @@ void LazyIcon::visit() {
                 }
 
                 auto result = image.unwrap();
-                if (self) self->createIcon("", MoreIconsAPI::addFrames(texture, result));
+                if (self) self->createIcon("", MoreIconsAPI::addFrames(result));
                 else {
                     result.texture->release();
                     result.frames->release();

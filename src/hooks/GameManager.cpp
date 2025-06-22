@@ -40,13 +40,7 @@ class $modify(MIGameManager, GameManager) {
             { IconType::Special, Severity::Debug }
         };
         MoreIcons::showReload = false;
-
-        auto mod = Mod::get();
-        MoreIcons::debugLogs = mod->getSettingValue<bool>("debug-logs");
-        MoreIcons::traditionalPacks = mod->getSettingValue<bool>("traditional-packs");
-        MoreIconsAPI::preloadIcons = mod->getSettingValue<bool>("preload-icons");
-
-        auto hooks = mod->getHooks();
+        MoreIcons::loadSettings();
 
         if (sheetHook) (void)(MoreIcons::traditionalPacks ? sheetHook->enable().inspectErr([](const std::string& err) {
             log::error("Failed to enable GameManager::sheetNameForIcon hook: {}", err);

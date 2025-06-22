@@ -40,14 +40,13 @@ public:
         { IconType::Jetpack, 0 },
         { IconType::Special, 0 }
     };
-    inline static IconType currentType = IconType::Cube;
     inline static int severity = 0;
     inline static bool showReload = false;
-    inline static bool debugLogs = true;
     inline static bool traditionalPacks = true;
 
     static void loadIcons(IconType type);
     static void loadPacks();
+    static void loadSettings();
     static void saveTrails();
     static std::string vanillaTexturePath(const std::string& path, bool skipSuffix);
 };

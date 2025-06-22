@@ -492,8 +492,8 @@ void EditIconPopup::updateSprites() {
                 secondSprite->setPosition(spritePart->getContentSize() / 2);
             }
 
-            static_cast<CCSprite*>(sprite->m_glowSprite->getChildren()->objectAtIndex(i))->setDisplayFrame(
-                static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_glow_001.png", tag))));
+            if (auto glowChild = getChild<CCSprite>(sprite->m_glowSprite, i))
+                glowChild->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_glow_001.png", tag))));
 
             if (spritePart == sprite->m_headSprite) {
                 auto extraFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_extra_001.png", tag)));
@@ -501,7 +501,7 @@ void EditIconPopup::updateSprites() {
                     if (sprite->m_extraSprite) sprite->m_extraSprite->setDisplayFrame(extraFrame);
                     else {
                         sprite->m_extraSprite = CCSprite::createWithSpriteFrame(extraFrame);
-                        sprite->m_headSprite->addChild(sprite->m_extraSprite, 2);
+                        spritePart->addChild(sprite->m_extraSprite, 2);
                     }
                     sprite->m_extraSprite->setPosition(spritePart->getContentSize() / 2);
                 }

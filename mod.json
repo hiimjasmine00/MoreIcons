@@ -6,7 +6,7 @@
         "mac": "2.2074",
         "ios": "2.2074"
     },
-    "version": "v1.13.6",
+    "version": "v1.13.7",
     "id": "hiimjustin000.more_icons",
     "name": "More Icons",
     "developer": "hiimjasmine00",
@@ -32,6 +32,12 @@
         "debug-logs": {
             "name": "Debug Logs",
             "description": "Whether to enable debug logs in the mod.",
+            "type": "bool",
+            "default": true
+        },
+        "info-logs": {
+            "name": "Info Logs",
+            "description": "Whether to enable info logs in the mod.",
             "type": "bool",
             "default": true
         },

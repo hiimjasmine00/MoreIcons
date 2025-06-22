@@ -1,4 +1,8 @@
 # More Icons Changelog
+## v1.13.7 (2025-06-22)
+- Added the ability to disable non-icon info logs in the mod settings
+- Fixed a bug where custom trails from vanilla icon packs would not be added to the icon kit
+
 ## v1.13.6 (2025-06-17)
 - Removed the cap on the number of icons in traditional icon packs (Suggested by [benBabies](user:9678950))
 
