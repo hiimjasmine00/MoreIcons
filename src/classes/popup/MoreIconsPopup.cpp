@@ -27,7 +27,7 @@ bool MoreIconsPopup::setup() {
     auto& metadata = Mod::get()->getMetadataRef();
 
     setID("MoreIconsPopup");
-    setTitle(fmt::format("{} {}", metadata.getName(), metadata.getVersion().toVString()), "goldFont.fnt", 0.7f, 17.0f);
+    setTitle(fmt::format("{} {}", metadata.getName(), metadata.getVersion().toNonVString()), "goldFont.fnt", 0.7f, 17.0f);
     m_title->setID("more-icons-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -181,8 +181,9 @@ bool MoreIconsPopup::setup() {
     m_mainLayer->addChild(gamemodesNode);
 
     auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [](auto) {
-        auto trashDir = MoreIcons::createTrash();
-        if (!trashDir.empty()) file::openFolder(trashDir);
+        GEODE_UNWRAP_OR_ELSE(trashDir, err, MoreIcons::createTrash())
+            return Notification::create(fmt::format("Failed to create trash directory: {}", err), NotificationIcon::Error)->show();
+        file::openFolder(trashDir);
     });
     trashButton->setPosition({ 435.0f, 5.0f });
     trashButton->setID("trash-button");

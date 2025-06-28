@@ -28,6 +28,7 @@ public:
     static std::string activeIcon(IconType type, bool dual);
     static std::string setIcon(const std::string& icon, IconType type, bool dual);
     static IconType getIconType(PlayerObject* object);
+    static std::string getIconName(cocos2d::CCNode* node);
     static int getCount(IconType type);
     static bool hasIcon(const std::string& icon, IconType type);
     static bool hasIcon(IconType type, bool dual);
@@ -53,6 +54,9 @@ public:
     static void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type);
     static geode::Result<ImageResult> createFrames(
         const std::string& png, const std::string& plist, const std::string& name, IconType type, IconInfo* info = nullptr
+    );
+    static geode::Result<cocos2d::CCDictionary*> createFrames(
+        const std::string& path, cocos2d::CCTexture2D* texture, const std::string& name, IconType type, bool fixNames = true
     );
     static std::vector<std::string> addFrames(const ImageResult& image);
 };

@@ -98,6 +98,10 @@ IconType MoreIconsAPI::getIconType(PlayerObject* object) {
     return MoreIcons::getIconType(object);
 }
 
+std::string MoreIconsAPI::getIconName(cocos2d::CCNode* node) {
+    return MoreIcons::getIconName(node);
+}
+
 bool MoreIconsAPI::hasIcon(const std::string& icon, IconType type) {
     if (icon.empty() || !iconSpans.contains(type)) return false;
     return std::ranges::any_of(iconSpans[type], [&icon](const IconInfo& info) { return info.name == icon; });
@@ -304,8 +308,6 @@ void MoreIconsAPI::addIcon(const IconInfo& info) {
         return naturalSort(a.shortName, b.shortName);
     }), info);
 
-    log::info("{}", icons.size());
-
     for (int i = 0; i < types.size(); i++) {
         auto type = types[i];
         if (info.type < type) continue;
@@ -323,14 +325,21 @@ void MoreIconsAPI::removeIcon(IconInfo* info) {
     }
     CCTextureCache::get()->m_pTextures->removeObjectForKey(info->textures[0]);
 
-    for (auto& [requestID, iconRequests] : requestedIcons) {
-        if (iconRequests.contains(info->type) && iconRequests[info->type] == info->name) {
-            iconRequests.erase(info->type);
-            if (iconRequests.empty()) requestedIcons.erase(requestID);
+    auto type = info->type;
+    if (!preloadIcons) {
+        auto& name = info->name;
+        std::vector<int> requestIDs;
+        for (auto& [requestID, iconRequests] : requestedIcons) {
+            if (iconRequests.contains(type) && iconRequests[type] == name) {
+                iconRequests.erase(type);
+                if (iconRequests.empty()) requestIDs.push_back(requestID);
+            }
+        }
+        for (auto& requestID : requestIDs) {
+            requestedIcons.erase(requestID);
         }
     }
 
-    auto type = info->type;
     icons.erase(icons.begin() + (info - icons.data()));
     auto& iconSpan = iconSpans[type];
     iconSpan = { iconSpan.data(), iconSpan.size() - 1 };
@@ -344,10 +353,6 @@ void MoreIconsAPI::removeIcon(IconInfo* info) {
     }
 }
 
-Result<std::pair<CCTexture2D*, CCDictionary*>> createFramesInternal(
-    const std::string& path, CCTexture2D* texture, const std::string& name, IconType type, bool fixNames
-);
-
 void MoreIconsAPI::updateIcon(IconInfo* info) {
     auto texture = CCTextureCache::get()->textureForKey(info->textures[0].c_str());
     if (!texture) return;
@@ -360,11 +365,11 @@ void MoreIconsAPI::updateIcon(IconInfo* info) {
     });
     texture->m_bHasPremultipliedAlpha = true;
 
-    GEODE_UNWRAP_OR_ELSE(pair, err, createFramesInternal(info->sheetName, texture, info->name, info->type, true)) return;
+    GEODE_UNWRAP_OR_ELSE(frames, err, createFrames(info->sheetName, texture, info->name, info->type, true)) return;
 
     info->frameNames.clear();
     auto spriteFrameCache = CCSpriteFrameCache::get();
-    for (auto [frameName, frame] : CCDictionaryExt<std::string, CCSpriteFrame*>(pair.second)) {
+    for (auto [frameName, frame] : CCDictionaryExt<std::string, CCSpriteFrame*>(frames)) {
         if (auto spriteFrame = getFrameByName(frameName)) {
             spriteFrame->m_obOffset = frame->m_obOffset;
             spriteFrame->m_obOriginalSize = frame->m_obOriginalSize;
@@ -377,7 +382,7 @@ void MoreIconsAPI::updateIcon(IconInfo* info) {
         else spriteFrameCache->m_pSpriteFrames->setObject(frame, frameName);
         info->frameNames.push_back(frameName);
     }
-    pair.second->release();
+    frames->release();
 }
 
 void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, IconType type, bool dual) {
@@ -547,7 +552,7 @@ Result<std::vector<uint8_t>> getFileData(const std::string& path) {
     static thread_local ZipFile* apkFile = new ZipFile(getApkPath());
     if (path.starts_with("assets/")) {
         auto size = 0ul;
-        if (auto data = apkFile->getFileData(path.c_str(), &size)) return Ok<std::vector<uint8_t>>(data, data + size);
+        if (auto data = apkFile->getFileData(path.c_str(), &size)) return Ok<std::vector<uint8_t>>({ data, data + size });
         else return Err("Failed to read file from APK");
     }
     return file::readBinary(path);
@@ -628,23 +633,20 @@ Result<ImageResult> MoreIconsAPI::createFrames(
         return fmt::format("Failed to parse image: {}", err);
     }));
 
-    CCTexture2D* texture = nullptr;
-    CCDictionary* frames = nullptr;
-
-    if (!plist.empty()) {
-        GEODE_UNWRAP_INTO(auto pair, createFramesInternal(plist, nullptr, name, type, !name.empty())
-            .mapErr([](const std::string& err) { return fmt::format("Failed to load frames: {}", err); }));
-        texture = pair.first;
-        frames = pair.second;
-    }
-    else texture = new CCTexture2D();
+    auto texture = new CCTexture2D();
+    GEODE_UNWRAP_INTO(auto frames, createFrames(plist, texture, name, type, !name.empty()).mapErr([texture](const std::string& err) {
+        texture->release();
+        return fmt::format("Failed to load frames: {}", err);
+    }));
 
     return Ok<ImageResult>({ png, std::move(image.data), texture, frames, info, image.width, image.height });
 }
 
-Result<std::pair<CCTexture2D*, CCDictionary*>> createFramesInternal(
+Result<CCDictionary*> MoreIconsAPI::createFrames(
     const std::string& path, CCTexture2D* texture, const std::string& name, IconType type, bool fixNames
 ) {
+    if (path.empty()) return Ok(nullptr);
+
     GEODE_UNWRAP_INTO(auto data, getFileData(path).mapErr([](const std::string& err) {
         return fmt::format("Failed to read file: {}", err);
     }));
@@ -676,7 +678,6 @@ Result<std::pair<CCTexture2D*, CCDictionary*>> createFramesInternal(
 
     if (framesNode.name() != "dict"sv) return Err("No frames <dict> element found");
 
-    if (!texture) texture = new CCTexture2D();
     auto frames = new CCDictionary();
     auto factor = CCDirector::get()->getContentScaleFactor();
     for (auto child = framesNode.child("key"); child; child = child.next_sibling("key")) {
@@ -807,7 +808,7 @@ Result<std::pair<CCTexture2D*, CCDictionary*>> createFramesInternal(
         texture->retain();
     }
 
-    return Ok(std::make_pair(texture, frames));
+    return Ok(frames);
 }
 
 std::vector<std::string> MoreIconsAPI::addFrames(const ImageResult& image) {

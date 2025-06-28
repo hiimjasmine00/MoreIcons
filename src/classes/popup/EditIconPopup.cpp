@@ -7,6 +7,7 @@
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GameManager.hpp>
+#include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/loader/Mod.hpp>
@@ -250,8 +251,8 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
                 [this, icon](auto, bool btn2) {
                     if (!btn2) return;
 
-                    auto trashDir = MoreIcons::createTrash();
-                    if (!trashDir.empty()) return;
+                    GEODE_UNWRAP_OR_ELSE(trashDir, err, MoreIcons::createTrash())
+                        return notify(NotificationIcon::Error, "Failed to create trash directory: {}", err);
 
                     std::error_code code;
 
@@ -267,7 +268,8 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
 
                     auto name = icon->name;
                     MoreIconsAPI::removeIcon(icon);
-                    notify(NotificationIcon::Success, "Trashed {}! Re-open the icon kit to apply changes.", name);
+                    notify(NotificationIcon::Success, "{} trashed!", name);
+                    fullClose();
                 }
             );
         });
@@ -354,6 +356,20 @@ void EditIconPopup::fullClose() {
         if (auto iconViewPopup = scene->getChildByType<IconViewPopup>(0)) iconViewPopup->close();
     }
     if (auto moreIconsPopup = scene->getChildByType<MoreIconsPopup>(0)) moreIconsPopup->close();
+    if (auto garageLayer = scene->getChildByType<GJGarageLayer>(0)) {
+        auto player1 = garageLayer->m_playerObject;
+        auto iconType1 = garageLayer->m_selectedIconType;
+        player1->updatePlayerFrame(GameManager::get()->activeIconForType(iconType1), iconType1);
+        MoreIconsAPI::updateSimplePlayer(player1, iconType1, false);
+        if (auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons")) {
+            auto player2 = static_cast<SimplePlayer*>(garageLayer->getChildByID("player2-icon"));
+            auto iconType2 = (IconType)sdi->getSavedValue("lastmode", 0);
+            constexpr std::array types = { "cube", "ship", "roll", "bird", "dart", "robot", "spider", "swing", "jetpack" };
+            player2->updatePlayerFrame(sdi->getSavedValue(types[(int)iconType2], 1), iconType2);
+            MoreIconsAPI::updateSimplePlayer(player2, iconType2, true);
+        }
+        garageLayer->selectTab(garageLayer->m_iconType);
+    }
 }
 
 void EditIconPopup::pickFile(int index, int type) {
@@ -365,34 +381,48 @@ void EditIconPopup::pickFile(int index, int type) {
         if (paths.empty()) return;
 
         m_pickerOpened = true;
+
+        auto isIcon = m_iconType <= IconType::Jetpack;
+        auto isTrail = m_iconType == IconType::Special;
+        std::string name;
         std::string png;
         std::string plist;
         for (auto& path : paths) {
             if (path.extension() == ".png") {
-                if (png.empty()) png = string::pathToString(path);
+                if (png.empty()) {
+                    if (isTrail) name = string::pathToString(path.stem());
+                    png = string::pathToString(path);
+                }
             }
             else if (path.extension() == ".plist") {
-                if (plist.empty()) plist = string::pathToString(path);
+                if (plist.empty()) {
+                    if (isIcon) {
+                        name = string::pathToString(path.stem());
+                        if (name.ends_with("-uhd")) name = name.substr(0, name.size() - 4);
+                        else if (name.ends_with("-hd")) name = name.substr(0, name.size() - 3);
+                    }
+                    plist = string::pathToString(path);
+                }
             }
             if (!png.empty() && !plist.empty()) break;
         }
 
-        auto isIcon = m_iconType <= IconType::Jetpack;
         auto pngEmpty = png.empty();
         auto plistEmpty = type == 0 && isIcon && plist.empty();
         if (pngEmpty && plistEmpty) return notify(NotificationIcon::Info, "Please select a PNG file and a Plist file");
         else if (plistEmpty) return notify(NotificationIcon::Info, "Please select a Plist file");
         else if (pngEmpty) return notify(NotificationIcon::Info, "Please select a PNG file");
 
+        GEODE_UNWRAP_OR_ELSE(image, err, texpack::fromPNG(png))
+            return notify(NotificationIcon::Error, "Failed to load image: {}", err);
+
+        auto texture = new CCTexture2D();
+        texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+            (float)image.width,
+            (float)image.height
+        });
+
         if (type > 0) {
-            GEODE_UNWRAP_OR_ELSE(image, err, texpack::fromPNG(png)) return notify(NotificationIcon::Error, "Failed to load image: {}", err);
-
-            auto texture = new CCTexture2D();
-            texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
-                (float)image.width,
-                (float)image.height
-            });
-
             constexpr std::array suffixes = { "_001.png", "_2_001.png", "_3_001.png", "_glow_001.png", "_extra_001.png" };
             auto suffix = suffixes[type + (m_iconType != IconType::Ufo && type > 2) - 1];
             m_frames->setObject(CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }),
@@ -401,21 +431,23 @@ void EditIconPopup::pickFile(int index, int type) {
             return updateSprites();
         }
 
-        GEODE_UNWRAP_OR_ELSE(image, err, MoreIconsAPI::createFrames(png, plist, "", m_iconType))
+        GEODE_UNWRAP_OR_ELSE(frames, err, MoreIconsAPI::createFrames(plist, texture, "", m_iconType))
             return notify(NotificationIcon::Error, "Failed to load frames: {}", err);
+
+        if (m_textInput->getString().empty() && !name.empty()) m_textInput->setString(name);
 
         if (isIcon) {
             m_frames->removeAllObjects();
-            for (auto [frameName, frame] : CCDictionaryExt<gd::string, CCSpriteFrame*>(image.frames)) {
+            for (auto [frameName, frame] : CCDictionaryExt<gd::string, CCSpriteFrame*>(frames)) {
                 m_frames->setObject(frame, frameName);
             }
-            image.frames->release();
-            image.texture->release();
+            frames->release();
+            texture->release();
             updateSprites();
         }
-        else if (m_iconType == IconType::Special) {
+        else if (isTrail) {
             m_streak->m_pobTexture->release();
-            m_streak->m_pobTexture = image.texture;
+            m_streak->m_pobTexture = texture;
         }
     });
 
@@ -502,7 +534,7 @@ void EditIconPopup::addOrUpdateIcon(const std::string& name, const std::filesyst
             .zipped = false
         });
     }
-    notify(NotificationIcon::Success, "{} saved! Re-open the icon kit to apply changes.", name);
+    notify(NotificationIcon::Success, "{} saved!", name);
     fullClose();
 }
 

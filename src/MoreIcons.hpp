@@ -1,6 +1,7 @@
 #include <array>
 #include <filesystem>
 #include <Geode/Enums.hpp>
+#include <Geode/Result.hpp>
 #include <map>
 
 struct IconPack {
@@ -40,7 +41,7 @@ public:
     inline static int severity = 0;
     inline static bool traditionalPacks = true;
 
-    static std::filesystem::path createTrash();
+    static geode::Result<std::filesystem::path> createTrash();
     static void loadIcons(IconType type);
     static void loadPacks();
     static void loadSettings();

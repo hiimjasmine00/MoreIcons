@@ -4,7 +4,6 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>
-#include <Geode/ui/Notification.hpp>
 #include <Geode/utils/ranges.hpp>
 #include <geode.texture-loader/include/TextureLoader.hpp>
 #include <texpack.hpp>
@@ -215,18 +214,15 @@ std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuff
     return string::pathToString(dirs::getResourcesDir() / path);
 }
 
-std::filesystem::path MoreIcons::createTrash() {
+Result<std::filesystem::path> MoreIcons::createTrash() {
     std::error_code code;
     auto trashPath = Mod::get()->getConfigDir() / "trash";
     auto exists = doesExist(trashPath);
-    if (!exists) exists = std::filesystem::create_directory(trashPath, code);
-    if (!exists) {
-        Notification::create(fmt::format("Failed to create trash directory: {}.", code.message()), NotificationIcon::Error)->show();
-        return "";
-    }
+    if (!exists) exists = std::filesystem::create_directories(trashPath, code);
+    if (!exists) return Err(code.message());
     else {
         std::filesystem::permissions(trashPath, std::filesystem::perms::all, code);
-        return trashPath;
+        return Ok(trashPath);
     }
 }
 

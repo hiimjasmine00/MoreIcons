@@ -356,7 +356,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto f = m_fields.self();
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
-        std::string name = static_cast<CCString*>(sender->getUserObject("name"_spr))->m_sString;
+        auto name = MoreIconsAPI::getIconName(sender);
 
         m_cursor1->setPosition(sender->getParent()->convertToWorldSpace(sender->getPosition()));
         m_cursor1->setVisible(true);
@@ -434,7 +434,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto f = m_fields.self();
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
-        std::string name = static_cast<CCString*>(sender->getUserObject("name"_spr))->m_sString;
+        auto name = MoreIconsAPI::getIconName(sender);
 
         m_cursor1->setPosition(sender->getParent()->convertToWorldSpace(sender->getPosition()));
         m_cursor1->setVisible(true);
