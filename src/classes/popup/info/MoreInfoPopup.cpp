@@ -4,7 +4,6 @@
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
-#include <Geode/binding/ItemInfoPopup.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/binding/TextArea.hpp>
 #include <Geode/loader/Mod.hpp>
@@ -49,8 +48,13 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     customLabel->setID("custom-label");
     m_mainLayer->addChild(customLabel);
 
+    constexpr std::array names = {
+        "", "Cube", "Main Color", "Secondary Color", "Ship", "Ball", "UFO", "Wave",
+        "Robot", "Spider", "Trail", "Death Effect", "Item", "Swing", "Jetpack", "Ship Fire"
+    };
+
     auto descriptionArea = TextArea::create(fmt::format("This <cg>{}</c> is added by the <cl>More Icons</c> mod.",
-        GEODE_ANDROID(std::string)(ItemInfoPopup::nameForUnlockType(1, unlockType))), "bigFont.fnt", 1.0f, 600.0f, { 0.5f, 1.0f }, 42.0f, false);
+        names[(int)unlockType]), "bigFont.fnt", 1.0f, 600.0f, { 0.5f, 1.0f }, 42.0f, false);
     descriptionArea->setPosition({ 150.0f, 91.0f });
     descriptionArea->setScale(0.4f);
     descriptionArea->setID("description-area");
@@ -65,52 +69,38 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     }
 
     if (info->type <= IconType::Jetpack) {
+        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+        auto dual = sdi && sdi->getSavedValue("2pselected", false);
+
         auto itemIcon = GJItemIcon::createBrowserItem(unlockType, 1);
         itemIcon->setScale(1.25f - hasPack * 0.15f);
 
         auto player = static_cast<SimplePlayer*>(itemIcon->m_player);
         MoreIconsAPI::updateSimplePlayer(player, info->name, info->type);
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        player->m_glowColor = gameManager->colorForIdx(
-            sdi && sdi->getSavedValue("2pselected", false) ? sdi->getSavedValue("colorglow", 0) : gameManager->m_playerGlowColor);
-        player->m_hasCustomGlowColor = true;
+        player->enableCustomGlowColor(gameManager->colorForIdx(dual ? sdi->getSavedValue("colorglow", 0) : gameManager->m_playerGlowColor));
 
-        auto iconButton = CCMenuItemExt::createSpriteExtra(itemIcon, [](CCMenuItemSpriteExtra* sender) {
-            auto toggled = static_cast<CCBool*>(sender->getUserObject("toggled"_spr));
-            if (!toggled) return;
-
-            toggled->m_bValue = !toggled->m_bValue;
+        auto color1 = gameManager->colorForIdx(dual ? sdi->getSavedValue("color1", 0) : gameManager->m_playerColor);
+        auto color2 = gameManager->colorForIdx(dual ? sdi->getSavedValue("color2", 0) : gameManager->m_playerColor2);
+        auto glow = dual ? sdi->getSavedValue("glow", false) : gameManager->m_playerGlow;
+        auto iconButton = CCMenuItemExt::createSpriteExtra(itemIcon, [this, color1, color2, glow](CCMenuItemSpriteExtra* sender) {
+            m_toggled = !m_toggled;
 
             auto player = static_cast<SimplePlayer*>(static_cast<GJItemIcon*>(sender->getNormalImage())->m_player);
-            auto gameManager = GameManager::get();
-            auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-            auto dual = sdi && sdi->getSavedValue("2pselected", false);
-            player->m_firstLayer->setColor(toggled->m_bValue ?
-                gameManager->colorForIdx(dual ? sdi->getSavedValue("color1", 0) : gameManager->m_playerColor) : ccColor3B { 175, 175, 175 });
-            player->m_secondLayer->setColor(toggled->m_bValue ?
-                gameManager->colorForIdx(dual ? sdi->getSavedValue("color2", 0) : gameManager->m_playerColor2) : ccColor3B { 255, 255, 255 });
-            player->m_hasGlowOutline = toggled->m_bValue &&
-                (dual ? sdi->getSavedValue("glow", false) : gameManager->m_playerGlow);
+            player->m_firstLayer->setColor(m_toggled ? color1 : ccColor3B { 175, 175, 175 });
+            player->m_secondLayer->setColor(m_toggled ? color2 : ccColor3B { 255, 255, 255 });
+            player->m_hasGlowOutline = m_toggled && glow;
             player->updateColors();
         });
         iconButton->setPosition({ 150.0f, 171.0f - hasPack * 6.0f });
-        iconButton->setUserObject("toggled"_spr, CCBool::create(false));
         iconButton->setID("icon-button");
         m_buttonMenu->addChild(iconButton);
     }
     else if (info->type == IconType::Special) {
-        auto square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
-        square->setColor({ 150, 150, 150 });
+        auto square = MoreIconsAPI::customTrail(info->textures[0]);
         square->setPosition({ 150.0f, 171.0f - hasPack * 6.0f });
         square->setScale(1.25f - hasPack * 0.15f);
         square->setID("trail-square");
         m_mainLayer->addChild(square);
-
-        auto streak = CCSprite::create(info->textures[0].c_str());
-        limitNodeHeight(streak, 27.0f, 999.0f, 0.001f);
-        streak->setRotation(-90.0f);
-        streak->setPosition(square->getContentSize() / 2);
-        square->addChild(streak);
 
         if (info->trailID == 0) {
             auto settingsButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_optionsBtn_001.png", 0.7f, [info](auto) {

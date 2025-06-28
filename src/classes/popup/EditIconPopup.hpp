@@ -4,27 +4,26 @@
 
 class EditIconPopup : public geode::Popup<IconType, int, const std::string&, bool> {
 protected:
-    geode::EventListener<geode::Task<geode::Result<std::filesystem::path>>> m_listener;
-    std::filesystem::path m_path;
+    geode::EventListener<geode::Task<geode::Result<std::vector<std::filesystem::path>>>> m_listener;
     SimplePlayer* m_player;
     cocos2d::CCSprite* m_streak;
-    cocos2d::CCTexture2D* m_texture;
     cocos2d::CCDictionary* m_frames;
     cocos2d::CCDictionary* m_sprites;
-    cocos2d::CCArray* m_frameMenus;
-    CCMenuItemSpriteExtra* m_plistButton;
-    CCMenuItemSpriteExtra* m_saveButton;
     geode::TextInput* m_textInput;
     IconType m_iconType;
+    bool m_readOnly;
+    bool m_pickerOpened;
 
     bool setup(IconType, int, const std::string&, bool) override;
 
-    void pickFile(int, int, bool);
+    void fullClose();
+    void pickFile(int, int);
     void updateSprites();
-    void saveTrail(const std::filesystem::path& path);
-    void saveIcon(const std::filesystem::path& png, const std::filesystem::path& plist);
-    void finishSave();
-    void onClose(cocos2d::CCObject* sender) override;
+    void addOrUpdateIcon(const std::string&, const std::filesystem::path&, const std::filesystem::path&);
+    bool checkFrame(std::string_view);
+    void saveTrail(const std::filesystem::path&);
+    void saveIcon(const std::filesystem::path&, const std::filesystem::path&);
+    void onClose(cocos2d::CCObject*) override;
 public:
     static EditIconPopup* create(IconType, int, const std::string&, bool);
 

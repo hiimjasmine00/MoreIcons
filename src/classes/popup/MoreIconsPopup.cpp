@@ -7,7 +7,6 @@
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
-#include <Geode/binding/GJItemIcon.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Notification.hpp>
@@ -56,6 +55,12 @@ bool MoreIconsPopup::setup() {
     };
 
     auto gameManager = GameManager::get();
+    auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+    auto dual = sdi && sdi->getSavedValue("2pselected", false);
+    auto color1 = gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color1", 0) : gameManager->m_playerColor);
+    auto color2 = gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color2", 0) : gameManager->m_playerColor2);
+    auto colorGlow = gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("colorglow", 0) : gameManager->m_playerGlowColor);
+    auto glow = dual ? sdi->getSavedValue<bool>("glow") : gameManager->m_playerGlow;
     for (int i = 0; i < 10; i++) {
         auto gamemodeMenu = CCMenu::create();
         gamemodeMenu->setPosition({ 0.0f, 0.0f });
@@ -72,8 +77,6 @@ bool MoreIconsPopup::setup() {
 
         auto& [name, type, color, directory] = gamemodes[i];
 
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto dual = sdi && sdi->getSavedValue("2pselected", false);
         constexpr std::array types = {
             "", "cube", "color1", "color2", "ship", "roll", "bird", "dart",
             "robot", "spider", "trail", "death", "", "swing", "jetpack", "shiptrail"
@@ -84,10 +87,10 @@ bool MoreIconsPopup::setup() {
             auto icon = SimplePlayer::create(1);
             icon->updatePlayerFrame(id, type);
             MoreIconsAPI::updateSimplePlayer(icon, type, dual);
-            icon->setColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color1", 0) : gameManager->m_playerColor));
-            icon->setSecondColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color2", 0) : gameManager->m_playerColor2));
-            icon->enableCustomGlowColor(gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("colorglow", 0) : gameManager->m_playerGlowColor));
-            icon->m_hasGlowOutline = dual ? sdi->getSavedValue<bool>("glow") : gameManager->m_playerGlow;
+            icon->setColor(color1);
+            icon->setSecondColor(color2);
+            icon->enableCustomGlowColor(colorGlow);
+            icon->m_hasGlowOutline = glow;
             icon->updateColors();
             icon->setPosition({ 35.0f, 100.0f });
             icon->setScale(0.9f);
@@ -95,27 +98,14 @@ bool MoreIconsPopup::setup() {
             gamemodeMenu->addChild(icon);
         }
         else if (type == IconType::Special) {
-            if (auto icon = MoreIconsAPI::getIcon(type, dual)) {
-                auto square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
-                square->setColor({ 150, 150, 150 });
-                square->setPosition({ 35.0f, 100.0f });
-                square->setScale(0.9f);
-                square->setID("player-icon");
-                gamemodeMenu->addChild(square);
-
-                auto streak = CCSprite::create(icon->textures[0].c_str());
-                limitNodeHeight(streak, 27.0f, 999.0f, 0.001f);
-                streak->setRotation(-90.0f);
-                streak->setPosition(square->getContentSize() / 2);
-                square->addChild(streak);
-            }
-            else {
-                auto sprite = CCSprite::createWithSpriteFrameName(fmt::format("player_special_{:02}_001.png", id).c_str());
-                sprite->setPosition({ 35.0f, 100.0f });
-                sprite->setScale(0.9f);
-                sprite->setID("player-icon");
-                gamemodeMenu->addChild(sprite);
-            }
+            auto info = MoreIconsAPI::getIcon(type, dual);
+            auto sprite = info
+                ? MoreIconsAPI::customTrail(info->textures[0])
+                : CCSprite::createWithSpriteFrameName(fmt::format("player_special_{:02}_001.png", id).c_str());
+            sprite->setPosition({ 35.0f, 100.0f });
+            sprite->setScale(0.9f);
+            sprite->setID("player-icon");
+            gamemodeMenu->addChild(sprite);
         }
 
         auto& severity = MoreIcons::severities[type];
@@ -168,7 +158,7 @@ bool MoreIconsPopup::setup() {
         auto addSprite = ButtonSprite::create("Add", "goldFont.fnt", "GJ_button_05.png", 0.8f);
         addSprite->setScale(0.6f);
         auto addButton = CCMenuItemExt::createSpriteExtra(addSprite, [type](auto) {
-            EditIconPopup::create(type, 0, "", false)->show();
+            EditIconPopup::create(type, 1, "", false)->show();
         });
         addButton->setPosition({ 24.0f, 15.0f });
         addButton->setID("add-button");
@@ -191,27 +181,16 @@ bool MoreIconsPopup::setup() {
     m_mainLayer->addChild(gamemodesNode);
 
     auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [](auto) {
-        auto trashDir = Mod::get()->getConfigDir() / "trash";
-        std::error_code code;
-        auto exists = std::filesystem::exists(trashDir, code);
-        if (!exists) exists = std::filesystem::create_directory(trashDir, code);
-        if (!exists) return Notification::create("Failed to create trash directory", NotificationIcon::Error)->show();
-        else std::filesystem::permissions(trashDir, std::filesystem::perms::all, code);
-        file::openFolder(trashDir);
+        auto trashDir = MoreIcons::createTrash();
+        if (!trashDir.empty()) file::openFolder(trashDir);
     });
     trashButton->setPosition({ 435.0f, 5.0f });
     trashButton->setID("trash-button");
     m_buttonMenu->addChild(trashButton);
 
-    auto reloadSprite = ButtonSprite::create("Reload Textures", "goldFont.fnt", "GJ_button_05.png");
-    reloadSprite->setScale(0.7f);
-    m_reloadButton = CCMenuItemExt::createSpriteExtra(reloadSprite, [](auto) {
-        reloadTextures([] { return GJGarageLayer::node(); });
-    });
-    m_reloadButton->setPosition({ 220.0f, 0.0f });
-    m_reloadButton->setVisible(MoreIcons::showReload);
-    m_reloadButton->setID("reload-button");
-    m_buttonMenu->addChild(m_reloadButton);
-
     return true;
+}
+
+void MoreIconsPopup::close() {
+    onClose(nullptr);
 }

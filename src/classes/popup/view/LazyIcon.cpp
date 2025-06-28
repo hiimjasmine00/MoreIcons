@@ -1,7 +1,6 @@
 #include "LazyIcon.hpp"
 #include "../EditIconPopup.hpp"
 #include "../../misc/ThreadPool.hpp"
-#include "../../../MoreIcons.hpp"
 #include "../../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/CCAnimateFrameCache.hpp>
 #include <Geode/binding/GameManager.hpp>
@@ -29,7 +28,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info) {
     m_type = type;
     m_id = id;
     m_info = info;
-    m_name = info ? info->name : fmt::format("{}{:02}", MoreIcons::prefixes[(int)gameManager->iconTypeToUnlockType(type)], id);
+    m_name = info ? info->name : MoreIconsAPI::iconName(id, type);
     setID(m_name);
 
     if (type == IconType::Special && !info) {
@@ -74,22 +73,11 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info) {
 
 void LazyIcon::createSimpleIcon() {
     auto iconName = fmt::format("{}{}", m_info ? GEODE_MOD_ID "/" : "", m_name);
-    auto spriteFrameCache = CCSpriteFrameCache::get();
-
-    auto primaryFrame = spriteFrameCache->spriteFrameByName(fmt::format("{}_001.png", iconName).c_str());
-    if (primaryFrame && primaryFrame->getTag() == 105871529) primaryFrame = nullptr;
-
-    auto secondaryFrame = spriteFrameCache->spriteFrameByName(fmt::format("{}_2_001.png", iconName).c_str());
-    if (secondaryFrame && secondaryFrame->getTag() == 105871529) secondaryFrame = nullptr;
-
-    auto tertiaryFrame = m_type == IconType::Ufo ? spriteFrameCache->spriteFrameByName(fmt::format("{}_3_001.png", iconName).c_str()) : nullptr;
-    if (tertiaryFrame && tertiaryFrame->getTag() == 105871529) tertiaryFrame = nullptr;
-
-    auto glowFrame = spriteFrameCache->spriteFrameByName(fmt::format("{}_glow_001.png", iconName).c_str());
-    if (glowFrame && glowFrame->getTag() == 105871529) glowFrame = nullptr;
-
-    auto extraFrame = spriteFrameCache->spriteFrameByName(fmt::format("{}_extra_001.png", iconName).c_str());
-    if (extraFrame && extraFrame->getTag() == 105871529) extraFrame = nullptr;
+    auto primaryFrame = MoreIconsAPI::getFrame("{}_001.png", iconName);
+    auto secondaryFrame = MoreIconsAPI::getFrame("{}_2_001.png", iconName);
+    auto tertiaryFrame = m_type == IconType::Ufo ? MoreIconsAPI::getFrame("{}_3_001.png", iconName) : nullptr;
+    auto glowFrame = MoreIconsAPI::getFrame("{}_glow_001.png", iconName);
+    auto extraFrame = MoreIconsAPI::getFrame("{}_extra_001.png", iconName);
 
     auto normalImage = getNormalImage();
     auto center = normalImage->getContentSize() / 2.0f - CCPoint { 0.0f, (m_type == IconType::Ufo) * 7.0f };
@@ -152,26 +140,22 @@ void LazyIcon::createComplexIcon() {
         if (!usedTexture) continue;
 
         auto textureString = usedTexture->valueForKey("texture");
-        auto texture = textureString ? textureString->m_sString : "";
-        auto index = texture.size() >= spider + 11 ? numFromString<int>(std::string(texture, spider + 9, 2)).unwrapOr(0) : 0;
+        if (!textureString) continue;
 
+        std::string_view texture = textureString->m_sString;
+        auto index = texture.size() >= spider + 11 ? numFromString<int>(texture.substr(spider + 9, 2)).unwrapOr(0) : 0;
         if (index <= 0) continue;
 
-        auto primaryFrame = sfc->spriteFrameByName(fmt::format("{}_{:02}_001.png", iconName, index).c_str());
-        if (primaryFrame && primaryFrame->getTag() == 105871529) primaryFrame = nullptr;
+        auto primaryFrame = MoreIconsAPI::getFrame("{}_{:02}_001.png", iconName, index);
+        auto secondaryFrame = MoreIconsAPI::getFrame("{}_{:02}_2_001.png", iconName, index);
+        auto glowFrame = MoreIconsAPI::getFrame("{}_{:02}_glow_001.png", iconName, index);
+        auto extraFrame = index == 1 ? MoreIconsAPI::getFrame("{}_{:02}_extra_001.png", iconName, index) : nullptr;
 
-        auto secondaryFrame = sfc->spriteFrameByName(fmt::format("{}_{:02}_2_001.png", iconName, index).c_str());
-        if (secondaryFrame && secondaryFrame->getTag() == 105871529) secondaryFrame = nullptr;
-
-        auto glowFrame = sfc->spriteFrameByName(fmt::format("{}_{:02}_glow_001.png", iconName, index).c_str());
-        if (glowFrame && glowFrame->getTag() == 105871529) glowFrame = nullptr;
-
-        auto extraFrame = index == 1 ? sfc->spriteFrameByName(fmt::format("{}_{:02}_extra_001.png", iconName, index).c_str()) : nullptr;
-        if (extraFrame && extraFrame->getTag() == 105871529) extraFrame = nullptr;
-
-        auto customIDString = usedTexture->valueForKey("customID");
-        auto customID = customIDString ? customIDString->m_sString : "";
-        uint8_t spriteColor = customID == "back01" || customID == "back02" || customID == "back03" ? 178 - (spider * 51) : 255;
+        uint8_t spriteColor = 255;
+        if (auto customIDString = usedTexture->valueForKey("customID")) {
+            std::string_view customID = customIDString->m_sString;
+            if (customID == "back01" || customID == "back02" || customID == "back03") spriteColor = 178 - (spider * 51);
+        }
         ccColor3B spriteColor3B = { spriteColor, spriteColor, spriteColor };
 
         auto description = static_cast<SpriteDescription*>(idleFrames->objectAtIndex(i));
@@ -247,19 +231,10 @@ void LazyIcon::createIcon(const std::string& err, const std::vector<std::string>
         else if (m_type <= IconType::Jetpack) createSimpleIcon();
         else if (m_info && m_type == IconType::Special) {
             auto normalImage = getNormalImage();
-
-            auto square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
+            auto square = MoreIconsAPI::customTrail(m_info->textures[0]);
             square->setPosition(normalImage->getContentSize() / 2.0f);
-            square->setColor({ 150, 150, 150 });
             square->setID("player-square");
             normalImage->addChild(square, 0);
-
-            auto streak = CCSprite::create(m_info->textures[0].c_str());
-            limitNodeHeight(streak, 27.0f, 999.0f, 0.001f);
-            streak->setRotation(-90.0f);
-            streak->setPosition(normalImage->getContentSize() / 2);
-            streak->setID("player-streak");
-            normalImage->addChild(streak, 1);
         }
     }
     else {
@@ -289,12 +264,11 @@ void LazyIcon::visit() {
         auto image = MoreIconsAPI::createFrames(texture, sheet, name, type);
         queueInMainThread([selfref = std::move(selfref), image = std::move(image)] {
             auto self = selfref.lock();
-            if (image.isErr()) {
-                if (self) self->createIcon(image.unwrapErr(), {});
+            GEODE_UNWRAP_OR_ELSE(result, err, image) {
+                if (self) self->createIcon(err, {});
                 return;
             }
 
-            auto result = image.unwrap();
             if (self) self->createIcon("", MoreIconsAPI::addFrames(result));
             else {
                 result.texture->release();

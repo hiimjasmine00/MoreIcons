@@ -45,24 +45,25 @@ bool IconViewPopup::setup(IconType type, bool custom) {
     scrollbar->setID("scrollbar");
     m_mainLayer->addChild(scrollbar);
 
-    auto start = 0;
-    auto end = 0;
     if (custom) {
-        auto& [first, second] = MoreIconsAPI::iconIndices[type];
-        start = first;
-        end = second;
+        auto& iconSpan = MoreIconsAPI::iconSpans[type];
+        for (auto info = iconSpan.data(), end = iconSpan.data() + iconSpan.size(); info < end; info++) {
+            scrollLayer->m_contentLayer->addChild(LazyIcon::create(type, 0, info));
+        }
     }
     else {
-        start = 1;
-        end = gameManager->countForType(type);
-    }
-
-    for (int i = start; i < end; i++) {
-        scrollLayer->m_contentLayer->addChild(LazyIcon::create(type, custom ? 0 : i, custom ? MoreIconsAPI::icons.data() + i : nullptr));
+        auto count = gameManager->countForType(type);
+        for (int i = 1; i <= count; i++) {
+            scrollLayer->m_contentLayer->addChild(LazyIcon::create(type, i, nullptr));
+        }
     }
 
     scrollLayer->m_contentLayer->updateLayout();
     scrollLayer->scrollToTop();
 
     return true;
+}
+
+void IconViewPopup::close() {
+    onClose(nullptr);
 }

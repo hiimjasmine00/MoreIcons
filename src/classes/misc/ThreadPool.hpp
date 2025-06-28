@@ -3,7 +3,7 @@
 #include <thread>
 #include <mutex>
 
-// https://github.com/geode-sdk/geode/blob/v4.5.0/loader/src/ui/nodes/LazySprite.cpp
+// https://github.com/geode-sdk/geode/blob/v4.6.1/loader/src/ui/nodes/LazySprite.cpp
 
 class ThreadPool {
 private:

@@ -16,7 +16,8 @@ using namespace geode::prelude;
         if (!iconName.empty()) MoreIconsAPI::loadedIcons[{ iconName, type }]++; \
         PlayerObject::funcName(frame); \
         if (!mainPlayer) return setUserObject("name"_spr, nullptr); \
-        updateIcon(type); \
+        if (p1()) updateIcon(type, false); \
+        else if (p2()) updateIcon(type, true); \
         if (!iconName.empty()) MoreIconsAPI::loadedIcons[{ iconName, type }]--; \
     }
 
@@ -33,8 +34,8 @@ class $modify(MIPlayerObject, PlayerObject) {
         return m_gameLayer && (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this);
     }
 
-    void updateIcon(IconType type) {
-        auto icon = p1() ? MoreIconsAPI::activeIcon(type, false) : p2() ? MoreIconsAPI::activeIcon(type, true) : "";
+    void updateIcon(IconType type, bool dual) {
+        auto icon = MoreIconsAPI::activeIcon(type, dual);
         if (!icon.empty()) MoreIconsAPI::updatePlayerObject(this, icon, type);
         else setUserObject("name"_spr, nullptr);
     }
@@ -42,9 +43,13 @@ class $modify(MIPlayerObject, PlayerObject) {
     bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool playLayer) {
         if (!PlayerObject::init(player, ship, gameLayer, layer, playLayer)) return false;
 
-        if (p1() || p2()) {
-            updateIcon(IconType::Cube);
-            updateIcon(IconType::Ship);
+        if (p1()) {
+            updateIcon(IconType::Cube, false);
+            updateIcon(IconType::Ship, false);
+        }
+        else if (p2()) {
+            updateIcon(IconType::Cube, true);
+            updateIcon(IconType::Ship, true);
         }
 
         return true;

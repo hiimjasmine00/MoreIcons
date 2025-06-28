@@ -5,4 +5,6 @@ protected:
     bool setup(IconType, bool) override;
 public:
     static IconViewPopup* create(IconType, bool);
+
+    void close();
 };

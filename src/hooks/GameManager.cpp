@@ -8,11 +8,11 @@ class $modify(MIGameManager, GameManager) {
     inline static Hook* sheetHook = nullptr;
 
     static void onModify(ModifyBase<ModifyDerive<MIGameManager, GameManager>>& self) {
+        (void)self.setHookPriority("GameManager::loadIcon", 999999999);
         (void)self.getHook("GameManager::sheetNameForIcon").inspect([](Hook* hook) {
             hook->setAutoEnable(Mod::get()->getSettingValue<bool>("traditional-packs"));
             sheetHook = hook;
         }).inspectErr([](const std::string& err) { log::error("Failed to get GameManager::sheetNameForIcon hook: {}", err); });
-        (void)self.setHookPriority("GameManager::loadIcon", 999999999);
     }
 
     void reloadAllStep2() {
@@ -22,7 +22,7 @@ class $modify(MIGameManager, GameManager) {
 
         MoreIcons::saveTrails();
         MoreIconsAPI::icons.clear();
-        MoreIconsAPI::iconIndices.clear();
+        MoreIconsAPI::iconSpans.clear();
         MoreIconsAPI::requestedIcons.clear();
         MoreIconsAPI::loadedIcons.clear();
         MoreIcons::logs.clear();
@@ -39,7 +39,6 @@ class $modify(MIGameManager, GameManager) {
             { IconType::Jetpack, Severity::Debug },
             { IconType::Special, Severity::Debug }
         };
-        MoreIcons::showReload = false;
         MoreIcons::loadSettings();
 
         if (sheetHook) (void)(MoreIcons::traditionalPacks ? sheetHook->enable().inspectErr([](const std::string& err) {
