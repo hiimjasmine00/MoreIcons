@@ -10,7 +10,13 @@
 
 using namespace geode::prelude;
 
-bool doesExist(const std::filesystem::path& path) {
+std::filesystem::path operator+(const std::filesystem::path& lhs, const std::filesystem::path& rhs) {
+    auto ret = lhs;
+    ret += rhs;
+    return ret;
+}
+
+bool MoreIcons::doesExist(const std::filesystem::path& path) {
     std::error_code code;
     auto exists = std::filesystem::exists(path, code);
     if (code) log::error("{}: Failed to check existence: {}", path, code.message());
@@ -21,7 +27,7 @@ $on_mod(Loaded) {
     MoreIcons::loadSettings();
     #ifdef GEODE_IS_ANDROID
     auto assetsDir = Mod::get()->getTempDir() / "assets";
-    if (doesExist(assetsDir)) {
+    if (exists(assetsDir)) {
         std::error_code code;
         std::filesystem::remove_all(assetsDir, code);
         if (code) log::error("{}: Failed to delete: {}", assetsDir, code.message());
@@ -80,7 +86,7 @@ void migrateFolderIcons(const std::filesystem::path& path) {
     for (int i = 0; i < folders.size(); i++) {
         auto& folder = folders[i];
         auto folderPath = path / folder;
-        if (!doesExist(folderPath)) continue;
+        if (!MoreIcons::doesExist(folderPath)) continue;
 
         auto isRobot = i == 5 || i == 6;
         DIRECTORY_ITERATOR(folderPath) {
@@ -142,18 +148,18 @@ void migrateFolderIcons(const std::filesystem::path& path) {
                 continue;
             }
 
-            auto pngPath = std::filesystem::path(entryPath).concat(".png");
-            if (doesExist(pngPath)) {
+            auto pngPath = entryPath + ".png";
+            if (MoreIcons::doesExist(pngPath)) {
                 std::error_code code;
-                std::filesystem::rename(pngPath, std::filesystem::path(pngPath).concat(".bak"), code);
+                std::filesystem::rename(pngPath, pngPath + ".bak", code);
                 if (code) log::error("{}: Failed to rename existing image: {}", entryPath, code.message());
             }
             if (GEODE_UNWRAP_IF_ERR(err, packer.png(pngPath))) log::error("{}: Failed to save image: {}", entryPath, err);
 
-            auto plistPath = std::filesystem::path(entryPath).concat(".plist");
-            if (doesExist(plistPath)) {
+            auto plistPath = entryPath + ".plist";
+            if (MoreIcons::doesExist(plistPath)) {
                 std::error_code code;
-                std::filesystem::rename(plistPath, std::filesystem::path(plistPath).concat(".bak"), code);
+                std::filesystem::rename(plistPath, plistPath + ".bak", code);
                 if (code) log::error("{}: Failed to rename existing plist: {}", entryPath, code.message());
             }
             if (GEODE_UNWRAP_IF_ERR(err, packer.plist(plistPath, fmt::format("icons/{}", entryPath.filename()), "    ")))
@@ -203,7 +209,7 @@ void MoreIcons::loadPacks() {
 
 std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuffix) {
     #ifdef GEODE_IS_MOBILE
-    if (CCDirector::get()->getContentScaleFactor() >= 4.0f && !skipSuffix) {
+    if (!skipSuffix && CCDirector::get()->getContentScaleFactor() >= 4.0f) {
         if (auto highGraphicsMobile = Loader::get()->getLoadedMod("weebify.high-graphics-android")) {
             auto configDir = highGraphicsMobile->getConfigDir(false) / GEODE_STR(GEODE_GD_VERSION);
             if (doesExist(configDir)) return configDir / path;
@@ -217,7 +223,7 @@ std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuff
 Result<std::filesystem::path> MoreIcons::createTrash() {
     std::error_code code;
     auto trashPath = Mod::get()->getConfigDir() / "trash";
-    auto exists = doesExist(trashPath);
+    auto exists = MoreIcons::doesExist(trashPath);
     if (!exists) exists = std::filesystem::create_directories(trashPath, code);
     if (!exists) return Err(code.message());
     else {
@@ -254,12 +260,12 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
         name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
         if (factor < 4.0f && factor >= 2.0f) {
-            if (!doesExist(replaceEnd(pathString, 10, "-hd.plist")) && !doesExist(replaceEnd(pathString, 9, ".plist")))
+            if (!MoreIcons::doesExist(replaceEnd(pathString, 10, "-hd.plist")) && !MoreIcons::doesExist(replaceEnd(pathString, 9, ".plist")))
                 printLog(name, Severity::Warning, "Ignoring high-quality icon on medium texture quality");
             return;
         }
         else if (factor < 2.0f) {
-            if (!doesExist(replaceEnd(pathString, 10, ".plist")))
+            if (!MoreIcons::doesExist(replaceEnd(pathString, 10, ".plist")))
                 printLog(name, Severity::Warning, "Ignoring high-quality icon on low texture quality");
             return;
         }
@@ -269,25 +275,25 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
         name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
         if (factor < 2.0f) {
-            if (!doesExist(replaceEnd(pathString, 9, ".plist")))
+            if (!MoreIcons::doesExist(replaceEnd(pathString, 9, ".plist")))
                 printLog(name, Severity::Warning, "Ignoring medium-quality icon on low texture quality");
             return;
         }
 
-        if (doesExist(replaceEnd(pathString, 9, "-uhd.plist")) && factor >= 4.0f) return;
+        if (MoreIcons::doesExist(replaceEnd(pathString, 9, "-uhd.plist")) && factor >= 4.0f) return;
     }
     else {
         shortName = pathStem;
         name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
-        if (doesExist(replaceEnd(pathString, 6, "-uhd.plist")) && factor >= 4.0f) return;
-        else if (doesExist(replaceEnd(pathString, 6, "-hd.plist")) && factor >= 2.0f) return;
+        if (MoreIcons::doesExist(replaceEnd(pathString, 6, "-uhd.plist")) && factor >= 4.0f) return;
+        else if (MoreIcons::doesExist(replaceEnd(pathString, 6, "-hd.plist")) && factor >= 2.0f) return;
     }
 
     safeDebug("Pre-loading icon {} from {}", name, pack.name);
 
     auto texturePath = replaceEnd(pathString, 6, ".png");
-    if (!doesExist(texturePath)) return printLog(name, Severity::Error, "Texture file {}.png not found", pathStem);
+    if (!MoreIcons::doesExist(texturePath)) return printLog(name, Severity::Error, "Texture file {}.png not found", pathStem);
 
     if (MoreIconsAPI::hasIcon(name, currentType)) return printLog(name, Severity::Warning, "Duplicate icon name");
 
@@ -327,13 +333,13 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     }
     else if (pathFilename.ends_with("-hd.png")) {
         if (factor < 2.0f) return;
-        if (doesExist(replaceEnd(pathString, 7, "-uhd.png")) && factor >= 4.0f) return;
+        if (MoreIcons::doesExist(replaceEnd(pathString, 7, "-uhd.png")) && factor >= 4.0f) return;
         shortName = replaceEnd(pathStem, 3, "");
         name = fmt::format("{}:{}", pack.id, shortName);
     }
     else {
-        if (doesExist(replaceEnd(pathString, 4, "-uhd.png")) && factor >= 4.0f) return;
-        else if (doesExist(replaceEnd(pathString, 4, "-hd.png")) && factor >= 2.0f) return;
+        if (MoreIcons::doesExist(replaceEnd(pathString, 4, "-uhd.png")) && factor >= 4.0f) return;
+        else if (MoreIcons::doesExist(replaceEnd(pathString, 4, "-hd.png")) && factor >= 2.0f) return;
         shortName = pathStem;
         name = fmt::format("{}:{}", pack.id, shortName);
     }
@@ -341,7 +347,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     safeDebug("Pre-loading vanilla icon {} from {}", name, pack.name);
 
     auto plistPath = replaceEnd(pathString, 4, ".plist");
-    if (!doesExist(plistPath)) plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", pathStem), false);
+    if (!MoreIcons::doesExist(plistPath)) plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", pathStem), false);
     if (!CCFileUtils::get()->isFileExist(plistPath)) return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
 
     ranges::remove(MoreIconsAPI::icons, [&name](const IconInfo& icon) { return icon.name == name && icon.type == currentType; });

@@ -42,9 +42,12 @@ public:
     inline static bool traditionalPacks = true;
 
     static geode::Result<std::filesystem::path> createTrash();
+    static bool doesExist(const std::filesystem::path& path);
     static void loadIcons(IconType type);
     static void loadPacks();
     static void loadSettings();
     static void saveTrails();
     static std::string vanillaTexturePath(const std::string& path, bool skipSuffix);
 };
+
+std::filesystem::path operator+(const std::filesystem::path& lhs, const std::filesystem::path& rhs);

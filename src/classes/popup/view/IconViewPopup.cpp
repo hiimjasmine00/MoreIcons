@@ -61,6 +61,8 @@ bool IconViewPopup::setup(IconType type, bool custom) {
     scrollLayer->m_contentLayer->updateLayout();
     scrollLayer->scrollToTop();
 
+    handleTouchPriority(this);
+
     return true;
 }
 

@@ -60,5 +60,7 @@ bool LogLayer::setup(IconType type) {
     scrollLayer->m_contentLayer->updateLayout();
     scrollLayer->scrollToTop();
 
+    handleTouchPriority(this);
+
     return true;
 }

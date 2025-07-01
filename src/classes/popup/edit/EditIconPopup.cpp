@@ -1,8 +1,9 @@
 #include "EditIconPopup.hpp"
-#include "MoreIconsPopup.hpp"
-#include "view/IconViewPopup.hpp"
-#include "../../MoreIcons.hpp"
-#include "../../api/MoreIconsAPI.hpp"
+#include "IconNamePopup.hpp"
+#include "../MoreIconsPopup.hpp"
+#include "../view/IconViewPopup.hpp"
+#include "../../../MoreIcons.hpp"
+#include "../../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
@@ -10,6 +11,7 @@
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Notification.hpp>
 #include <texpack.hpp>
@@ -34,20 +36,130 @@ EditIconPopup* EditIconPopup::create(IconType type, int id, const std::string& n
     return nullptr;
 }
 
-constexpr std::array lowercase = {
-    "", "icon", "", "", "ship", "ball",
-    "UFO", "wave", "robot", "spider", "trail",
-    "death effect", "", "swing", "jetpack", "ship fire"
-};
-constexpr std::array uppercase = {
-    "", "Icon", "", "", "Ship", "Ball",
-    "UFO", "Wave", "Robot", "Spider", "Trail",
-    "Death Effect", "", "Swing", "Jetpack", "Ship Fire"
-};
-
 template <typename... T>
 void notify(NotificationIcon icon, fmt::format_string<T...> message, T&&... args) {
     Notification::create(fmt::format(message, std::forward<T>(args)...), icon)->show();
+}
+
+Result<> renameFile(const std::filesystem::path& oldPath, const std::filesystem::path& newPath) {
+    auto filename = newPath.filename();
+    for (int i = 1; MoreIcons::doesExist(newPath); i++) {
+        filename = fmt::format("{} ({:02}){}", newPath.stem(), i, newPath.extension());
+    }
+    std::error_code code;
+    std::filesystem::rename(oldPath, newPath.parent_path() / filename, code);
+    if (code) return Err(code.message());
+    else return Ok();
+}
+
+constexpr std::array folders = { "icon", "ship", "ball", "ufo", "wave", "robot", "spider", "swing", "jetpack" };
+
+void EditIconPopup::moveIcon(IconInfo* info, const std::filesystem::path& directory, bool trash) {
+    std::filesystem::path texturePath = info->textures[0];
+    auto parentDir = texturePath.parent_path();
+
+    if (info->type == IconType::Special) {
+        auto filename = texturePath.filename();
+        if (GEODE_UNWRAP_IF_ERR(err, renameFile(texturePath, directory / filename)))
+            return notify(NotificationIcon::Error, "Failed to {} {}: {}.", trash ? "trash" : "move", filename, err);
+
+        if (trash) {
+            auto jsonName = filename.stem() + ".json";
+            auto jsonPath = parentDir / jsonName;
+            if (MoreIcons::doesExist(jsonPath)) {
+                if (GEODE_UNWRAP_IF_ERR(err, renameFile(jsonPath, directory / jsonName)))
+                    return notify(NotificationIcon::Error, "Failed to trash {}: {}.", jsonName, err);
+            }
+        }
+    }
+    else if (info->type <= IconType::Jetpack) {
+        auto& shortName = info->shortName;
+        std::vector<std::filesystem::path> files;
+
+        auto uhdPng = parentDir / (shortName + "-uhd.png");
+        if (MoreIcons::doesExist(uhdPng)) {
+            files.push_back(uhdPng);
+            auto filename = shortName + "-uhd.plist";
+            auto plist = parentDir / filename;
+            if (MoreIcons::doesExist(plist)) files.push_back(plist);
+            else if (!trash) {
+                #ifdef GEODE_IS_MOBILE
+                auto vanillaPath = dirs::getModConfigDir() / "weebify.high-graphics-android" / GEODE_STR(GEODE_GD_VERSION) / "icons" / filename;
+                #else
+                auto vanillaPath = dirs::getResourcesDir() / "icons" / filename;
+                #endif
+                std::error_code code;
+                std::filesystem::copy_file(vanillaPath, directory / filename, code);
+                if (code) return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, code.message());
+            }
+        }
+
+        auto hdPng = parentDir / (shortName + "-hd.png");
+        if (MoreIcons::doesExist(hdPng)) {
+            files.push_back(hdPng);
+            auto filename = shortName + "-hd.plist";
+            auto plist = parentDir / filename;
+            if (MoreIcons::doesExist(plist)) files.push_back(plist);
+            else if (!trash) {
+                auto vanillaPath = dirs::getResourcesDir() / "icons" / filename;
+                #ifdef GEODE_IS_ANDROID
+                auto size = 0ul;
+                auto data = CCFileUtils::get()->getFileData(vanillaPath.c_str(), "rb", &size);
+                if (!data) return notify(NotificationIcon::Error, "Failed to read {}", filename);
+
+                if (GEODE_UNWRAP_IF_ERR(err, file::writeBinary(directory / filename, { data, data + size })))
+                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, err);
+                #else
+                std::error_code code;
+                std::filesystem::copy_file(vanillaPath, directory / filename, code);
+                if (code) return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, code.message());
+                #endif
+            }
+        }
+
+        auto png = parentDir / (shortName + ".png");
+        if (MoreIcons::doesExist(png)) {
+            files.push_back(png);
+            auto filename = shortName + ".plist";
+            auto plist = parentDir / filename;
+            if (MoreIcons::doesExist(plist)) files.push_back(plist);
+            else if (!trash) {
+                auto vanillaPath = dirs::getResourcesDir() / "icons" / filename;
+                #ifdef GEODE_IS_ANDROID
+                auto size = 0ul;
+                auto data = CCFileUtils::get()->getFileData(vanillaPath.c_str(), "rb", &size);
+                if (!data) return notify(NotificationIcon::Error, "Failed to read {}", filename);
+
+                if (GEODE_UNWRAP_IF_ERR(err, file::writeBinary(directory / filename, { data, data + size })))
+                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, err);
+                #else
+                std::error_code code;
+                std::filesystem::copy_file(vanillaPath, directory / filename, code);
+                if (code) return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, code.message());
+                #endif
+            }
+        }
+
+        std::error_code code;
+        for (int i = 0; i < files.size(); i++) {
+            auto& file = files[i];
+            auto filename = file.filename();
+            if (GEODE_UNWRAP_IF_ERR(err, renameFile(file, directory / filename))) {
+                for (int j = 0; j < i; j++) {
+                    auto& file2 = files[j];
+                    std::filesystem::rename(directory / file2.filename(), file2, code);
+                }
+                return notify(NotificationIcon::Error, "Failed to {} {}: {}.", trash ? "trash" : "move", filename, err);
+            }
+        }
+    }
+
+    auto name = info->shortName;
+    fullClose();
+    if (trash) MoreIconsAPI::removeIcon(info);
+    else MoreIconsAPI::moveIcon(info, directory);
+    notify(NotificationIcon::Success, "{} {}ed!", name, trash ? "trash" : "convert");
+    updateGarage();
 }
 
 bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool read) {
@@ -106,7 +218,7 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
         }
 
         m_player = SimplePlayer::create(1);
-        if (!name.empty()) MoreIconsAPI::updateSimplePlayer(m_player, name, type);
+        if (!name.empty()) MoreIconsAPI::updateSimplePlayer(m_player, name, type, false);
         else m_player->updatePlayerFrame(id, type);
         m_player->setGlowOutline({ 255, 255, 255 });
         m_player->setPosition({ 175.0f, 150.0f + isRobot * 80.0f - suffixes.size() * 30.0f - read * 70.0f });
@@ -240,11 +352,49 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
 
     if (read) {
         auto icon = id > 0 ? nullptr : MoreIconsAPI::getIcon(name, type);
-        if (!icon || icon->vanilla || icon->zipped) return true;
+        if (!icon || icon->zipped) return true;
 
-        auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [this, icon, unlock, unlockName](auto) {
+        if (icon->vanilla) {
+            auto moveButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.7f, [this, icon, unlock](auto) {
+                auto lower = lowercase[(int)unlock];
+                auto upper = uppercase[(int)unlock];
+                createQuickPopup(
+                    fmt::format("Convert {}", upper).c_str(),
+                    fmt::format("Are you sure you want to <cy>convert</c> this <cg>{}</c> into a <cl>More Icons</c> <cg>{}</c>?", lower, lower),
+                    "No",
+                    "Yes",
+                    [this, icon](auto, bool btn2) {
+                        if (!btn2) return;
+
+                        auto parent = std::filesystem::path(icon->textures[0]).parent_path();
+                        auto type = icon->type;
+                        auto dir = (type <= IconType::Jetpack ? parent.parent_path() : parent) / "config" / GEODE_MOD_ID / folders[(int)type];
+                        std::error_code code;
+                        auto exists = MoreIcons::doesExist(dir);
+                        if (!exists) exists = std::filesystem::create_directories(dir, code);
+                        if (!exists) return notify(NotificationIcon::Error, "Failed to create directory: {}", code.message());
+                        moveIcon(icon, dir, false);
+                    }
+                );
+            });
+            moveButton->setPosition({ 320.0f, 30.0f });
+            moveButton->setID("move-button");
+            m_buttonMenu->addChild(moveButton);
+            return true;
+        }
+
+        m_title->setPosition({ 165.0f, m_size.height - 20.0f });
+
+        auto editButton = CCMenuItemExt::createSpriteExtraWithFilename("MI_pencil_001.png"_spr, 0.7f, [icon](auto) {
+            IconNamePopup::create(icon)->show();
+        });
+        editButton->setPosition(m_title->getPosition() + CCPoint { m_title->getScaledContentWidth() / 2.0f + 10.0f, 0.0f });
+        editButton->setID("edit-button");
+        m_buttonMenu->addChild(editButton);
+
+        auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [this, icon, unlock](auto) {
             createQuickPopup(
-                fmt::format("Trash {}", unlockName).c_str(),
+                fmt::format("Trash {}", uppercase[(int)unlock]).c_str(),
                 fmt::format("Are you sure you want to <cr>trash</c> this <cg>{}</c>?", lowercase[(int)unlock]),
                 "No",
                 "Yes",
@@ -254,22 +404,7 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
                     GEODE_UNWRAP_OR_ELSE(trashDir, err, MoreIcons::createTrash())
                         return notify(NotificationIcon::Error, "Failed to create trash directory: {}", err);
 
-                    std::error_code code;
-
-                    if (!icon->sheetName.empty()) {
-                        auto sheetName = std::filesystem::path(icon->sheetName).filename();
-                        std::filesystem::rename(icon->sheetName, trashDir / sheetName, code);
-                        if (code) return notify(NotificationIcon::Error, "Failed to trash {}: {}.", sheetName, code.message());
-                    }
-
-                    auto textureName = std::filesystem::path(icon->textures[0]).filename();
-                    std::filesystem::rename(icon->textures[0], trashDir / textureName, code);
-                    if (code) return notify(NotificationIcon::Error, "Failed to trash {}: {}.", textureName, code.message());
-
-                    auto name = icon->name;
-                    MoreIconsAPI::removeIcon(icon);
-                    notify(NotificationIcon::Success, "{} trashed!", name);
-                    fullClose();
+                    moveIcon(icon, trashDir, true);
                 }
             );
         });
@@ -305,10 +440,9 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
 
         auto mod = Mod::get();
         auto configDir = mod->getConfigDir();
-        std::error_code code;
         if (m_iconType == IconType::Special) {
             auto path = configDir / "trail" / fmt::format("{}.png", iconName);
-            if (std::filesystem::exists(path, code)) createQuickPopup(
+            if (MoreIcons::doesExist(path)) createQuickPopup(
                 "Existing Trail",
                 fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
                 "No",
@@ -320,12 +454,11 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
             else saveTrail(path);
         }
         else if (m_iconType <= IconType::Jetpack) {
-            constexpr std::array directories = { "icon", "ship", "ball", "ufo", "wave", "robot", "spider", "swing", "jetpack" };
             auto factor = CCDirector::get()->getContentScaleFactor();
-            auto path = configDir / directories[(int)m_iconType] / (iconName + (factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : ""));
-            auto png = std::filesystem::path(path).concat(".png");
-            auto plist = std::filesystem::path(path).concat(".plist");
-            if (std::filesystem::exists(png, code) || std::filesystem::exists(plist, code))
+            auto path = configDir / folders[(int)m_iconType] / (iconName + (factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : ""));
+            auto png = path + ".png";
+            auto plist = path + ".plist";
+            if (MoreIcons::doesExist(png) || MoreIcons::doesExist(plist))
                 createQuickPopup(
                     "Existing Icon",
                     fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
@@ -344,6 +477,8 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
     bottomMenu->updateLayout();
     m_mainLayer->addChild(bottomMenu);
 
+    handleTouchPriority(this);
+
     return true;
 }
 
@@ -356,10 +491,14 @@ void EditIconPopup::fullClose() {
         if (auto iconViewPopup = scene->getChildByType<IconViewPopup>(0)) iconViewPopup->close();
     }
     if (auto moreIconsPopup = scene->getChildByType<MoreIconsPopup>(0)) moreIconsPopup->close();
-    if (auto garageLayer = scene->getChildByType<GJGarageLayer>(0)) {
+}
+
+void EditIconPopup::updateGarage() {
+    if (auto garageLayer = CCScene::get()->getChildByType<GJGarageLayer>(0)) {
+        auto gameManager = GameManager::get();
         auto player1 = garageLayer->m_playerObject;
-        auto iconType1 = garageLayer->m_selectedIconType;
-        player1->updatePlayerFrame(GameManager::get()->activeIconForType(iconType1), iconType1);
+        auto iconType1 = gameManager->m_playerIconType;
+        player1->updatePlayerFrame(gameManager->activeIconForType(iconType1), iconType1);
         MoreIconsAPI::updateSimplePlayer(player1, iconType1, false);
         if (auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons")) {
             auto player2 = static_cast<SimplePlayer*>(garageLayer->getChildByID("player2-icon"));
@@ -513,6 +652,7 @@ void EditIconPopup::updateSprites() {
 }
 
 void EditIconPopup::addOrUpdateIcon(const std::string& name, const std::filesystem::path& png, const std::filesystem::path& plist) {
+    fullClose();
     if (auto icon = MoreIconsAPI::getIcon(name, m_iconType)) MoreIconsAPI::updateIcon(icon);
     else {
         MoreIconsAPI::addIcon({
@@ -535,7 +675,7 @@ void EditIconPopup::addOrUpdateIcon(const std::string& name, const std::filesyst
         });
     }
     notify(NotificationIcon::Success, "{} saved!", name);
-    fullClose();
+    updateGarage();
 }
 
 bool EditIconPopup::checkFrame(std::string_view suffix) {
@@ -640,7 +780,7 @@ void EditIconPopup::onClose(CCObject* sender) {
     auto type = (int)GameManager::get()->iconTypeToUnlockType(m_iconType);
     createQuickPopup(
         fmt::format("Exit {} Editor", uppercase[type]).c_str(),
-        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} editor</c>?\n<cr>All unsaved changes will be lost.</c>", lowercase[type]),
+        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} editor</c>?\n<cr>All unsaved changes will be lost!</c>", lowercase[type]),
         "No",
         "Yes",
         [this, sender](auto, bool btn2) {

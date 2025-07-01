@@ -1,5 +1,5 @@
 #include "MoreIconsPopup.hpp"
-#include "EditIconPopup.hpp"
+#include "edit/EditIconPopup.hpp"
 #include "log/LogLayer.hpp"
 #include "view/IconViewPopup.hpp"
 #include "../../MoreIcons.hpp"
@@ -188,6 +188,8 @@ bool MoreIconsPopup::setup() {
     trashButton->setPosition({ 435.0f, 5.0f });
     trashButton->setID("trash-button");
     m_buttonMenu->addChild(trashButton);
+
+    handleTouchPriority(this);
 
     return true;
 }

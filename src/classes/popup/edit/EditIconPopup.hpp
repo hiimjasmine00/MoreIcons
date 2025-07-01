@@ -2,6 +2,8 @@
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/Task.hpp>
 
+class IconInfo;
+
 class EditIconPopup : public geode::Popup<IconType, int, const std::string&, bool> {
 protected:
     geode::EventListener<geode::Task<geode::Result<std::vector<std::filesystem::path>>>> m_listener;
@@ -16,7 +18,7 @@ protected:
 
     bool setup(IconType, int, const std::string&, bool) override;
 
-    void fullClose();
+    void moveIcon(IconInfo*, const std::filesystem::path&, bool);
     void pickFile(int, int);
     void updateSprites();
     void addOrUpdateIcon(const std::string&, const std::filesystem::path&, const std::filesystem::path&);
@@ -25,7 +27,21 @@ protected:
     void saveIcon(const std::filesystem::path&, const std::filesystem::path&);
     void onClose(cocos2d::CCObject*) override;
 public:
+    inline static constexpr std::array lowercase = {
+        "", "icon", "", "", "ship", "ball",
+        "UFO", "wave", "robot", "spider", "trail",
+        "death effect", "", "swing", "jetpack", "ship fire"
+    };
+    inline static constexpr std::array uppercase = {
+        "", "Icon", "", "", "Ship", "Ball",
+        "UFO", "Wave", "Robot", "Spider", "Trail",
+        "Death Effect", "", "Swing", "Jetpack", "Ship Fire"
+    };
+
     static EditIconPopup* create(IconType, int, const std::string&, bool);
+
+    void fullClose();
+    void updateGarage();
 
     ~EditIconPopup();
 };

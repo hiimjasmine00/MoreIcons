@@ -1,5 +1,5 @@
 #include "LazyIcon.hpp"
-#include "../EditIconPopup.hpp"
+#include "../edit/EditIconPopup.hpp"
 #include "../../misc/ThreadPool.hpp"
 #include "../../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/CCAnimateFrameCache.hpp>
@@ -124,7 +124,6 @@ void LazyIcon::createComplexIcon() {
     auto type = spider ? "Spider" : "Robot";
     auto idleFrames = afc->spriteFrameByName(fmt::format("{}_idle_001.png", type).c_str());
     auto iconName = fmt::format("{}{}", m_info ? GEODE_MOD_ID "/" : "", m_name);
-    auto sfc = CCSpriteFrameCache::get();
     auto normalImage = getNormalImage();
     auto center = normalImage->getContentSize() / 2.0f;
 

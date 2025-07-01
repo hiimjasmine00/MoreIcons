@@ -45,11 +45,13 @@ public:
     static void unloadIcon(const std::string& name, IconType type, int requestID);
     static void unloadIcons(int requestID);
     static void addIcon(const IconInfo& info);
+    static void moveIcon(IconInfo* info, const std::filesystem::path& path);
     static void removeIcon(IconInfo* info);
+    static void renameIcon(IconInfo* info, const std::string& name);
     static void updateIcon(IconInfo* info);
-    static void updateSimplePlayer(SimplePlayer* player, IconType type, bool dual);
-    static void updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type);
-    static void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type);
+    static void updateSimplePlayer(SimplePlayer* player, IconType type, bool dual, bool load = true);
+    static void updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type, bool load = true);
+    static void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type, bool load = true);
     static void updatePlayerObject(PlayerObject* object, IconType type, bool dual);
     static void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type);
     static geode::Result<ImageResult> createFrames(
