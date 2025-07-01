@@ -1,4 +1,12 @@
 # More Icons Changelog
+## v1.14.0 (2025-07-01)
+- Deprecated folder icons, which will be converted to file icons on first load
+- Added the ability to re-name an icon in the icon viewer ([#32](https://github.com/hiimjasmine00/MoreIcons/issues/32))
+- Added the ability to convert a traditional pack icon to a More Icons pack icon in the icon viewer ([#32](https://github.com/hiimjasmine00/MoreIcons/issues/32))
+- Improved icon trashing, which now accounts for different icon qualities ([#32](https://github.com/hiimjasmine00/MoreIcons/issues/32#issuecomment-2994636123))
+- Removed the "Reload Textures" button from the More Icons popup, now handling the reloading automatically
+- Merged the "PNG" and "Plist" buttons in the icon editor into a single button
+
 ## v1.13.7 (2025-06-22)
 - Added the ability to disable non-icon info logs in the mod settings
 - Fixed a bug where custom trails from vanilla icon packs would not be added to the icon kit

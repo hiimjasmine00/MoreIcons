@@ -416,7 +416,7 @@ void MoreIconsAPI::removeIcon(IconInfo* info) {
     if (found < types.end() - 1) {
         for (auto it = found + 1; it < types.end(); it++) {
             auto& iconSpan = iconSpans[*it];
-            iconSpan = { iconSpan.data() - 1, iconSpan.size() - 1 };
+            iconSpan = { iconSpan.data() - 1, iconSpan.size() };
         }
     }
 }
@@ -672,7 +672,11 @@ Result<std::vector<uint8_t>> getFileData(const std::string& path) {
     static thread_local ZipFile* apkFile = new ZipFile(getApkPath());
     if (path.starts_with("assets/")) {
         auto size = 0ul;
-        if (auto data = apkFile->getFileData(path.c_str(), &size)) return Ok<std::vector<uint8_t>>({ data, data + size });
+        if (auto data = apkFile->getFileData(path.c_str(), &size)) {
+            std::vector vec(data, data + size);
+            delete[] data;
+            return Ok(vec);
+        }
         else return Err("Failed to read file from APK");
     }
     return file::readBinary(path);

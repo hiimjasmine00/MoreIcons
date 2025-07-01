@@ -223,7 +223,7 @@ std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuff
 Result<std::filesystem::path> MoreIcons::createTrash() {
     std::error_code code;
     auto trashPath = Mod::get()->getConfigDir() / "trash";
-    auto exists = MoreIcons::doesExist(trashPath);
+    auto exists = doesExist(trashPath);
     if (!exists) exists = std::filesystem::create_directories(trashPath, code);
     if (!exists) return Err(code.message());
     else {

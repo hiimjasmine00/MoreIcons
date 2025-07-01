@@ -52,6 +52,30 @@ Result<> renameFile(const std::filesystem::path& oldPath, const std::filesystem:
     else return Ok();
 }
 
+Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem::path& dest, bool uhd) {
+    #ifdef GEODE_IS_MOBILE
+    auto fullSrc = (uhd ? dirs::getModConfigDir() / "weebify.high-graphics-android" / GEODE_STR(GEODE_GD_VERSION) : dirs::getResourcesDir()) / src;
+    #else
+    auto fullSrc = dirs::getResourcesDir() / src;
+    #endif
+    #ifdef GEODE_IS_ANDROID
+    if (!uhd) {
+        auto size = 0ul;
+        auto data = CCFileUtils::get()->getFileData(fullSrc.c_str(), "rb", &size);
+        if (!data) return Err("Failed to read file");
+
+        std::vector vec(data, data + size);
+        delete[] data;
+
+        return file::writeBinary(dest, vec);
+    }
+    #endif
+    std::error_code code;
+    std::filesystem::copy_file(fullSrc, dest, code);
+    if (code) return Err(code.message());
+    else return Ok();
+}
+
 constexpr std::array folders = { "icon", "ship", "ball", "ufo", "wave", "robot", "spider", "swing", "jetpack" };
 
 void EditIconPopup::moveIcon(IconInfo* info, const std::filesystem::path& directory, bool trash) {
@@ -83,14 +107,8 @@ void EditIconPopup::moveIcon(IconInfo* info, const std::filesystem::path& direct
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                #ifdef GEODE_IS_MOBILE
-                auto vanillaPath = dirs::getModConfigDir() / "weebify.high-graphics-android" / GEODE_STR(GEODE_GD_VERSION) / "icons" / filename;
-                #else
-                auto vanillaPath = dirs::getResourcesDir() / "icons" / filename;
-                #endif
-                std::error_code code;
-                std::filesystem::copy_file(vanillaPath, directory / filename, code);
-                if (code) return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, code.message());
+                if (GEODE_UNWRAP_IF_ERR(err, copyVanillaFile("icons/" + filename, directory / filename, true)))
+                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, err);
             }
         }
 
@@ -101,19 +119,8 @@ void EditIconPopup::moveIcon(IconInfo* info, const std::filesystem::path& direct
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                auto vanillaPath = dirs::getResourcesDir() / "icons" / filename;
-                #ifdef GEODE_IS_ANDROID
-                auto size = 0ul;
-                auto data = CCFileUtils::get()->getFileData(vanillaPath.c_str(), "rb", &size);
-                if (!data) return notify(NotificationIcon::Error, "Failed to read {}", filename);
-
-                if (GEODE_UNWRAP_IF_ERR(err, file::writeBinary(directory / filename, { data, data + size })))
+                if (GEODE_UNWRAP_IF_ERR(err, copyVanillaFile("icons/" + filename, directory / filename, false)))
                     return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, err);
-                #else
-                std::error_code code;
-                std::filesystem::copy_file(vanillaPath, directory / filename, code);
-                if (code) return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, code.message());
-                #endif
             }
         }
 
@@ -124,19 +131,8 @@ void EditIconPopup::moveIcon(IconInfo* info, const std::filesystem::path& direct
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                auto vanillaPath = dirs::getResourcesDir() / "icons" / filename;
-                #ifdef GEODE_IS_ANDROID
-                auto size = 0ul;
-                auto data = CCFileUtils::get()->getFileData(vanillaPath.c_str(), "rb", &size);
-                if (!data) return notify(NotificationIcon::Error, "Failed to read {}", filename);
-
-                if (GEODE_UNWRAP_IF_ERR(err, file::writeBinary(directory / filename, { data, data + size })))
+                if (GEODE_UNWRAP_IF_ERR(err, copyVanillaFile("icons/" + filename, directory / filename, false)))
                     return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, err);
-                #else
-                std::error_code code;
-                std::filesystem::copy_file(vanillaPath, directory / filename, code);
-                if (code) return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, code.message());
-                #endif
             }
         }
 
