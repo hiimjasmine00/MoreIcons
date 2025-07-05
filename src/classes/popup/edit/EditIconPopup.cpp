@@ -650,26 +650,24 @@ void EditIconPopup::updateSprites() {
 void EditIconPopup::addOrUpdateIcon(const std::string& name, const std::filesystem::path& png, const std::filesystem::path& plist) {
     fullClose();
     if (auto icon = MoreIconsAPI::getIcon(name, m_iconType)) MoreIconsAPI::updateIcon(icon);
-    else {
-        MoreIconsAPI::addIcon({
-            .name = name,
-            .textures = { string::pathToString(png) },
-            .frameNames = {},
-            .sheetName = string::pathToString(plist),
-            .packName = "More Icons",
-            .packID = "",
-            .type = m_iconType,
-            .trailID = 0,
-            .blend = false,
-            .tint = false,
-            .show = false,
-            .fade = 0.0f,
-            .stroke = 0.0f,
-            .shortName = name,
-            .vanilla = false,
-            .zipped = false
-        });
-    }
+    else MoreIconsAPI::addIcon({
+        .name = name,
+        .textures = { string::pathToString(png) },
+        .frameNames = {},
+        .sheetName = string::pathToString(plist),
+        .packName = "More Icons",
+        .packID = "",
+        .type = m_iconType,
+        .trailID = 0,
+        .blend = false,
+        .tint = false,
+        .show = false,
+        .fade = 0.0f,
+        .stroke = 0.0f,
+        .shortName = name,
+        .vanilla = false,
+        .zipped = false
+    }, true);
     notify(NotificationIcon::Success, "{} saved!", name);
     updateGarage();
 }

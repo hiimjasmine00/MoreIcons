@@ -44,7 +44,7 @@ public:
     static void loadIcons(IconType type, bool logs);
     static void unloadIcon(const std::string& name, IconType type, int requestID);
     static void unloadIcons(int requestID);
-    static void addIcon(const IconInfo& info);
+    static void addIcon(const IconInfo& info, bool postLoad = false);
     static void moveIcon(IconInfo* info, const std::filesystem::path& path);
     static void removeIcon(IconInfo* info);
     static void renameIcon(IconInfo* info, const std::string& name);

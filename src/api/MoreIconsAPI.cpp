@@ -342,7 +342,7 @@ constexpr std::array types = {
     IconType::Spider, IconType::Wave, IconType::Swing, IconType::Jetpack, IconType::Special
 };
 
-void MoreIconsAPI::addIcon(const IconInfo& info) {
+void MoreIconsAPI::addIcon(const IconInfo& info, bool postLoad) {
     size_t indices[types.size()];
     for (int i = 0; i < types.size(); i++) {
         auto type = types[i];
@@ -354,16 +354,15 @@ void MoreIconsAPI::addIcon(const IconInfo& info) {
 
     for (int i = 0; i < types.size(); i++) {
         auto type = types[i];
-        if (info.type < type) continue;
+        if (!iconSpans.contains(type) && info.type != type) continue;
         auto& iconSpan = iconSpans[type];
         iconSpan = { icons.data() + indices[i] + (info.type < type), iconSpan.size() + (info.type == type) };
     }
 
-    if (!preloadIcons) return;
+    if (!preloadIcons || !postLoad) return;
 
-    GEODE_UNWRAP_OR_ELSE(image, err, createFrames(info.textures[0], info.sheetName, info.name, info.type, std::to_address(it))) {
+    GEODE_UNWRAP_OR_ELSE(image, err, createFrames(info.textures[0], info.sheetName, info.name, info.type, std::to_address(it)))
         log::error("{}: {}", info.name, err);
-    }
     else addFrames(image);
 }
 
