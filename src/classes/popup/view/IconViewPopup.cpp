@@ -65,7 +65,3 @@ bool IconViewPopup::setup(IconType type, bool custom) {
 
     return true;
 }
-
-void IconViewPopup::close() {
-    onClose(nullptr);
-}

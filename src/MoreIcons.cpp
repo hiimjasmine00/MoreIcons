@@ -2,6 +2,8 @@
 #include "api/MoreIconsAPI.hpp"
 #include "classes/misc/ThreadPool.hpp"
 #include <Geode/binding/GameManager.hpp>
+#include <Geode/binding/GJGarageLayer.hpp>
+#include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/utils/ranges.hpp>
@@ -555,4 +557,26 @@ void MoreIcons::saveTrails() {
             { "stroke", info.stroke }
         })).inspectErr([info](const std::string& err) { log::error("{}: Failed to save trail info: {}", info.name, err); });
     }
+}
+
+void MoreIcons::updateGarage(GJGarageLayer* layer) {
+    auto hasLayer = layer != nullptr;
+    if (!hasLayer) layer = CCScene::get()->getChildByType<GJGarageLayer>(0);
+    if (!layer) return;
+
+    auto gameManager = GameManager::get();
+    auto player1 = layer->m_playerObject;
+    auto iconType1 = gameManager->m_playerIconType;
+    if (!hasLayer) player1->updatePlayerFrame(gameManager->activeIconForType(iconType1), iconType1);
+    MoreIconsAPI::updateSimplePlayer(player1, iconType1, false);
+
+    if (auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons")) {
+        auto player2 = static_cast<SimplePlayer*>(layer->getChildByID("player2-icon"));
+        auto iconType2 = (IconType)sdi->getSavedValue("lastmode", 0);
+        constexpr std::array types = { "cube", "ship", "roll", "bird", "dart", "robot", "spider", "swing", "jetpack" };
+        if (!hasLayer) player2->updatePlayerFrame(sdi->getSavedValue(types[(int)iconType2], 1), iconType2);
+        MoreIconsAPI::updateSimplePlayer(player2, iconType2, true);
+    }
+
+    layer->selectTab(layer->m_iconType);
 }

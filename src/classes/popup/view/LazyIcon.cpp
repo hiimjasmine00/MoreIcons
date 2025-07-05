@@ -1,5 +1,5 @@
 #include "LazyIcon.hpp"
-#include "../edit/EditIconPopup.hpp"
+#include "../EditIconPopup.hpp"
 #include "../../misc/ThreadPool.hpp"
 #include "../../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/CCAnimateFrameCache.hpp>

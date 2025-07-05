@@ -18,7 +18,6 @@ protected:
 
     bool setup(IconType, int, const std::string&, bool) override;
 
-    void moveIcon(IconInfo*, const std::filesystem::path&, bool);
     void pickFile(int, int);
     void updateSprites();
     void addOrUpdateIcon(const std::string&, const std::filesystem::path&, const std::filesystem::path&);
@@ -27,21 +26,7 @@ protected:
     void saveIcon(const std::filesystem::path&, const std::filesystem::path&);
     void onClose(cocos2d::CCObject*) override;
 public:
-    inline static constexpr std::array lowercase = {
-        "", "icon", "", "", "ship", "ball",
-        "UFO", "wave", "robot", "spider", "trail",
-        "death effect", "", "swing", "jetpack", "ship fire"
-    };
-    inline static constexpr std::array uppercase = {
-        "", "Icon", "", "", "Ship", "Ball",
-        "UFO", "Wave", "Robot", "Spider", "Trail",
-        "Death Effect", "", "Swing", "Jetpack", "Ship Fire"
-    };
-
     static EditIconPopup* create(IconType, int, const std::string&, bool);
-
-    void fullClose();
-    void updateGarage();
 
     ~EditIconPopup();
 };

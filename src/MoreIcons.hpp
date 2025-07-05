@@ -1,6 +1,7 @@
 #include <array>
 #include <filesystem>
 #include <Geode/Enums.hpp>
+#include <Geode/GeneratedPredeclare.hpp>
 #include <Geode/Result.hpp>
 #include <map>
 
@@ -23,6 +24,14 @@ class MoreIcons {
 public:
     inline static constexpr std::array severityFrames = {
         "cc_2x2_white_image", "GJ_infoIcon_001.png", "geode.loader/info-warning.png", "geode.loader/info-alert.png"
+    };
+    inline static constexpr std::array lowercase = {
+        "", "icon", "", "", "ship", "ball", "UFO", "wave", "robot",
+        "spider", "trail", "death effect", "", "swing", "jetpack", "ship fire"
+    };
+    inline static constexpr std::array uppercase = {
+        "", "Icon", "", "", "Ship", "Ball", "UFO", "Wave", "Robot",
+        "Spider", "Trail", "Death Effect", "", "Swing", "Jetpack", "Ship Fire"
     };
     inline static std::vector<IconPack> packs;
     inline static std::vector<LogData> logs;
@@ -47,6 +56,7 @@ public:
     static void loadPacks();
     static void loadSettings();
     static void saveTrails();
+    static void updateGarage(GJGarageLayer* layer = nullptr);
     static std::string vanillaTexturePath(const std::string& path, bool skipSuffix);
 };
 

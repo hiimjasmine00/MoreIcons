@@ -1,5 +1,6 @@
 # More Icons Changelog
 ## v1.14.1 (2025-07-05)
+- Moved the icon converting, renaming, and trashing buttons to the icon popup in the icon kit
 - Fixed a bug where the "Preload Icon Textures" setting would load the icons twice (And in the main thread :scream:)
 
 ## v1.14.0 (2025-07-01)

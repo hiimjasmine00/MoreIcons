@@ -1,7 +1,8 @@
 #include "IconNamePopup.hpp"
-#include "EditIconPopup.hpp"
+#include "MoreInfoPopup.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../api/MoreIconsAPI.hpp"
+#include <fmt/std.h>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/ui/Notification.hpp>
@@ -10,7 +11,7 @@ using namespace geode::prelude;
 
 IconNamePopup* IconNamePopup::create(IconInfo* info) {
     auto ret = new IconNamePopup();
-    if (ret->initAnchored(350.0f, 130.0f, info, "geode.loader/GE_square03.png")) {
+    if (ret->initAnchored(350.0f, 130.0f, info)) {
         ret->autorelease();
         return ret;
     }
@@ -31,7 +32,7 @@ Result<> replaceFile(const std::filesystem::path& oldPath, const std::filesystem
 
 bool IconNamePopup::setup(IconInfo* info) {
     auto unlock = (int)GameManager::get()->iconTypeToUnlockType(info->type);
-    auto unlockName = EditIconPopup::uppercase[unlock];
+    auto unlockName = MoreIcons::uppercase[unlock];
 
     setID("IconNamePopup");
     setTitle(fmt::format("Edit {} Name", unlockName));
@@ -50,9 +51,7 @@ bool IconNamePopup::setup(IconInfo* info) {
     m_nameInput->setID("name-input");
     m_mainLayer->addChild(m_nameInput);
 
-    auto confirmButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Confirm", "goldFont.fnt", "GJ_button_05.png", 0.8f), [
-        this, info, unlockName
-    ](auto) {
+    auto confirmButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Confirm", 0.8f), [this, info, unlockName](auto) {
         auto name = m_nameInput->getString();
         if (name.empty()) return Notification::create("Name cannot be empty.", NotificationIcon::Info)->show();
 
@@ -119,13 +118,11 @@ bool IconNamePopup::setup(IconInfo* info) {
                     return Notification::create(fmt::format("Failed to rename {}.plist: {}", old, err), NotificationIcon::Error)->show();
             }
 
-            m_nameInput->setString("");
-            onClose(nullptr);
-            auto editIconPopup = CCScene::get()->getChildByType<EditIconPopup>(0);
-            if (editIconPopup) editIconPopup->fullClose();
+            Popup::onClose(nullptr);
+            if (auto moreInfoPopup = CCScene::get()->getChildByType<MoreInfoPopup>(0)) moreInfoPopup->close();
             MoreIconsAPI::renameIcon(info, name);
             Notification::create(fmt::format("{} renamed to {}!", old, name), NotificationIcon::Success)->show();
-            if (editIconPopup) editIconPopup->updateGarage();
+            MoreIcons::updateGarage();
         });
     });
     confirmButton->setPosition({ 175.0f, 30.0f });
@@ -142,9 +139,9 @@ void IconNamePopup::onClose(cocos2d::CCObject* sender) {
 
     auto unlock = (int)GameManager::get()->iconTypeToUnlockType(m_iconType);
     createQuickPopup(
-        fmt::format("Exit {} Name Editor", EditIconPopup::uppercase[unlock]).c_str(),
+        fmt::format("Exit {} Name Editor", MoreIcons::uppercase[unlock]).c_str(),
         fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} name editor</c>?\n<cr>All unsaved changes will be lost!</c>",
-            EditIconPopup::lowercase[unlock]),
+            MoreIcons::lowercase[unlock]),
         "No",
         "Yes",
         [this, sender](auto, bool btn2) {

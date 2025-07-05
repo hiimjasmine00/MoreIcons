@@ -37,15 +37,12 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         f->m_initialized = true;
         f->m_pages[IconType::Cube] = m_iconPages[IconType::Cube];
 
-        MoreIconsAPI::updateSimplePlayer(m_playerObject, GameManager::get()->m_playerIconType, false);
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        if (sdi) MoreIconsAPI::updateSimplePlayer(
-            static_cast<SimplePlayer*>(getChildByID("player2-icon")), (IconType)sdi->getSavedValue("lastmode", 0), true);
+        MoreIcons::updateGarage(this);
 
         if (MoreIconsAPI::hasIcon(IconType::Cube, false)) setupCustomPage(findIconPage(IconType::Cube));
         else createNavMenu();
 
-        auto shardsMenu = getChildByID("shards-menu");
+        auto sdi = Loader::get()->isModLoaded("weebify.separate_dual_icons");
         if (sdi) {
             if (auto playerButtonsMenu = getChildByID("player-buttons-menu")) {
                 ButtonHooker::create(
@@ -57,25 +54,25 @@ class $modify(MIGarageLayer, GJGarageLayer) {
                     this, menu_selector(MIGarageLayer::newOn2PToggle)
                 );
             }
+        }
 
-            if (shardsMenu) ButtonHooker::create(
+        if (auto shardsMenu = getChildByID("shards-menu")) {
+            auto miSprite = CircleButtonSprite::createWithSprite("MI_moreIcons_001.png"_spr, 1.0f, CircleBaseColor::Gray, CircleBaseSize::Small);
+            if (MoreIcons::severity > Severity::Debug) {
+                auto severitySprite = CCSprite::createWithSpriteFrameName(MoreIcons::severityFrames[MoreIcons::severity]);
+                severitySprite->setPosition(miSprite->getContentSize() - CCPoint { 6.0f, 6.0f });
+                severitySprite->setScale(0.6f);
+                miSprite->addChild(severitySprite, 1);
+            }
+            auto miButton = CCMenuItemSpriteExtra::create(miSprite, this, menu_selector(MIGarageLayer::onMoreIcons));
+            miButton->setID("more-icons-button"_spr);
+            shardsMenu->addChild(miButton);
+            shardsMenu->updateLayout();
+
+            if (sdi) ButtonHooker::create(
                 static_cast<CCMenuItem*>(shardsMenu->getChildByID("swap-2p-button")),
                 this, menu_selector(MIGarageLayer::newSwap2PKit)
             );
-        }
-
-        auto moreIconsSprite = CircleButtonSprite::createWithSprite("MI_moreIcons_001.png"_spr, 1.0f, CircleBaseColor::Gray, CircleBaseSize::Small);
-        if (MoreIcons::severity > Severity::Debug) {
-            auto severitySprite = CCSprite::createWithSpriteFrameName(MoreIcons::severityFrames[MoreIcons::severity]);
-            severitySprite->setPosition(moreIconsSprite->getContentSize() - CCPoint { 6.0f, 6.0f });
-            severitySprite->setScale(0.6f);
-            moreIconsSprite->addChild(severitySprite, 1);
-        }
-        auto moreIconsButton = CCMenuItemSpriteExtra::create(moreIconsSprite, this, menu_selector(MIGarageLayer::onMoreIcons));
-        moreIconsButton->setID("more-icons-button"_spr);
-        if (shardsMenu) {
-            shardsMenu->addChild(moreIconsButton);
-            shardsMenu->updateLayout();
         }
 
         return true;
