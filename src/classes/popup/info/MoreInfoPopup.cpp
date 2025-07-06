@@ -256,7 +256,9 @@ bool MoreInfoPopup::setup(IconInfo* info) {
 
                     auto parent = std::filesystem::path(m_info->textures[0]).parent_path();
                     auto type = m_info->type;
-                    auto dir = (type <= IconType::Jetpack ? parent.parent_path() : parent) / "config" / GEODE_MOD_ID / folders[(int)type];
+                    auto dir = type <= IconType::Jetpack
+                        ? parent.parent_path() / "config" / GEODE_MOD_ID / folders[(int)type]
+                        : parent / "config" / GEODE_MOD_ID / "trail";
                     std::error_code code;
                     auto exists = MoreIcons::doesExist(dir);
                     if (!exists) exists = std::filesystem::create_directories(dir, code);

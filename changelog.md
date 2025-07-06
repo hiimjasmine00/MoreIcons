@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v1.14.2 (2025-07-06)
+- Possibly fixed a bug relating to converting vanilla trails to More Icons trails
+
 ## v1.14.1 (2025-07-05)
 - Moved the icon converting, renaming, and trashing buttons to the icon popup in the icon kit
 - Fixed a bug where the "Preload Icon Textures" setting would load the icons twice (And in the main thread :scream:)
