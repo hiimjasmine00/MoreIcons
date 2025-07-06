@@ -182,16 +182,17 @@ CCTexture2D* MoreIconsAPI::loadIcon(const std::string& name, IconType type, int 
 void MoreIconsAPI::loadIcons(IconType type, bool logs) {
     if (!preloadIcons) return;
 
-    constexpr std::array names = {
+    constexpr std::array lowercase = {
         "", "icon", "", "", "ship", "ball", "UFO", "wave",
         "robot", "spider", "trail", "death effect", "", "swing", "jetpack", "ship fire"
     };
-    auto name = names[(int)GameManager::get()->iconTypeToUnlockType(type)];
+    auto name = lowercase[(int)GameManager::get()->iconTypeToUnlockType(type)];
 
     auto& iconSpan = iconSpans[type];
     if (logs) log::info("Pre-loading {} {} textures", iconSpan.size(), name);
 
     std::vector<ImageResult> images;
+    images.reserve(iconSpan.size());
     std::mutex imageMutex;
 
     auto& threadPool = ThreadPool::get();
@@ -216,7 +217,6 @@ void MoreIconsAPI::loadIcons(IconType type, bool logs) {
         loaded++;
     }
 
-    images.clear();
     if (logs) log::info("Finished pre-loading {} {} textures, {} remaining", loaded, name, iconSpan.size() - loaded);
 }
 
@@ -374,13 +374,11 @@ void MoreIconsAPI::moveIcon(IconInfo* info, const std::filesystem::path& path) {
     info->vanilla = false;
 
     auto textureCache = CCTextureCache::get();
-    auto texture = textureCache->textureForKey(oldPng.c_str());
+    Ref texture = textureCache->textureForKey(oldPng.c_str());
     if (!texture) return;
 
-    texture->retain();
     textureCache->m_pTextures->removeObjectForKey(oldPng);
     textureCache->m_pTextures->setObject(texture, info->textures[0]);
-    texture->release();
 }
 
 void MoreIconsAPI::removeIcon(IconInfo* info) {
@@ -439,20 +437,16 @@ void MoreIconsAPI::renameIcon(IconInfo* info, const std::string& name) {
     info->sheetName = string::pathToString(std::filesystem::path(info->sheetName).parent_path() / fmt::format("{}{}.plist", name, quality));
 
     auto textureCache = CCTextureCache::get();
-    if (auto texture = textureCache->textureForKey(oldPng.c_str())) {
-        texture->retain();
+    if (Ref texture = textureCache->textureForKey(oldPng.c_str())) {
         textureCache->m_pTextures->removeObjectForKey(oldPng);
         textureCache->m_pTextures->setObject(texture, newPng);
-        texture->release();
 
         auto spriteFrameCache = CCSpriteFrameCache::get();
         for (auto& frameName : info->frameNames) {
-            if (auto spriteFrame = getFrameByName(frameName)) {
-                spriteFrame->retain();
+            if (Ref spriteFrame = getFrameByName(frameName)) {
                 spriteFrameCache->m_pSpriteFrames->removeObjectForKey(frameName);
                 frameName = getFrameName(frameName, newName, type);
                 spriteFrameCache->m_pSpriteFrames->setObject(spriteFrame, frameName);
-                spriteFrame->release();
             }
         }
     }
@@ -501,7 +495,6 @@ void MoreIconsAPI::updateIcon(IconInfo* info) {
         else spriteFrameCache->m_pSpriteFrames->setObject(frame, frameName);
         info->frameNames.push_back(frameName);
     }
-    frames->release();
 }
 
 void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, IconType type, bool dual, bool load) {
@@ -621,22 +614,21 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& i
 
     object->setUserObject("name"_spr, CCString::create(icon));
 
-    if (type == IconType::Robot || type == IconType::Spider) {
-        auto robotSprite = type == IconType::Spider ? object->m_spiderSprite : object->m_robotSprite;
-        auto batchNode = type == IconType::Spider ? object->m_spiderBatchNode : object->m_robotBatchNode;
-        auto useBatchNode = batchNode && robotSprite && robotSprite->getParent() == batchNode;
-
-        if (useBatchNode) {
-            robotSprite->retain();
+    if (type == IconType::Robot) {
+        if (Ref robotSprite = object->m_robotSprite) {
             robotSprite->removeFromParentAndCleanup(false);
+            updateRobotSprite(robotSprite, icon, type);
+            object->m_robotBatchNode->setTexture(robotSprite->getTexture());
+            object->m_robotBatchNode->addChild(robotSprite);
         }
-
-        updateRobotSprite(robotSprite, icon, type);
-
-        if (useBatchNode) {
-            batchNode->setTexture(robotSprite->getTexture());
-            batchNode->addChild(robotSprite);
-            robotSprite->release();
+        return;
+    }
+    else if (type == IconType::Spider) {
+        if (Ref spiderSprite = object->m_spiderSprite) {
+            spiderSprite->removeFromParentAndCleanup(false);
+            updateRobotSprite(spiderSprite, icon, type);
+            object->m_spiderBatchNode->setTexture(spiderSprite->getTexture());
+            object->m_spiderBatchNode->addChild(spiderSprite);
         }
         return;
     }
@@ -684,25 +676,6 @@ Result<std::vector<uint8_t>> getFileData(const std::string& path) {
 #define getFileData file::readBinary
 #endif
 
-std::vector<float> floatsFromString(const std::string& str, int count) {
-    std::vector<float> result;
-    std::string temp;
-    for (auto& c : str) {
-        if (c == '{' || c == '}') continue;
-        else if (c == ',') {
-            if (!temp.empty()) {
-                result.push_back(numFromString<float>(temp).unwrapOr(0.0f));
-                temp.clear();
-                if (result.size() >= count) break;
-            }
-        }
-        else temp += c;
-    }
-    if (!temp.empty()) result.push_back(numFromString<float>(temp).unwrapOr(0.0f));
-    if (result.size() < count) result.resize(count, 0.0f);
-    return result;
-}
-
 Result<ImageResult> MoreIconsAPI::createFrames(
     const std::string& png, const std::string& plist, const std::string& name, IconType type, IconInfo* info
 ) {
@@ -714,16 +687,39 @@ Result<ImageResult> MoreIconsAPI::createFrames(
         return fmt::format("Failed to parse image: {}", err);
     }));
 
-    auto texture = new CCTexture2D();
-    GEODE_UNWRAP_INTO(auto frames, createFrames(plist, texture, name, type, !name.empty()).mapErr([texture](const std::string& err) {
-        texture->release();
+    auto texture = createRef<CCTexture2D>();
+    GEODE_UNWRAP_INTO(auto frames, createFrames(plist, texture, name, type, !name.empty()).mapErr([](const std::string& err) {
         return fmt::format("Failed to load frames: {}", err);
     }));
 
-    return Ok<ImageResult>({ png, std::move(image.data), texture, frames, info, image.width, image.height });
+    return Ok<ImageResult>({ png, std::move(image.data), std::move(texture), std::move(frames), info, image.width, image.height });
 }
 
-Result<CCDictionary*> MoreIconsAPI::createFrames(
+matjson::Value parseNode(const pugi::xml_node& node) {
+    std::string_view name = node.name();
+    if (name == "dict") {
+        auto json = matjson::Value::object();
+        for (auto child = node.child("key"); child; child = child.next_sibling("key")) {
+            json[child.text().as_string()] = parseNode(child.next_sibling());
+        }
+        return json;
+    }
+    else if (name == "array") {
+        auto json = matjson::Value::array();
+        for (auto child = node.first_child(); child; child = child.next_sibling()) {
+            json.push(parseNode(child));
+        }
+        return json;
+    }
+    else if (name == "string" || name == "data" || name == "date") return node.text().as_string();
+    else if (name == "real") return node.text().as_double();
+    else if (name == "integer") return node.text().as_llong();
+    else if (name == "true") return true;
+    else if (name == "false") return false;
+    else return nullptr;
+}
+
+Result<Ref<CCDictionary>> MoreIconsAPI::createFrames(
     const std::string& path, CCTexture2D* texture, const std::string& name, IconType type, bool fixNames
 ) {
     if (path.empty()) return Ok(nullptr);
@@ -736,157 +732,88 @@ Result<CCDictionary*> MoreIconsAPI::createFrames(
     auto result = doc.load_buffer(data.data(), data.size());
     if (!result) return Err("Failed to parse XML: {}", result.description());
 
-    auto root = doc.child("plist").child("dict");
-    if (!root) return Err("No root <dict> element found");
+    auto root = doc.child("plist");
+    if (!root) return Err("No root <plist> element found");
 
-    pugi::xml_node framesNode;
-    pugi::xml_node metadataNode;
-    for (auto child = root.child("key"); child; child = child.next_sibling("key")) {
-        std::string_view key = child.text().as_string();
-        if (key == "frames") framesNode = child.next_sibling();
-        else if (key == "metadata") metadataNode = child.next_sibling();
-    }
+    auto json = parseNode(root.first_child());
+    if (!json.isObject()) return Err("No root <dict> element found");
 
-    auto format = 0;
-    if (metadataNode.name() == "dict"sv) {
-        for (auto child = metadataNode.child("key"); child; child = child.next_sibling("key")) {
-            if (child.text().as_string() == "format"sv) {
-                format = child.next_sibling().text().as_int();
+    GEODE_UNWRAP_INTO(auto jsonFrames, json.get("frames").mapErr([] { return "No frames <dict> element found"; }));
+
+    auto format = json.get("metadata").andThen([](const matjson::Value& v) {
+        return v.get("format").andThen([](const matjson::Value& v) { return v.asInt(); });
+    }).unwrapOr(0);
+
+    auto frames = createRef<CCDictionary>();
+    for (auto& [frameName, obj] : jsonFrames) {
+        if (!obj.isObject()) continue;
+
+        auto frame = createRef<CCSpriteFrame>();
+        frames->setObject(frame, fixNames ? getFrameName(frameName, name, type) : frameName);
+
+        CCRect rect;
+        CCPoint offset;
+        CCSize originalSize;
+        auto rotated = false;
+
+        switch (format) {
+            case 0: {
+                GEODE_UNWRAP_INTO_IF_OK(rect.origin.x, obj.get("x").andThen([](const matjson::Value& v) {
+                    return v.asDouble();
+                }));
+                GEODE_UNWRAP_INTO_IF_OK(rect.origin.y, obj.get("y").andThen([](const matjson::Value& v) {
+                    return v.asDouble();
+                }));
+                GEODE_UNWRAP_INTO_IF_OK(rect.size.width, obj.get("width").andThen([](const matjson::Value& v) {
+                    return v.asDouble();
+                }));
+                GEODE_UNWRAP_INTO_IF_OK(rect.size.height, obj.get("height").andThen([](const matjson::Value& v) {
+                    return v.asDouble();
+                }));
+                GEODE_UNWRAP_INTO_IF_OK(offset.x, obj.get("offsetX").andThen([](const matjson::Value& v) {
+                    return v.asDouble();
+                }));
+                GEODE_UNWRAP_INTO_IF_OK(offset.y, obj.get("offsetY").andThen([](const matjson::Value& v) {
+                    return v.asDouble();
+                }));
+                GEODE_UNWRAP_INTO_IF_OK(originalSize.width, obj.get("originalWidth").andThen([](const matjson::Value& v) {
+                    return v.asInt().map([](intmax_t v) -> float { return abs(v); });
+                }));
+                GEODE_UNWRAP_INTO_IF_OK(originalSize.height, obj.get("originalHeight").andThen([](const matjson::Value& v) {
+                    return v.asInt().map([](intmax_t v) -> float { return abs(v); });
+                }));
+                break;
+            }
+            case 1: case 2: case 3: {
+                if (format == 3) {
+                    GEODE_UNWRAP_INTO_IF_OK(rect.origin, obj.get("textureRect").andThen([](const matjson::Value& v) {
+                        return v.asString().map([](const std::string& s) { return CCRectFromString(s.c_str()).origin; });
+                    }));
+                    GEODE_UNWRAP_INTO_IF_OK(rect.size, obj.get("spriteSize").andThen([](const matjson::Value& v) {
+                        return v.asString().map([](const std::string& s) { return CCSizeFromString(s.c_str()); });
+                    }));
+                }
+                else {
+                    GEODE_UNWRAP_INTO_IF_OK(rect, obj.get("frame").andThen([](const matjson::Value& v) {
+                        return v.asString().map([](const std::string& s) { return CCRectFromString(s.c_str()); });
+                    }));
+                }
+                GEODE_UNWRAP_INTO_IF_OK(offset, obj.get(format == 3 ? "spriteOffset" : "offset").andThen([](const matjson::Value& v) {
+                    return v.asString().map([](const std::string& s) { return CCPointFromString(s.c_str()); });
+                }));
+                GEODE_UNWRAP_INTO_IF_OK(originalSize, obj.get(format == 3 ? "spriteSourceSize" : "sourceSize").andThen([](const matjson::Value& v) {
+                    return v.asString().map([](const std::string& s) { return CCSizeFromString(s.c_str()); });
+                }));
+                if (format > 1) {
+                    GEODE_UNWRAP_INTO_IF_OK(rotated, obj.get(format == 3 ? "textureRotated" : "rotated").andThen([](const matjson::Value& v) {
+                        return v.asBool();
+                    }));
+                }
                 break;
             }
         }
-    }
 
-    if (framesNode.name() != "dict"sv) return Err("No frames <dict> element found");
-
-    auto frames = new CCDictionary();
-    auto factor = CCDirector::get()->getContentScaleFactor();
-    for (auto child = framesNode.child("key"); child; child = child.next_sibling("key")) {
-        auto frameName = child.text().as_string();
-        auto frame = new CCSpriteFrame();
-        frame->m_bRotated = false;
-        frame->m_pobTexture = nullptr;
-        frames->setObject(frame, fixNames ? getFrameName(frameName, name, type) : frameName);
-        frame->release();
-
-        auto frameNode = child.next_sibling();
-        if (frameNode.name() != "dict"sv) continue;
-
-        auto x = 0.0f;
-        auto y = 0.0f;
-        auto width = 0.0f;
-        auto height = 0.0f;
-        auto offsetX = 0.0f;
-        auto offsetY = 0.0f;
-        auto originalWidth = 0.0f;
-        auto originalHeight = 0.0f;
-        auto rotated = false;
-
-        for (auto next = frameNode.child("key"); next; next = next.next_sibling("key")) {
-            std::string_view k = next.text().as_string();
-            auto value = next.next_sibling();
-            auto val = value.text();
-            std::string v = val.as_string();
-
-            switch (format) {
-                case 0: {
-                    if (k == "x") x = val.as_float();
-                    else if (k == "y") y = val.as_float();
-                    else if (k == "width") width = val.as_float();
-                    else if (k == "height") height = val.as_float();
-                    else if (k == "offsetX") offsetX = val.as_float();
-                    else if (k == "offsetY") offsetY = val.as_float();
-                    else if (k == "originalWidth") originalWidth = abs(val.as_int());
-                    else if (k == "originalHeight") originalHeight = abs(val.as_int());
-                    break;
-                }
-                case 1: {
-                    if (k == "frame") {
-                        auto floats = floatsFromString(v, 4);
-                        x = floats[0];
-                        y = floats[1];
-                        width = floats[2];
-                        height = floats[3];
-                    }
-                    else if (k == "offset") {
-                        auto floats = floatsFromString(v, 2);
-                        offsetX = floats[0];
-                        offsetY = floats[1];
-                    }
-                    else if (k == "sourceSize") {
-                        auto floats = floatsFromString(v, 2);
-                        originalWidth = floats[0];
-                        originalHeight = floats[1];
-                    }
-                    break;
-                }
-                case 2: {
-                    if (k == "frame") {
-                        auto floats = floatsFromString(v, 4);
-                        x = floats[0];
-                        y = floats[1];
-                        width = floats[2];
-                        height = floats[3];
-                    }
-                    else if (k == "offset") {
-                        auto floats = floatsFromString(v, 2);
-                        offsetX = floats[0];
-                        offsetY = floats[1];
-                    }
-                    else if (k == "sourceSize") {
-                        auto floats = floatsFromString(v, 2);
-                        originalWidth = floats[0];
-                        originalHeight = floats[1];
-                    }
-                    else if (k == "rotated") rotated = value.name() == "true"sv;
-                    break;
-                }
-                case 3: {
-                    if (k == "textureRect") {
-                        auto floats = floatsFromString(v, 2);
-                        x = floats[0];
-                        y = floats[1];
-                    }
-                    else if (k == "spriteSize") {
-                        auto floats = floatsFromString(v, 2);
-                        width = floats[0];
-                        height = floats[1];
-                    }
-                    else if (k == "spriteOffset") {
-                        auto floats = floatsFromString(v, 2);
-                        offsetX = floats[0];
-                        offsetY = floats[1];
-                    }
-                    else if (k == "spriteSourceSize") {
-                        auto floats = floatsFromString(v, 2);
-                        originalWidth = floats[0];
-                        originalHeight = floats[1];
-                    }
-                    else if (k == "textureRotated") rotated = value.name() == "true"sv;
-                    break;
-                }
-            }
-        }
-
-        frame->m_obOffset.x = offsetX / factor;
-        frame->m_obOffset.y = offsetY / factor;
-        frame->m_obOriginalSize.width = originalWidth / factor;
-        frame->m_obOriginalSize.height = originalHeight / factor;
-        frame->m_obRectInPixels.origin.x = x;
-        frame->m_obRectInPixels.origin.y = y;
-        frame->m_obRectInPixels.size.width = width;
-        frame->m_obRectInPixels.size.height = height;
-        frame->m_bRotated = rotated;
-        frame->m_obRect.origin.x = x / factor;
-        frame->m_obRect.origin.y = y / factor;
-        frame->m_obRect.size.width = width / factor;
-        frame->m_obRect.size.height = height / factor;
-        frame->m_obOffsetInPixels.x = offsetX;
-        frame->m_obOffsetInPixels.y = offsetY;
-        frame->m_obOriginalSizeInPixels.width = originalWidth;
-        frame->m_obOriginalSizeInPixels.height = originalHeight;
-        frame->m_pobTexture = texture;
-        texture->retain();
+        frame->initWithTexture(texture, rect, rotated, offset, originalSize);
     }
 
     return Ok(frames);
@@ -899,17 +826,16 @@ std::vector<std::string> MoreIconsAPI::addFrames(const ImageResult& image) {
         texture->initWithData(data.data(), kCCTexture2DPixelFormat_RGBA8888, width, height, { (float)width, (float)height });
         texture->m_bHasPremultipliedAlpha = true;
         CCTextureCache::get()->m_pTextures->setObject(texture, name);
-        texture->release();
     }
 
     std::vector<std::string> frameNames;
+    frameNames.reserve(frames ? frames->count() : 0);
     if (frames) {
         auto spriteFrameCache = CCSpriteFrameCache::get();
-        for (auto [frameName, frame] : CCDictionaryExt<gd::string, CCSpriteFrame*>(frames)) {
+        for (auto [frameName, frame] : CCDictionaryExt<std::string, CCSpriteFrame*>(frames)) {
             spriteFrameCache->m_pSpriteFrames->setObject(frame, frameName);
             frameNames.push_back(frameName);
         }
-        frames->release();
     }
     if (info) info->frameNames = frameNames;
     return frameNames;

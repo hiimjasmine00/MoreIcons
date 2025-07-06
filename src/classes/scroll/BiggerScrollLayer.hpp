@@ -1,8 +1,9 @@
 #include <Geode/binding/CCScrollLayerExt.hpp>
+#include <Geode/utils/cocos.hpp>
 
 class BiggerScrollLayer : public CCScrollLayerExt {
 protected:
-    cocos2d::extension::CCScale9Sprite* m_stencil;
+    geode::Ref<cocos2d::extension::CCScale9Sprite> m_stencil;
 
     BiggerScrollLayer(float, float, float, float);
 public:
@@ -19,6 +20,4 @@ public:
     void scrollToTop();
     void scrollWheel(float, float) override;
     void visit() override;
-
-    ~BiggerScrollLayer();
 };

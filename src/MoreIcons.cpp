@@ -81,7 +81,7 @@ void migrateFolderIcons(const std::filesystem::path& path) {
     };
 
     auto& saveContainer = Mod::get()->getSaveContainer();
-    if (!saveContainer.contains("migrated-folders")) saveContainer["migrated-folders"] = std::vector<matjson::Value>();
+    if (!saveContainer.contains("migrated-folders")) saveContainer["migrated-folders"] = matjson::Value::array();
 
     auto& migratedFolders = saveContainer["migrated-folders"];
 
@@ -96,9 +96,9 @@ void migrateFolderIcons(const std::filesystem::path& path) {
             if (!entry.is_directory()) continue;
 
             auto& entryPath = entry.path();
-            if (migratedFolders.isArray() && ranges::contains(migratedFolders.asArray().unwrap(), entryPath)) continue;
-
-            migratedFolders.push(entryPath);
+            migratedFolders.asArray().inspect([&entryPath](std::vector<matjson::Value>& vec) {
+                if (!ranges::contains(vec, entryPath)) vec.push_back(entryPath);
+            });
 
             std::vector<std::string> names;
 
@@ -352,7 +352,8 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     if (!MoreIcons::doesExist(plistPath)) plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", pathStem), false);
     if (!CCFileUtils::get()->isFileExist(plistPath)) return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
 
-    ranges::remove(MoreIconsAPI::icons, [&name](const IconInfo& icon) { return icon.name == name && icon.type == currentType; });
+    if (auto icon = MoreIconsAPI::getIcon(name, currentType))
+        MoreIconsAPI::icons.erase(MoreIconsAPI::icons.begin() + (icon - MoreIconsAPI::icons.data()));
 
     MoreIconsAPI::addIcon({
         .name = name,
@@ -384,7 +385,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     if (MoreIconsAPI::hasIcon(name, IconType::Special)) return printLog(name, Severity::Warning, "Duplicate trail name");
 
-    auto json = file::readJson(std::filesystem::path(path).replace_extension(".json")).unwrapOr(matjson::makeObject({
+    auto json = file::readJson(path.parent_path() / (pathStem + ".json")).unwrapOr(matjson::makeObject({
         { "blend", false },
         { "tint", false },
         { "show", false },
@@ -401,11 +402,11 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
         .packID = pack.id,
         .type = IconType::Special,
         .trailID = 0,
-        .blend = json.contains("blend") ? json["blend"].asBool().unwrapOr(false) : false,
-        .tint = json.contains("tint") ? json["tint"].asBool().unwrapOr(false) : false,
-        .show = json.contains("show") ? json["show"].asBool().unwrapOr(false) : false,
-        .fade = json.contains("fade") ? (float)json["fade"].asDouble().unwrapOr(0.3) : 0.3f,
-        .stroke = json.contains("stroke") ? (float)json["stroke"].asDouble().unwrapOr(14.0) : 14.0f,
+        .blend = json.get("blend").andThen([](const matjson::Value& v) { return v.asBool(); }).unwrapOr(false),
+        .tint = json.get("tint").andThen([](const matjson::Value& v) { return v.asBool(); }).unwrapOr(false),
+        .show = json.get("show").andThen([](const matjson::Value& v) { return v.asBool(); }).unwrapOr(false),
+        .fade = json.get("fade").andThen([](const matjson::Value& v) { return v.as<float>(); }).unwrapOr(0.3f),
+        .stroke = json.get("stroke").andThen([](const matjson::Value& v) { return v.as<float>(); }).unwrapOr(14.0f),
         .shortName = pathStem,
         .vanilla = false,
         .zipped = pack.zipped
@@ -419,10 +420,11 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
     auto name = fmt::format("{}:{}", pack.id, pathStem);
 
     safeDebug("Pre-loading vanilla trail {} from {}", name, pack.name);
-    auto trailID = numFromString<int>(pathStem.substr(pathStem.find('_') + 1, pathStem.rfind('_') - pathStem.find('_') - 1)).unwrapOr(0);
+    auto trailID = numFromString<int>(pathStem.substr(7, pathStem.size() - 11)).unwrapOr(0);
     if (trailID == 0) trailID = -1;
 
-    ranges::remove(MoreIconsAPI::icons, [&name](const IconInfo& icon) { return icon.name == name && icon.type == IconType::Special; });
+    if (auto icon = MoreIconsAPI::getIcon(name, IconType::Special))
+        MoreIconsAPI::icons.erase(MoreIconsAPI::icons.begin() + (icon - MoreIconsAPI::icons.data()));
 
     MoreIconsAPI::addIcon({
         .name = name,
@@ -549,7 +551,7 @@ void MoreIcons::loadIcons(IconType type) {
 void MoreIcons::saveTrails() {
     for (auto& info : MoreIconsAPI::icons) {
         if (info.type != IconType::Special || info.trailID != 0) continue;
-        (void)file::writeToJson(std::filesystem::path(info.textures[0]).replace_extension(".json"), matjson::makeObject({
+        (void)file::writeToJson(replaceEnd(info.textures[0], 4, ".json"), matjson::makeObject({
             { "blend", info.blend },
             { "tint", info.tint },
             { "show", info.show },

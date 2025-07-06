@@ -1,15 +1,12 @@
-#include <cocos2d.h>
-#include <fmt/format.h>
-#include <Geode/GeneratedPredeclare.hpp>
-#include <Geode/Result.hpp>
+#include <Geode/utils/cocos.hpp>
 #include <IconInfo.hpp>
 #include <span>
 
 struct ImageResult {
     std::string name;
     std::vector<uint8_t> data;
-    cocos2d::CCTexture2D* texture;
-    cocos2d::CCDictionary* frames;
+    geode::Ref<cocos2d::CCTexture2D> texture;
+    geode::Ref<cocos2d::CCDictionary> frames;
     IconInfo* info;
     uint32_t width;
     uint32_t height;
@@ -34,6 +31,12 @@ public:
     static bool hasIcon(IconType type, bool dual);
     static std::string iconName(int id, IconType type);
     static std::string iconName(int id, UnlockType type);
+    template <class T>
+    static geode::Ref<T> createRef() {
+        geode::Ref ret = new T();
+        ret->release();
+        return ret;
+    }
     template <typename... T>
     static cocos2d::CCSpriteFrame* getFrame(fmt::format_string<T...> format, T&&... args) {
         return getFrameInternal(format, fmt::make_format_args(args...));
@@ -57,7 +60,7 @@ public:
     static geode::Result<ImageResult> createFrames(
         const std::string& png, const std::string& plist, const std::string& name, IconType type, IconInfo* info = nullptr
     );
-    static geode::Result<cocos2d::CCDictionary*> createFrames(
+    static geode::Result<geode::Ref<cocos2d::CCDictionary>> createFrames(
         const std::string& path, cocos2d::CCTexture2D* texture, const std::string& name, IconType type, bool fixNames = true
     );
     static std::vector<std::string> addFrames(const ImageResult& image);

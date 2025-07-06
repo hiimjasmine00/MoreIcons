@@ -1,10 +1,11 @@
 #include "LazyIcon.hpp"
-#include "../EditIconPopup.hpp"
+#include "ViewIconPopup.hpp"
 #include "../../misc/ThreadPool.hpp"
 #include "../../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/CCAnimateFrameCache.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SpriteDescription.hpp>
+#include <Geode/loader/Loader.hpp>
 
 using namespace geode::prelude;
 
@@ -248,7 +249,7 @@ void LazyIcon::createIcon(const std::string& err, const std::vector<std::string>
 void LazyIcon::activate() {
     if (!m_bEnabled) return;
     CCMenuItemSpriteExtra::activate();
-    if (m_error.empty()) EditIconPopup::create(m_type, m_id, m_info ? m_info->name : "", true)->show();
+    if (m_error.empty()) ViewIconPopup::create(m_type, m_id, m_info)->show();
     else FLAlertLayer::create("Error", m_error, "OK")->show();
 }
 
@@ -262,16 +263,9 @@ void LazyIcon::visit() {
     ThreadPool::get().pushTask([selfref = WeakRef(this), texture = m_texture, sheet = m_sheet, name = m_info ? m_info->name : "", type = m_type] {
         auto image = MoreIconsAPI::createFrames(texture, sheet, name, type);
         queueInMainThread([selfref = std::move(selfref), image = std::move(image)] {
-            auto self = selfref.lock();
-            GEODE_UNWRAP_OR_ELSE(result, err, image) {
-                if (self) self->createIcon(err, {});
-                return;
-            }
-
-            if (self) self->createIcon("", MoreIconsAPI::addFrames(result));
-            else {
-                result.texture->release();
-                result.frames->release();
+            if (auto self = selfref.lock()) {
+                GEODE_UNWRAP_OR_ELSE(result, err, image) self->createIcon(err, {});
+                else self->createIcon("", MoreIconsAPI::addFrames(result));
             }
         });
     });

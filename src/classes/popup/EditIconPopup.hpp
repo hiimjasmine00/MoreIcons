@@ -4,19 +4,18 @@
 
 class IconInfo;
 
-class EditIconPopup : public geode::Popup<IconType, int, const std::string&, bool> {
+class EditIconPopup : public geode::Popup<IconType> {
 protected:
     geode::EventListener<geode::Task<geode::Result<std::vector<std::filesystem::path>>>> m_listener;
     SimplePlayer* m_player;
     cocos2d::CCSprite* m_streak;
-    cocos2d::CCDictionary* m_frames;
-    cocos2d::CCDictionary* m_sprites;
+    geode::Ref<cocos2d::CCDictionary> m_frames;
+    geode::Ref<cocos2d::CCDictionary> m_sprites;
     geode::TextInput* m_textInput;
     IconType m_iconType;
-    bool m_readOnly;
     bool m_pickerOpened;
 
-    bool setup(IconType, int, const std::string&, bool) override;
+    bool setup(IconType) override;
 
     void pickFile(int, int);
     void updateSprites();
@@ -26,7 +25,5 @@ protected:
     void saveIcon(const std::filesystem::path&, const std::filesystem::path&);
     void onClose(cocos2d::CCObject*) override;
 public:
-    static EditIconPopup* create(IconType, int, const std::string&, bool);
-
-    ~EditIconPopup();
+    static EditIconPopup* create(IconType);
 };

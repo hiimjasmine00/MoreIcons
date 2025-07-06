@@ -158,7 +158,7 @@ bool MoreIconsPopup::setup() {
         auto addSprite = ButtonSprite::create("Add", "goldFont.fnt", "GJ_button_05.png", 0.8f);
         addSprite->setScale(0.6f);
         auto addButton = CCMenuItemExt::createSpriteExtra(addSprite, [type](auto) {
-            EditIconPopup::create(type, 1, "", false)->show();
+            EditIconPopup::create(type)->show();
         });
         addButton->setPosition({ 24.0f, 15.0f });
         addButton->setID("add-button");

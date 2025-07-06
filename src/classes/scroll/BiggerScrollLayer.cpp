@@ -19,7 +19,6 @@ BiggerScrollLayer::BiggerScrollLayer(float width, float height, float cutOffset,
     m_stencil = CCScale9Sprite::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
     m_stencil->setPosition(background->getPosition());
     m_stencil->setContentSize(background->getContentSize());
-    m_stencil->retain();
 
     static auto _ = [] {
         glGetIntegerv(GL_STENCIL_BITS, &stencilBits);
@@ -179,8 +178,4 @@ void BiggerScrollLayer::visit() {
     glStencilOp(currentStencilFail, currentStencilPassDepthFail, currentStencilPassDepthPass);
     glStencilMask(currentStencilWriteMask);
     if (!currentStencilEnabled) glDisable(GL_STENCIL_TEST);
-}
-
-BiggerScrollLayer::~BiggerScrollLayer() {
-    CC_SAFE_RELEASE(m_stencil);
 }

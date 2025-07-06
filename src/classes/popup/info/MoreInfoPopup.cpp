@@ -65,8 +65,6 @@ Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem
     else return Ok();
 }
 
-constexpr std::array folders = { "icon", "ship", "ball", "ufo", "wave", "robot", "spider", "swing", "jetpack" };
-
 void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash) {
     std::filesystem::path texturePath = m_info->textures[0];
     auto parentDir = texturePath.parent_path();
@@ -251,14 +249,13 @@ bool MoreInfoPopup::setup(IconInfo* info) {
                 fmt::format("Are you sure you want to <cy>convert</c> this <cg>{}</c> into a <cl>More Icons</c> <cg>{}</c>?", lower, lower),
                 "No",
                 "Yes",
-                [this](auto, bool btn2) {
+                [this, unlockType](auto, bool btn2) {
                     if (!btn2) return;
 
-                    auto parent = std::filesystem::path(m_info->textures[0]).parent_path();
                     auto type = m_info->type;
-                    auto dir = type <= IconType::Jetpack
-                        ? parent.parent_path() / "config" / GEODE_MOD_ID / folders[(int)type]
-                        : parent / "config" / GEODE_MOD_ID / "trail";
+                    auto parent = std::filesystem::path(m_info->textures[0]).parent_path();
+                    if (type <= IconType::Jetpack) parent = parent.parent_path();
+                    auto dir = parent / "config" / GEODE_MOD_ID / MoreIcons::folders[(int)unlockType];
                     std::error_code code;
                     auto exists = MoreIcons::doesExist(dir);
                     if (!exists) exists = std::filesystem::create_directories(dir, code);

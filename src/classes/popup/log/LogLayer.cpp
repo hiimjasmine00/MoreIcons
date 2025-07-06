@@ -19,14 +19,8 @@ LogLayer* LogLayer::create(IconType type) {
 }
 
 bool LogLayer::setup(IconType type) {
-    constexpr std::array titles = {
-        "", "Icon", "", "", "Ship", "Ball", "UFO", "Wave", "Robot",
-        "Spider", "Trail", "Death Effect", "", "Swing", "Jetpack", "Ship Fire"
-    };
-    auto unlock = (int)GameManager::get()->iconTypeToUnlockType(type);
-
     setID("LogLayer");
-    setTitle(fmt::format("{} Logs", titles[unlock]));
+    setTitle(fmt::format("{} Logs", MoreIcons::uppercase[(int)GameManager::get()->iconTypeToUnlockType(type)]));
     m_title->setID("more-icons-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");

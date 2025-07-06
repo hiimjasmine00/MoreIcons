@@ -6,25 +6,20 @@
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GameManager.hpp>
-#include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
-#include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Notification.hpp>
 #include <texpack.hpp>
 
 using namespace geode::prelude;
 
-EditIconPopup* EditIconPopup::create(IconType type, int id, const std::string& name, bool read) {
+EditIconPopup* EditIconPopup::create(IconType type) {
     auto ret = new EditIconPopup();
     if (ret->initAnchored(
         350.0f,
-        180.0f + (type <= IconType::Jetpack) * 50.0f + (type == IconType::Robot || type == IconType::Spider) * 30.0f - read * 60.0f,
+        180.0f + (type <= IconType::Jetpack) * 50.0f + (type == IconType::Robot || type == IconType::Spider) * 30.0f,
         type,
-        id,
-        name,
-        read,
         "geode.loader/GE_square03.png"
     )) {
         ret->autorelease();
@@ -39,90 +34,60 @@ void notify(NotificationIcon icon, fmt::format_string<T...> message, T&&... args
     Notification::create(fmt::format(message, std::forward<T>(args)...), icon)->show();
 }
 
-constexpr std::array folders = { "icon", "ship", "ball", "ufo", "wave", "robot", "spider", "swing", "jetpack" };
-
-bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool read) {
-    auto gameManager = GameManager::get();
-    auto unlock = gameManager->iconTypeToUnlockType(type);
-    auto unlockName = MoreIcons::uppercase[(int)unlock];
-    auto colonIndex = name.find(':');
+bool EditIconPopup::setup(IconType type) {
+    auto unlock = GameManager::get()->iconTypeToUnlockType(type);
 
     setID("EditIconPopup");
-    setTitle(read ? name.empty() ? fmt::format("{} {:02}", unlockName, id) : name.substr(colonIndex + 1) : fmt::format("{} Editor", unlockName));
+    setTitle(fmt::format("{} Editor", MoreIcons::uppercase[(int)unlock]));
     m_title->setID("edit-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
     m_bgSprite->setID("background");
     m_closeBtn->setID("close-button");
 
-    if (read && colonIndex != std::string::npos) {
-        if (auto icon = MoreIconsAPI::getIcon(name, type)) {
-            auto subTitle = CCLabelBMFont::create(icon->packName.c_str(), "goldFont.fnt");
-            subTitle->setPosition(m_title->getPosition() - CCPoint { 0.0f, 15.0f });
-            subTitle->setScale(0.4f);
-            subTitle->setID("edit-icon-sub-title");
-            m_mainLayer->addChild(subTitle);
-        }
-    }
-
     m_frames = CCDictionary::create();
-    m_frames->retain();
     m_sprites = CCDictionary::create();
-    m_sprites->retain();
     m_iconType = type;
-    m_readOnly = read;
 
     auto isIcon = type <= IconType::Jetpack;
     if (isIcon) {
-        std::vector<std::vector<std::string>> suffixes;
         auto isRobot = type == IconType::Robot || type == IconType::Spider;
+        std::vector<std::vector<std::string>> suffixes;
+        suffixes.reserve(isRobot * 3 + 1);
         if (isRobot) {
-            for (int i = 1; i < 5; i++) {
-                std::vector<std::string> subSuffixes;
-                subSuffixes.push_back(fmt::format("_{:02}_001.png", i));
-                subSuffixes.push_back(fmt::format("_{:02}_2_001.png", i));
-                subSuffixes.push_back(fmt::format("_{:02}_glow_001.png", i));
-                if (i == 1) subSuffixes.push_back("_01_extra_001.png");
-                suffixes.push_back(subSuffixes);
-            }
+            suffixes.push_back({ "_01_001.png", "_01_2_001.png", "_01_glow_001.png", "_01_extra_001.png" });
+            suffixes.push_back({ "_02_001.png", "_02_2_001.png", "_02_glow_001.png" });
+            suffixes.push_back({ "_03_001.png", "_03_2_001.png", "_03_glow_001.png" });
+            suffixes.push_back({ "_04_001.png", "_04_2_001.png", "_04_glow_001.png" });
         }
         else {
-            std::vector<std::string> subFrames;
-            subFrames.push_back("_001.png");
-            subFrames.push_back("_2_001.png");
-            if (type == IconType::Ufo) subFrames.push_back("_3_001.png");
-            subFrames.push_back("_glow_001.png");
-            subFrames.push_back("_extra_001.png");
-            suffixes.push_back(subFrames);
+            if (type == IconType::Ufo) suffixes.push_back({ "_001.png", "_2_001.png", "_3_001.png", "_glow_001.png", "_extra_001.png" });
+            else suffixes.push_back({ "_001.png", "_2_001.png", "_glow_001.png", "_extra_001.png" });
         }
 
         m_player = SimplePlayer::create(1);
-        if (!name.empty()) MoreIconsAPI::updateSimplePlayer(m_player, name, type, false);
-        else m_player->updatePlayerFrame(id, type);
+        m_player->updatePlayerFrame(1, type);
         m_player->setGlowOutline({ 255, 255, 255 });
-        m_player->setPosition({ 175.0f, 150.0f + isRobot * 80.0f - suffixes.size() * 30.0f - read * 70.0f });
+        m_player->setPosition({ 175.0f, 150.0f + isRobot * 80.0f - suffixes.size() * 30.0f });
         m_player->setID("player-icon");
         m_mainLayer->addChild(m_player);
 
-        auto prefix = name.empty() ? MoreIconsAPI::iconName(id, unlock) : fmt::format("{}"_spr, name);
+        auto prefix = MoreIconsAPI::iconName(1, unlock);
         auto spriteFrameCache = CCSpriteFrameCache::get();
+        auto crossFrame = spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
         for (int i = 0; i < suffixes.size(); i++) {
             auto frameMenu = CCMenu::create();
-            frameMenu->setPosition({ 175.0f, 170.0f + isRobot * 40.0f - i * 30.0f + std::max(i - 1, 0) * 10.0f - read * 70.0f });
+            frameMenu->setPosition({ 175.0f, 170.0f + isRobot * 40.0f - i * 30.0f + std::max(i - 1, 0) * 10.0f });
             frameMenu->setContentSize({ 350.0f, 30.0f });
-            frameMenu->setEnabled(!read);
             frameMenu->setID(fmt::format("frame-menu-{}", i + 1));
 
             auto& subSuffixes = suffixes[i];
-            auto crossFrame = spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
-            auto whiteFrame = spriteFrameCache->spriteFrameByName("cc_2x2_white_image");
             auto frameButtons = CCArray::create();
             for (int j = 0; j < subSuffixes.size(); j++) {
                 auto& suffix = subSuffixes[j];
 
                 auto spriteFrame = MoreIconsAPI::getFrame("{}{}", prefix, suffix);
                 if (spriteFrame) m_frames->setObject(spriteFrame, suffix);
-                else if (read) continue;
 
                 auto sprite = CCSprite::createWithSpriteFrame(spriteFrame ? spriteFrame : crossFrame);
                 m_sprites->setObject(sprite, suffix);
@@ -136,7 +101,7 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
             }
 
             auto gap = 0.0f;
-            if (read && i == 0) {
+            if (i == 0) {
                 switch (frameMenu->getChildrenCount()) {
                     case 2: gap = 100.0f; break;
                     case 3: gap = 50.0f; break;
@@ -144,41 +109,15 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
                     case 5: gap = 10.0f; break;
                 }
             }
-            else if (read) gap = 20.0f;
-            else if (type == IconType::Ship || type == IconType::Wave || isRobot) gap = 15.0f;
-            else if (type == IconType::Ball || type == IconType::Jetpack) gap = 5.0f;
-            else if (type != IconType::Ufo) gap = 10.0f;
+            else gap = 20.0f;
 
             frameMenu->setLayout(RowLayout::create()->setGap(gap));
             frameMenu->updateLayout();
 
-            for (int j = 0; j < frameButtons->count(); j++) {
-                auto contentHeight = frameMenu->getContentHeight();
-                auto frameButton = static_cast<CCMenuItemSprite*>(frameButtons->objectAtIndex(j));
-                frameButton->setContentSize({ contentHeight, contentHeight });
-                frameButton->getNormalImage()->setPosition({ contentHeight / 2.0f, contentHeight / 2.0f });
-                if (!read) {
-                    auto& suffix = subSuffixes[j];
-                    auto resetSprite = CCSprite::createWithSpriteFrameName("GJ_updateBtn_001.png");
-                    resetSprite->setScale(i < 1 && type != IconType::Ufo ? contentHeight / resetSprite->getContentHeight() : 0.4f);
-                    auto resetButton = CCMenuItemExt::createSpriteExtra(resetSprite, [this, i, j, suffix](auto) {
-                        createQuickPopup(
-                            "Reset Frame",
-                            "Are you sure you want to <cy>reset</c> this <cg>frame</c>?",
-                            "No",
-                            "Yes",
-                            [this, i, j, suffix](auto, bool btn2) {
-                                if (!btn2) return;
-                                auto spriteFrame = MoreIconsAPI::getFrame("{}{}", MoreIconsAPI::iconName(1, m_iconType), suffix);
-                                if (spriteFrame) m_frames->setObject(spriteFrame, suffix);
-                                else m_frames->removeObjectForKey(suffix);
-                                updateSprites();
-                            }
-                        );
-                    });
-                    resetButton->setID(fmt::format("reset-button-{}", j + 1));
-                    frameMenu->insertAfter(resetButton, frameButton);
-                }
+            for (auto button : CCArrayExt<CCMenuItemSprite*>(frameButtons)) {
+                auto height = frameMenu->getContentHeight() * button->getScale();
+                button->setContentSize({ height, height });
+                button->getNormalImage()->setPosition({ height / 2.0f, height / 2.0f });
             }
 
             frameMenu->updateLayout();
@@ -186,50 +125,19 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
         }
     }
     else if (type == IconType::Special) {
-        auto icon = MoreIconsAPI::getIcon(name, type);
-
         auto stroke = 10.0f;
         auto tint = true;
-        auto trailID = icon ? icon->trailID : read ? id : 0;
-        if (trailID != 0) switch (trailID) {
-            case 2:
-            case 7:
-                stroke = 14.0f;
-                tint = false;
-                break;
-            case 3:
-                stroke = 8.5f;
-                break;
-            case 4:
-                stroke = 10.0f;
-                break;
-            case 5:
-                stroke = 5.0f;
-                break;
-            case 6:
-                stroke = 3.0f;
-                break;
-        }
-        else {
-            stroke = icon ? icon->stroke : 14.0f;
-            tint = icon && icon->tint;
-        }
 
-        m_streak = CCSprite::create((icon ? icon->textures[0] : fmt::format("streak_{:02}_001.png", name.empty() ? id : 1)).c_str());
-        m_streak->setBlendFunc({
-            GL_SRC_ALPHA,
-            (uint32_t)GL_ONE_MINUS_SRC_ALPHA - (trailID != 0 || (icon && icon->blend)) * (uint32_t)GL_SRC_ALPHA
-        });
-        m_streak->setPosition({ 175.0f, 120.0f - read * 70.0f });
+        m_streak = CCSprite::create("streak_01_001.png");
+        m_streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA });
+        m_streak->setPosition({ 175.0f, 120.0f });
         m_streak->setRotation(-90.0f);
-        m_streak->setScaleX(stroke / m_streak->getContentWidth());
-        m_streak->setScaleY(320.0f / m_streak->getContentHeight());
-        if (tint) m_streak->setColor(gameManager->colorForIdx(gameManager->m_playerColor2));
+        auto& size = m_streak->getContentSize();
+        m_streak->setScaleX(14.0f / size.width);
+        m_streak->setScaleY(320.0f / size.height);
         m_streak->setID("streak-preview");
         m_mainLayer->addChild(m_streak);
     }
-
-    if (read) return true;
 
     m_textInput = TextInput::create(300.0f, "Name");
     m_textInput->setPosition({ 175.0f, 75.0f });
@@ -251,14 +159,14 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
     pngButton->setID("png-button");
     bottomMenu->addChild(pngButton);
 
-    auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
+    auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png"), [this, unlock](auto) {
         auto iconName = m_textInput->getString();
         if (iconName.empty()) return notify(NotificationIcon::Info, "Please enter a name.");
 
-        auto mod = Mod::get();
-        auto configDir = mod->getConfigDir();
+        auto configDir = Mod::get()->getConfigDir();
+        auto folder = MoreIcons::folders[(int)unlock];
         if (m_iconType == IconType::Special) {
-            auto path = configDir / "trail" / fmt::format("{}.png", iconName);
+            auto path = configDir / folder / fmt::format("{}.png", iconName);
             if (MoreIcons::doesExist(path)) createQuickPopup(
                 "Existing Trail",
                 fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
@@ -272,7 +180,7 @@ bool EditIconPopup::setup(IconType type, int id, const std::string& name, bool r
         }
         else if (m_iconType <= IconType::Jetpack) {
             auto factor = CCDirector::get()->getContentScaleFactor();
-            auto path = configDir / folders[(int)m_iconType] / (iconName + (factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : ""));
+            auto path = configDir / folder / (iconName + (factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : ""));
             auto png = path + ".png";
             auto plist = path + ".plist";
             if (MoreIcons::doesExist(png) || MoreIcons::doesExist(plist))
@@ -343,7 +251,7 @@ void EditIconPopup::pickFile(int index, int type) {
         GEODE_UNWRAP_OR_ELSE(image, err, texpack::fromPNG(png))
             return notify(NotificationIcon::Error, "Failed to load image: {}", err);
 
-        auto texture = new CCTexture2D();
+        auto texture = MoreIconsAPI::createRef<CCTexture2D>();
         texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
             (float)image.width,
             (float)image.height
@@ -354,7 +262,6 @@ void EditIconPopup::pickFile(int index, int type) {
             auto suffix = suffixes[type + (m_iconType != IconType::Ufo && type > 2) - 1];
             m_frames->setObject(CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }),
                 index > 0 ? fmt::format("_{:02}{}", index, suffix) : suffix);
-            texture->release();
             return updateSprites();
         }
 
@@ -368,14 +275,9 @@ void EditIconPopup::pickFile(int index, int type) {
             for (auto [frameName, frame] : CCDictionaryExt<gd::string, CCSpriteFrame*>(frames)) {
                 m_frames->setObject(frame, frameName);
             }
-            frames->release();
-            texture->release();
             updateSprites();
         }
-        else if (isTrail) {
-            m_streak->m_pobTexture->release();
-            m_streak->m_pobTexture = texture;
-        }
+        else if (isTrail) m_streak->setTexture(texture);
     });
 
     m_listener.setFilter(file::pickMany({ std::nullopt, {{ "PNG/Plist files", { "*.png", "*.plist" } }} }));
@@ -577,9 +479,4 @@ void EditIconPopup::onClose(CCObject* sender) {
             if (btn2) Popup::onClose(sender);
         }
     );
-}
-
-EditIconPopup::~EditIconPopup() {
-    CC_SAFE_RELEASE(m_frames);
-    CC_SAFE_RELEASE(m_sprites);
 }
