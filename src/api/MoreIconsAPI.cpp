@@ -33,7 +33,9 @@ $execute {
 
     new EventListener(+[](std::vector<IconInfo*>* vec) {
         vec->clear();
-        for (int i = 0; i < MoreIconsAPI::icons.size(); i++) vec->push_back(MoreIconsAPI::icons.data() + i);
+        auto size = MoreIconsAPI::icons.size();
+        vec->reserve(size);
+        for (int i = 0; i < size; i++) vec->push_back(MoreIconsAPI::icons.data() + i);
         return ListenerResult::Propagate;
     }, MoreIcons::AllIconsFilter("all-icons"_spr));
 
@@ -41,21 +43,24 @@ $execute {
         vec->clear();
         if (!MoreIconsAPI::iconSpans.contains(type)) return ListenerResult::Propagate;
         auto& iconSpan = MoreIconsAPI::iconSpans[type];
-        for (auto it = iconSpan.data(), end = iconSpan.data() + iconSpan.size(); it < end; it++) vec->push_back(it);
+        auto data = iconSpan.data();
+        auto size = iconSpan.size();
+        vec->reserve(size);
+        for (auto it = data, end = data + size; it < end; it++) vec->push_back(it);
         return ListenerResult::Propagate;
     }, MoreIcons::GetIconsFilter("get-icons"_spr));
 
-    new EventListener(+[](IconInfo** info, std::string name, IconType type) {
+    new EventListener(+[](IconInfo** info, const std::string& name, IconType type) {
         *info = MoreIconsAPI::getIcon(name, type);
         return ListenerResult::Propagate;
     }, MoreIcons::GetIconFilter("get-icon"_spr));
 
-    new EventListener(+[](std::string icon, IconType type, int requestID) {
+    new EventListener(+[](const std::string& icon, IconType type, int requestID) {
         MoreIconsAPI::loadIcon(icon, type, requestID);
         return ListenerResult::Propagate;
     }, MoreIcons::LoadIconFilter("load-icon"_spr));
 
-    new EventListener(+[](std::string icon, IconType type, int requestID) {
+    new EventListener(+[](const std::string& icon, IconType type, int requestID) {
         MoreIconsAPI::unloadIcon(icon, type, requestID);
         return ListenerResult::Propagate;
     }, MoreIcons::UnloadIconFilter("unload-icon"_spr));
@@ -64,15 +69,6 @@ $execute {
         MoreIconsAPI::unloadIcons(requestID);
         return ListenerResult::Propagate;
     }, MoreIcons::UnloadIconsFilter("unload-icons"_spr));
-    #if GEODE_COMP_GD_VERSION == 22074 // Keep this until the next Geometry Dash update
-    new EventListener(+[](std::vector<std::string>* vec, IconType type) {
-        vec->clear();
-        if (!MoreIconsAPI::iconSpans.contains(type)) return ListenerResult::Propagate;
-        auto& iconSpan = MoreIconsAPI::iconSpans[type];
-        for (auto it = iconSpan.data(), end = iconSpan.data() + iconSpan.size(); it < end; it++) vec->push_back(it->name);
-        return ListenerResult::Propagate;
-    }, DispatchFilter<std::vector<std::string>*, IconType>("all-icons"_spr));
-    #endif
 }
 
 IconInfo* MoreIconsAPI::getIcon(const std::string& name, IconType type) {
