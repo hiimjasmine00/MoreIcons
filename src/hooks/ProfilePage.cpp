@@ -29,8 +29,10 @@ class $modify(MIProfilePage, ProfilePage) {
         };
 
         for (int i = 0; i < icons.size(); i++) {
-            if (auto player = playerMenu->getChildByID(icons[i]))
-                updatePlayer(player, i == 1 && player->getTag() != -1 ? (IconType)player->getTag() : (IconType)i, dual);
+            if (auto player = playerMenu->getChildByID(icons[i])) {
+                auto tag = i == 1 ? player->getTag() : -1;
+                updatePlayer(player, (IconType)(tag != -1 ? tag : i), dual);
+            }
         }
     }
 
@@ -49,7 +51,7 @@ class $modify(MIProfilePage, ProfilePage) {
     }
 
     void newOn2PToggle(CCObject* sender) {
-        CALL_BUTTON_ORIGINAL(sender);
+        ButtonHooker::call(sender);
 
         changePlayers();
     }

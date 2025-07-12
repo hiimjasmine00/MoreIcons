@@ -6,7 +6,6 @@
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>
-#include <Geode/utils/ranges.hpp>
 #include <geode.texture-loader/include/TextureLoader.hpp>
 #include <texpack.hpp>
 
@@ -52,16 +51,16 @@ void MoreIcons::loadSettings() {
     MoreIconsAPI::preloadIcons = mod->getSettingValue<bool>("preload-icons");
 }
 
-#define DIRECTORY_ITERATOR(path) \
-    std::error_code code; \
-    std::filesystem::directory_iterator it(path, code); \
-    if (code) { \
-        log::error("{}: Failed to create directory iterator: {}", path, code.message()); \
-        continue; \
-    } \
-    for (; it != std::filesystem::end(it); it.increment(code))
-
-#define DIRECTORY_ITERATOR_END(path) if (code) log::error("{}: Failed to iterate over directory: {}", path, code.message());
+void directoryIterator(const std::filesystem::path& path, auto&& func) {
+    std::error_code code;
+    std::filesystem::directory_iterator it(path, code);
+    if (code) return log::error("{}: Failed to create directory iterator: {}", path, code.message());
+    for (; it != std::filesystem::end(it); it.increment(code)) {
+        if constexpr (std::is_void_v<decltype(func(*it))>) func(*it);
+        else if (func(*it)) break;
+    }
+    if (code) return log::error("{}: Failed to iterate over directory: {}", path, code.message());
+}
 
 template <typename... Args>
 void safeDebug(fmt::format_string<Args...> message, Args&&... args) {
@@ -91,25 +90,23 @@ void migrateFolderIcons(const std::filesystem::path& path) {
         if (!MoreIcons::doesExist(folderPath)) continue;
 
         auto isRobot = i == 5 || i == 6;
-        DIRECTORY_ITERATOR(folderPath) {
-            auto& entry = *it;
-            if (!entry.is_directory()) continue;
+        directoryIterator(folderPath, [i, isRobot, &migratedFolders](const std::filesystem::directory_entry& entry) {
+            if (!entry.is_directory()) return;
 
             auto& entryPath = entry.path();
             migratedFolders.asArray().inspect([&entryPath](std::vector<matjson::Value>& vec) {
-                if (!ranges::contains(vec, entryPath)) vec.push_back(entryPath);
+                if (std::ranges::find(vec, entryPath) == vec.end()) vec.push_back(entryPath);
             });
 
             std::vector<std::string> names;
 
-            DIRECTORY_ITERATOR(entryPath) {
-                auto& entry2 = *it;
-                if (!entry2.is_regular_file()) continue;
+            directoryIterator(entryPath, [i, isRobot, &names](const std::filesystem::directory_entry& entry) {
+                if (!entry.is_regular_file()) return;
 
-                auto& entry2Path = entry2.path();
-                if (entry2Path.extension() != ".png") continue;
+                auto& entryPath = entry.path();
+                if (entryPath.extension() != ".png") return;
 
-                auto name = string::pathToString(entry2Path.stem());
+                auto name = string::pathToString(entryPath.stem());
                 if (name.ends_with("_2_001")) {
                     if (!isRobot || name.ends_with("_01_2_001") || name.ends_with("_02_2_001") ||
                         name.ends_with("_03_2_001") || name.ends_with("_04_2_001")) names.push_back(name);
@@ -126,10 +123,9 @@ void migrateFolderIcons(const std::filesystem::path& path) {
                     if (!isRobot || name.ends_with("_01_001") || name.ends_with("_02_001") ||
                         name.ends_with("_03_001") || name.ends_with("_04_001")) names.push_back(name);
                 }
-            }
-            DIRECTORY_ITERATOR_END(entryPath)
+            });
 
-            if (names.empty()) continue;
+            if (names.empty()) return;
 
             texpack::Packer packer;
 
@@ -143,12 +139,9 @@ void migrateFolderIcons(const std::filesystem::path& path) {
                 }
             }
 
-            if (frameFailed) continue;
+            if (frameFailed) return;
 
-            if (GEODE_UNWRAP_IF_ERR(err, packer.pack())) {
-                log::error("{}: Failed to pack frames: {}", entryPath, err);
-                continue;
-            }
+            if (GEODE_UNWRAP_IF_ERR(err, packer.pack())) return log::error("{}: Failed to pack frames: {}", entryPath, err);
 
             auto pngPath = entryPath + ".png";
             if (MoreIcons::doesExist(pngPath)) {
@@ -166,8 +159,7 @@ void migrateFolderIcons(const std::filesystem::path& path) {
             }
             if (GEODE_UNWRAP_IF_ERR(err, packer.plist(plistPath, fmt::format("icons/{}", entryPath.filename()), "    ")))
                 log::error("{}: Failed to save plist: {}", entryPath, err);
-        }
-        DIRECTORY_ITERATOR_END(folderPath)
+        });
     }
 
     safeInfo("Finished folder icon migration in {}", path);
@@ -183,22 +175,20 @@ void MoreIcons::loadPacks() {
         auto zipped = extension == ".apk" || extension == ".zip";
         if (traditionalPacks) {
             if (doesExist(pack.resourcesPath / "icons")) packs.push_back({ pack.name, pack.id, pack.resourcesPath, true, zipped });
-            else {
-                DIRECTORY_ITERATOR(pack.resourcesPath) {
-                    auto& entry = *it;
-                    if (!entry.is_regular_file()) continue;
+            else directoryIterator(pack.resourcesPath, [&pack, zipped](const std::filesystem::directory_entry& entry) {
+                if (!entry.is_regular_file()) return false;
 
-                    auto& entryPath = entry.path();
-                    if (entryPath.extension() != ".png") continue;
+                auto& entryPath = entry.path();
+                if (entryPath.extension() != ".png") return false;
 
-                    auto filename = string::pathToString(entryPath.filename());
-                    if (filename.starts_with("streak_") && filename.ends_with("_001.png")) {
-                        packs.push_back({ pack.name, pack.id, entryPath.parent_path(), true, zipped });
-                        break;
-                    }
+                auto filename = string::pathToString(entryPath.filename());
+                if (filename.starts_with("streak_") && filename.ends_with("_001.png")) {
+                    packs.push_back({ pack.name, pack.id, entryPath.parent_path(), true, zipped });
+                    return true;
                 }
-                DIRECTORY_ITERATOR_END(pack.resourcesPath)
-            }
+
+                return false;
+            });
         }
 
         auto configPath = pack.resourcesPath / "config" / GEODE_MOD_ID;
@@ -493,9 +483,8 @@ void MoreIcons::loadIcons(IconType type) {
 
             safeInfo("Pre-loading {} from {}", name, path);
 
-            DIRECTORY_ITERATOR(path) {
-                auto& entry = *it;
-                if (!entry.is_regular_file()) continue;
+            directoryIterator(path, [type, &pack](const std::filesystem::directory_entry& entry) {
+                if (!entry.is_regular_file()) return;
 
                 auto& entryPath = entry.path();
                 if (type <= IconType::Jetpack) {
@@ -504,8 +493,7 @@ void MoreIcons::loadIcons(IconType type) {
                 else if (type == IconType::Special) {
                     if (entryPath.extension() == ".png") loadTrail(entryPath, pack);
                 }
-            }
-            DIRECTORY_ITERATOR_END(path)
+            });
 
             safeInfo("Finished pre-loading {} from {}", name, path);
         }
@@ -515,15 +503,14 @@ void MoreIcons::loadIcons(IconType type) {
 
             safeInfo("Pre-loading {} from {}", name, path);
 
-            DIRECTORY_ITERATOR(path) {
-                auto& entry = *it;
-                if (!entry.is_regular_file()) continue;
+            directoryIterator(path, [type, &pack, prefix](const std::filesystem::directory_entry& entry) {
+                if (!entry.is_regular_file()) return;
 
                 auto& entryPath = entry.path();
-                if (entryPath.extension() != ".png") continue;
+                if (entryPath.extension() != ".png") return;
 
                 auto filename = string::pathToString(entryPath.filename());
-                if (!filename.starts_with(prefix)) continue;
+                if (!filename.starts_with(prefix)) return;
 
                 if (type <= IconType::Jetpack) {
                     if (type != IconType::Cube || !filename.starts_with("player_ball_")) {
@@ -534,8 +521,7 @@ void MoreIcons::loadIcons(IconType type) {
                 else if (type == IconType::Special) {
                     if (filename.ends_with("_001.png")) loadVanillaTrail(entryPath, pack);
                 }
-            }
-            DIRECTORY_ITERATOR_END(path)
+            });
 
             safeInfo("Finished pre-loading {} from {}", name, path);
         }
@@ -545,6 +531,9 @@ void MoreIcons::loadIcons(IconType type) {
 
     if (type == IconType::Special) {
         packs.clear();
+        std::ranges::sort(logs, [](const LogData& a, const LogData& b) {
+            return a.severity == b.severity ? a.name < b.name : a.severity > b.severity;
+        });
     }
 }
 

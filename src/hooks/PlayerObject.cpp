@@ -5,21 +5,7 @@
 
 using namespace geode::prelude;
 
-#define UPDATE_HOOK(funcName, type) \
-    void funcName(int frame) { \
-        auto mainPlayer = frame != 0 && (p1() || p2()); \
-        std::string iconName; \
-        if (mainPlayer && !MoreIconsAPI::preloadIcons && MoreIconsAPI::requestedIcons.contains(m_iconRequestID)) { \
-            auto& iconRequests = MoreIconsAPI::requestedIcons[m_iconRequestID]; \
-            if (iconRequests.contains(type)) iconName = iconRequests[type]; \
-        } \
-        if (!iconName.empty()) MoreIconsAPI::loadedIcons[{ iconName, type }]++; \
-        PlayerObject::funcName(frame); \
-        if (!mainPlayer) return setUserObject("name"_spr, nullptr); \
-        if (p1()) updateIcon(type, false); \
-        else if (p2()) updateIcon(type, true); \
-        if (!iconName.empty()) MoreIconsAPI::loadedIcons[{ iconName, type }]--; \
-    }
+typedef void(PlayerObject::*UpdateFunc)(int);
 
 class $modify(MIPlayerObject, PlayerObject) {
     static void onModify(ModifyBase<ModifyDerive<MIPlayerObject, PlayerObject>>& self) {
@@ -34,8 +20,10 @@ class $modify(MIPlayerObject, PlayerObject) {
         return m_gameLayer && (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this);
     }
 
-    void updateIcon(IconType type, bool dual) {
-        auto icon = MoreIconsAPI::activeIcon(type, dual);
+    void updateIcon(IconType type) {
+        std::string icon;
+        if (p1()) icon = MoreIconsAPI::activeIcon(type, false);
+        else if (p2()) icon = MoreIconsAPI::activeIcon(type, true);
         if (!icon.empty()) MoreIconsAPI::updatePlayerObject(this, icon, type);
         else setUserObject("name"_spr, nullptr);
     }
@@ -43,27 +31,61 @@ class $modify(MIPlayerObject, PlayerObject) {
     bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool playLayer) {
         if (!PlayerObject::init(player, ship, gameLayer, layer, playLayer)) return false;
 
-        if (p1()) {
-            updateIcon(IconType::Cube, false);
-            updateIcon(IconType::Ship, false);
-        }
-        else if (p2()) {
-            updateIcon(IconType::Cube, true);
-            updateIcon(IconType::Ship, true);
-        }
+        updateIcon(IconType::Cube);
+        updateIcon(IconType::Ship);
 
         return true;
     }
 
-    UPDATE_HOOK(updatePlayerFrame, IconType::Cube)
-    UPDATE_HOOK(updatePlayerShipFrame, IconType::Ship)
-    UPDATE_HOOK(updatePlayerRollFrame, IconType::Ball)
-    UPDATE_HOOK(updatePlayerBirdFrame, IconType::Ufo)
-    UPDATE_HOOK(updatePlayerDartFrame, IconType::Wave)
-    UPDATE_HOOK(createRobot, IconType::Robot)
-    UPDATE_HOOK(createSpider, IconType::Spider)
-    UPDATE_HOOK(updatePlayerSwingFrame, IconType::Swing)
-    UPDATE_HOOK(updatePlayerJetpackFrame, IconType::Jetpack)
+    void updateIcon(UpdateFunc func, IconType type, int frame) {
+        auto mainPlayer = frame != 0 && (p1() || p2());
+        std::string iconName;
+        if (mainPlayer && !MoreIconsAPI::preloadIcons && MoreIconsAPI::requestedIcons.contains(m_iconRequestID)) {
+            auto& iconRequests = MoreIconsAPI::requestedIcons[m_iconRequestID];
+            if (iconRequests.contains(type)) iconName = iconRequests[type];
+        }
+        if (!iconName.empty()) MoreIconsAPI::loadedIcons[{ iconName, type }]++;
+        (this->*func)(frame);
+        if (!mainPlayer) return setUserObject("name"_spr, nullptr);
+        updateIcon(type);
+        if (!iconName.empty()) MoreIconsAPI::loadedIcons[{ iconName, type }]--;
+    }
+
+    void updatePlayerFrame(int frame) {
+        updateIcon(&PlayerObject::updatePlayerFrame, IconType::Cube, frame);
+    }
+
+    void updatePlayerShipFrame(int frame) {
+        updateIcon(&PlayerObject::updatePlayerShipFrame, IconType::Ship, frame);
+    }
+
+    void updatePlayerRollFrame(int frame) {
+        updateIcon(&PlayerObject::updatePlayerRollFrame, IconType::Ball, frame);
+    }
+
+    void updatePlayerDartFrame(int frame) {
+        updateIcon(&PlayerObject::updatePlayerDartFrame, IconType::Wave, frame);
+    }
+
+    void updatePlayerBirdFrame(int frame) {
+        updateIcon(&PlayerObject::updatePlayerBirdFrame, IconType::Ufo, frame);
+    }
+
+    void createRobot(int frame) {
+        updateIcon(&PlayerObject::createRobot, IconType::Robot, frame);
+    }
+
+    void createSpider(int frame) {
+        updateIcon(&PlayerObject::createSpider, IconType::Spider, frame);
+    }
+
+    void updatePlayerSwingFrame(int frame) {
+        updateIcon(&PlayerObject::updatePlayerSwingFrame, IconType::Swing, frame);
+    }
+
+    void updatePlayerJetpackFrame(int frame) {
+        updateIcon(&PlayerObject::updatePlayerJetpackFrame, IconType::Jetpack, frame);
+    }
 
     void resetTrail() {
         m_regularTrail->setUserObject("name"_spr, nullptr);

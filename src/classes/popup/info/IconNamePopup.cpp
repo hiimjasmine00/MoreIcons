@@ -26,8 +26,7 @@ Result<> replaceFile(const std::filesystem::path& oldPath, const std::filesystem
         if (!std::filesystem::remove(newPath, code)) return Err("Failed to remove {}: {}", newPath.filename(), code.message());
     }
     std::filesystem::rename(oldPath, newPath, code);
-    if (code) return Err("Failed to rename {}: {}", oldPath.filename(), code.message());
-    else return Ok();
+    return code ? Err("Failed to rename {}: {}", oldPath.filename(), code.message()) : Result<>(Ok());
 }
 
 bool IconNamePopup::setup(IconInfo* info) {

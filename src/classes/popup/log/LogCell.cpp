@@ -19,7 +19,7 @@ LogCell* LogCell::create(const std::string& name, const std::string& message, in
 bool LogCell::init(const std::string& name, const std::string& message, int severity, int index) {
     if (!CCLayer::init()) return false;
 
-    setID("LogCell");
+    setID(fmt::format("log-cell-{}", index + 1));
     ignoreAnchorPointForPosition(false);
     setContentSize({ 400.0f, 30.0f });
 

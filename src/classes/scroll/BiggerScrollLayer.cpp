@@ -1,6 +1,5 @@
 #include "BiggerScrollLayer.hpp"
 #include "BiggerContentLayer.hpp"
-#include <Geode/utils/cocos.hpp>
 
 using namespace geode::prelude;
 

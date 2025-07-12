@@ -115,7 +115,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     }
 
     void newOn2PToggle(CCObject* sender) {
-        CALL_BUTTON_ORIGINAL(sender);
+        ButtonHooker::call(sender);
 
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         if (MoreIconsAPI::hasIcon(m_iconType, sdi && sdi->getSavedValue("2pselected", false))) {
@@ -132,7 +132,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     }
 
     void newSwap2PKit(CCObject* sender) {
-        CALL_BUTTON_ORIGINAL(sender);
+        ButtonHooker::call(sender);
 
         swapDual(IconType::Cube);
         swapDual(IconType::Ship);

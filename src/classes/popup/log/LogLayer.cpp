@@ -3,7 +3,6 @@
 #include "../../scroll/BiggerScrollLayer.hpp"
 #include "../../../MoreIcons.hpp"
 #include <Geode/binding/GameManager.hpp>
-#include <Geode/utils/ranges.hpp>
 #include <Geode/ui/Scrollbar.hpp>
 
 using namespace geode::prelude;
@@ -40,15 +39,10 @@ bool LogLayer::setup(IconType type) {
     scrollbar->setID("scrollbar");
     m_mainLayer->addChild(scrollbar);
 
-    auto logs = ranges::filter(MoreIcons::logs, [type](const LogData& log) { return log.type == type; });
-    std::ranges::sort(logs, [](const LogData& a, const LogData& b) {
-        return a.severity == b.severity ? a.name < b.name : a.severity > b.severity;
-    });
-    for (int i = 0; i < logs.size(); i++) {
-        auto& log = logs[i];
-        auto cell = LogCell::create(log.name, log.message, log.severity, i);
-        cell->setID(fmt::format("log-cell-{}", i + 1));
-        scrollLayer->m_contentLayer->addChild(cell);
+    int i = 0;
+    for (auto& log : MoreIcons::logs) {
+        if (log.type != type) continue;
+        scrollLayer->m_contentLayer->addChild(LogCell::create(log.name, log.message, log.severity, i++));
     }
 
     scrollLayer->m_contentLayer->updateLayout();

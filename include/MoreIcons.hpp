@@ -6,16 +6,30 @@
 #include <Geode/loader/Mod.hpp>
 
 #define MORE_ICONS_ID "hiimjustin000.more_icons"
-#define MORE_ICONS_EXPAND(x) MORE_ICONS_ID "/" x
-#define MORE_ICONS_SIMPLE_PLAYER(...) MoreIcons::SimplePlayerEvent(MORE_ICONS_EXPAND("simple-player"), __VA_ARGS__).post()
-#define MORE_ICONS_ROBOT_SPRITE(...) MoreIcons::RobotSpriteEvent(MORE_ICONS_EXPAND("robot-sprite"), __VA_ARGS__).post()
-#define MORE_ICONS_PLAYER_OBJECT(...) MoreIcons::PlayerObjectEvent(MORE_ICONS_EXPAND("player-object"), __VA_ARGS__).post()
-#define MORE_ICONS_ALL_ICONS(...) MoreIcons::AllIconsEvent(MORE_ICONS_EXPAND("all-icons"), __VA_ARGS__).post()
-#define MORE_ICONS_GET_ICONS(...) MoreIcons::GetIconsEvent(MORE_ICONS_EXPAND("get-icons"), __VA_ARGS__).post()
-#define MORE_ICONS_GET_ICON(...) MoreIcons::GetIconEvent(MORE_ICONS_EXPAND("get-icon"), __VA_ARGS__).post()
-#define MORE_ICONS_LOAD_ICON(...) MoreIcons::LoadIconEvent(MORE_ICONS_EXPAND("load-icon"), __VA_ARGS__).post()
-#define MORE_ICONS_UNLOAD_ICON(...) MoreIcons::UnloadIconEvent(MORE_ICONS_EXPAND("unload-icon"), __VA_ARGS__).post()
-#define MORE_ICONS_UNLOAD_ICONS(...) MoreIcons::UnloadIconsEvent(MORE_ICONS_EXPAND("unload-icons"), __VA_ARGS__).post()
+
+// https://github.com/geode-sdk/geode/blob/v4.6.3/loader/include/Geode/loader/Mod.hpp#L503
+namespace __moreicons {
+    template <size_t N>
+    struct BoyIfYouDontGet {
+        static constexpr size_t extra = sizeof(MORE_ICONS_ID);
+        char buffer[extra + N]{};
+        constexpr BoyIfYouDontGet(const char (&pp)[N]) {
+            char id[] = MORE_ICONS_ID;
+            for (int i = 0; i < sizeof(id); i++) {
+                buffer[i] = id[i];
+            }
+            buffer[extra - 1] = '/';
+            for (int i = 0; i < N; i++) {
+                buffer[extra + i] = pp[i];
+            }
+        }
+    };
+}
+
+template <__moreicons::BoyIfYouDontGet Str>
+constexpr auto operator""_mi() {
+    return Str.buffer;
+}
 
 /**
  * A class that provides an API for interacting with the More Icons mod.
@@ -55,8 +69,7 @@ public:
      * @returns The Mod object for the More Icons mod, or nullptr if the mod is not loaded.
      */
     static geode::Mod* get() {
-        static auto mod = geode::Loader::get()->getLoadedMod(MORE_ICONS_ID);
-        return mod;
+        return geode::Loader::get()->getLoadedMod(MORE_ICONS_ID);
     }
 
     /**
@@ -66,8 +79,7 @@ public:
      * @param requestID The request ID of the icon to load.
      */
     static void loadIcon(const std::string& name, IconType type, int requestID) {
-        if (!loaded()) return;
-        MORE_ICONS_LOAD_ICON(name, type, requestID);
+        if (loaded()) LoadIconEvent("load-icon"_mi, name, type, requestID).post();
     }
 
     /**
@@ -77,8 +89,7 @@ public:
      * @param requestID The request ID of the icon to unload.
      */
     static void unloadIcon(const std::string& name, IconType type, int requestID) {
-        if (!loaded()) return;
-        MORE_ICONS_UNLOAD_ICON(name, type, requestID);
+        if (loaded()) UnloadIconEvent("unload-icon"_mi, name, type, requestID).post();
     }
 
     /**
@@ -86,8 +97,7 @@ public:
      * @param requestID The request ID of the icons to unload.
      */
     static void unloadIcons(int requestID) {
-        if (!loaded()) return;
-        MORE_ICONS_UNLOAD_ICONS(requestID);
+        if (loaded()) UnloadIconsEvent("unload-icons"_mi, requestID).post();
     }
 
     /**
@@ -97,8 +107,7 @@ public:
      * @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
      */
     static void updateSimplePlayer(SimplePlayer* player, IconType type, bool dual = false) {
-        if (!player || !loaded()) return;
-        MORE_ICONS_SIMPLE_PLAYER(player, activeIcon(type, dual), type);
+        updateSimplePlayer(player, activeIcon(type, dual), type);
     }
 
     /**
@@ -108,8 +117,7 @@ public:
      * @param type The type of icon to change to.
      */
     static void updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type) {
-        if (!player || icon.empty() || !loaded()) return;
-        MORE_ICONS_SIMPLE_PLAYER(player, icon, type);
+        if (player && !icon.empty() && loaded()) SimplePlayerEvent("simple-player"_mi, player, icon, type).post();
     }
 
     /**
@@ -118,8 +126,7 @@ public:
      * @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
      */
     static void updateRobotSprite(GJRobotSprite* sprite, bool dual = false) {
-        if (!sprite || !loaded()) return;
-        MORE_ICONS_ROBOT_SPRITE(sprite, activeIcon(sprite->m_iconType, dual), sprite->m_iconType);
+        updateRobotSprite(sprite, sprite->m_iconType, dual);
     }
 
     /**
@@ -128,8 +135,7 @@ public:
      * @param icon The name of the icon to change to.
      */
     static void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon) {
-        if (!sprite || icon.empty() || !loaded()) return;
-        MORE_ICONS_ROBOT_SPRITE(sprite, icon, sprite->m_iconType);
+        updateRobotSprite(sprite, icon, sprite->m_iconType);
     }
 
     /**
@@ -139,8 +145,7 @@ public:
      * @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
      */
     static void updateRobotSprite(GJRobotSprite* sprite, IconType type, bool dual = false) {
-        if (!sprite || !loaded()) return;
-        MORE_ICONS_ROBOT_SPRITE(sprite, activeIcon(type, dual), type);
+        updateRobotSprite(sprite, activeIcon(type, dual), type);
     }
 
     /**
@@ -150,8 +155,7 @@ public:
      * @param type The type of icon to change to.
      */
     static void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type) {
-        if (!sprite || icon.empty() || !loaded()) return;
-        MORE_ICONS_ROBOT_SPRITE(sprite, icon, type);
+        if (sprite && !icon.empty() && loaded()) RobotSpriteEvent("robot-sprite"_mi, sprite, icon, type).post();
     }
 
     /**
@@ -181,9 +185,7 @@ public:
      * @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
      */
     static void updatePlayerObject(PlayerObject* object, bool dual = false) {
-        if (!object || !loaded()) return;
-        auto type = getIconType(object);
-        MORE_ICONS_PLAYER_OBJECT(object, activeIcon(type, dual), type);
+        updatePlayerObject(object, getIconType(object), dual);
     }
 
     /**
@@ -192,8 +194,7 @@ public:
      * @param icon The name of the icon to change to.
      */
     static void updatePlayerObject(PlayerObject* object, const std::string& icon) {
-        if (!object || icon.empty() || !loaded()) return;
-        MORE_ICONS_PLAYER_OBJECT(object, icon, getIconType(object));
+        updatePlayerObject(object, icon, getIconType(object));
     }
 
     /**
@@ -203,8 +204,7 @@ public:
      * @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
      */
     static void updatePlayerObject(PlayerObject* object, IconType type, bool dual = false) {
-        if (!object || !loaded()) return;
-        MORE_ICONS_PLAYER_OBJECT(object, activeIcon(type, dual), type);
+        updatePlayerObject(object, activeIcon(type, dual), type);
     }
 
     /**
@@ -214,8 +214,7 @@ public:
      * @param type The type of icon to change to.
      */
     static void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type) {
-        if (!object || icon.empty() || !loaded()) return;
-        MORE_ICONS_PLAYER_OBJECT(object, icon, type);
+        if (object && !icon.empty() && loaded()) PlayerObjectEvent("player-object"_mi, object, icon, type).post();
     }
 
     /**
@@ -224,8 +223,7 @@ public:
      */
     static std::vector<IconInfo*> getIcons() {
         std::vector<IconInfo*> vec;
-        if (!loaded()) return vec;
-        MORE_ICONS_ALL_ICONS(&vec);
+        if (loaded()) AllIconsEvent("all-icons"_mi, &vec).post();
         return vec;
     }
 
@@ -236,8 +234,7 @@ public:
      */
     static std::vector<IconInfo*> getIcons(IconType type) {
         std::vector<IconInfo*> vec;
-        if (!loaded()) return vec;
-        MORE_ICONS_GET_ICONS(&vec, type);
+        if (loaded()) GetIconsEvent("get-icons"_mi, &vec, type).post();
         return vec;
     }
 
@@ -249,8 +246,7 @@ public:
      */
     static IconInfo* getIcon(const std::string& name, IconType type) {
         IconInfo* info = nullptr;
-        if (!loaded()) return info;
-        MORE_ICONS_GET_ICON(&info, name, type);
+        if (loaded()) GetIconEvent("get-icon"_mi, &info, name, type).post();
         return info;
     }
 
@@ -261,10 +257,7 @@ public:
      * @returns The icon info for the active icon of the specified type, or nullptr if the icon is not found.
      */
     static IconInfo* getIcon(IconType type, bool dual = false) {
-        IconInfo* info = nullptr;
-        if (!loaded()) return nullptr;
-        MORE_ICONS_GET_ICON(&info, activeIcon(type, dual), type);
-        return info;
+        return getIcon(activeIcon(type, dual), type);
     }
 
     /**
@@ -322,7 +315,7 @@ public:
      */
     static std::string getIconName(cocos2d::CCNode* node) {
         if (!node || !loaded()) return "";
-        auto userObject = static_cast<cocos2d::CCString*>(node->getUserObject(MORE_ICONS_EXPAND("name")));
+        auto userObject = static_cast<cocos2d::CCString*>(node->getUserObject("name"_mi));
         return userObject ? userObject->m_sString : "";
     }
 };

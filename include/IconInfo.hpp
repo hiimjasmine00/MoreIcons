@@ -27,4 +27,8 @@ struct IconInfo {
     bool operator==(const IconInfo& other) const {
         return name == other.name && type == other.type;
     }
+
+    bool operator==(const std::pair<std::string, IconType>& other) const {
+        return name == other.first && type == other.second;
+    }
 };

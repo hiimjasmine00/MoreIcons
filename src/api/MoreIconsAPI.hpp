@@ -63,5 +63,5 @@ public:
     static geode::Result<geode::Ref<cocos2d::CCDictionary>> createFrames(
         const std::string& path, cocos2d::CCTexture2D* texture, const std::string& name, IconType type, bool fixNames = true
     );
-    static std::vector<std::string> addFrames(const ImageResult& image);
+    static std::vector<std::string> addFrames(ImageResult image);
 };

@@ -37,8 +37,7 @@ Result<> renameFile(const std::filesystem::path& oldPath, const std::filesystem:
     }
     std::error_code code;
     std::filesystem::rename(oldPath, parent / filename, code);
-    if (code) return Err(code.message());
-    else return Ok();
+    return code ? Err(code.message()) : Result<>(Ok());
 }
 
 Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem::path& dest, bool uhd) {
@@ -61,8 +60,7 @@ Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem
     #endif
     std::error_code code;
     std::filesystem::copy_file(fullSrc, dest, code);
-    if (code) return Err(code.message());
-    else return Ok();
+    return code ? Err(code.message()) : Result<>(Ok());
 }
 
 void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash) {
