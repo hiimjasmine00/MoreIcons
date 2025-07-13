@@ -7,7 +7,6 @@ struct ImageResult {
     std::vector<uint8_t> data;
     geode::Ref<cocos2d::CCTexture2D> texture;
     geode::Ref<cocos2d::CCDictionary> frames;
-    IconInfo* info;
     uint32_t width;
     uint32_t height;
 };
@@ -47,7 +46,7 @@ public:
     static void loadIcons(IconType type, bool logs);
     static void unloadIcon(const std::string& name, IconType type, int requestID);
     static void unloadIcons(int requestID);
-    static void addIcon(const IconInfo& info, bool postLoad = false);
+    static void addIcon(IconInfo&& info, bool postLoad = false);
     static void moveIcon(IconInfo* info, const std::filesystem::path& path);
     static void removeIcon(IconInfo* info);
     static void renameIcon(IconInfo* info, const std::string& name);
@@ -57,11 +56,9 @@ public:
     static void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type, bool load = true);
     static void updatePlayerObject(PlayerObject* object, IconType type, bool dual);
     static void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type);
-    static geode::Result<ImageResult> createFrames(
-        const std::string& png, const std::string& plist, const std::string& name, IconType type, IconInfo* info = nullptr
-    );
+    static geode::Result<ImageResult> createFrames(const std::string& png, const std::string& plist, const std::string& name, IconType type);
     static geode::Result<geode::Ref<cocos2d::CCDictionary>> createFrames(
         const std::string& path, cocos2d::CCTexture2D* texture, const std::string& name, IconType type, bool fixNames = true
     );
-    static std::vector<std::string> addFrames(ImageResult image);
+    static cocos2d::CCTexture2D* addFrames(ImageResult image, std::vector<std::string>& frameNames);
 };

@@ -58,7 +58,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info) {
         if (CCTextureCache::get()->textureForKey(m_texture.c_str())) {
             m_visited = true;
             m_texture = "";
-            createIcon("", {});
+            createIcon();
         }
         else {
             setEnabled(false);
@@ -123,7 +123,7 @@ void LazyIcon::createSimpleIcon() {
 void LazyIcon::createComplexIcon() {
     auto spider = m_type == IconType::Spider;
     auto def = spider ? "Spider" : "Robot";
-    auto anim = "idle01";
+    auto anim = "idle";
 
     auto definition = ObjectManager::instance()->getDefinition(def);
     if (!definition) return;
@@ -244,11 +244,9 @@ void LazyIcon::update(float dt) {
         frames->objectAtIndex((int)(fmodf(interval, 1.0f) * frames->count())))->m_pSpriteFrame));
 }
 
-void LazyIcon::createIcon(const std::string& err, const std::vector<std::string>& frames) {
-    m_error = err;
+void LazyIcon::createIcon() {
     setEnabled(true);
-    if (err.empty()) {
-        m_frames = frames;
+    if (m_error.empty()) {
         if (m_loadingSprite) {
             m_loadingSprite->removeFromParent();
             m_loadingSprite = nullptr;
@@ -263,7 +261,6 @@ void LazyIcon::createIcon(const std::string& err, const std::vector<std::string>
         }
     }
     else {
-        log::error("{}: {}", m_name, err);
         m_loadingSprite->stopAllActions();
         m_loadingSprite->setDisplayFrame(CCSpriteFrameCache::get()->spriteFrameByName("GJ_deleteIcon_001.png"));
         m_loadingSprite->setScale(1.1f);
@@ -289,8 +286,12 @@ void LazyIcon::visit() {
         auto image = MoreIconsAPI::createFrames(texture, sheet, name, type);
         queueInMainThread([selfref = std::move(selfref), image = std::move(image)] {
             if (auto self = selfref.lock()) {
-                GEODE_UNWRAP_OR_ELSE(result, err, image) self->createIcon(err, {});
-                else self->createIcon("", MoreIconsAPI::addFrames(std::move(result)));
+                GEODE_UNWRAP_OR_ELSE(result, err, image) {
+                    self->m_error = std::move(err);
+                    log::error("{}: {}", self->m_name, self->m_error);
+                }
+                else MoreIconsAPI::addFrames(std::move(result), self->m_frames);
+                self->createIcon();
             }
         });
     });
@@ -299,8 +300,8 @@ void LazyIcon::visit() {
 LazyIcon::~LazyIcon() {
     auto spriteFrameCache = CCSpriteFrameCache::get();
     for (auto& frame : m_frames) {
-        spriteFrameCache->m_pSpriteFrames->removeObjectForKey(frame);
+        spriteFrameCache->removeSpriteFrameByName(frame.c_str());
     }
 
-    if (!m_texture.empty()) CCTextureCache::get()->m_pTextures->removeObjectForKey(m_texture);
+    if (!m_texture.empty()) CCTextureCache::get()->removeTextureForKey(m_texture.c_str());
 }

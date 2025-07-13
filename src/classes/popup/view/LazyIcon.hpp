@@ -20,7 +20,7 @@ protected:
     bool m_visited;
 
     bool init(IconType, int, IconInfo*);
-    void createIcon(const std::string&, const std::vector<std::string>&);
+    void createIcon();
     void createSimpleIcon();
     void createComplexIcon();
     void updateComplexSprite(cocos2d::CCString*);
