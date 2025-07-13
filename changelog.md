@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v1.14.3 (2025-07-13)
+- Fixed a few bugs related to overwriting icons with the icon editor
+
 ## v1.14.2 (2025-07-06)
 - Possibly fixed a bug relating to converting vanilla trails to More Icons trails
 

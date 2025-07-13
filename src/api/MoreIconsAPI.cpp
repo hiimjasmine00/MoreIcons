@@ -485,9 +485,14 @@ void MoreIconsAPI::updateIcon(IconInfo* info) {
     texture->m_bHasPremultipliedAlpha = true;
 
     GEODE_UNWRAP_OR_ELSE(frames, err, createFrames(info->sheetName, texture, info->name, info->type, true)) return;
+    else if (!frames) return;
+
+    auto spriteFrameCache = CCSpriteFrameCache::get();
+    for (auto& frameName : info->frameNames) {
+        if (!frames->objectForKey(frameName)) spriteFrameCache->m_pSpriteFrames->removeObjectForKey(frameName);
+    }
 
     info->frameNames.clear();
-    auto spriteFrameCache = CCSpriteFrameCache::get();
     for (auto [frameName, frame] : CCDictionaryExt<std::string, CCSpriteFrame*>(frames)) {
         if (auto spriteFrame = getFrameByName(frameName)) {
             spriteFrame->m_obOffset = frame->m_obOffset;
