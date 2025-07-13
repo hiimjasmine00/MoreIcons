@@ -240,8 +240,8 @@ void LazyIcon::update(float dt) {
     }
 
     auto frames = m_animation->m_pFrames;
-    updateComplexSprite(reinterpret_cast<CCString*>(static_cast<CCAnimationFrame*>(
-        frames->objectAtIndex((int)(fmodf(interval, 1.0f) * frames->count())))->m_pSpriteFrame));
+    updateComplexSprite(static_cast<CCString*>(static_cast<CCObject*>(static_cast<CCAnimationFrame*>(
+        frames->objectAtIndex((int)(fmodf(interval, 1.0f) * frames->count())))->m_pSpriteFrame)));
 }
 
 void LazyIcon::createIcon() {
