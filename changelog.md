@@ -1,5 +1,5 @@
 # More Icons Changelog
-## v1.14.3 (2025-07-13)
+## v1.14.4 (2025-07-14)
 - Fixed a few bugs related to overwriting icons with the icon editor
 
 ## v1.14.2 (2025-07-06)
