@@ -86,8 +86,9 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto gameManager = GameManager::get();
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto info = MoreIconsAPI::getIcon(type, sdi && sdi->getSavedValue("2pselected", false));
-        return info && MoreIconsAPI::iconSpans.contains(type)
-            ? (gameManager->countForType(type) + 35) / 36 + (info - MoreIconsAPI::iconSpans[type].data()) / 36
+        auto& icons = MoreIconsAPI::icons[type];
+        return info && !icons.empty()
+            ? (gameManager->countForType(type) + 35) / 36 + (info - icons.data()) / 36
             : (gameManager->activeIconForType(type) - 1) / 36;
     }
 
@@ -153,7 +154,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     void updatePlayerColors() {
         GJGarageLayer::updatePlayerColors();
 
-        if (m_iconSelection && m_fields->m_pageBar && MoreIconsAPI::getCount(m_iconType) > 0) m_iconSelection->setVisible(false);
+        if (m_iconSelection && m_fields->m_pageBar && MoreIconsAPI::icons[m_iconType].size() > 0) m_iconSelection->setVisible(false);
     }
 
     void createNavMenu() {
@@ -168,7 +169,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             addChild(f->m_navMenu, 1);
         }
 
-        auto iconCount = MoreIconsAPI::getCount(m_iconType);
+        auto iconCount = MoreIconsAPI::icons[m_iconType].size();
         m_navDotMenu->setPositionY(iconCount > 0 ? 35.0f : 25.0f);
         auto count = (GameManager::get()->countForType(m_iconType) + 35) / 36;
         if (count < 2) {
@@ -242,7 +243,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     }
 
     void wrapPage(int page) {
-        auto pages = (GameManager::get()->countForType(m_iconType) + 35) / 36 + (MoreIconsAPI::getCount(m_iconType) + 35) / 36;
+        auto pages = (GameManager::get()->countForType(m_iconType) + 35) / 36 + (MoreIconsAPI::icons[m_iconType].size() + 35) / 36;
         m_fields->m_pages[m_iconType] = pages > 0 ? page < 0 ? pages - 1 : page >= pages ? 0 : page : 0;
     }
 
@@ -278,13 +279,14 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
     std::span<IconInfo> getPage() {
         auto customPage = m_fields->m_pages[m_iconType] - (GameManager::get()->countForType(m_iconType) + 35) / 36;
-        if (customPage < 0 || !MoreIconsAPI::iconSpans.contains(m_iconType)) return {};
+        if (customPage < 0) return {};
+
+        auto& icons = MoreIconsAPI::icons[m_iconType];
+        auto size = icons.size();
+        if (size == 0) return {};
 
         auto index = customPage * 36;
-        auto& iconSpan = MoreIconsAPI::iconSpans[m_iconType];
-        if (iconSpan.size() <= index) return {};
-
-        return iconSpan.subspan(index, std::min<size_t>(36, iconSpan.size() - index));
+        return { size > index ? icons.data() + index : nullptr, size > index ? std::min<size_t>(36, size - index) : 0 };
     }
 
     void setupCustomPage(int page) {
@@ -297,7 +299,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         }
 
         auto gameManager = GameManager::get();
-        if (MoreIconsAPI::getCount(m_iconType) <= 0 || page * 36 < gameManager->countForType(m_iconType)) return createNavMenu();
+        if (MoreIconsAPI::icons[m_iconType].size() <= 0 || page * 36 < gameManager->countForType(m_iconType)) return createNavMenu();
 
         m_cursor1->setOpacity(255);
         m_iconSelection->setVisible(false);
@@ -350,10 +352,10 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     }
 
     void onCustomSelect(CCNode* sender) {
-        auto f = m_fields.self();
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
         auto name = MoreIconsAPI::getIconName(sender);
+        auto& selectedIcon = m_fields->m_selectedIcon;
 
         m_cursor1->setPosition(sender->getParent()->convertToWorldSpace(sender->getPosition()));
         m_cursor1->setVisible(true);
@@ -362,7 +364,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         MoreIconsAPI::updateSimplePlayer(player, name, m_iconType);
         player->setScale(m_iconType == IconType::Jetpack ? 1.5f : 1.6f);
         auto selectedIconType = dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType;
-        if (f->m_selectedIcon == name && selectedIconType == m_iconType) {
+        if (selectedIcon == name && selectedIconType == m_iconType) {
             if (auto info = MoreIconsAPI::getIcon(name, m_iconType)) MoreInfoPopup::create(info)->show();
         }
 
@@ -375,7 +377,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             m_selectedIconType = m_iconType;
         }
 
-        f->m_selectedIcon = name;
+        selectedIcon = name;
         MoreIconsAPI::setIcon(name, m_iconType, dual);
     }
 
@@ -386,7 +388,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             f->m_pageBar = nullptr;
         }
 
-        if (MoreIconsAPI::getCount(m_iconType) <= 0 || page * 36 < GameManager::get()->countForType(m_iconType)) return createNavMenu();
+        if (MoreIconsAPI::icons[m_iconType].size() <= 0 || page * 36 < GameManager::get()->countForType(m_iconType)) return createNavMenu();
 
         m_cursor1->setOpacity(255);
         m_iconSelection->setVisible(false);
@@ -428,22 +430,22 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     }
 
     void onCustomSpecialSelect(CCNode* sender) {
-        auto f = m_fields.self();
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
         auto name = MoreIconsAPI::getIconName(sender);
+        auto& selectedIcon = m_fields->m_selectedIcon;
 
         m_cursor1->setPosition(sender->getParent()->convertToWorldSpace(sender->getPosition()));
         m_cursor1->setVisible(true);
         auto selectedIconType = dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType;
-        if (f->m_selectedIcon == name && selectedIconType == m_iconType) {
+        if (selectedIcon == name && selectedIconType == m_iconType) {
             if (auto info = MoreIconsAPI::getIcon(name, m_iconType)) MoreInfoPopup::create(info)->show();
         }
 
         if (dual) sdi->setSavedValue("lasttype", (int)m_iconType);
         else m_selectedIconType = m_iconType;
 
-        f->m_selectedIcon = name;
+        selectedIcon = name;
         MoreIconsAPI::setIcon(name, m_iconType, dual);
     }
 };

@@ -4,7 +4,6 @@
 #include "../../../api/MoreIconsAPI.hpp"
 #include <fmt/std.h>
 #include <Geode/binding/ButtonSprite.hpp>
-#include <Geode/binding/GameManager.hpp>
 #include <Geode/ui/Notification.hpp>
 
 using namespace geode::prelude;
@@ -30,8 +29,7 @@ Result<> replaceFile(const std::filesystem::path& oldPath, const std::filesystem
 }
 
 bool IconNamePopup::setup(IconInfo* info) {
-    auto unlock = (int)GameManager::get()->iconTypeToUnlockType(info->type);
-    auto unlockName = MoreIcons::uppercase[unlock];
+    auto unlockName = MoreIcons::uppercase[MoreIconsAPI::convertType(info->type)];
 
     setID("IconNamePopup");
     setTitle(fmt::format("Edit {} Name", unlockName));
@@ -136,11 +134,11 @@ bool IconNamePopup::setup(IconInfo* info) {
 void IconNamePopup::onClose(cocos2d::CCObject* sender) {
     if (m_nameInput->getString().empty()) return Popup::onClose(sender);
 
-    auto unlock = (int)GameManager::get()->iconTypeToUnlockType(m_iconType);
+    auto type = MoreIconsAPI::convertType(m_iconType);
     createQuickPopup(
-        fmt::format("Exit {} Name Editor", MoreIcons::uppercase[unlock]).c_str(),
+        fmt::format("Exit {} Name Editor", MoreIcons::uppercase[type]).c_str(),
         fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} name editor</c>?\n<cr>All unsaved changes will be lost!</c>",
-            MoreIcons::lowercase[unlock]),
+            MoreIconsAPI::lowercase[type]),
         "No",
         "Yes",
         [this, sender](auto, bool btn2) {

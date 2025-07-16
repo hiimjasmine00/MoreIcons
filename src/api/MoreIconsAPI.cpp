@@ -3,7 +3,6 @@
 #include "../classes/misc/ThreadPool.hpp"
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
-#include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #ifdef GEODE_IS_ANDROID
@@ -33,20 +32,20 @@ $execute {
 
     new EventListener(+[](std::vector<IconInfo*>* vec) {
         vec->clear();
-        auto size = MoreIconsAPI::icons.size();
-        vec->reserve(size);
-        for (int i = 0; i < size; i++) vec->push_back(MoreIconsAPI::icons.data() + i);
+        for (auto& [type, icons] : MoreIconsAPI::icons) {
+            auto size = icons.size();
+            vec->reserve(size);
+            for (int i = 0; i < size; i++) vec->push_back(icons.data() + i);
+        }
         return ListenerResult::Propagate;
     }, MoreIcons::AllIconsFilter("all-icons"_spr));
 
     new EventListener(+[](std::vector<IconInfo*>* vec, IconType type) {
         vec->clear();
-        if (!MoreIconsAPI::iconSpans.contains(type)) return ListenerResult::Propagate;
-        auto& iconSpan = MoreIconsAPI::iconSpans[type];
-        auto data = iconSpan.data();
-        auto size = iconSpan.size();
+        auto& icons = MoreIconsAPI::icons[type];
+        auto size = icons.size();
         vec->reserve(size);
-        for (auto it = data, end = data + size; it < end; it++) vec->push_back(it);
+        for (int i = 0; i < size; i++) vec->push_back(icons.data() + i);
         return ListenerResult::Propagate;
     }, MoreIcons::GetIconsFilter("get-icons"_spr));
 
@@ -73,9 +72,9 @@ $execute {
 
 IconInfo* MoreIconsAPI::getIcon(const std::string& name, IconType type) {
     if (name.empty()) return nullptr;
-    auto& iconSpan = iconSpans[type];
-    auto found = std::ranges::find_if(iconSpan, [&name](const IconInfo& info) { return info.name == name; });
-    return found < iconSpan.end() ? std::to_address(found) : nullptr;
+    auto& iconsVec = icons[type];
+    auto found = std::ranges::find_if(iconsVec, [&name](const IconInfo& info) { return info.name == name; });
+    return found < iconsVec.end() ? std::to_address(found) : nullptr;
 }
 
 IconInfo* MoreIconsAPI::getIcon(IconType type, bool dual) {
@@ -99,29 +98,12 @@ std::string MoreIconsAPI::getIconName(cocos2d::CCNode* node) {
 }
 
 bool MoreIconsAPI::hasIcon(const std::string& icon, IconType type) {
-    if (icon.empty() || !iconSpans.contains(type)) return false;
-    return std::ranges::any_of(iconSpans[type], [&icon](const IconInfo& info) { return info.name == icon; });
+    if (icon.empty()) return false;
+    return std::ranges::any_of(icons[type], [&icon](const IconInfo& info) { return info.name == icon; });
 }
 
 bool MoreIconsAPI::hasIcon(IconType type, bool dual) {
     return hasIcon(activeIcon(type, dual), type);
-}
-
-int MoreIconsAPI::getCount(IconType type) {
-    return iconSpans.contains(type) ? iconSpans[type].size() : 0;
-}
-
-std::string MoreIconsAPI::iconName(int id, IconType type) {
-    return iconName(id, GameManager::get()->iconTypeToUnlockType(type));
-}
-
-std::string MoreIconsAPI::iconName(int id, UnlockType type) {
-    constexpr std::array prefixes = {
-        "", "player_", "", "", "ship_", "player_ball_", "bird_", "dart_",
-        "robot_", "spider_", "streak_", "PlayerExplosion_", "", "swing_", "jetpack_", "shipfire"
-    };
-
-    return fmt::format("{}{:02}", prefixes[(int)type], id);
 }
 
 CCSpriteFrame* getFrameByName(const std::string& name) {
@@ -184,22 +166,19 @@ CCTexture2D* MoreIconsAPI::loadIcon(const std::string& name, IconType type, int 
 void MoreIconsAPI::loadIcons(IconType type, bool logs) {
     if (!preloadIcons) return;
 
-    constexpr std::array lowercase = {
-        "", "icon", "", "", "ship", "ball", "UFO", "wave",
-        "robot", "spider", "trail", "death effect", "", "swing", "jetpack", "ship fire"
-    };
-    auto name = lowercase[(int)GameManager::get()->iconTypeToUnlockType(type)];
+    auto name = lowercase[MoreIconsAPI::convertType(type)];
 
-    auto& iconSpan = iconSpans[type];
-    if (logs) log::info("Pre-loading {} {} textures", iconSpan.size(), name);
+    auto& iconsVec = icons[type];
+    auto size = iconsVec.size();
+    if (logs) log::info("Pre-loading {} {} textures", size, name);
 
     std::vector<std::pair<ImageResult, IconInfo*>> images;
-    images.reserve(iconSpan.size());
+    images.reserve(size);
     std::mutex imageMutex;
 
     auto& threadPool = ThreadPool::get();
-    for (auto info = iconSpan.data(), end = iconSpan.data() + iconSpan.size(); info < end; info++) {
-        threadPool.pushTask([info, &images, &imageMutex] {
+    for (int i = 0; i < size; i++) {
+        threadPool.pushTask([info = iconsVec.data() + i, &images, &imageMutex] {
             GEODE_UNWRAP_OR_ELSE(image, err, createFrames(info->textures[0], info->sheetName, info->name, info->type))
                 return log::error("{}: {}", info->name, err);
 
@@ -219,7 +198,7 @@ void MoreIconsAPI::loadIcons(IconType type, bool logs) {
         images.erase(images.begin());
     }
 
-    if (logs) log::info("Finished pre-loading {} {} textures, {} remaining", loaded, name, iconSpan.size() - loaded);
+    if (logs) log::info("Finished pre-loading {} {} textures, {} remaining", loaded, name, size - loaded);
 }
 
 void MoreIconsAPI::unloadIcon(const std::string& name, IconType type, int requestID) {
@@ -339,31 +318,11 @@ bool operator<(const IconInfo& a, const IconInfo& b) {
     return naturalSort(a.shortName, b.shortName);
 }
 
-constexpr std::array types = {
-    IconType::Cube, IconType::Ship, IconType::Ball, IconType::Ufo, IconType::Robot,
-    IconType::Spider, IconType::Wave, IconType::Swing, IconType::Jetpack, IconType::Special
-};
-
 void MoreIconsAPI::addIcon(IconInfo&& info, bool postLoad) {
-    size_t indices[types.size()];
-    auto type = info.type;
-    for (int i = 0; i < types.size(); i++) {
-        auto iType = types[i];
-        if (iconSpans.contains(iType)) indices[i] = iconSpans[iType].data() - icons.data();
-        else if (type == iType) indices[i] = icons.size();
-    }
+    auto& iconsVec = icons[info.type];
+    auto it = iconsVec.insert(std::ranges::upper_bound(iconsVec, info, std::less<IconInfo>()), std::move(info));
 
-    auto it = std::ranges::upper_bound(icons, info, std::less<IconInfo>());
-    icons.insert(it, std::move(info));
-
-    for (int i = 0; i < types.size(); i++) {
-        auto iType = types[i];
-        if (!iconSpans.contains(iType) && type != iType) continue;
-        auto& iconSpan = iconSpans[iType];
-        iconSpan = { icons.data() + indices[i] + (type < iType), iconSpan.size() + (type == iType) };
-    }
-
-    if (preloadIcons && postLoad) (void)createAndAddFrames(it->textures[0], it->sheetName, it->name, type, it->frameNames);
+    if (preloadIcons && postLoad) (void)createAndAddFrames(it->textures[0], it->sheetName, it->name, it->type, it->frameNames);
 }
 
 void MoreIconsAPI::moveIcon(IconInfo* info, const std::filesystem::path& path) {
@@ -382,7 +341,9 @@ void MoreIconsAPI::moveIcon(IconInfo* info, const std::filesystem::path& path) {
 }
 
 void MoreIconsAPI::removeIcon(IconInfo* info) {
-    loadedIcons[{ info->name, info->type }] = 0;
+    auto& name = info->name;
+    auto type = info->type;
+    loadedIcons[{ name, type }] = 0;
 
     auto spriteFrameCache = CCSpriteFrameCache::get();
     for (auto& frame : info->frameNames) {
@@ -390,9 +351,7 @@ void MoreIconsAPI::removeIcon(IconInfo* info) {
     }
     CCTextureCache::get()->removeTextureForKey(info->textures[0].c_str());
 
-    auto type = info->type;
     if (!preloadIcons) {
-        auto& name = info->name;
         std::vector<int> requestIDs;
         for (auto& [requestID, iconRequests] : requestedIcons) {
             if (iconRequests.contains(type) && iconRequests[type] == name) {
@@ -405,17 +364,8 @@ void MoreIconsAPI::removeIcon(IconInfo* info) {
         }
     }
 
-    icons.erase(icons.begin() + (info - icons.data()));
-    auto& iconSpan = iconSpans[type];
-    iconSpan = iconSpan.subspan(0, iconSpan.size() - 1);
-
-    auto found = std::ranges::find(types, type);
-    if (found < types.end() - 1) {
-        for (auto it = found + 1; it < types.end(); it++) {
-            auto& iconSpan = iconSpans[*it];
-            iconSpan = iconSpan.subspan(-1, iconSpan.size());
-        }
-    }
+    auto& iconsVec = icons[type];
+    iconsVec.erase(iconsVec.begin() + (info - iconsVec.data()));
 }
 
 void MoreIconsAPI::renameIcon(IconInfo* info, const std::string& name) {
@@ -463,7 +413,7 @@ void MoreIconsAPI::renameIcon(IconInfo* info, const std::string& name) {
     if (activeIcon(type, false) == oldName) setIcon(newName, type, false);
     if (activeIcon(type, true) == oldName) setIcon(newName, type, true);
 
-    std::ranges::sort(icons, std::less<IconInfo>());
+    std::ranges::sort(icons[type], std::less<IconInfo>());
 }
 
 void MoreIconsAPI::updateIcon(IconInfo* info) {

@@ -41,32 +41,31 @@ bool MoreIconsPopup::setup() {
     gamemodesNode->setLayout(RowLayout::create()->setGap(5.0f)->setGrowCrossAxis(true));
     gamemodesNode->setID("gamemodes-node");
 
-    constexpr std::array gamemodes = {
-        std::make_tuple("Icons", IconType::Cube, ccColor3B { 64, 227, 72 }, "icon"),
-        std::make_tuple("Ships", IconType::Ship, ccColor3B { 255, 0, 255 }, "ship"),
-        std::make_tuple("Balls", IconType::Ball, ccColor3B { 255, 90, 90 }, "ball"),
-        std::make_tuple("UFOs", IconType::Ufo, ccColor3B { 255, 165, 75 }, "ufo"),
-        std::make_tuple("Waves", IconType::Wave, ccColor3B { 50, 200, 255 }, "wave"),
-        std::make_tuple("Robots", IconType::Robot, ccColor3B { 200, 200, 200 }, "robot"),
-        std::make_tuple("Spiders", IconType::Spider, ccColor3B { 150, 50, 255 }, "spider"),
-        std::make_tuple("Swings", IconType::Swing, ccColor3B { 255, 255, 0 }, "swing"),
-        std::make_tuple("Jetpacks", IconType::Jetpack, ccColor3B { 255, 150, 255 }, "jetpack"),
-        std::make_tuple("Trails", IconType::Special, ccColor3B { 74, 82, 225 }, "trail")
+    constexpr std::array colors = {
+        ccColor3B { 64, 227, 72 },
+        ccColor3B { 255, 0, 255 },
+        ccColor3B { 255, 90, 90 },
+        ccColor3B { 255, 165, 75 },
+        ccColor3B { 50, 200, 255 },
+        ccColor3B { 200, 200, 200 },
+        ccColor3B { 150, 50, 255 },
+        ccColor3B { 255, 255, 0 },
+        ccColor3B { 255, 150, 255 },
+        ccColor3B { 255, 0, 0 },
+        ccColor3B { 74, 82, 225 }
     };
 
-    auto gameManager = GameManager::get();
     auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
     auto dual = sdi && sdi->getSavedValue("2pselected", false);
-    auto color1 = gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color1", 0) : gameManager->m_playerColor);
-    auto color2 = gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("color2", 0) : gameManager->m_playerColor2);
-    auto colorGlow = gameManager->colorForIdx(dual ? sdi->getSavedValue<int>("colorglow", 0) : gameManager->m_playerGlowColor);
-    auto glow = dual ? sdi->getSavedValue<bool>("glow") : gameManager->m_playerGlow;
-    for (int i = 0; i < 10; i++) {
+    auto [color1, color2, colorGlow, glow] = MoreIcons::activeColors(dual);
+    for (int i = 0; i < 11; i++) {
+        if (i == 9) continue;
+
         auto gamemodeMenu = CCMenu::create();
         gamemodeMenu->setPosition({ 0.0f, 0.0f });
         gamemodeMenu->setContentSize({ 70.0f, 120.0f });
         gamemodeMenu->ignoreAnchorPointForPosition(false);
-        gamemodeMenu->setID(fmt::format("gamemode-menu-{}", i + 1));
+        gamemodeMenu->setID(fmt::format("gamemode-menu-{}", i + (i < 10)));
 
         auto background = CCScale9Sprite::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
         background->setPosition({ 35.0f, 60.0f });
@@ -75,15 +74,9 @@ bool MoreIconsPopup::setup() {
         background->setID("background");
         gamemodeMenu->addChild(background);
 
-        auto& [name, type, color, directory] = gamemodes[i];
-
-        constexpr std::array types = {
-            "", "cube", "color1", "color2", "ship", "roll", "bird", "dart",
-            "robot", "spider", "trail", "death", "", "swing", "jetpack", "shiptrail"
-        };
-
-        auto id = dual ? sdi->getSavedValue<int>(types[(int)gameManager->iconTypeToUnlockType(type)], 1) : gameManager->activeIconForType(type);
-        if (type <= IconType::Jetpack) {
+        auto type = (IconType)(i + (i > 8) * 89);
+        auto id = MoreIcons::activeIcon(type, dual);
+        if (i < 9) {
             auto icon = SimplePlayer::create(1);
             icon->updatePlayerFrame(id, type);
             MoreIconsAPI::updateSimplePlayer(icon, type, dual);
@@ -97,7 +90,7 @@ bool MoreIconsPopup::setup() {
             icon->setID("player-icon");
             gamemodeMenu->addChild(icon);
         }
-        else if (type == IconType::Special) {
+        else if (i == 10) {
             auto info = MoreIconsAPI::getIcon(type, dual);
             auto sprite = info
                 ? MoreIconsAPI::customTrail(info->textures[0])
@@ -117,15 +110,15 @@ bool MoreIconsPopup::setup() {
             gamemodeMenu->addChild(severityIcon);
         }
 
-        auto label = CCLabelBMFont::create(name, "bigFont.fnt");
+        auto label = CCLabelBMFont::create(fmt::format("{}s", MoreIcons::uppercase[i]).c_str(), "bigFont.fnt");
         label->setPosition({ 35.0f, 76.0f });
         label->limitLabelWidth(65.0f, 0.45f, 0.0f);
-        label->setColor(color);
+        label->setColor(colors[i]);
         label->setID("info-label");
         gamemodeMenu->addChild(label);
 
-        auto vanillaCount = gameManager->countForType(type);
-        auto customCount = MoreIconsAPI::getCount(type);
+        auto vanillaCount = GameManager::get()->countForType(type);
+        auto customCount = MoreIconsAPI::icons[type].size();
         auto logCount = std::ranges::count_if(MoreIcons::logs, [type](const LogData& log) { return log.type == type; });
 
         auto vanillaLabel = CCLabelBMFont::create(fmt::format("Vanilla: {}", vanillaCount).c_str(), "goldFont.fnt");
@@ -167,7 +160,7 @@ bool MoreIconsPopup::setup() {
         auto folderSprite = ButtonSprite::create(
             CCSprite::createWithSpriteFrameName("folderIcon_001.png"), 0, false, 0.0f, "GJ_button_05.png", 0.7f);
         folderSprite->setScale(0.45f);
-        auto folderButton = CCMenuItemExt::createSpriteExtra(folderSprite, [directory](auto) {
+        auto folderButton = CCMenuItemExt::createSpriteExtra(folderSprite, [directory = MoreIcons::folders[i]](auto) {
             file::openFolder(Mod::get()->getConfigDir() / directory);
         });
         folderButton->setPosition({ 54.0f, 15.0f });

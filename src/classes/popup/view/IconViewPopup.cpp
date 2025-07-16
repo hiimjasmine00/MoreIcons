@@ -1,6 +1,7 @@
 #include "IconViewPopup.hpp"
 #include "LazyIcon.hpp"
 #include "../../scroll/BiggerScrollLayer.hpp"
+#include "../../../MoreIcons.hpp"
 #include "../../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
@@ -19,23 +20,18 @@ IconViewPopup* IconViewPopup::create(IconType type, bool custom) {
 }
 
 bool IconViewPopup::setup(IconType type, bool custom) {
-    constexpr std::array titles = {
-        "", "Icons", "", "", "Ships", "Balls", "UFOs", "Waves", "Robots",
-        "Spiders", "Trails", "Death Effects", "", "Swings", "Jetpacks", "Ship Fires"
-    };
-    auto gameManager = GameManager::get();
-    auto unlock = gameManager->iconTypeToUnlockType(type);
-
     setID("IconViewPopup");
-    setTitle(fmt::format("{} {}", custom ? "Custom" : "Vanilla", titles[(int)unlock]));
+    setTitle(fmt::format("{} {}s", custom ? "Custom" : "Vanilla", MoreIcons::uppercase[MoreIconsAPI::convertType(type)]));
     m_title->setID("icon-view-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
     m_bgSprite->setID("background");
     m_closeBtn->setID("close-button");
 
+    auto gameManager = GameManager::get();
     auto scrollLayer = BiggerScrollLayer::create(400.0f, 230.0f, 5.0f, 15.0f);
-    scrollLayer->m_contentLayer->setLayout(RowLayout::create()->setGap(roundf(7.5f / GJItemIcon::scaleForType(unlock)))->setGrowCrossAxis(true));
+    scrollLayer->m_contentLayer->setLayout(
+        RowLayout::create()->setGap(roundf(7.5f / GJItemIcon::scaleForType(gameManager->iconTypeToUnlockType(type))))->setGrowCrossAxis(true));
     scrollLayer->setPosition({ 215.0f, 135.0f });
     scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(scrollLayer);
@@ -46,9 +42,10 @@ bool IconViewPopup::setup(IconType type, bool custom) {
     m_mainLayer->addChild(scrollbar);
 
     if (custom) {
-        auto& iconSpan = MoreIconsAPI::iconSpans[type];
-        for (auto info = iconSpan.data(), end = iconSpan.data() + iconSpan.size(); info < end; info++) {
-            scrollLayer->m_contentLayer->addChild(LazyIcon::create(type, 0, info));
+        auto& icons = MoreIconsAPI::icons[type];
+        auto count = icons.size();
+        for (int i = 0; i < count; i++) {
+            scrollLayer->m_contentLayer->addChild(LazyIcon::create(type, 0, icons.data() + i));
         }
     }
     else {

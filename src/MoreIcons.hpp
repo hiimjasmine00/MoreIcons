@@ -1,4 +1,5 @@
 #include <array>
+#include <ccTypes.h>
 #include <filesystem>
 #include <Geode/Enums.hpp>
 #include <Geode/GeneratedPredeclare.hpp>
@@ -20,22 +21,25 @@ struct LogData {
     int severity;
 };
 
+struct ColorInfo {
+    cocos2d::ccColor3B color1;
+    cocos2d::ccColor3B color2;
+    cocos2d::ccColor3B colorGlow;
+    bool glow;
+};
+
 class MoreIcons {
 public:
     inline static constexpr std::array severityFrames = {
         "cc_2x2_white_image", "GJ_infoIcon_001.png", "geode.loader/info-warning.png", "geode.loader/info-alert.png"
     };
     inline static constexpr std::array folders = {
-        "", "icon", "", "", "ship", "ball", "ufo", "wave", "robot",
-        "spider", "trail", "death", "", "swing", "jetpack", "fire"
-    };
-    inline static constexpr std::array lowercase = {
-        "", "icon", "", "", "ship", "ball", "UFO", "wave", "robot",
-        "spider", "trail", "death effect", "", "swing", "jetpack", "ship fire"
+        "icon", "ship", "ball", "ufo", "wave", "robot", "spider",
+        "swing", "jetpack", "death", "trail", "", "fire"
     };
     inline static constexpr std::array uppercase = {
-        "", "Icon", "", "", "Ship", "Ball", "UFO", "Wave", "Robot",
-        "Spider", "Trail", "Death Effect", "", "Swing", "Jetpack", "Ship Fire"
+        "Icon", "Ship", "Ball", "UFO", "Wave", "Robot", "Spider",
+        "Swing", "Jetpack", "Death Effect", "Trail", "", "Ship Fire"
     };
     inline static std::vector<IconPack> packs;
     inline static std::vector<LogData> logs;
@@ -54,6 +58,8 @@ public:
     inline static int severity = 0;
     inline static bool traditionalPacks = true;
 
+    static ColorInfo activeColors(bool dual);
+    static int activeIcon(IconType type, bool dual);
     static geode::Result<std::filesystem::path> createTrash();
     static bool doesExist(const std::filesystem::path& path);
     static void loadIcons(IconType type);
@@ -63,5 +69,3 @@ public:
     static void updateGarage(GJGarageLayer* layer = nullptr);
     static std::string vanillaTexturePath(const std::string& path, bool skipSuffix);
 };
-
-std::filesystem::path operator+(const std::filesystem::path& lhs, const std::filesystem::path& rhs);

@@ -24,11 +24,10 @@ ViewIconPopup* ViewIconPopup::create(IconType type, int id, IconInfo* info) {
 }
 
 bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
-    auto gameManager = GameManager::get();
-    auto unlock = gameManager->iconTypeToUnlockType(type);
+    auto miType = MoreIconsAPI::convertType(type);
 
     setID("ViewIconPopup");
-    setTitle(fmt::format("{} Viewer", MoreIcons::uppercase[(int)unlock]));
+    setTitle(fmt::format("{} Viewer", MoreIcons::uppercase[miType]));
     m_title->setID("view-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -66,7 +65,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         player->setID("player-icon");
         m_mainLayer->addChild(player);
 
-        auto prefix = info ? GEODE_MOD_ID "/" + info->name : MoreIconsAPI::iconName(id, unlock);
+        auto prefix = info ? GEODE_MOD_ID "/" + info->name : fmt::format("{}{:02}", MoreIconsAPI::prefixes[miType], id);
         auto spriteFrameCache = CCSpriteFrameCache::get();
         for (int i = 0; i < suffixes.size(); i++) {
             auto container = CCNode::create();
@@ -152,7 +151,10 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         auto& size = streak->getContentSize();
         streak->setScaleX(stroke / size.width);
         streak->setScaleY(320.0f / size.height);
-        if (tint) streak->setColor(gameManager->colorForIdx(gameManager->m_playerColor2));
+        if (tint) {
+            auto gameManager = GameManager::get();
+            streak->setColor(gameManager->colorForIdx(gameManager->m_playerColor2));
+        }
         streak->setID("streak-preview");
         m_mainLayer->addChild(streak);
     }

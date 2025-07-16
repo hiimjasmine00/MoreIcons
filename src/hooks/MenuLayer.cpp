@@ -7,7 +7,7 @@ using namespace geode::prelude;
 
 class $modify(MIMenuLayer, MenuLayer) {
     static void onModify(ModifyBase<ModifyDerive<MIMenuLayer, MenuLayer>>& self) {
-        (void)self.getHook("MenuLayer::init").inspect([](Hook* hook) {
+        self.getHook("MenuLayer::init").inspect([](Hook* hook) {
             hook->setAutoEnable(false);
             if (auto iconProfile = Loader::get()->getInstalledMod("capeling.icon_profile")) {
                 if (iconProfile->isEnabled()) {
@@ -16,7 +16,7 @@ class $modify(MIMenuLayer, MenuLayer) {
                 }
                 else new EventListener([hook](ModStateEvent* e) {
                     afterPriority(hook, e->getMod());
-                    (void)hook->enable().inspectErr([](const std::string& err) {
+                    hook->enable().inspectErr([](const std::string& err) {
                         log::error("Failed to enable MenuLayer::init hook: {}", err);
                     });
                 }, ModStateFilter(iconProfile, ModEventType::Loaded));

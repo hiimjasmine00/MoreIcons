@@ -14,37 +14,30 @@ class $modify(MIMenuGameLayer, MenuGameLayer) {
     void resetPlayer() {
         MenuGameLayer::resetPlayer();
 
-        auto iconType = MoreIconsAPI::getIconType(m_playerObject);
+        auto type = MoreIconsAPI::getIconType(m_playerObject);
         auto gameManager = GameManager::get();
-        auto icons = gameManager->countForType(iconType);
-        auto vehicle = m_playerObject->m_isShip || m_playerObject->m_isBird;
-        auto cubes = vehicle ? gameManager->countForType(IconType::Cube) : 0;
 
-        auto icon = (int)roundf((rand() / (float)RAND_MAX) * (icons + MoreIconsAPI::getCount(iconType) - 1)) + 1;
-        auto cube = vehicle ? (int)roundf((rand() / (float)RAND_MAX) * (cubes + MoreIconsAPI::getCount(IconType::Cube) - 1)) + 1 : 0;
+        auto& icons = MoreIconsAPI::icons[type];
+        auto iconCount = gameManager->countForType(type);
+        auto icon = (int)roundf((rand() / (float)RAND_MAX) * (iconCount + icons.size() - 1)) + 1;
 
-        if (icon > icons) {
-            MoreIconsAPI::updatePlayerObject(m_playerObject, MoreIconsAPI::iconSpans[iconType][icon - icons - 1].name, iconType);
-            if (vehicle) {
-                if (cube > cubes) MoreIconsAPI::updatePlayerObject(m_playerObject, MoreIconsAPI::icons[cube - cubes - 1].name, IconType::Cube);
-                else m_playerObject->updatePlayerFrame(cube);
-            }
-        }
-        else if (m_playerObject->m_isShip) {
-            m_playerObject->updatePlayerShipFrame(icon);
-            if (cube > cubes) MoreIconsAPI::updatePlayerObject(m_playerObject, MoreIconsAPI::icons[cube - cubes - 1].name, IconType::Cube);
-            else m_playerObject->updatePlayerFrame(cube);
-        }
+        if (icon > iconCount) MoreIconsAPI::updatePlayerObject(m_playerObject, icons[icon - iconCount - 1].name, type);
+        else if (m_playerObject->m_isShip) m_playerObject->updatePlayerShipFrame(icon);
         else if (m_playerObject->m_isBall) m_playerObject->updatePlayerRollFrame(icon);
-        else if (m_playerObject->m_isBird) {
-            m_playerObject->updatePlayerBirdFrame(icon);
-            if (cube > cubes) MoreIconsAPI::updatePlayerObject(m_playerObject, MoreIconsAPI::icons[cube - cubes - 1].name, IconType::Cube);
-            else m_playerObject->updatePlayerFrame(cube);
-        }
+        else if (m_playerObject->m_isBird) m_playerObject->updatePlayerBirdFrame(icon);
         else if (m_playerObject->m_isDart) m_playerObject->updatePlayerDartFrame(icon);
         else if (m_playerObject->m_isRobot) m_playerObject->updatePlayerRobotFrame(icon);
         else if (m_playerObject->m_isSpider) m_playerObject->updatePlayerSpiderFrame(icon);
         else if (m_playerObject->m_isSwing) m_playerObject->updatePlayerSwingFrame(icon);
         else m_playerObject->updatePlayerFrame(icon);
+
+        if (m_playerObject->m_isShip || m_playerObject->m_isBird) {
+            auto& cubes = MoreIconsAPI::icons[IconType::Cube];
+            auto cubeCount = gameManager->countForType(IconType::Cube);
+            auto cube = (int)roundf((rand() / (float)RAND_MAX) * (cubeCount + cubes.size() - 1)) + 1;
+
+            if (cube > cubeCount) MoreIconsAPI::updatePlayerObject(m_playerObject, cubes[cube - cubeCount - 1].name, IconType::Cube);
+            else m_playerObject->updatePlayerFrame(cube);
+        }
     }
 };

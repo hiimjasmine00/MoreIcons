@@ -1,3 +1,4 @@
+#include "../MoreIcons.hpp"
 #include "../api/MoreIconsAPI.hpp"
 #include "../classes/misc/ButtonHooker.hpp"
 #include <Geode/binding/SimplePlayer.hpp>
@@ -22,14 +23,8 @@ class $modify(MIProfilePage, ProfilePage) {
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
 
-        constexpr std::array icons = {
-            "player-icon", "player-ship", "player-ball",
-            "player-ufo", "player-wave", "player-robot",
-            "player-spider", "player-swing", "player-jetpack"
-        };
-
-        for (int i = 0; i < icons.size(); i++) {
-            if (auto player = playerMenu->getChildByID(icons[i])) {
+        for (int i = 0; i < 9; i++) {
+            if (auto player = playerMenu->getChildByID(fmt::format("player-{}", MoreIcons::folders[i]))) {
                 auto tag = i == 1 ? player->getTag() : -1;
                 updatePlayer(player, (IconType)(tag != -1 ? tag : i), dual);
             }

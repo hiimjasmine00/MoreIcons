@@ -5,7 +5,6 @@
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
-#include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/loader/Mod.hpp>
@@ -35,10 +34,10 @@ void notify(NotificationIcon icon, fmt::format_string<T...> message, T&&... args
 }
 
 bool EditIconPopup::setup(IconType type) {
-    auto unlock = GameManager::get()->iconTypeToUnlockType(type);
+    auto miType = MoreIconsAPI::convertType(type);
 
     setID("EditIconPopup");
-    setTitle(fmt::format("{} Editor", MoreIcons::uppercase[(int)unlock]));
+    setTitle(fmt::format("{} Editor", MoreIcons::uppercase[miType]));
     m_title->setID("edit-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -72,7 +71,7 @@ bool EditIconPopup::setup(IconType type) {
         m_player->setID("player-icon");
         m_mainLayer->addChild(m_player);
 
-        auto prefix = MoreIconsAPI::iconName(1, unlock);
+        auto prefix = MoreIconsAPI::prefixes[miType];
         auto spriteFrameCache = CCSpriteFrameCache::get();
         auto crossFrame = spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
         for (int i = 0; i < suffixes.size(); i++) {
@@ -86,14 +85,14 @@ bool EditIconPopup::setup(IconType type) {
             for (int j = 0; j < subSuffixes.size(); j++) {
                 auto& suffix = subSuffixes[j];
 
-                auto spriteFrame = MoreIconsAPI::getFrame("{}{}", prefix, suffix);
+                auto spriteFrame = MoreIconsAPI::getFrame("{}01{}", prefix, suffix);
                 if (spriteFrame) m_frames->setObject(spriteFrame, suffix);
 
                 auto sprite = CCSprite::createWithSpriteFrame(spriteFrame ? spriteFrame : crossFrame);
                 m_sprites->setObject(sprite, suffix);
 
-                auto button = CCMenuItemExt::createSpriteExtra(sprite, [this, i, isRobot, j](auto) {
-                    pickFile(i + isRobot, j + 1);
+                auto button = CCMenuItemExt::createSpriteExtra(sprite, [this, i, isRobot, suffix](auto) {
+                    pickFile(i + isRobot, suffix);
                 });
                 button->setID(fmt::format("frame-button-{}", j + 1));
                 frameButtons->addObject(button);
@@ -159,12 +158,12 @@ bool EditIconPopup::setup(IconType type) {
     pngButton->setID("png-button");
     bottomMenu->addChild(pngButton);
 
-    auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png"), [this, unlock](auto) {
+    auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png"), [this, miType](auto) {
         auto iconName = m_textInput->getString();
         if (iconName.empty()) return notify(NotificationIcon::Info, "Please enter a name.");
 
         auto configDir = Mod::get()->getConfigDir();
-        auto folder = MoreIcons::folders[(int)unlock];
+        auto folder = MoreIcons::folders[miType];
         if (m_iconType == IconType::Special) {
             auto path = configDir / folder / fmt::format("{}.png", iconName);
             if (MoreIcons::doesExist(path)) createQuickPopup(
@@ -179,10 +178,11 @@ bool EditIconPopup::setup(IconType type) {
             else saveTrail(path);
         }
         else if (m_iconType <= IconType::Jetpack) {
+            auto parent = configDir / folder;
             auto factor = CCDirector::get()->getContentScaleFactor();
-            auto path = configDir / folder / (iconName + (factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : ""));
-            auto png = path + ".png";
-            auto plist = path + ".plist";
+            auto filename = iconName + (factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : "");
+            auto png = parent / (filename + ".png");
+            auto plist = parent / (filename + ".plist");
             if (MoreIcons::doesExist(png) || MoreIcons::doesExist(plist))
                 createQuickPopup(
                     "Existing Icon",
@@ -207,8 +207,8 @@ bool EditIconPopup::setup(IconType type) {
     return true;
 }
 
-void EditIconPopup::pickFile(int index, int type) {
-    m_listener.bind([this, index, type](Task<Result<std::vector<std::filesystem::path>>>::Event* e) {
+void EditIconPopup::pickFile(int index, std::string_view suffix) {
+    m_listener.bind([this, index, suffix](Task<Result<std::vector<std::filesystem::path>>>::Event* e) {
         auto res = e->getValue();
         if (!res || res->isErr()) return;
 
@@ -243,7 +243,7 @@ void EditIconPopup::pickFile(int index, int type) {
         }
 
         auto pngEmpty = png.empty();
-        auto plistEmpty = type == 0 && isIcon && plist.empty();
+        auto plistEmpty = suffix.empty() && isIcon && plist.empty();
         if (pngEmpty && plistEmpty) return notify(NotificationIcon::Info, "Please select a PNG file and a Plist file");
         else if (plistEmpty) return notify(NotificationIcon::Info, "Please select a Plist file");
         else if (pngEmpty) return notify(NotificationIcon::Info, "Please select a PNG file");
@@ -257,11 +257,9 @@ void EditIconPopup::pickFile(int index, int type) {
             (float)image.height
         });
 
-        if (type > 0) {
-            constexpr std::array suffixes = { "_001.png", "_2_001.png", "_3_001.png", "_glow_001.png", "_extra_001.png" };
-            auto suffix = suffixes[type + (m_iconType != IconType::Ufo && type > 2) - 1];
+        if (!suffix.empty()) {
             m_frames->setObject(CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }),
-                index > 0 ? fmt::format("_{:02}{}", index, suffix) : suffix);
+                index > 0 ? fmt::format("_{:02}{}", index, suffix) : std::string(suffix));
             return updateSprites();
         }
 
@@ -459,7 +457,7 @@ void EditIconPopup::saveIcon(const std::filesystem::path& png, const std::filesy
 
     if (GEODE_UNWRAP_IF_ERR(err, packer.pack())) return notify(NotificationIcon::Error, "Failed to pack frames: {}", err);
     if (GEODE_UNWRAP_IF_ERR(err, packer.png(png))) return notify(NotificationIcon::Error, "Failed to save image: {}", err);
-    if (GEODE_UNWRAP_IF_ERR(err, packer.plist(plist, "icons/" + string::pathToString(plist.filename()), "    ")))
+    if (GEODE_UNWRAP_IF_ERR(err, packer.plist(plist, "icons/" + string::pathToString(png.filename()), "    ")))
         return notify(NotificationIcon::Error, "Failed to save plist: {}", err);
 
     addOrUpdateIcon(name, png, plist);
@@ -468,11 +466,11 @@ void EditIconPopup::saveIcon(const std::filesystem::path& png, const std::filesy
 void EditIconPopup::onClose(CCObject* sender) {
     if (!m_pickerOpened && (!m_textInput || m_textInput->getString().empty())) return Popup::onClose(sender);
 
-    auto type = (int)GameManager::get()->iconTypeToUnlockType(m_iconType);
+    auto type = MoreIconsAPI::convertType(m_iconType);
     createQuickPopup(
         fmt::format("Exit {} Editor", MoreIcons::uppercase[type]).c_str(),
         fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} editor</c>?\n<cr>All unsaved changes will be lost!</c>",
-            MoreIcons::lowercase[type]),
+            MoreIconsAPI::lowercase[type]),
         "No",
         "Yes",
         [this, sender](auto, bool btn2) {

@@ -9,7 +9,7 @@ class $modify(MIGameManager, GameManager) {
 
     static void onModify(ModifyBase<ModifyDerive<MIGameManager, GameManager>>& self) {
         (void)self.setHookPriority("GameManager::loadIcon", 999999999);
-        (void)self.getHook("GameManager::sheetNameForIcon").inspect([](Hook* hook) {
+        self.getHook("GameManager::sheetNameForIcon").inspect([](Hook* hook) {
             hook->setAutoEnable(Mod::get()->getSettingValue<bool>("traditional-packs"));
             sheetHook = hook;
         }).inspectErr([](const std::string& err) { log::error("Failed to get GameManager::sheetNameForIcon hook: {}", err); });
@@ -21,31 +21,40 @@ class $modify(MIGameManager, GameManager) {
         if (!m_reloadTextures) return;
 
         MoreIcons::saveTrails();
-        MoreIconsAPI::icons.clear();
-        MoreIconsAPI::iconSpans.clear();
+        MoreIconsAPI::icons[IconType::Cube].clear();
+        MoreIconsAPI::icons[IconType::Ship].clear();
+        MoreIconsAPI::icons[IconType::Ball].clear();
+        MoreIconsAPI::icons[IconType::Ufo].clear();
+        MoreIconsAPI::icons[IconType::Wave].clear();
+        MoreIconsAPI::icons[IconType::Robot].clear();
+        MoreIconsAPI::icons[IconType::Spider].clear();
+        MoreIconsAPI::icons[IconType::Swing].clear();
+        MoreIconsAPI::icons[IconType::Jetpack].clear();
+        MoreIconsAPI::icons[IconType::Special].clear();
         MoreIconsAPI::requestedIcons.clear();
         MoreIconsAPI::loadedIcons.clear();
         MoreIcons::logs.clear();
         MoreIcons::severity = Severity::Debug;
-        MoreIcons::severities = {
-            { IconType::Cube, Severity::Debug },
-            { IconType::Ship, Severity::Debug },
-            { IconType::Ball, Severity::Debug },
-            { IconType::Ufo, Severity::Debug },
-            { IconType::Wave, Severity::Debug },
-            { IconType::Robot, Severity::Debug },
-            { IconType::Spider, Severity::Debug },
-            { IconType::Swing, Severity::Debug },
-            { IconType::Jetpack, Severity::Debug },
-            { IconType::Special, Severity::Debug }
-        };
+        MoreIcons::severities[IconType::Cube] = Severity::Debug;
+        MoreIcons::severities[IconType::Ship] = Severity::Debug;
+        MoreIcons::severities[IconType::Ball] = Severity::Debug;
+        MoreIcons::severities[IconType::Ufo] = Severity::Debug;
+        MoreIcons::severities[IconType::Wave] = Severity::Debug;
+        MoreIcons::severities[IconType::Robot] = Severity::Debug;
+        MoreIcons::severities[IconType::Spider] = Severity::Debug;
+        MoreIcons::severities[IconType::Swing] = Severity::Debug;
+        MoreIcons::severities[IconType::Jetpack] = Severity::Debug;
+        MoreIcons::severities[IconType::Special] = Severity::Debug;
         MoreIcons::loadSettings();
 
-        if (sheetHook) (void)(MoreIcons::traditionalPacks ? sheetHook->enable().inspectErr([](const std::string& err) {
-            log::error("Failed to enable GameManager::sheetNameForIcon hook: {}", err);
-        }) : sheetHook->disable().inspectErr([](const std::string& err) {
-            log::error("Failed to disable GameManager::sheetNameForIcon hook: {}", err);
-        }));
+        if (sheetHook) {
+            if (MoreIcons::traditionalPacks) sheetHook->enable().inspectErr([](const std::string& err) {
+                log::error("Failed to enable GameManager::sheetNameForIcon hook: {}", err);
+            });
+            else sheetHook->disable().inspectErr([](const std::string& err) {
+                log::error("Failed to disable GameManager::sheetNameForIcon hook: {}", err);
+            });
+        }
     }
 
     gd::string sheetNameForIcon(int id, int type) {

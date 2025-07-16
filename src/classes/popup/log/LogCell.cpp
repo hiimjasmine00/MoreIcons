@@ -44,11 +44,12 @@ bool LogCell::init(const std::string& name, const std::string& message, int seve
     nameLabel->setID("name-label");
     addChild(nameLabel);
 
+    constexpr std::array severities = { "<cg>DEBUG:</c> ", "<cj>INFO:</c> ", "<cy>WARNING:</c> ", "<cr>ERROR:</c> " };
+
     auto viewSprite = ButtonSprite::create("View", "bigFont.fnt", "GJ_button_05.png", 0.8f);
     viewSprite->setScale(0.5f);
-    auto viewButton = CCMenuItemExt::createSpriteExtra(viewSprite, [name, message, severity](auto) {
-        constexpr std::array severities = { "<cg>DEBUG:</c> ", "<cj>INFO:</c> ", "<cy>WARNING:</c> ", "<cr>ERROR:</c> " };
-        FLAlertLayer::create(name.c_str(), fmt::format("{}{}", severities[severity], message), "OK")->show();
+    auto viewButton = CCMenuItemExt::createSpriteExtra(viewSprite, [name, message = severities[severity] + message](auto) {
+        FLAlertLayer::create(name.c_str(), message, "OK")->show();
     });
     viewButton->setID("view-button");
 

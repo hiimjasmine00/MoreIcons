@@ -17,7 +17,7 @@ protected:
 
     bool setup(IconType) override;
 
-    void pickFile(int, int);
+    void pickFile(int, std::string_view);
     void updateSprites();
     void addOrUpdateIcon(const std::string&, const std::filesystem::path&, const std::filesystem::path&);
     bool checkFrame(std::string_view);

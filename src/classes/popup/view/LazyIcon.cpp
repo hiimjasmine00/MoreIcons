@@ -32,7 +32,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info) {
     m_type = type;
     m_id = id;
     m_info = info;
-    m_name = info ? info->name : MoreIconsAPI::iconName(id, type);
+    m_name = info ? info->name : fmt::format("{}{:02}", MoreIconsAPI::prefixes[MoreIconsAPI::convertType(type)], id);
     setID(m_name);
 
     if (type == IconType::Special && !info) {

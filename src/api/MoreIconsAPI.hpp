@@ -1,6 +1,5 @@
 #include <Geode/utils/cocos.hpp>
 #include <IconInfo.hpp>
-#include <span>
 
 struct ImageResult {
     std::string name;
@@ -13,8 +12,26 @@ struct ImageResult {
 
 class MoreIconsAPI {
 public:
-    inline static std::vector<IconInfo> icons;
-    inline static std::map<IconType, std::span<IconInfo>> iconSpans;
+    inline static constexpr std::array prefixes = {
+        "player_", "ship_", "player_ball_", "bird_", "dart_", "robot_", "spider_",
+        "swing_", "jetpack_", "PlayerExplosion_", "streak_", "", "shipfire"
+    };
+    inline static constexpr std::array lowercase = {
+        "icon", "ship", "ball", "UFO", "wave", "robot", "spider",
+        "swing", "jetpack", "death effect", "trail", "", "ship fire"
+    };
+    inline static std::map<IconType, std::vector<IconInfo>> icons = {
+        { IconType::Cube, {} },
+        { IconType::Ship, {} },
+        { IconType::Ball, {} },
+        { IconType::Ufo, {} },
+        { IconType::Wave, {} },
+        { IconType::Robot, {} },
+        { IconType::Spider, {} },
+        { IconType::Swing, {} },
+        { IconType::Jetpack, {} },
+        { IconType::Special, {} }
+    };
     inline static std::map<int, std::map<IconType, std::string>> requestedIcons;
     inline static std::map<std::pair<std::string, IconType>, int> loadedIcons;
     inline static bool preloadIcons = false;
@@ -25,11 +42,11 @@ public:
     static std::string setIcon(const std::string& icon, IconType type, bool dual);
     static IconType getIconType(PlayerObject* object);
     static std::string getIconName(cocos2d::CCNode* node);
-    static int getCount(IconType type);
     static bool hasIcon(const std::string& icon, IconType type);
     static bool hasIcon(IconType type, bool dual);
-    static std::string iconName(int id, IconType type);
-    static std::string iconName(int id, UnlockType type);
+    static int convertType(IconType type) {
+        return (int)type - (type >= IconType::DeathEffect) * 89;
+    }
     template <class T>
     static geode::Ref<T> createRef() {
         geode::Ref ret = new T();

@@ -73,7 +73,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             return notify(NotificationIcon::Error, "Failed to {} {}: {}.", trash ? "trash" : "move", filename, err);
 
         if (trash) {
-            auto jsonName = filename.stem() + ".json";
+            auto jsonName = texturePath.filename().replace_extension(".json");
             auto jsonPath = parentDir / jsonName;
             if (MoreIcons::doesExist(jsonPath)) {
                 if (GEODE_UNWRAP_IF_ERR(err, renameFile(jsonPath, directory / jsonName)))
@@ -164,8 +164,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     m_mainLayer->addChild(descBackground);
 
     auto hasPack = !info->packID.empty();
-    auto gameManager = GameManager::get();
-    auto unlockType = gameManager->iconTypeToUnlockType(info->type);
+    auto miType = MoreIconsAPI::convertType(info->type);
 
     auto customLabel = CCLabelBMFont::create("Custom", "goldFont.fnt");
     customLabel->setPosition({ 150.0f, 123.0f });
@@ -173,13 +172,8 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     customLabel->setID("custom-label");
     m_mainLayer->addChild(customLabel);
 
-    constexpr std::array names = {
-        "", "Cube", "Main Color", "Secondary Color", "Ship", "Ball", "UFO", "Wave",
-        "Robot", "Spider", "Trail", "Death Effect", "Item", "Swing", "Jetpack", "Ship Fire"
-    };
-
     auto descriptionArea = TextArea::create(fmt::format("This <cg>{}</c> is added by the <cl>More Icons</c> mod.",
-        names[(int)unlockType]), "bigFont.fnt", 1.0f, 600.0f, { 0.5f, 1.0f }, 42.0f, false);
+        MoreIcons::uppercase[miType]), "bigFont.fnt", 1.0f, 600.0f, { 0.5f, 1.0f }, 42.0f, false);
     descriptionArea->setPosition({ 150.0f, 91.0f });
     descriptionArea->setScale(0.4f);
     descriptionArea->setID("description-area");
@@ -194,19 +188,16 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     }
 
     if (info->type <= IconType::Jetpack) {
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto dual = sdi && sdi->getSavedValue("2pselected", false);
-
-        auto itemIcon = GJItemIcon::createBrowserItem(unlockType, 1);
+        auto itemIcon = GJItemIcon::createBrowserItem(GameManager::get()->iconTypeToUnlockType(info->type), 1);
         itemIcon->setScale(1.25f - hasPack * 0.15f);
 
         auto player = static_cast<SimplePlayer*>(itemIcon->m_player);
         MoreIconsAPI::updateSimplePlayer(player, info->name, info->type);
-        player->enableCustomGlowColor(gameManager->colorForIdx(dual ? sdi->getSavedValue("colorglow", 0) : gameManager->m_playerGlowColor));
 
-        auto color1 = gameManager->colorForIdx(dual ? sdi->getSavedValue("color1", 0) : gameManager->m_playerColor);
-        auto color2 = gameManager->colorForIdx(dual ? sdi->getSavedValue("color2", 0) : gameManager->m_playerColor2);
-        auto glow = dual ? sdi->getSavedValue("glow", false) : gameManager->m_playerGlow;
+        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+        auto [color1, color2, colorGlow, glow] = MoreIcons::activeColors(sdi && sdi->getSavedValue("2pselected", false));
+        player->enableCustomGlowColor(colorGlow);
+
         auto iconButton = CCMenuItemExt::createSpriteExtra(itemIcon, [this, color1, color2, glow](CCMenuItemSpriteExtra* sender) {
             m_toggled = !m_toggled;
 
@@ -240,20 +231,20 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     CCMenuItemSpriteExtra* operationButton = nullptr;
 
     if (info->vanilla && !info->zipped) {
-        operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.7f, [this, unlockType](auto) {
-            auto lower = MoreIcons::lowercase[(int)unlockType];
+        operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.7f, [this, miType](auto) {
+            auto lower = MoreIconsAPI::lowercase[miType];
             createQuickPopup(
-                fmt::format("Convert {}", MoreIcons::uppercase[(int)unlockType]).c_str(),
+                fmt::format("Convert {}", MoreIcons::uppercase[miType]).c_str(),
                 fmt::format("Are you sure you want to <cy>convert</c> this <cg>{}</c> into a <cl>More Icons</c> <cg>{}</c>?", lower, lower),
                 "No",
                 "Yes",
-                [this, unlockType](auto, bool btn2) {
+                [this, miType](auto, bool btn2) {
                     if (!btn2) return;
 
                     auto type = m_info->type;
                     auto parent = std::filesystem::path(m_info->textures[0]).parent_path();
                     if (type <= IconType::Jetpack) parent = parent.parent_path();
-                    auto dir = parent / "config" / GEODE_MOD_ID / MoreIcons::folders[(int)unlockType];
+                    auto dir = parent / "config" / GEODE_MOD_ID / MoreIcons::folders[miType];
                     std::error_code code;
                     auto exists = MoreIcons::doesExist(dir);
                     if (!exists) exists = std::filesystem::create_directories(dir, code);
@@ -274,10 +265,10 @@ bool MoreInfoPopup::setup(IconInfo* info) {
         editButton->setID("edit-button");
         m_buttonMenu->addChild(editButton);
 
-        operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [this, unlockType](auto) {
+        operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [this, miType](auto) {
             createQuickPopup(
-                fmt::format("Trash {}", MoreIcons::uppercase[(int)unlockType]).c_str(),
-                fmt::format("Are you sure you want to <cr>trash</c> this <cg>{}</c>?", MoreIcons::lowercase[(int)unlockType]),
+                fmt::format("Trash {}", MoreIcons::uppercase[miType]).c_str(),
+                fmt::format("Are you sure you want to <cr>trash</c> this <cg>{}</c>?", MoreIconsAPI::lowercase[miType]),
                 "No",
                 "Yes",
                 [this](auto, bool btn2) {
