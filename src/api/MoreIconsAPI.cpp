@@ -173,7 +173,7 @@ CCTexture2D* MoreIconsAPI::loadIcon(const std::string& name, IconType type, int 
     if (requestedIcon != name) {
         loadedIcon++;
         if (!requestedIcon.empty()) unloadIcon(requestedIcon, type, requestID);
-        requestedIcon = name;
+        requestedIcons[requestID][type] = name;
     }
 
     return texture;
@@ -250,8 +250,11 @@ void MoreIconsAPI::unloadIcons(int requestID) {
     for (int i = 0; i < 9; i++) {
         auto type = (IconType)i;
         if (!iconRequests.contains(type)) continue;
-        auto icon = iconRequests[type];
-        if (!icon.empty()) unloadIcon(icon, type, requestID);
+        auto& icon = iconRequests[type];
+        if (!icon.empty()) {
+            unloadIcon(icon, type, requestID);
+            if (!requestedIcons.contains(requestID)) return;
+        }
     }
 
     requestedIcons.erase(requestID);

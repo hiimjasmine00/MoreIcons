@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v1.14.5 (2025-07-17)
+- Fixed a rare crash when unloading icons ([#41](https://github.com/hiimjasmine00/MoreIcons/issues/41))
+
 ## v1.14.4 (2025-07-14)
 - Fixed a few bugs related to overwriting icons with the icon editor
 
