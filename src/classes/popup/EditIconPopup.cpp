@@ -220,13 +220,13 @@ void EditIconPopup::pickFile(int index, std::string_view suffix) {
         auto isIcon = m_iconType <= IconType::Jetpack;
         auto isTrail = m_iconType == IconType::Special;
         std::string name;
-        std::string png;
-        std::string plist;
+        std::filesystem::path png;
+        std::filesystem::path plist;
         for (auto& path : paths) {
             if (path.extension() == ".png") {
                 if (png.empty()) {
                     if (isTrail) name = string::pathToString(path.stem());
-                    png = string::pathToString(path);
+                    png = path;
                 }
             }
             else if (path.extension() == ".plist") {
@@ -236,7 +236,7 @@ void EditIconPopup::pickFile(int index, std::string_view suffix) {
                         if (name.ends_with("-uhd")) name = name.substr(0, name.size() - 4);
                         else if (name.ends_with("-hd")) name = name.substr(0, name.size() - 3);
                     }
-                    plist = string::pathToString(path);
+                    plist = path;
                 }
             }
             if (!png.empty() && !plist.empty()) break;
@@ -263,7 +263,7 @@ void EditIconPopup::pickFile(int index, std::string_view suffix) {
             return updateSprites();
         }
 
-        GEODE_UNWRAP_OR_ELSE(frames, err, MoreIconsAPI::createFrames(plist, texture, "", m_iconType))
+        GEODE_UNWRAP_OR_ELSE(frames, err, MoreIconsAPI::createFrames(string::pathToString(plist), texture, "", m_iconType))
             return notify(NotificationIcon::Error, "Failed to load frames: {}", err);
 
         if (m_textInput->getString().empty() && !name.empty()) m_textInput->setString(name);

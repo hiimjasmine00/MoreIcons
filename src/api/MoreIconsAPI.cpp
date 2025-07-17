@@ -136,7 +136,7 @@ Result<CCTexture2D*> createAndAddFrames(
         log::error("{}: {}", name, err);
     }));
 
-    return Ok(MoreIconsAPI::addFrames(std::move(image), frameNames));
+    return Ok(MoreIconsAPI::addFrames(image, frameNames));
 }
 
 CCTexture2D* MoreIconsAPI::loadIcon(const std::string& name, IconType type, int requestID) {
@@ -184,7 +184,7 @@ void MoreIconsAPI::loadIcons(IconType type, bool logs) {
 
             std::unique_lock lock(imageMutex);
 
-            images.push_back({ std::move(image), info });
+            images.push_back({ image, info });
         });
     }
     threadPool.wait();
@@ -194,7 +194,7 @@ void MoreIconsAPI::loadIcons(IconType type, bool logs) {
     auto loaded = 0;
     for (; !images.empty(); loaded++) {
         auto& [image, info] = images.front();
-        addFrames(std::move(image), info->frameNames);
+        addFrames(image, info->frameNames);
         images.erase(images.begin());
     }
 
@@ -690,15 +690,14 @@ Result<Ref<CCDictionary>> MoreIconsAPI::createFrames(
 
     auto json = parseNode(root.first_child());
     if (!json.isObject()) return Err("No root <dict> element found");
-
-    GEODE_UNWRAP_INTO(auto jsonFrames, json.get("frames").mapErr([] { return "No frames <dict> element found"; }));
+    if (!json.contains("frames")) return Err("No frames <dict> element found");
 
     auto format = json.get("metadata").andThen([](const matjson::Value& v) {
         return v.get("format").andThen([](const matjson::Value& v) { return v.asInt(); });
     }).unwrapOr(0);
 
     auto frames = createRef<CCDictionary>();
-    for (auto& [frameName, obj] : jsonFrames) {
+    for (auto& [frameName, obj] : json["frames"]) {
         if (!obj.isObject()) continue;
 
         auto frame = createRef<CCSpriteFrame>();
@@ -772,7 +771,7 @@ Result<Ref<CCDictionary>> MoreIconsAPI::createFrames(
     return Ok(frames);
 }
 
-CCTexture2D* MoreIconsAPI::addFrames(ImageResult image, std::vector<std::string>& frameNames) {
+CCTexture2D* MoreIconsAPI::addFrames(const ImageResult& image, std::vector<std::string>& frameNames) {
     if (auto texture = image.texture.data()) {
         texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
             (float)image.width,

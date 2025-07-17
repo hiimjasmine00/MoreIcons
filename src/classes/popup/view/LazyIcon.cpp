@@ -290,7 +290,7 @@ void LazyIcon::visit() {
                     self->m_error = std::move(err);
                     log::error("{}: {}", self->m_name, self->m_error);
                 }
-                else MoreIconsAPI::addFrames(std::move(result), self->m_frames);
+                else MoreIconsAPI::addFrames(result, self->m_frames);
                 self->createIcon();
             }
         });
