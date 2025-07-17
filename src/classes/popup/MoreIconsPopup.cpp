@@ -57,7 +57,7 @@ bool MoreIconsPopup::setup() {
 
     auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
     auto dual = sdi && sdi->getSavedValue("2pselected", false);
-    auto [color1, color2, colorGlow, glow] = MoreIcons::activeColors(dual);
+    auto [color1, color2, colorGlow, glow] = MoreIcons::vanillaColors(dual);
     for (int i = 0; i < 11; i++) {
         if (i == 9) continue;
 
@@ -75,7 +75,7 @@ bool MoreIconsPopup::setup() {
         gamemodeMenu->addChild(background);
 
         auto type = (IconType)(i + (i > 8) * 89);
-        auto id = MoreIcons::activeIcon(type, dual);
+        auto id = MoreIcons::vanillaIcon(type, dual);
         if (i < 9) {
             auto icon = SimplePlayer::create(1);
             icon->updatePlayerFrame(id, type);

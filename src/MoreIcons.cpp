@@ -521,7 +521,7 @@ void MoreIcons::saveTrails() {
     }
 }
 
-ColorInfo MoreIcons::activeColors(bool dual) {
+ColorInfo MoreIcons::vanillaColors(bool dual) {
     auto gameManager = GameManager::get();
     auto sdi = dual ? Loader::get()->getLoadedMod("weebify.separate_dual_icons") : nullptr;
     return {
@@ -532,7 +532,7 @@ ColorInfo MoreIcons::activeColors(bool dual) {
     };
 }
 
-int MoreIcons::activeIcon(IconType type, bool dual) {
+int MoreIcons::vanillaIcon(IconType type, bool dual) {
     auto gameManager = GameManager::get();
     auto sdi = dual ? Loader::get()->getLoadedMod("weebify.separate_dual_icons") : nullptr;
     switch (type) {
@@ -560,13 +560,13 @@ void MoreIcons::updateGarage(GJGarageLayer* layer) {
     auto gameManager = GameManager::get();
     auto player1 = layer->m_playerObject;
     auto iconType1 = gameManager->m_playerIconType;
-    if (noLayer) player1->updatePlayerFrame(activeIcon(iconType1, false), iconType1);
+    if (noLayer) player1->updatePlayerFrame(vanillaIcon(iconType1, false), iconType1);
     MoreIconsAPI::updateSimplePlayer(player1, iconType1, false);
 
     if (auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons")) {
         auto player2 = static_cast<SimplePlayer*>(layer->getChildByID("player2-icon"));
         auto iconType2 = (IconType)sdi->getSavedValue("lastmode", 0);
-        if (noLayer) player2->updatePlayerFrame(activeIcon(iconType2, true), iconType2);
+        if (noLayer) player2->updatePlayerFrame(vanillaIcon(iconType2, true), iconType2);
         MoreIconsAPI::updateSimplePlayer(player2, iconType2, true);
     }
 

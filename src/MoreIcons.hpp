@@ -58,8 +58,6 @@ public:
     inline static int severity = 0;
     inline static bool traditionalPacks = true;
 
-    static ColorInfo activeColors(bool dual);
-    static int activeIcon(IconType type, bool dual);
     static geode::Result<std::filesystem::path> createTrash();
     static bool doesExist(const std::filesystem::path& path);
     static void loadIcons(IconType type);
@@ -67,5 +65,7 @@ public:
     static void loadSettings();
     static void saveTrails();
     static void updateGarage(GJGarageLayer* layer = nullptr);
+    static ColorInfo vanillaColors(bool dual);
+    static int vanillaIcon(IconType type, bool dual);
     static std::string vanillaTexturePath(const std::string& path, bool skipSuffix);
 };

@@ -195,7 +195,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
         MoreIconsAPI::updateSimplePlayer(player, info->name, info->type);
 
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto [color1, color2, colorGlow, glow] = MoreIcons::activeColors(sdi && sdi->getSavedValue("2pselected", false));
+        auto [color1, color2, colorGlow, glow] = MoreIcons::vanillaColors(sdi && sdi->getSavedValue("2pselected", false));
         player->enableCustomGlowColor(colorGlow);
 
         auto iconButton = CCMenuItemExt::createSpriteExtra(itemIcon, [this, color1, color2, glow](CCMenuItemSpriteExtra* sender) {
