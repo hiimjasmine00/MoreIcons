@@ -20,14 +20,6 @@ bool MoreIcons::doesExist(const std::filesystem::path& path) {
 
 $on_mod(Loaded) {
     MoreIcons::loadSettings();
-    #ifdef GEODE_IS_ANDROID
-    auto assetsDir = Mod::get()->getTempDir() / "assets";
-    if (exists(assetsDir)) {
-        std::error_code code;
-        std::filesystem::remove_all(assetsDir, code);
-        if (code) log::error("{}: Failed to delete: {}", assetsDir, code.message());
-    }
-    #endif
 }
 
 $on_mod(DataSaved) {
@@ -83,33 +75,31 @@ void migrateFolderIcons(const std::filesystem::path& path) {
         directoryIterator(folderPath, [i, &folderPath, &migratedFolders](const std::filesystem::path& path, std::filesystem::file_type fileType) {
             if (fileType != std::filesystem::file_type::directory) return;
 
-            migratedFolders.asArray().inspect([&path](std::vector<matjson::Value>& vec) {
-                if (std::ranges::find(vec, path) == vec.end()) vec.push_back(path);
-            });
+            if (std::find(migratedFolders.begin(), migratedFolders.end(), path) != migratedFolders.end()) return;
+            else migratedFolders.push(path);
 
             std::vector<std::string> names;
 
             directoryIterator(path, [i, &names](const std::filesystem::path& path, std::filesystem::file_type fileType) {
-                if (fileType != std::filesystem::file_type::regular) return;
+                if (fileType != std::filesystem::file_type::regular || path.extension() != ".png") return;
 
-                if (path.extension() != ".png") return;
-
-                auto name = string::pathToString(path.stem());
-                if (name.ends_with("_2_001")) {
-                    if ((i != 5 && i != 6) || name.ends_with("_01_2_001") || name.ends_with("_02_2_001") ||
-                        name.ends_with("_03_2_001") || name.ends_with("_04_2_001")) names.push_back(name);
+                auto pathFilename = string::pathToString(path.filename());
+                auto pathStem = string::pathToString(path.stem());
+                if (pathStem.ends_with("_2_001")) {
+                    if ((i != 5 && i != 6) || pathStem.ends_with("_01_2_001") || pathStem.ends_with("_02_2_001") ||
+                        pathStem.ends_with("_03_2_001") || pathStem.ends_with("_04_2_001")) names.push_back(pathFilename);
                 }
-                else if (i == 3 && name.ends_with("_3_001")) names.push_back(name);
-                else if (name.ends_with("_extra_001")) {
-                    if ((i != 5 && i != 6) || name.ends_with("_01_extra_001")) names.push_back(name);
+                else if (i == 3 && pathStem.ends_with("_3_001")) names.push_back(pathFilename);
+                else if (pathStem.ends_with("_extra_001")) {
+                    if ((i != 5 && i != 6) || pathStem.ends_with("_01_extra_001")) names.push_back(pathFilename);
                 }
-                else if (name.ends_with("_glow_001")) {
-                    if ((i != 5 && i != 6) || name.ends_with("_01_glow_001") || name.ends_with("_02_glow_001") ||
-                        name.ends_with("_03_glow_001") || name.ends_with("_04_glow_001")) names.push_back(name);
+                else if (pathStem.ends_with("_glow_001")) {
+                    if ((i != 5 && i != 6) || pathStem.ends_with("_01_glow_001") || pathStem.ends_with("_02_glow_001") ||
+                        pathStem.ends_with("_03_glow_001") || pathStem.ends_with("_04_glow_001")) names.push_back(pathFilename);
                 }
-                else if (name.ends_with("_001")) {
-                    if ((i != 5 && i != 6) || name.ends_with("_01_001") || name.ends_with("_02_001") ||
-                        name.ends_with("_03_001") || name.ends_with("_04_001")) names.push_back(name);
+                else if (pathStem.ends_with("_001")) {
+                    if ((i != 5 && i != 6) || pathStem.ends_with("_01_001") || pathStem.ends_with("_02_001") ||
+                        pathStem.ends_with("_03_001") || pathStem.ends_with("_04_001")) names.push_back(pathFilename);
                 }
             });
 
@@ -117,17 +107,10 @@ void migrateFolderIcons(const std::filesystem::path& path) {
 
             texpack::Packer packer;
 
-            auto frameFailed = false;
-            for (auto& name : names) {
-                auto filename = name + ".png";
-                if (GEODE_UNWRAP_IF_ERR(err, packer.frame(filename, path / filename))) {
-                    log::error("{}: Failed to load {}: {}", path, filename, err);
-                    frameFailed = true;
-                    break;
-                }
+            for (auto& filename : names) {
+                if (GEODE_UNWRAP_IF_ERR(err, packer.frame(filename, path / filename)))
+                    return log::error("{}: Failed to load frame {}: {}", path, filename, err);
             }
-
-            if (frameFailed) return;
 
             if (GEODE_UNWRAP_IF_ERR(err, packer.pack())) return log::error("{}: Failed to pack frames: {}", path, err);
 
@@ -274,6 +257,8 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
 
     safeDebug("Pre-loading icon {} from {}", name, pack.name);
 
+    if (pathString.empty() && !path.empty()) printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
+
     auto texturePath = replaceEnd(pathString, 6, ".png");
     if (!MoreIcons::doesExist(texturePath)) return printLog(name, Severity::Error, "Texture file {}.png not found", pathStem);
 
@@ -328,6 +313,8 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
 
     safeDebug("Pre-loading vanilla icon {} from {}", name, pack.name);
 
+    if (pathString.empty() && !path.empty()) printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
+
     auto plistPath = replaceEnd(pathString, 4, ".plist");
     if (!MoreIcons::doesExist(plistPath)) plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", pathStem), false);
     if (!CCFileUtils::get()->isFileExist(plistPath)) return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
@@ -361,9 +348,12 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
 
 void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
     auto pathStem = string::pathToString(path.stem());
+    auto pathString = string::pathToString(path);
     auto name = pack.id.empty() ? pathStem : fmt::format("{}:{}", pack.id, pathStem);
 
     safeDebug("Pre-loading trail {} from {}", name, pack.name);
+
+    if (pathString.empty() && !path.empty()) printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
 
     if (MoreIconsAPI::hasIcon(name, IconType::Special)) return printLog(name, Severity::Warning, "Duplicate trail name");
 
@@ -377,7 +367,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     MoreIconsAPI::addIcon({
         .name = name,
-        .textures = { string::pathToString(path) },
+        .textures = { pathString },
         .frameNames = {},
         .sheetName = "",
         .packName = pack.name,
@@ -399,9 +389,13 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 
 void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
     auto pathStem = string::pathToString(path.stem());
+    auto pathString = string::pathToString(path);
     auto name = fmt::format("{}:{}", pack.id, pathStem);
 
     safeDebug("Pre-loading vanilla trail {} from {}", name, pack.name);
+
+    if (pathString.empty() && !path.empty()) printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
+
     auto trailID = numFromString<int>(pathStem.substr(7, pathStem.size() - 11)).unwrapOr(0);
     if (trailID == 0) trailID = -1;
 
@@ -412,7 +406,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     MoreIconsAPI::addIcon({
         .name = name,
-        .textures = { string::pathToString(path) },
+        .textures = { pathString },
         .frameNames = {},
         .sheetName = "",
         .packName = pack.name,
