@@ -5,7 +5,7 @@
 
 using namespace geode::prelude;
 
-typedef void(PlayerObject::*UpdateFunc)(int);
+using UpdateFunc = void(PlayerObject::*)(int);
 
 class $modify(MIPlayerObject, PlayerObject) {
     static void onModify(ModifyBase<ModifyDerive<MIPlayerObject, PlayerObject>>& self) {
@@ -20,10 +20,8 @@ class $modify(MIPlayerObject, PlayerObject) {
         return m_gameLayer && (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this);
     }
 
-    void updateIcon(IconType type) {
-        std::string icon;
-        if (p1()) icon = MoreIconsAPI::activeIcon(type, false);
-        else if (p2()) icon = MoreIconsAPI::activeIcon(type, true);
+    void updateIcon(IconType type, bool dual) {
+        auto icon = MoreIconsAPI::activeIcon(type, dual);
         if (!icon.empty()) MoreIconsAPI::updatePlayerObject(this, icon, type);
         else setUserObject("name"_spr, nullptr);
     }
@@ -31,14 +29,22 @@ class $modify(MIPlayerObject, PlayerObject) {
     bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool playLayer) {
         if (!PlayerObject::init(player, ship, gameLayer, layer, playLayer)) return false;
 
-        updateIcon(IconType::Cube);
-        updateIcon(IconType::Ship);
+        if (p1()) {
+            updateIcon(IconType::Cube, false);
+            updateIcon(IconType::Ship, false);
+        }
+        else if (p2()) {
+            updateIcon(IconType::Cube, true);
+            updateIcon(IconType::Ship, true);
+        }
 
         return true;
     }
 
     void updateIcon(UpdateFunc func, IconType type, int frame) {
-        auto mainPlayer = frame != 0 && (p1() || p2());
+        auto player1 = p1();
+        auto player2 = p2();
+        auto mainPlayer = frame != 0 && (player1 || player2);
         std::string iconName;
         if (mainPlayer && !MoreIconsAPI::preloadIcons && MoreIconsAPI::requestedIcons.contains(m_iconRequestID)) {
             auto& iconRequests = MoreIconsAPI::requestedIcons[m_iconRequestID];
@@ -47,7 +53,8 @@ class $modify(MIPlayerObject, PlayerObject) {
         if (!iconName.empty()) MoreIconsAPI::loadedIcons[{ iconName, type }]++;
         (this->*func)(frame);
         if (!mainPlayer) return setUserObject("name"_spr, nullptr);
-        updateIcon(type);
+        if (player1) updateIcon(type, false);
+        else if (player2) updateIcon(type, true);
         if (!iconName.empty()) MoreIconsAPI::loadedIcons[{ iconName, type }]--;
     }
 
@@ -63,12 +70,12 @@ class $modify(MIPlayerObject, PlayerObject) {
         updateIcon(&PlayerObject::updatePlayerRollFrame, IconType::Ball, frame);
     }
 
-    void updatePlayerDartFrame(int frame) {
-        updateIcon(&PlayerObject::updatePlayerDartFrame, IconType::Wave, frame);
-    }
-
     void updatePlayerBirdFrame(int frame) {
         updateIcon(&PlayerObject::updatePlayerBirdFrame, IconType::Ufo, frame);
+    }
+
+    void updatePlayerDartFrame(int frame) {
+        updateIcon(&PlayerObject::updatePlayerDartFrame, IconType::Wave, frame);
     }
 
     void createRobot(int frame) {
