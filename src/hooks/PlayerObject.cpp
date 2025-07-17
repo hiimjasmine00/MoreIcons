@@ -41,7 +41,7 @@ class $modify(MIPlayerObject, PlayerObject) {
         return true;
     }
 
-    void updateIcon(UpdateFunc func, IconType type, int frame) {
+    void updateIcon(int frame, IconType type, UpdateFunc func) {
         auto player1 = p1();
         auto player2 = p2();
         auto mainPlayer = frame != 0 && (player1 || player2);
@@ -59,39 +59,39 @@ class $modify(MIPlayerObject, PlayerObject) {
     }
 
     void updatePlayerFrame(int frame) {
-        updateIcon(&PlayerObject::updatePlayerFrame, IconType::Cube, frame);
+        updateIcon(frame, IconType::Cube, &PlayerObject::updatePlayerFrame);
     }
 
     void updatePlayerShipFrame(int frame) {
-        updateIcon(&PlayerObject::updatePlayerShipFrame, IconType::Ship, frame);
+        updateIcon(frame, IconType::Ship, &PlayerObject::updatePlayerShipFrame);
     }
 
     void updatePlayerRollFrame(int frame) {
-        updateIcon(&PlayerObject::updatePlayerRollFrame, IconType::Ball, frame);
+        updateIcon(frame, IconType::Ball, &PlayerObject::updatePlayerRollFrame);
     }
 
     void updatePlayerBirdFrame(int frame) {
-        updateIcon(&PlayerObject::updatePlayerBirdFrame, IconType::Ufo, frame);
+        updateIcon(frame, IconType::Ufo, &PlayerObject::updatePlayerBirdFrame);
     }
 
     void updatePlayerDartFrame(int frame) {
-        updateIcon(&PlayerObject::updatePlayerDartFrame, IconType::Wave, frame);
+        updateIcon(frame, IconType::Wave, &PlayerObject::updatePlayerDartFrame);
     }
 
     void createRobot(int frame) {
-        updateIcon(&PlayerObject::createRobot, IconType::Robot, frame);
+        updateIcon(frame, IconType::Robot, &PlayerObject::createRobot);
     }
 
     void createSpider(int frame) {
-        updateIcon(&PlayerObject::createSpider, IconType::Spider, frame);
+        updateIcon(frame, IconType::Spider, &PlayerObject::createSpider);
     }
 
     void updatePlayerSwingFrame(int frame) {
-        updateIcon(&PlayerObject::updatePlayerSwingFrame, IconType::Swing, frame);
+        updateIcon(frame, IconType::Swing, &PlayerObject::updatePlayerSwingFrame);
     }
 
     void updatePlayerJetpackFrame(int frame) {
-        updateIcon(&PlayerObject::updatePlayerJetpackFrame, IconType::Jetpack, frame);
+        updateIcon(frame, IconType::Jetpack, &PlayerObject::updatePlayerJetpackFrame);
     }
 
     void resetTrail() {
