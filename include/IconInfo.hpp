@@ -28,7 +28,30 @@ struct IconInfo {
         return name == other.name && type == other.type;
     }
 
-    bool operator==(const std::pair<std::string, IconType>& other) const {
-        return name == other.first && type == other.second;
+    std::strong_ordering operator<=>(const IconInfo& other) const {
+        if (type != other.type) return type <=> other.type;
+        if (name == other.name) return std::strong_ordering::equal;
+        if (packID.empty() && !other.packID.empty()) return std::strong_ordering::less;
+        if (!packID.empty() && other.packID.empty()) return std::strong_ordering::greater;
+
+        auto differentPack = packID != other.packID;
+        std::string_view a = differentPack ? packID : shortName, b = differentPack ? other.packID : other.shortName;
+
+        for (size_t aIt = 0, bIt = 0; aIt < a.size() && bIt < b.size();) {
+            if (isdigit(a[aIt]) && isdigit(b[bIt])) {
+                auto aStart = aIt, bStart = bIt;
+                for (; aIt < a.size() && isdigit(a[aIt]); aIt++);
+                for (; bIt < b.size() && isdigit(b[bIt]); bIt++);
+                auto aNum = a.substr(aStart, aIt - aStart), bNum = b.substr(bStart, bIt - bStart);
+                auto comparison = aNum.size() != bNum.size() ? aNum.size() <=> bNum.size() : aNum <=> bNum;
+                if (comparison != std::strong_ordering::equal) return comparison;
+            }
+            else {
+                auto comparison = tolower(a[aIt++]) <=> tolower(b[bIt++]);
+                if (comparison != std::strong_ordering::equal) return comparison;
+            }
+        }
+
+        return a.size() <=> b.size();
     }
 };
