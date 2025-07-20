@@ -12,7 +12,6 @@
 #include <texpack.hpp>
 
 using namespace geode::prelude;
-using namespace std::string_view_literals;
 
 $execute {
     new EventListener(+[](SimplePlayer* player, const std::string& icon, IconType type) {
