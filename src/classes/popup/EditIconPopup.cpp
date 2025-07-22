@@ -344,24 +344,17 @@ void EditIconPopup::addOrUpdateIcon(const std::string& name, const std::filesyst
     if (auto moreIconsPopup = CCScene::get()->getChildByType<MoreIconsPopup>(0)) moreIconsPopup->close();
 
     if (auto icon = MoreIconsAPI::getIcon(name, m_iconType)) MoreIconsAPI::updateIcon(icon);
-    else MoreIconsAPI::addIcon({
-        .name = name,
-        .textures = { string::pathToString(png) },
-        .frameNames = {},
-        .sheetName = string::pathToString(plist),
-        .packName = "More Icons",
-        .packID = "",
-        .type = m_iconType,
-        .trailID = 0,
-        .blend = false,
-        .tint = false,
-        .show = false,
-        .fade = 0.0f,
-        .stroke = 0.0f,
-        .shortName = name,
-        .vanilla = false,
-        .zipped = false
-    }, true);
+    else {
+        icon = MoreIconsAPI::addIcon(name, m_iconType,
+            string::pathToString(png), string::pathToString(plist), "", "More Icons", 0, {}, false, false);
+        if (MoreIconsAPI::preloadIcons) {
+            MoreIconsAPI::createFrames(icon->textures[0], icon->sheetName, icon->name, icon->type).inspect([icon](const ImageResult& image) {
+                MoreIconsAPI::addFrames(image, icon->frameNames);
+            }).inspectErr([icon](const std::string& err) {
+                log::error("{}: {}", icon->name, err);
+            });
+        }
+    }
 
     notify(NotificationIcon::Success, "{} saved!", name);
     MoreIcons::updateGarage();

@@ -25,8 +25,8 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     m_bgSprite->setID("background");
     m_closeBtn->setID("close-button");
 
-    m_fadeTime = info->fade;
-    m_strokeWidth = info->stroke;
+    m_fadeTime = info->trailInfo.fade;
+    m_strokeWidth = info->trailInfo.stroke;
 
     auto fadeTimeSlider = Slider::create(nullptr, nullptr, 0.8f);
     fadeTimeSlider->setPosition({ 100.0f, 87.5f });
@@ -91,7 +91,7 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
 
     auto blendToggle = CCMenuItemToggler::createWithStandardSprites(nullptr, nullptr, 0.8f);
     blendToggle->setPosition({ 60.0f, 60.0f });
-    blendToggle->toggle(info->blend);
+    blendToggle->toggle(info->trailInfo.blend);
     blendToggle->setID("blend-toggle");
     m_buttonMenu->addChild(blendToggle);
 
@@ -104,7 +104,7 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
 
     auto tintToggle = CCMenuItemToggler::createWithStandardSprites(nullptr, nullptr, 0.8f);
     tintToggle->setPosition({ 170.0f, 60.0f });
-    tintToggle->toggle(info->tint);
+    tintToggle->toggle(info->trailInfo.tint);
     tintToggle->setID("tint-toggle");
     m_buttonMenu->addChild(tintToggle);
 
@@ -117,7 +117,7 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
 
     auto showToggle = CCMenuItemToggler::createWithStandardSprites(nullptr, nullptr, 0.8f);
     showToggle->setPosition({ 280.0f, 60.0f });
-    showToggle->toggle(info->show);
+    showToggle->toggle(info->trailInfo.show);
     showToggle->setID("show-toggle");
     m_buttonMenu->addChild(showToggle);
 
@@ -129,11 +129,11 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     m_mainLayer->addChild(showLabel);
 
     auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", 0.8f), [this, blendToggle, tintToggle, showToggle, info](auto) {
-        info->fade = m_fadeTime;
-        info->stroke = m_strokeWidth;
-        info->blend = blendToggle->m_toggled;
-        info->tint = tintToggle->m_toggled;
-        info->show = showToggle->m_toggled;
+        info->trailInfo.fade = m_fadeTime;
+        info->trailInfo.stroke = m_strokeWidth;
+        info->trailInfo.blend = blendToggle->m_toggled;
+        info->trailInfo.tint = tintToggle->m_toggled;
+        info->trailInfo.show = showToggle->m_toggled;
         onClose(nullptr);
     });
     saveButton->setPosition({ 200.0f, 25.0f });

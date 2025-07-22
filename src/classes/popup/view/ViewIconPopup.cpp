@@ -3,6 +3,7 @@
 #include "../../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/loader/Mod.hpp>
 
 using namespace geode::prelude;
 
@@ -114,46 +115,21 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         }
     }
     else if (type == IconType::Special) {
-        auto stroke = 10.0f;
-        auto tint = true;
-        auto trailID = info ? info->trailID : id;
-        if (trailID != 0) switch (trailID) {
-            case 2:
-            case 7:
-                stroke = 14.0f;
-                tint = false;
-                break;
-            case 3:
-                stroke = 8.5f;
-                break;
-            case 4:
-                stroke = 10.0f;
-                break;
-            case 5:
-                stroke = 5.0f;
-                break;
-            case 6:
-                stroke = 3.0f;
-                break;
-        }
-        else {
-            stroke = info ? info->stroke : 14.0f;
-            tint = info && info->tint;
-        }
-
         auto streak = CCSprite::create((info ? info->textures[0] : fmt::format("streak_{:02}_001.png", id)).c_str());
         streak->setBlendFunc({
             GL_SRC_ALPHA,
-            (uint32_t)GL_ONE_MINUS_SRC_ALPHA - (trailID != 0 || (info && info->blend)) * (uint32_t)GL_SRC_ALPHA
+            (uint32_t)GL_ONE_MINUS_SRC_ALPHA - (info && info->trailInfo.blend) * (uint32_t)GL_SRC_ALPHA
         });
         streak->setPosition({ 175.0f, 50.0f });
         streak->setRotation(-90.0f);
         auto& size = streak->getContentSize();
-        streak->setScaleX(stroke / size.width);
+        streak->setScaleX(info->trailInfo.stroke / size.width);
         streak->setScaleY(320.0f / size.height);
-        if (tint) {
+        if (info->trailInfo.tint) {
             auto gameManager = GameManager::get();
-            streak->setColor(gameManager->colorForIdx(gameManager->m_playerColor2));
+            auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+            streak->setColor(gameManager->colorForIdx(
+                sdi && sdi->getSavedValue("2pselected", false) ? sdi->getSavedValue("color2", 0) : gameManager->m_playerColor2));
         }
         streak->setID("streak-preview");
         m_mainLayer->addChild(streak);

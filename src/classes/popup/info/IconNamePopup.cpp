@@ -18,16 +18,6 @@ IconNamePopup* IconNamePopup::create(IconInfo* info) {
     return nullptr;
 }
 
-Result<> replaceFile(const std::filesystem::path& oldPath, const std::filesystem::path& newPath) {
-    std::error_code code;
-    if (!MoreIcons::doesExist(oldPath)) return Ok();
-    if (MoreIcons::doesExist(newPath)) {
-        if (!std::filesystem::remove(newPath, code)) return Err("Failed to remove {}: {}", newPath.filename(), code.message());
-    }
-    std::filesystem::rename(oldPath, newPath, code);
-    return code ? Err("Failed to rename {}: {}", oldPath.filename(), code.message()) : Result<>(Ok());
-}
-
 bool IconNamePopup::setup(IconInfo* info) {
     auto unlockName = MoreIcons::uppercase[MoreIconsAPI::convertType(info->type)];
 
@@ -95,23 +85,23 @@ bool IconNamePopup::setup(IconInfo* info) {
             auto parent = std::filesystem::path(info->textures[0]).parent_path();
 
             if (info->type == IconType::Special) {
-                if (GEODE_UNWRAP_IF_ERR(err, replaceFile(parent / (old + ".png"), parent / (name + ".png"))))
+                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + ".png"), parent / (name + ".png"))))
                     return Notification::create(fmt::format("Failed to rename {}.png: {}", old, err), NotificationIcon::Error)->show();
-                if (GEODE_UNWRAP_IF_ERR(err, replaceFile(parent / (old + ".json"), parent / (name + ".json"))))
+                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + ".json"), parent / (name + ".json"))))
                     return Notification::create(fmt::format("Failed to rename {}.json: {}", old, err), NotificationIcon::Error)->show();
             }
             else if (info->type <= IconType::Jetpack) {
-                if (GEODE_UNWRAP_IF_ERR(err, replaceFile(parent / (old + "-uhd.png"), parent / (name + "-uhd.png"))))
+                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + "-uhd.png"), parent / (name + "-uhd.png"))))
                     return Notification::create(fmt::format("Failed to rename {}-uhd.png: {}", old, err), NotificationIcon::Error)->show();
-                if (GEODE_UNWRAP_IF_ERR(err, replaceFile(parent / (old + "-hd.png"), parent / (name + "-hd.png"))))
+                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + "-hd.png"), parent / (name + "-hd.png"))))
                     return Notification::create(fmt::format("Failed to rename {}-hd.png: {}", old, err), NotificationIcon::Error)->show();
-                if (GEODE_UNWRAP_IF_ERR(err, replaceFile(parent / (old + ".png"), parent / (name + ".png"))))
+                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + ".png"), parent / (name + ".png"))))
                     return Notification::create(fmt::format("Failed to rename {}.png: {}", old, err), NotificationIcon::Error)->show();
-                if (GEODE_UNWRAP_IF_ERR(err, replaceFile(parent / (old + "-uhd.plist"), parent / (name + "-uhd.plist"))))
+                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + "-uhd.plist"), parent / (name + "-uhd.plist"))))
                     return Notification::create(fmt::format("Failed to rename {}-uhd.plist: {}", old, err), NotificationIcon::Error)->show();
-                if (GEODE_UNWRAP_IF_ERR(err, replaceFile(parent / (old + "-hd.plist"), parent / (name + "-hd.plist"))))
+                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + "-hd.plist"), parent / (name + "-hd.plist"))))
                     return Notification::create(fmt::format("Failed to rename {}-hd.plist: {}", old, err), NotificationIcon::Error)->show();
-                if (GEODE_UNWRAP_IF_ERR(err, replaceFile(parent / (old + ".plist"), parent / (name + ".plist"))))
+                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + ".plist"), parent / (name + ".plist"))))
                     return Notification::create(fmt::format("Failed to rename {}.plist: {}", old, err), NotificationIcon::Error)->show();
             }
 

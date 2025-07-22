@@ -128,15 +128,6 @@ CCSprite* MoreIconsAPI::customTrail(const std::string& png) {
     return square;
 }
 
-Result<CCTexture2D*> createAndAddFrames(IconInfo* info) {
-    GEODE_UNWRAP_INTO(auto image, MoreIconsAPI::createFrames(info->textures[0], info->sheetName, info->name, info->type)
-        .inspectErr([info](const std::string& err) {
-            log::error("{}: {}", info->name, err);
-        }));
-
-    return Ok(MoreIconsAPI::addFrames(image, info->frameNames));
-}
-
 CCTexture2D* MoreIconsAPI::loadIcon(const std::string& name, IconType type, int requestID) {
     auto info = getIcon(name, type);
     if (!info) return nullptr;
@@ -148,7 +139,9 @@ CCTexture2D* MoreIconsAPI::loadIcon(const std::string& name, IconType type, int 
     auto& loadedIcon = loadedIcons[{ name, type }];
 
     if (loadedIcon < 1) {
-        GEODE_UNWRAP_INTO_IF_OK(texture, createAndAddFrames(info));
+        GEODE_UNWRAP_OR_ELSE(image, err, createFrames(info->textures[0], info->sheetName, info->name, info->type))
+            log::error("{}: {}", info->name, err);
+        else addFrames(image, info->frameNames);
     }
 
     auto& requestedIcon = requestedIcons[requestID][type];
@@ -281,11 +274,24 @@ std::string getFrameName(const std::string& name, const std::string& prefix, Ico
     return *suffix ? prefix.empty() ? suffix : GEODE_MOD_ID "/" + prefix + suffix : name;
 }
 
-void MoreIconsAPI::addIcon(IconInfo&& info, bool postLoad) {
-    auto& iconsVec = icons[info.type];
-    auto it = iconsVec.insert(std::ranges::upper_bound(iconsVec, info), std::move(info));
-
-    if (preloadIcons && postLoad) (void)createAndAddFrames(std::to_address(it));
+IconInfo* MoreIconsAPI::addIcon(
+    const std::string& name, IconType type, const std::string& png, const std::string& plist, const std::string& packID,
+    const std::string& packName, int trailID, const TrailInfo& trailInfo, bool vanilla, bool zipped
+) {
+    IconInfo info;
+    info.name = packID.empty() ? name : fmt::format("{}:{}", packID, name);
+    info.textures.push_back(png);
+    info.sheetName = plist;
+    info.packName = packName;
+    info.packID = packID;
+    info.type = type;
+    info.trailID = trailID;
+    info.trailInfo = trailInfo;
+    info.shortName = name;
+    info.vanilla = vanilla;
+    info.zipped = zipped;
+    auto& iconsVec = icons[type];
+    return std::to_address(iconsVec.insert(std::ranges::upper_bound(iconsVec, info), std::move(info)));
 }
 
 void MoreIconsAPI::moveIcon(IconInfo* info, const std::filesystem::path& path) {
@@ -298,7 +304,7 @@ void MoreIconsAPI::moveIcon(IconInfo* info, const std::filesystem::path& path) {
     auto textureCache = CCTextureCache::get();
     if (Ref texture = textureCache->textureForKey(oldPng.c_str())) {
         textureCache->removeTextureForKey(oldPng.c_str());
-        textureCache->m_pTextures->setObject(texture, info->textures[0]);
+        textureCache->m_pTextures->setObject(texture, newPng);
     }
 }
 

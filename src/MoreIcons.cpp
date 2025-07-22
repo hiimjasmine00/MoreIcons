@@ -11,13 +11,6 @@
 
 using namespace geode::prelude;
 
-bool MoreIcons::doesExist(const std::filesystem::path& path) {
-    std::error_code code;
-    auto exists = std::filesystem::exists(path, code);
-    if (code) log::error("{}: Failed to check existence: {}", path, code.message());
-    return exists;
-}
-
 $on_mod(Loaded) {
     MoreIcons::loadSettings();
 }
@@ -37,15 +30,40 @@ void MoreIcons::loadSettings() {
     MoreIconsAPI::preloadIcons = mod->getSettingValue<bool>("preload-icons");
 }
 
+bool MoreIcons::doesExist(const std::filesystem::path& path) {
+    std::error_code code;
+    auto exists = std::filesystem::exists(path, code);
+    if (code) log::error("{}: Failed to check existence: {}", path, code.message());
+    return exists;
+}
+
+Result<> MoreIcons::renameFile(const std::filesystem::path& from, const std::filesystem::path& to, bool overwrite, bool copy) {
+    std::error_code code;
+    if (!MoreIcons::doesExist(from)) return Ok();
+    if (overwrite && MoreIcons::doesExist(to)) {
+        if (!std::filesystem::remove(to, code)) return Err("Failed to remove {}: {}", to.filename(), code.message());
+    }
+    if (copy) {
+        auto dest = to;
+        for (int i = 1; MoreIcons::doesExist(dest); i++) {
+            dest.replace_filename(fmt::format("{} ({}){}", dest.stem(), i, dest.extension()));
+        }
+        std::filesystem::rename(from, dest, code);
+    }
+    else std::filesystem::rename(from, to, code);
+    return code ? Err("Failed to rename {}: {}", from.filename(), code.message()) : Result<>(Ok());
+}
+
 void directoryIterator(const std::filesystem::path& path, auto&& func) {
     std::error_code code;
     std::filesystem::directory_iterator it(path, code);
     if (code) return log::error("{}: Failed to create directory iterator: {}", path, code.message());
     for (; it != std::filesystem::end(it); it.increment(code)) {
         std::error_code code;
+        auto& itPath = it->path();
         auto type = it->status(code).type();
-        if constexpr (std::is_void_v<decltype(func(it->path(), type))>) func(it->path(), type);
-        else if (func(it->path(), type)) break;
+        if constexpr (std::is_void_v<decltype(func(itPath, type))>) func(itPath, type);
+        else if (func(itPath, type)) break;
     }
     if (code) return log::error("{}: Failed to iterate over directory: {}", path, code.message());
 }
@@ -115,21 +133,17 @@ void migrateFolderIcons(const std::filesystem::path& path) {
             if (GEODE_UNWRAP_IF_ERR(err, packer.pack())) return log::error("{}: Failed to pack frames: {}", path, err);
 
             auto pngPath = folderPath / path.filename().concat(".png");
-            if (MoreIcons::doesExist(pngPath)) {
-                std::error_code code;
-                std::filesystem::rename(pngPath, folderPath / pngPath.filename().concat(".bak"), code);
-                if (code) log::error("{}: Failed to rename existing image: {}", path, code.message());
-            }
+            MoreIcons::renameFile(pngPath, folderPath / path.filename().concat(".png")).inspectErr([&path](const std::string& err) {
+                log::error("{}: Failed to rename existing image: {}", path, err);
+            });
             packer.png(pngPath).inspectErr([&path](const std::string& err) {
                 log::error("{}: Failed to save image: {}", path, err);
             });
 
             auto plistPath = folderPath / path.filename().concat(".plist");
-            if (MoreIcons::doesExist(plistPath)) {
-                std::error_code code;
-                std::filesystem::rename(plistPath, folderPath / plistPath.filename().concat(".bak"), code);
-                if (code) log::error("{}: Failed to rename existing plist: {}", path, code.message());
-            }
+            MoreIcons::renameFile(plistPath, folderPath / path.filename().concat(".plist")).inspectErr([&path](const std::string& err) {
+                log::error("{}: Failed to rename existing plist: {}", path, err);
+            });
             packer.plist(plistPath, "icons/" + string::pathToString(pngPath.filename()), "    ").inspectErr([&path](const std::string& err) {
                 log::error("{}: Failed to save plist: {}", path, err);
             });
@@ -176,7 +190,7 @@ std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuff
     #ifdef GEODE_IS_MOBILE
     if (!skipSuffix && CCDirector::get()->getContentScaleFactor() >= 4.0f) {
         if (auto highGraphicsMobile = Loader::get()->getLoadedMod("weebify.high-graphics-android")) {
-            auto configDir = highGraphicsMobile->getConfigDir(false) / GEODE_STR(GEODE_GD_VERSION);
+            auto configDir = highGraphicsMobile->getConfigDir(false) / GEODE_GD_VERSION_STRING;
             if (doesExist(configDir)) return configDir / path;
         }
         return path;
@@ -186,15 +200,11 @@ std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuff
 }
 
 Result<std::filesystem::path> MoreIcons::createTrash() {
-    std::error_code code;
     auto trashPath = Mod::get()->getConfigDir() / "trash";
-    auto exists = doesExist(trashPath);
-    if (!exists) exists = std::filesystem::create_directories(trashPath, code);
-    if (!exists) return Err(code.message());
-    else {
-        std::filesystem::permissions(trashPath, std::filesystem::perms::all, code);
-        return Ok(trashPath);
-    }
+    GEODE_UNWRAP(file::createDirectoryAll(trashPath));
+    std::error_code code;
+    std::filesystem::permissions(trashPath, std::filesystem::perms::all, code);
+    return Ok(trashPath);
 }
 
 std::string replaceEnd(const std::string& str, size_t end, std::string_view replace) {
@@ -264,24 +274,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
 
     if (MoreIconsAPI::hasIcon(name, currentType)) return printLog(name, Severity::Warning, "Duplicate icon name");
 
-    MoreIconsAPI::addIcon({
-        .name = name,
-        .textures = { texturePath },
-        .frameNames = {},
-        .sheetName = pathString,
-        .packName = pack.name,
-        .packID = pack.id,
-        .type = currentType,
-        .trailID = 0,
-        .blend = false,
-        .tint = false,
-        .show = false,
-        .fade = 0.0f,
-        .stroke = 0.0f,
-        .shortName = shortName,
-        .vanilla = false,
-        .zipped = pack.zipped
-    });
+    MoreIconsAPI::addIcon(shortName, currentType, texturePath, pathString, pack.id, pack.name, 0, {}, false, pack.zipped);
 
     safeDebug("Finished pre-loading icon {} from {}", name, pack.name);
 }
@@ -324,24 +317,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
         icons.erase(icons.begin() + (icon - icons.data()));
     }
 
-    MoreIconsAPI::addIcon({
-        .name = name,
-        .textures = { pathString },
-        .frameNames = {},
-        .sheetName = plistPath,
-        .packName = pack.name,
-        .packID = pack.id,
-        .type = currentType,
-        .trailID = 0,
-        .blend = false,
-        .tint = false,
-        .show = false,
-        .fade = 0.0f,
-        .stroke = 0.0f,
-        .shortName = shortName,
-        .vanilla = true,
-        .zipped = pack.zipped
-    });
+    MoreIconsAPI::addIcon(shortName, currentType, pathString, plistPath, pack.id, pack.name, 0, {}, true, pack.zipped);
 
     safeDebug("Finished pre-loading vanilla icon {} from {}", name, pack.name);
 }
@@ -357,32 +333,8 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     if (MoreIconsAPI::hasIcon(name, IconType::Special)) return printLog(name, Severity::Warning, "Duplicate trail name");
 
-    auto json = file::readJson(path.parent_path() / (pathStem + ".json")).unwrapOr(matjson::makeObject({
-        { "blend", false },
-        { "tint", false },
-        { "show", false },
-        { "fade", 0.3f },
-        { "stroke", 14.0f }
-    }));
-
-    MoreIconsAPI::addIcon({
-        .name = name,
-        .textures = { pathString },
-        .frameNames = {},
-        .sheetName = "",
-        .packName = pack.name,
-        .packID = pack.id,
-        .type = IconType::Special,
-        .trailID = 0,
-        .blend = json.get("blend").andThen([](const matjson::Value& v) { return v.asBool(); }).unwrapOr(false),
-        .tint = json.get("tint").andThen([](const matjson::Value& v) { return v.asBool(); }).unwrapOr(false),
-        .show = json.get("show").andThen([](const matjson::Value& v) { return v.asBool(); }).unwrapOr(false),
-        .fade = json.get("fade").andThen([](const matjson::Value& v) { return v.as<float>(); }).unwrapOr(0.3f),
-        .stroke = json.get("stroke").andThen([](const matjson::Value& v) { return v.as<float>(); }).unwrapOr(14.0f),
-        .shortName = pathStem,
-        .vanilla = false,
-        .zipped = pack.zipped
-    });
+    MoreIconsAPI::addIcon(pathStem, IconType::Special, pathString, "", pack.id, pack.name, 0,
+        file::readFromJson<TrailInfo>(std::filesystem::path(path).replace_extension(".json")).unwrapOrDefault(), false, pack.zipped);
 
     safeDebug("Finished pre-loading trail {} from {}", name, pack.name);
 }
@@ -399,29 +351,42 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
     auto trailID = numFromString<int>(pathStem.substr(7, pathStem.size() - 11)).unwrapOr(0);
     if (trailID == 0) trailID = -1;
 
+    TrailInfo trailInfo;
+    trailInfo.blend = true;
+    switch (trailID) {
+        case 1:
+            trailInfo.tint = true;
+            trailInfo.stroke = 10.0f;
+            break;
+        case 3:
+            trailInfo.tint = true;
+            trailInfo.stroke = 8.5f;
+            break;
+        case 4:
+            trailInfo.tint = true;
+            trailInfo.fade = 0.4f;
+            trailInfo.stroke = 10.0f;
+            break;
+        case 5:
+            trailInfo.tint = true;
+            trailInfo.show = true;
+            trailInfo.fade = 0.6f;
+            trailInfo.stroke = 5.0f;
+            break;
+        case 6:
+            trailInfo.tint = true;
+            trailInfo.show = true;
+            trailInfo.fade = 1.0f;
+            trailInfo.stroke = 3.0f;
+            break;
+    }
+
     if (auto icon = MoreIconsAPI::getIcon(name, IconType::Special)) {
         auto& icons = MoreIconsAPI::icons[IconType::Special];
         icons.erase(icons.begin() + (icon - icons.data()));
     }
 
-    MoreIconsAPI::addIcon({
-        .name = name,
-        .textures = { pathString },
-        .frameNames = {},
-        .sheetName = "",
-        .packName = pack.name,
-        .packID = pack.id,
-        .type = IconType::Special,
-        .trailID = trailID,
-        .blend = false,
-        .tint = false,
-        .show = false,
-        .fade = 0.0f,
-        .stroke = 0.0f,
-        .shortName = pathStem,
-        .vanilla = true,
-        .zipped = pack.zipped
-    });
+    MoreIconsAPI::addIcon(pathStem, IconType::Special, pathString, "", pack.id, pack.name, trailID, trailInfo, true, pack.zipped);
 
     safeDebug("Finished pre-loading vanilla trail {} from {}", name, pack.name);
 }
@@ -441,9 +406,7 @@ void MoreIcons::loadIcons(IconType type) {
             auto path = pack.path / "config" / GEODE_MOD_ID / folder;
             if (!doesExist(path)) {
                 if (i == 0) {
-                    std::error_code code;
-                    std::filesystem::create_directories(path, code);
-                    if (code) log::error("{}: Failed to create directory: {}", path, code.message());
+                    if (GEODE_UNWRAP_IF_ERR(err, file::createDirectoryAll(path))) log::error("{}: {}", path, err);
                 }
                 continue;
             }
@@ -510,14 +473,12 @@ void MoreIcons::loadIcons(IconType type) {
 
 void MoreIcons::saveTrails() {
     for (auto& info : MoreIconsAPI::icons[IconType::Special]) {
-        if (info.trailID != 0) continue;
-        file::writeToJson(replaceEnd(info.textures[0], 4, ".json"), matjson::makeObject({
-            { "blend", info.blend },
-            { "tint", info.tint },
-            { "show", info.show },
-            { "fade", info.fade },
-            { "stroke", info.stroke }
-        })).inspectErr([info](const std::string& err) { log::error("{}: Failed to save trail info: {}", info.name, err); });
+        if (info.trailID == 0) {
+            file::writeToJson(std::filesystem::path(info.textures[0]).replace_extension(".json"), info.trailInfo)
+                .inspectErr([&info](const std::string& err) {
+                    log::error("{}: Failed to save trail info: {}", info.name, err);
+                });
+        }
     }
 }
 

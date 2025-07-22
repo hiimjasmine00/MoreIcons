@@ -174,8 +174,7 @@ bool MoreIconsPopup::setup() {
     m_mainLayer->addChild(gamemodesNode);
 
     auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [](auto) {
-        GEODE_UNWRAP_OR_ELSE(trashDir, err, MoreIcons::createTrash())
-            return Notification::create(fmt::format("Failed to create trash directory: {}", err), NotificationIcon::Error)->show();
+        GEODE_UNWRAP_OR_ELSE(trashDir, err, MoreIcons::createTrash()) return Notification::create(err, NotificationIcon::Error)->show();
         file::openFolder(trashDir);
     });
     trashButton->setPosition({ 435.0f, 5.0f });

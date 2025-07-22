@@ -63,7 +63,10 @@ public:
     static void loadIcons(IconType type, bool logs);
     static void unloadIcon(const std::string& name, IconType type, int requestID);
     static void unloadIcons(int requestID);
-    static void addIcon(IconInfo&& info, bool postLoad = false);
+    static IconInfo* addIcon(
+        const std::string& name, IconType type, const std::string& png, const std::string& plist, const std::string& packID,
+        const std::string& packName, int trailID, const TrailInfo& trailInfo, bool vanilla, bool zipped
+    );
     static void moveIcon(IconInfo* info, const std::filesystem::path& path);
     static void removeIcon(IconInfo* info);
     static void renameIcon(IconInfo* info, const std::string& name);

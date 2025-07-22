@@ -29,38 +29,39 @@ void notify(NotificationIcon icon, fmt::format_string<T...> message, T&&... args
     Notification::create(fmt::format(message, std::forward<T>(args)...), icon)->show();
 }
 
-Result<> renameFile(const std::filesystem::path& oldPath, const std::filesystem::path& newPath) {
-    auto parent = newPath.parent_path();
-    auto filename = newPath.filename();
-    for (int i = 1; MoreIcons::doesExist(parent / filename); i++) {
-        filename = fmt::format("{} ({}){}", newPath.stem(), i, newPath.extension());
-    }
-    std::error_code code;
-    std::filesystem::rename(oldPath, parent / filename, code);
-    return code ? Err(code.message()) : Result<>(Ok());
+void notify(NotificationIcon icon, const std::string& message) {
+    Notification::create(message, icon)->show();
 }
 
 Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem::path& dest, bool uhd) {
     #ifdef GEODE_IS_MOBILE
-    auto fullSrc = (uhd ? dirs::getModConfigDir() / "weebify.high-graphics-android" / GEODE_STR(GEODE_GD_VERSION) : dirs::getResourcesDir()) / src;
+    auto fullSrc = (uhd ? dirs::getModConfigDir() / "weebify.high-graphics-android" / GEODE_GD_VERSION_STRING : dirs::getResourcesDir()) / src;
     #else
     auto fullSrc = dirs::getResourcesDir() / src;
     #endif
+    std::vector<unsigned char> vec;
     #ifdef GEODE_IS_ANDROID
     if (!uhd) {
         auto size = 0ul;
         auto data = CCFileUtils::get()->getFileData(fullSrc.c_str(), "rb", &size);
         if (!data) return Err("Failed to read file");
 
-        std::vector vec(data, data + size);
+        vec.assign(data, data + size);
         delete[] data;
-
-        return file::writeBinary(dest, vec);
     }
+    else {
+        GEODE_UNWRAP_INTO(vec, file::readBinary(fullSrc).mapErr([](const std::string& err) {
+            return fmt::format("Failed to read file: {}", err);
+        }));
+    }
+    #else
+    GEODE_UNWRAP_INTO(vec, file::readBinary(fullSrc).mapErr([](const std::string& err) {
+        return fmt::format("Failed to read file: {}", err);
+    }));
     #endif
-    std::error_code code;
-    std::filesystem::copy_file(fullSrc, dest, code);
-    return code ? Err(code.message()) : Result<>(Ok());
+    return file::writeBinary(dest, vec).mapErr([](const std::string& err) {
+        return fmt::format("Failed to write file: {}", err);
+    });
 }
 
 void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash) {
@@ -69,16 +70,20 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
 
     if (m_info->type == IconType::Special) {
         auto filename = texturePath.filename();
-        if (GEODE_UNWRAP_IF_ERR(err, renameFile(texturePath, directory / filename)))
-            return notify(NotificationIcon::Error, "Failed to {} {}: {}.", trash ? "trash" : "move", filename, err);
+        if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(texturePath, directory / filename, false, true)))
+            return notify(NotificationIcon::Error, "Failed to {} {}: {}", trash ? "trash" : "move", filename, err);
 
+        auto jsonName = texturePath.filename().replace_extension(".json");
+        auto jsonPath = parentDir / jsonName;
         if (trash) {
-            auto jsonName = texturePath.filename().replace_extension(".json");
-            auto jsonPath = parentDir / jsonName;
             if (MoreIcons::doesExist(jsonPath)) {
-                if (GEODE_UNWRAP_IF_ERR(err, renameFile(jsonPath, directory / jsonName)))
-                    return notify(NotificationIcon::Error, "Failed to trash {}: {}.", jsonName, err);
+                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(jsonPath, directory / jsonName, false, true)))
+                    return notify(NotificationIcon::Error, "Failed to trash {}: {}", jsonName, err);
             }
+        }
+        else {
+            if (GEODE_UNWRAP_IF_ERR(err, file::writeToJson(jsonPath, m_info->trailInfo)))
+                return notify(NotificationIcon::Error, "Failed to write trail info to {}: {}", jsonName, err);
         }
     }
     else if (m_info->type <= IconType::Jetpack) {
@@ -121,16 +126,15 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             }
         }
 
-        std::error_code code;
         for (int i = 0; i < files.size(); i++) {
             auto& file = files[i];
             auto filename = file.filename();
-            if (GEODE_UNWRAP_IF_ERR(err, renameFile(file, directory / filename))) {
+            if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(file, directory / filename, false, true))) {
                 for (int j = 0; j < i; j++) {
                     auto& file2 = files[j];
-                    std::filesystem::rename(directory / file2.filename(), file2, code);
+                    (void)MoreIcons::renameFile(directory / file2.filename(), file2, false);
                 }
-                return notify(NotificationIcon::Error, "Failed to {} {}: {}.", trash ? "trash" : "move", filename, err);
+                return notify(NotificationIcon::Error, "Failed to {} {}: {}", trash ? "trash" : "move", filename, err);
             }
         }
     }
@@ -245,10 +249,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
                     auto parent = std::filesystem::path(m_info->textures[0]).parent_path();
                     if (type <= IconType::Jetpack) parent = parent.parent_path();
                     auto dir = parent / "config" / GEODE_MOD_ID / MoreIcons::folders[miType];
-                    std::error_code code;
-                    auto exists = MoreIcons::doesExist(dir);
-                    if (!exists) exists = std::filesystem::create_directories(dir, code);
-                    if (!exists) return notify(NotificationIcon::Error, "Failed to create directory: {}", code.message());
+                    if (GEODE_UNWRAP_IF_ERR(err, file::createDirectoryAll(dir))) return notify(NotificationIcon::Error, err);
                     moveIcon(dir, false);
                 }
             );
@@ -274,8 +275,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
                 [this](auto, bool btn2) {
                     if (!btn2) return;
 
-                    GEODE_UNWRAP_OR_ELSE(trashDir, err, MoreIcons::createTrash())
-                        return notify(NotificationIcon::Error, "Failed to create trash directory: {}", err);
+                    GEODE_UNWRAP_OR_ELSE(trashDir, err, MoreIcons::createTrash()) return notify(NotificationIcon::Error, err);
 
                     moveIcon(trashDir, true);
                 }

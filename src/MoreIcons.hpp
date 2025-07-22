@@ -63,6 +63,7 @@ public:
     static void loadIcons(IconType type);
     static void loadPacks();
     static void loadSettings();
+    static geode::Result<> renameFile(const std::filesystem::path& from, const std::filesystem::path& to, bool overwrite = true, bool copy = false);
     static void saveTrails();
     static void updateGarage(GJGarageLayer* layer = nullptr);
     static ColorInfo vanillaColors(bool dual);
