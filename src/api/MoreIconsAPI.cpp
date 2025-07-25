@@ -193,7 +193,7 @@ void MoreIconsAPI::loadIcons(IconType type, bool logs) {
 }
 
 void MoreIconsAPI::unloadIcon(const std::string& name, IconType type, int requestID) {
-    if (preloadIcons) return;
+    if (preloadIcons || name.empty()) return;
 
     auto info = getIcon(name, type);
     if (!info) return;
@@ -216,16 +216,21 @@ void MoreIconsAPI::unloadIcon(const std::string& name, IconType type, int reques
 }
 
 void MoreIconsAPI::unloadIcons(int requestID) {
-    if (preloadIcons || !requestedIcons.contains(requestID)) return;
+    if (preloadIcons) return;
 
-    auto& iconRequests = requestedIcons[requestID];
+    auto foundRequests = requestedIcons.find(requestID);
+    if (foundRequests == requestedIcons.end()) return;
+
+    auto& iconRequests = foundRequests->second;
     for (int i = 0; i < 9; i++) {
         auto type = (IconType)i;
-        if (!iconRequests.contains(type)) continue;
-        auto& icon = iconRequests[type];
-        if (!icon.empty()) {
-            unloadIcon(icon, type, requestID);
-            if (!requestedIcons.contains(requestID)) return;
+        if (auto found = iconRequests.find(type); found != iconRequests.end()) {
+            auto& icon = found->second;
+            if (!icon.empty()) {
+                auto lastIcon = iconRequests.size() == 1;
+                unloadIcon(icon, type, requestID);
+                if (lastIcon) return;
+            }
         }
     }
 
@@ -278,20 +283,24 @@ IconInfo* MoreIconsAPI::addIcon(
     const std::string& name, IconType type, const std::string& png, const std::string& plist, const std::string& packID,
     const std::string& packName, int trailID, const TrailInfo& trailInfo, bool vanilla, bool zipped
 ) {
-    IconInfo info;
-    info.name = packID.empty() ? name : fmt::format("{}:{}", packID, name);
-    info.textures.push_back(png);
-    info.sheetName = plist;
-    info.packName = packName;
-    info.packID = packID;
-    info.type = type;
-    info.trailID = trailID;
-    info.trailInfo = trailInfo;
-    info.shortName = name;
-    info.vanilla = vanilla;
-    info.zipped = zipped;
     auto& iconsVec = icons[type];
-    return std::to_address(iconsVec.insert(std::ranges::upper_bound(iconsVec, info), std::move(info)));
+    return std::to_address(iconsVec.emplace(
+        std::ranges::find_if(iconsVec, [&name, &packID, type](const IconInfo& icon) {
+            return icon.compare(packID, name, type) >= 0;
+        }),
+        packID.empty() ? name : fmt::format("{}:{}", packID, name),
+        std::vector<std::string>({ png }),
+        std::vector<std::string>(),
+        plist,
+        packName,
+        packID,
+        type,
+        trailID,
+        trailInfo,
+        name,
+        vanilla,
+        zipped
+    ));
 }
 
 void MoreIconsAPI::moveIcon(IconInfo* info, const std::filesystem::path& path) {
@@ -322,8 +331,9 @@ void MoreIconsAPI::removeIcon(IconInfo* info) {
     if (!preloadIcons) {
         std::vector<int> requestIDs;
         for (auto& [requestID, iconRequests] : requestedIcons) {
-            if (iconRequests.contains(type) && iconRequests[type] == name) {
-                iconRequests.erase(type);
+            auto iconRequest = iconRequests.find(type);
+            if (iconRequest != iconRequests.end() && iconRequest->second == name) {
+                iconRequests.erase(iconRequest);
                 if (iconRequests.empty()) requestIDs.push_back(requestID);
             }
         }
@@ -375,13 +385,21 @@ void MoreIconsAPI::renameIcon(IconInfo* info, const std::string& name) {
     }
 
     for (auto& [requestID, iconRequests] : requestedIcons) {
-        if (iconRequests.contains(type) && iconRequests[type] == oldName) iconRequests[type] = newName;
+        if (auto found = iconRequests.find(type); found != iconRequests.end() && found->second == oldName) iconRequests[type] = newName;
     }
 
     if (activeIcon(type, false) == oldName) setIcon(newName, type, false);
     if (activeIcon(type, true) == oldName) setIcon(newName, type, true);
 
-    std::ranges::sort(icons[type]);
+    auto& iconsVec = icons[type];
+    auto it = std::ranges::find_if(iconsVec, [info](const IconInfo& icon) {
+        return info->compare(icon) >= 0;
+    });
+    if (std::to_address(it) == info) return;
+
+    auto icon = std::move(*info);
+    iconsVec.erase(iconsVec.begin() + (info - iconsVec.data()));
+    iconsVec.insert(it, std::move(icon));
 }
 
 void MoreIconsAPI::updateIcon(IconInfo* info) {
@@ -661,7 +679,7 @@ Result<Ref<CCDictionary>> MoreIconsAPI::createFrames(
     if (!json.contains("frames")) return Err("No frames <dict> element found");
 
     auto format = json.get("metadata").andThen([](const matjson::Value& v) {
-        return v.get("format").andThen([](const matjson::Value& v) { return v.asInt(); });
+        return v.get("format").andThen([](const matjson::Value& v) { return v.as<int>(); });
     }).unwrapOr(0);
 
     auto frames = createRef<CCDictionary>();

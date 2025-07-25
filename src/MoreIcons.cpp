@@ -82,7 +82,7 @@ void migrateFolderIcons(const std::filesystem::path& path) {
     safeInfo("Beginning folder icon migration in {}", path);
 
     auto& saveContainer = Mod::get()->getSaveContainer();
-    if (!saveContainer.contains("migrated-folders")) saveContainer["migrated-folders"] = matjson::Value::array();
+    if (!saveContainer.contains("migrated-folders")) saveContainer.set("migrated-folders", matjson::Value::array());
 
     auto& migratedFolders = saveContainer["migrated-folders"];
 

@@ -56,36 +56,46 @@ struct IconInfo {
     bool zipped;
 
     bool operator==(const IconInfo& other) const {
-        return name == other.name && type == other.type;
+        return type == other.type && name == other.name;
     }
 
     std::strong_ordering operator<=>(const IconInfo& other) const {
-        if (type != other.type) return type <=> other.type;
-        if (name == other.name) return std::strong_ordering::equal;
-        if (packID.empty() && !other.packID.empty()) return std::strong_ordering::less;
-        if (!packID.empty() && other.packID.empty()) return std::strong_ordering::greater;
+        return compare(other) <=> 0;
+    }
 
-        auto differentPack = packID != other.packID;
-        std::string_view a = differentPack ? packID : shortName;
-        std::string_view b = differentPack ? other.packID : other.shortName;
+    int compare(const IconInfo& other) const {
+        return compare(other.packID, other.shortName, other.type);
+    }
+
+    int compare(const std::string& packID2, const std::string& shortName2, IconType type2) const {
+        auto comparison = type <=> type2;
+        if (comparison != std::strong_ordering::equal) return comparison < 0 ? -1 : 1;
+
+        auto samePack = packID == packID2;
+        if (samePack && shortName == shortName2) return 0;
+        if (packID.empty() && !packID2.empty()) return -1;
+        if (!packID.empty() && packID2.empty()) return 1;
+
+        std::string_view a = samePack ? shortName : packID;
+        std::string_view b = samePack ? shortName2 : packID2;
 
         for (size_t aIt = 0, bIt = 0; aIt < a.size() && bIt < b.size();) {
             if (isdigit(a[aIt]) && isdigit(b[bIt])) {
                 auto aStart = aIt;
-                auto bStart = bIt;
                 for (; aIt < a.size() && isdigit(a[aIt]); aIt++);
+                auto aSize = aIt - aStart;
+
+                auto bStart = bIt;
                 for (; bIt < b.size() && isdigit(b[bIt]); bIt++);
-                auto aNum = a.substr(aStart, aIt - aStart);
-                auto bNum = b.substr(bStart, bIt - bStart);
-                auto comparison = aNum.size() != bNum.size() ? aNum.size() <=> bNum.size() : aNum <=> bNum;
-                if (comparison != std::strong_ordering::equal) return comparison;
+                auto bSize = bIt - bStart;
+
+                comparison = aSize == bSize ? a.substr(aStart, aSize) <=> b.substr(bStart, bSize) : aSize <=> bSize;
             }
-            else {
-                auto comparison = tolower(a[aIt++]) <=> tolower(b[bIt++]);
-                if (comparison != std::strong_ordering::equal) return comparison;
-            }
+            else comparison = tolower(a[aIt++]) <=> tolower(b[bIt++]);
+
+            if (comparison != std::strong_ordering::equal) return comparison < 0 ? -1 : 1;
         }
 
-        return a.size() <=> b.size();
+        return a.size() < b.size() ? -1 : a.size() > b.size() ? 1 : 0;
     }
 };

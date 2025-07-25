@@ -191,10 +191,10 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         f->m_navMenu->removeAllChildren();
         auto navDotAmount = (iconCount + 35) / 36;
+        auto found = f->m_pages.find(m_iconType);
+        auto index = found != f->m_pages.end() ? found->second : navDotAmount + count;
         for (int i = count; i < navDotAmount + count; i++) {
-            auto pages = f->m_pages;
-            auto dotSprite = CCSprite::createWithSpriteFrameName(
-                pages.contains(m_iconType) && i == pages[m_iconType] ? "gj_navDotBtn_on_001.png" : "gj_navDotBtn_off_001.png");
+            auto dotSprite = CCSprite::createWithSpriteFrameName(i == index ? "gj_navDotBtn_on_001.png" : "gj_navDotBtn_off_001.png");
             dotSprite->setScale(0.9f);
             auto dot = CCMenuItemSpriteExtra::create(dotSprite, this, menu_selector(MIGarageLayer::onCustomNavigate));
             dot->setTag(i);
@@ -274,7 +274,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto f = m_fields.self();
         if (!f->m_initialized) return;
 
-        setupCustomPage(f->m_pages[type] = f->m_pages.contains(type) ? f->m_pages[type] : findIconPage(type));
+        setupCustomPage(f->m_pages.try_emplace(type, findIconPage(type)).first->second);
     }
 
     std::span<IconInfo> getPage() {

@@ -46,10 +46,13 @@ class $modify(MIPlayerObject, PlayerObject) {
         auto player2 = p2();
         auto mainPlayer = frame != 0 && (player1 || player2);
         std::string iconName;
-        if (mainPlayer && !MoreIconsAPI::preloadIcons && MoreIconsAPI::requestedIcons.contains(m_iconRequestID)) {
-            auto& iconRequests = MoreIconsAPI::requestedIcons[m_iconRequestID];
-            if (iconRequests.contains(type)) iconName = iconRequests[type];
+        if (mainPlayer && !MoreIconsAPI::preloadIcons) {
+            if (auto foundRequests = MoreIconsAPI::requestedIcons.find(m_iconRequestID); foundRequests != MoreIconsAPI::requestedIcons.end()) {
+                auto& iconRequests = foundRequests->second;
+                if (auto found = iconRequests.find(type); found != iconRequests.end()) iconName = found->second;
+            }
         }
+
         if (!iconName.empty()) MoreIconsAPI::loadedIcons[{ iconName, type }]++;
         (this->*func)(frame);
         if (!mainPlayer) return setUserObject("name"_spr, nullptr);

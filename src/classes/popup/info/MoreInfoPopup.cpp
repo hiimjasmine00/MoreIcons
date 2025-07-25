@@ -149,7 +149,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
 
 bool MoreInfoPopup::setup(IconInfo* info) {
     setID("MoreInfoPopup");
-    setTitle(info->name.substr(info->name.find(':') + 1), "goldFont.fnt", 0.8f, 16.0f);
+    setTitle(info->shortName, "goldFont.fnt", 0.8f, 16.0f);
     m_title->setID("more-info-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");

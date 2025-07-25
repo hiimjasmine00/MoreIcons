@@ -155,7 +155,9 @@ void LazyIcon::createComplexIcon() {
         if (!usedTexture) continue;
 
         std::string_view texture = usedTexture->valueForKey("texture")->m_sString;
-        auto index = texture.size() >= spider + 11 ? numFromString<int>(texture.substr(spider + 9, 2)).unwrapOr(0) : 0;
+        if (texture.size() < spider + 11) continue;
+
+        auto index = numFromString<int>(texture.substr(spider + 9, 2)).unwrapOr(0);
         if (index <= 0) continue;
 
         std::string_view customID = usedTexture->valueForKey("customID")->m_sString;
