@@ -19,10 +19,10 @@ jobs:
           build-config: RelWithDebInfo
 
         - name: macOS
-          os: macos-latest
+          os: macos-15
 
         - name: iOS
-          os: macos-latest
+          os: macos-15
           target: iOS
 
         - name: Android32
