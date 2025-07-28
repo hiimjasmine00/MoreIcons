@@ -69,7 +69,7 @@ struct IconInfo {
 
     int compare(const std::string& packID2, const std::string& shortName2, IconType type2) const {
         auto comparison = type <=> type2;
-        if (comparison != std::strong_ordering::equal) return comparison < 0 ? -1 : 1;
+        if (comparison != 0) return comparison < 0 ? -1 : 1;
 
         auto samePack = packID == packID2;
         if (samePack && shortName == shortName2) return 0;
@@ -93,7 +93,7 @@ struct IconInfo {
             }
             else comparison = tolower(a[aIt++]) <=> tolower(b[bIt++]);
 
-            if (comparison != std::strong_ordering::equal) return comparison < 0 ? -1 : 1;
+            if (comparison != 0) return comparison < 0 ? -1 : 1;
         }
 
         return a.size() < b.size() ? -1 : a.size() > b.size() ? 1 : 0;

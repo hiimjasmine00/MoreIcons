@@ -20,6 +20,10 @@ public:
         "icon", "ship", "ball", "UFO", "wave", "robot", "spider",
         "swing", "jetpack", "death effect", "trail", "", "ship fire"
     };
+    inline static constexpr std::array uppercase = {
+        "Icon", "Ship", "Ball", "UFO", "Wave", "Robot", "Spider",
+        "Swing", "Jetpack", "Death Effect", "Trail", "", "Ship Fire"
+    };
     inline static std::map<IconType, std::vector<IconInfo>> icons = {
         { IconType::Cube, {} },
         { IconType::Ship, {} },
@@ -53,19 +57,15 @@ public:
         ret->release();
         return ret;
     }
-    template <typename... T>
-    static cocos2d::CCSpriteFrame* getFrame(fmt::format_string<T...> format, T&&... args) {
-        return getFrameInternal(format, fmt::make_format_args(args...));
-    }
-    static cocos2d::CCSpriteFrame* getFrameInternal(fmt::string_view format, fmt::format_args args);
+    static cocos2d::CCSpriteFrame* getFrame(std::string_view name);
     static cocos2d::CCSprite* customTrail(const std::string& png);
     static cocos2d::CCTexture2D* loadIcon(const std::string& name, IconType type, int requestID);
     static void loadIcons(IconType type, bool logs);
     static void unloadIcon(const std::string& name, IconType type, int requestID);
     static void unloadIcons(int requestID);
     static IconInfo* addIcon(
-        const std::string& name, IconType type, const std::string& png, const std::string& plist, const std::string& packID,
-        const std::string& packName, int trailID, const TrailInfo& trailInfo, bool vanilla, bool zipped
+        const std::string& name, const std::string& shortName, IconType type, const std::string& png, const std::string& plist,
+        const std::string& packID, const std::string& packName, int trailID, const TrailInfo& trailInfo, bool vanilla, bool zipped
     );
     static void moveIcon(IconInfo* info, const std::filesystem::path& path);
     static void removeIcon(IconInfo* info);

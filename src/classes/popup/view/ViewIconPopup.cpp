@@ -1,5 +1,4 @@
 #include "ViewIconPopup.hpp"
-#include "../../../MoreIcons.hpp"
 #include "../../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
@@ -28,7 +27,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
     auto miType = MoreIconsAPI::convertType(type);
 
     setID("ViewIconPopup");
-    setTitle(fmt::format("{} Viewer", MoreIcons::uppercase[miType]));
+    setTitle(fmt::format("{} Viewer", MoreIconsAPI::uppercase[miType]));
     m_title->setID("view-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -77,7 +76,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
 
             auto& subSuffixes = suffixes[i];
             for (int j = 0; j < subSuffixes.size(); j++) {
-                if (auto spriteFrame = MoreIconsAPI::getFrame("{}{}", prefix, subSuffixes[j])) {
+                if (auto spriteFrame = MoreIconsAPI::getFrame(prefix + subSuffixes[j])) {
                     auto sprite = CCSprite::createWithSpriteFrame(spriteFrame);
                     auto& size = sprite->getContentSize();
                     sprite->setPosition(size / 2.0f);

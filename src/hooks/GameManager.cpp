@@ -70,11 +70,11 @@ class $modify(MIGameManager, GameManager) {
         CCTexture2D* texture = nullptr;
         auto iconKey = keyForIcon(id, type);
 
-        auto pngName = fmt::format("{}.png", sheetName);
+        auto pngName = sheetName + ".png";
         auto textureCache = CCTextureCache::get();
         if (m_iconLoadCounts[iconKey] < 1) {
             texture = textureCache->addImage(pngName.c_str(), false);
-            CCSpriteFrameCache::get()->addSpriteFramesWithFile(fmt::format("{}.plist", sheetName).c_str(), texture);
+            CCSpriteFrameCache::get()->addSpriteFramesWithFile((sheetName + ".plist").c_str(), texture);
         }
         else texture = textureCache->textureForKey(pngName.c_str());
 

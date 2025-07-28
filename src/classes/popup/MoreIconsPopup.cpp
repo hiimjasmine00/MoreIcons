@@ -110,7 +110,7 @@ bool MoreIconsPopup::setup() {
             gamemodeMenu->addChild(severityIcon);
         }
 
-        auto label = CCLabelBMFont::create(fmt::format("{}s", MoreIcons::uppercase[i]).c_str(), "bigFont.fnt");
+        auto label = CCLabelBMFont::create(fmt::format("{}s", MoreIconsAPI::uppercase[i]).c_str(), "bigFont.fnt");
         label->setPosition({ 35.0f, 76.0f });
         label->limitLabelWidth(65.0f, 0.45f, 0.0f);
         label->setColor(colors[i]);

@@ -177,7 +177,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     m_mainLayer->addChild(customLabel);
 
     auto descriptionArea = TextArea::create(fmt::format("This <cg>{}</c> is added by the <cl>More Icons</c> mod.",
-        MoreIcons::uppercase[miType]), "bigFont.fnt", 1.0f, 600.0f, { 0.5f, 1.0f }, 42.0f, false);
+        MoreIconsAPI::uppercase[miType]), "bigFont.fnt", 1.0f, 600.0f, { 0.5f, 1.0f }, 42.0f, false);
     descriptionArea->setPosition({ 150.0f, 91.0f });
     descriptionArea->setScale(0.4f);
     descriptionArea->setID("description-area");
@@ -238,7 +238,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
         operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.7f, [this, miType](auto) {
             auto lower = MoreIconsAPI::lowercase[miType];
             createQuickPopup(
-                fmt::format("Convert {}", MoreIcons::uppercase[miType]).c_str(),
+                fmt::format("Convert {}", MoreIconsAPI::uppercase[miType]).c_str(),
                 fmt::format("Are you sure you want to <cy>convert</c> this <cg>{}</c> into a <cl>More Icons</c> <cg>{}</c>?", lower, lower),
                 "No",
                 "Yes",
@@ -268,7 +268,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
 
         operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [this, miType](auto) {
             createQuickPopup(
-                fmt::format("Trash {}", MoreIcons::uppercase[miType]).c_str(),
+                fmt::format("Trash {}", MoreIconsAPI::uppercase[miType]).c_str(),
                 fmt::format("Are you sure you want to <cr>trash</c> this <cg>{}</c>?", MoreIconsAPI::lowercase[miType]),
                 "No",
                 "Yes",

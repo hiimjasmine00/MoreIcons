@@ -37,10 +37,6 @@ public:
         "icon", "ship", "ball", "ufo", "wave", "robot", "spider",
         "swing", "jetpack", "death", "trail", "", "fire"
     };
-    inline static constexpr std::array uppercase = {
-        "Icon", "Ship", "Ball", "UFO", "Wave", "Robot", "Spider",
-        "Swing", "Jetpack", "Death Effect", "Trail", "", "Ship Fire"
-    };
     inline static std::vector<IconPack> packs;
     inline static std::vector<LogData> logs;
     inline static std::map<IconType, int> severities = {

@@ -19,7 +19,7 @@ LogLayer* LogLayer::create(IconType type) {
 
 bool LogLayer::setup(IconType type) {
     setID("LogLayer");
-    setTitle(fmt::format("{} Logs", MoreIcons::uppercase[MoreIconsAPI::convertType(type)]));
+    setTitle(fmt::format("{} Logs", MoreIconsAPI::uppercase[MoreIconsAPI::convertType(type)]));
     m_title->setID("more-icons-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");

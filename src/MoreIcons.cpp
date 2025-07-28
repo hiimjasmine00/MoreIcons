@@ -274,7 +274,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
 
     if (MoreIconsAPI::hasIcon(name, currentType)) return printLog(name, Severity::Warning, "Duplicate icon name");
 
-    MoreIconsAPI::addIcon(shortName, currentType, texturePath, pathString, pack.id, pack.name, 0, {}, false, pack.zipped);
+    MoreIconsAPI::addIcon(name, shortName, currentType, texturePath, pathString, pack.id, pack.name, 0, {}, false, pack.zipped);
 
     safeDebug("Finished pre-loading icon {} from {}", name, pack.name);
 }
@@ -317,7 +317,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
         icons.erase(icons.begin() + (icon - icons.data()));
     }
 
-    MoreIconsAPI::addIcon(shortName, currentType, pathString, plistPath, pack.id, pack.name, 0, {}, true, pack.zipped);
+    MoreIconsAPI::addIcon(name, shortName, currentType, pathString, plistPath, pack.id, pack.name, 0, {}, true, pack.zipped);
 
     safeDebug("Finished pre-loading vanilla icon {} from {}", name, pack.name);
 }
@@ -333,7 +333,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     if (MoreIconsAPI::hasIcon(name, IconType::Special)) return printLog(name, Severity::Warning, "Duplicate trail name");
 
-    MoreIconsAPI::addIcon(pathStem, IconType::Special, pathString, "", pack.id, pack.name, 0,
+    MoreIconsAPI::addIcon(name, pathStem, IconType::Special, pathString, "", pack.id, pack.name, 0,
         file::readFromJson<TrailInfo>(std::filesystem::path(path).replace_extension(".json")).unwrapOrDefault(), false, pack.zipped);
 
     safeDebug("Finished pre-loading trail {} from {}", name, pack.name);
@@ -386,7 +386,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
         icons.erase(icons.begin() + (icon - icons.data()));
     }
 
-    MoreIconsAPI::addIcon(pathStem, IconType::Special, pathString, "", pack.id, pack.name, trailID, trailInfo, true, pack.zipped);
+    MoreIconsAPI::addIcon(name, pathStem, IconType::Special, pathString, "", pack.id, pack.name, trailID, trailInfo, true, pack.zipped);
 
     safeDebug("Finished pre-loading vanilla trail {} from {}", name, pack.name);
 }

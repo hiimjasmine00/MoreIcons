@@ -75,12 +75,12 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info) {
 
 void LazyIcon::createSimpleIcon() {
     auto ufo = m_type == IconType::Ufo;
-    auto iconName = fmt::format("{}{}", m_info ? GEODE_MOD_ID "/" : "", m_name);
-    auto primaryFrame = MoreIconsAPI::getFrame("{}_001.png", iconName);
-    auto secondaryFrame = MoreIconsAPI::getFrame("{}_2_001.png", iconName);
-    auto tertiaryFrame = ufo ? MoreIconsAPI::getFrame("{}_3_001.png", iconName) : nullptr;
-    auto glowFrame = MoreIconsAPI::getFrame("{}_glow_001.png", iconName);
-    auto extraFrame = MoreIconsAPI::getFrame("{}_extra_001.png", iconName);
+    auto iconName = (m_info ? GEODE_MOD_ID "/" : "") + m_name;
+    auto primaryFrame = MoreIconsAPI::getFrame(iconName + "_001.png");
+    auto secondaryFrame = MoreIconsAPI::getFrame(iconName + "_2_001.png");
+    auto tertiaryFrame = ufo ? MoreIconsAPI::getFrame(iconName + "_3_001.png") : nullptr;
+    auto glowFrame = MoreIconsAPI::getFrame(iconName + "_glow_001.png");
+    auto extraFrame = MoreIconsAPI::getFrame(iconName + "_extra_001.png");
 
     auto normalImage = getNormalImage();
 
@@ -122,7 +122,7 @@ void LazyIcon::createSimpleIcon() {
 
 void LazyIcon::createComplexIcon() {
     auto spider = m_type == IconType::Spider;
-    auto def = spider ? "Spider" : "Robot";
+    auto def = MoreIconsAPI::uppercase[(int)m_type];
     auto anim = "idle";
 
     auto definition = ObjectManager::instance()->getDefinition(def);
@@ -171,21 +171,21 @@ void LazyIcon::createComplexIcon() {
         partNode->m_propagateFlipChanges = true;
         partNode->setID(fmt::format("part-node-{}", i + 1));
 
-        if (auto primaryFrame = MoreIconsAPI::getFrame("{}_{:02}_001.png", iconName, index)) {
+        if (auto primaryFrame = MoreIconsAPI::getFrame(fmt::format("{}_{:02}_001.png", iconName, index))) {
             auto sprite = CCSprite::createWithSpriteFrame(primaryFrame);
             sprite->setColor(spriteColor3B);
             sprite->setID(fmt::format("primary-sprite-{}", i + 1));
             partNode->addChild(sprite, 0);
         }
 
-        if (auto secondaryFrame = MoreIconsAPI::getFrame("{}_{:02}_2_001.png", iconName, index)) {
+        if (auto secondaryFrame = MoreIconsAPI::getFrame(fmt::format("{}_{:02}_2_001.png", iconName, index))) {
             auto sprite = CCSprite::createWithSpriteFrame(secondaryFrame);
             sprite->setColor(spriteColor3B);
             sprite->setID(fmt::format("secondary-sprite-{}", i + 1));
             partNode->addChild(sprite, -1);
         }
 
-        if (auto glowFrame = MoreIconsAPI::getFrame("{}_{:02}_glow_001.png", iconName, index)) {
+        if (auto glowFrame = MoreIconsAPI::getFrame(fmt::format("{}_{:02}_glow_001.png", iconName, index))) {
             auto sprite = CCSprite::createWithSpriteFrame(glowFrame);
             sprite->setID(fmt::format("glow-sprite-{}", i + 1));
             glowNode->addChild(sprite, -1);
@@ -193,7 +193,7 @@ void LazyIcon::createComplexIcon() {
         }
 
         if (index == 1) {
-            if (auto extraFrame = MoreIconsAPI::getFrame("{}_01_extra_001.png", iconName)) {
+            if (auto extraFrame = MoreIconsAPI::getFrame(fmt::format("{}_01_extra_001.png", iconName))) {
                 auto sprite = CCSprite::createWithSpriteFrame(extraFrame);
                 sprite->setID(fmt::format("extra-sprite-{}", i + 1));
                 partNode->addChild(sprite, 1);

@@ -19,7 +19,7 @@ IconNamePopup* IconNamePopup::create(IconInfo* info) {
 }
 
 bool IconNamePopup::setup(IconInfo* info) {
-    auto unlockName = MoreIcons::uppercase[MoreIconsAPI::convertType(info->type)];
+    auto unlockName = MoreIconsAPI::uppercase[MoreIconsAPI::convertType(info->type)];
 
     setID("IconNamePopup");
     setTitle(fmt::format("Edit {} Name", unlockName));
@@ -126,7 +126,7 @@ void IconNamePopup::onClose(cocos2d::CCObject* sender) {
 
     auto type = MoreIconsAPI::convertType(m_iconType);
     createQuickPopup(
-        fmt::format("Exit {} Name Editor", MoreIcons::uppercase[type]).c_str(),
+        fmt::format("Exit {} Name Editor", MoreIconsAPI::uppercase[type]).c_str(),
         fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} name editor</c>?\n<cr>All unsaved changes will be lost!</c>",
             MoreIconsAPI::lowercase[type]),
         "No",

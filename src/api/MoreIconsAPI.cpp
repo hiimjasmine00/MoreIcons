@@ -105,14 +105,10 @@ bool MoreIconsAPI::hasIcon(IconType type, bool dual) {
     return hasIcon(activeIcon(type, dual), type);
 }
 
-CCSpriteFrame* getFrameByName(const std::string& name) {
-    auto spriteFrame = static_cast<CCSpriteFrame*>(CCSpriteFrameCache::get()->m_pSpriteFrames->objectForKey(name));
+CCSpriteFrame* MoreIconsAPI::getFrame(std::string_view name) {
+    auto spriteFrame = static_cast<CCSpriteFrame*>(CCSpriteFrameCache::get()->m_pSpriteFrames->objectForKey({ name.data(), name.size() }));
     if (!spriteFrame || spriteFrame->getTag() == 105871529) spriteFrame = nullptr;
     return spriteFrame;
-}
-
-CCSpriteFrame* MoreIconsAPI::getFrameInternal(fmt::string_view format, fmt::format_args args) {
-    return getFrameByName(fmt::vformat(format, args));
 }
 
 CCSprite* MoreIconsAPI::customTrail(const std::string& png) {
@@ -280,15 +276,15 @@ std::string getFrameName(const std::string& name, const std::string& prefix, Ico
 }
 
 IconInfo* MoreIconsAPI::addIcon(
-    const std::string& name, IconType type, const std::string& png, const std::string& plist, const std::string& packID,
-    const std::string& packName, int trailID, const TrailInfo& trailInfo, bool vanilla, bool zipped
+    const std::string& name, const std::string& shortName, IconType type, const std::string& png, const std::string& plist,
+    const std::string& packID, const std::string& packName, int trailID, const TrailInfo& trailInfo, bool vanilla, bool zipped
 ) {
     auto& iconsVec = icons[type];
     return std::to_address(iconsVec.emplace(
-        std::ranges::find_if(iconsVec, [&name, &packID, type](const IconInfo& icon) {
-            return icon.compare(packID, name, type) >= 0;
+        std::ranges::find_if(iconsVec, [&packID, &shortName, type](const IconInfo& icon) {
+            return icon.compare(packID, shortName, type) >= 0;
         }),
-        packID.empty() ? name : fmt::format("{}:{}", packID, name),
+        name,
         std::vector<std::string>({ png }),
         std::vector<std::string>(),
         plist,
@@ -297,7 +293,7 @@ IconInfo* MoreIconsAPI::addIcon(
         type,
         trailID,
         trailInfo,
-        name,
+        shortName,
         vanilla,
         zipped
     ));
@@ -371,7 +367,7 @@ void MoreIconsAPI::renameIcon(IconInfo* info, const std::string& name) {
 
         auto spriteFrameCache = CCSpriteFrameCache::get();
         for (auto& frameName : info->frameNames) {
-            if (Ref spriteFrame = getFrameByName(frameName)) {
+            if (Ref spriteFrame = getFrame(frameName)) {
                 spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
                 frameName = getFrameName(frameName, newName, type);
                 spriteFrameCache->addSpriteFrame(spriteFrame, frameName.c_str());
@@ -424,7 +420,7 @@ void MoreIconsAPI::updateIcon(IconInfo* info) {
 
     info->frameNames.clear();
     for (auto [frameName, frame] : CCDictionaryExt<std::string, CCSpriteFrame*>(frames)) {
-        if (auto spriteFrame = getFrameByName(frameName)) {
+        if (auto spriteFrame = getFrame(frameName)) {
             spriteFrame->m_obOffset = frame->m_obOffset;
             spriteFrame->m_obOriginalSize = frame->m_obOriginalSize;
             spriteFrame->m_obRectInPixels = frame->m_obRectInPixels;
@@ -475,19 +471,19 @@ void MoreIconsAPI::updateSimplePlayer(SimplePlayer* player, const std::string& i
 
     if (load) loadIcon(icon, type, player->m_iconRequestID);
 
-    player->m_firstLayer->setDisplayFrame(getFrame("{}_001.png"_spr, icon));
+    player->m_firstLayer->setDisplayFrame(getFrame(fmt::format("{}_001.png"_spr, icon)));
     player->m_firstLayer->setScale(type == IconType::Ball ? 0.9f : 1.0f);
     player->m_firstLayer->setPosition({ 0.0f, type == IconType::Ufo ? -7.0f : 0.0f });
-    player->m_secondLayer->setDisplayFrame(getFrame("{}_2_001.png"_spr, icon));
+    player->m_secondLayer->setDisplayFrame(getFrame(fmt::format("{}_2_001.png"_spr, icon)));
     auto firstCenter = player->m_firstLayer->getContentSize() / 2.0f;
     player->m_secondLayer->setPosition(firstCenter);
-    player->m_outlineSprite->setDisplayFrame(getFrame("{}_glow_001.png"_spr, icon));
+    player->m_outlineSprite->setDisplayFrame(getFrame(fmt::format("{}_glow_001.png"_spr, icon)));
     player->m_outlineSprite->setPosition(firstCenter);
     if (type == IconType::Ufo) {
-        player->m_birdDome->setDisplayFrame(getFrame("{}_3_001.png"_spr, icon));
+        player->m_birdDome->setDisplayFrame(getFrame(fmt::format("{}_3_001.png"_spr, icon)));
         player->m_birdDome->setPosition(firstCenter);
     }
-    auto extraFrame = getFrame("{}_extra_001.png"_spr, icon);
+    auto extraFrame = getFrame(fmt::format("{}_extra_001.png"_spr, icon));
     player->m_detailSprite->setVisible(extraFrame != nullptr);
     if (extraFrame) {
         player->m_detailSprite->setDisplayFrame(extraFrame);
@@ -516,20 +512,20 @@ void MoreIconsAPI::updateRobotSprite(GJRobotSprite* sprite, const std::string& i
         auto tag = spritePart->getTag();
 
         spritePart->setBatchNode(nullptr);
-        spritePart->setDisplayFrame(getFrame("{}_{:02}_001.png"_spr, icon, tag));
+        spritePart->setDisplayFrame(getFrame(fmt::format("{}_{:02}_001.png"_spr, icon, tag)));
         if (auto secondSprite = static_cast<CCSprite*>(sprite->m_secondArray->objectAtIndex(i))) {
             secondSprite->setBatchNode(nullptr);
-            secondSprite->setDisplayFrame(getFrame("{}_{:02}_2_001.png"_spr, icon, tag));
+            secondSprite->setDisplayFrame(getFrame(fmt::format("{}_{:02}_2_001.png"_spr, icon, tag)));
             secondSprite->setPosition(spritePart->getContentSize() / 2.0f);
         }
 
         if (auto glowChild = getChild<CCSprite>(sprite->m_glowSprite, i)) {
             glowChild->setBatchNode(nullptr);
-            glowChild->setDisplayFrame(getFrame("{}_{:02}_glow_001.png"_spr, icon, tag));
+            glowChild->setDisplayFrame(getFrame(fmt::format("{}_{:02}_glow_001.png"_spr, icon, tag)));
         }
 
         if (spritePart == sprite->m_headSprite) {
-            auto extraFrame = getFrame("{}_{:02}_extra_001.png"_spr, icon, tag);
+            auto extraFrame = getFrame(fmt::format("{}_{:02}_extra_001.png"_spr, icon, tag));
             if (extraFrame) {
                 if (sprite->m_extraSprite) {
                     sprite->m_extraSprite->setBatchNode(nullptr);
@@ -582,16 +578,16 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& i
     auto outlineSprite = isVehicle ? object->m_vehicleGlow : object->m_iconGlow;
     auto detailSprite = isVehicle ? object->m_vehicleSpriteWhitener : object->m_iconSpriteWhitener;
 
-    firstLayer->setDisplayFrame(getFrame("{}_001.png"_spr, icon));
-    secondLayer->setDisplayFrame(getFrame("{}_2_001.png"_spr, icon));
+    firstLayer->setDisplayFrame(getFrame(fmt::format("{}_001.png"_spr, icon)));
+    secondLayer->setDisplayFrame(getFrame(fmt::format("{}_2_001.png"_spr, icon)));
     auto firstCenter = firstLayer->getContentSize() / 2.0f;
     secondLayer->setPosition(firstCenter);
     if (type == IconType::Ufo) {
-        object->m_birdVehicle->setDisplayFrame(getFrame("{}_3_001.png"_spr, icon));
+        object->m_birdVehicle->setDisplayFrame(getFrame(fmt::format("{}_3_001.png"_spr, icon)));
         object->m_birdVehicle->setPosition(firstCenter);
     }
-    outlineSprite->setDisplayFrame(getFrame("{}_glow_001.png"_spr, icon));
-    auto extraFrame = getFrame("{}_extra_001.png"_spr, icon);
+    outlineSprite->setDisplayFrame(getFrame(fmt::format("{}_glow_001.png"_spr, icon)));
+    auto extraFrame = getFrame(fmt::format("{}_extra_001.png"_spr, icon));
     detailSprite->setVisible(extraFrame != nullptr);
     if (extraFrame) {
         detailSprite->setDisplayFrame(extraFrame);

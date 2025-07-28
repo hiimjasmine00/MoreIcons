@@ -21,7 +21,7 @@ IconViewPopup* IconViewPopup::create(IconType type, bool custom) {
 
 bool IconViewPopup::setup(IconType type, bool custom) {
     setID("IconViewPopup");
-    setTitle(fmt::format("{} {}s", custom ? "Custom" : "Vanilla", MoreIcons::uppercase[MoreIconsAPI::convertType(type)]));
+    setTitle(fmt::format("{} {}s", custom ? "Custom" : "Vanilla", MoreIconsAPI::uppercase[MoreIconsAPI::convertType(type)]));
     m_title->setID("icon-view-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");

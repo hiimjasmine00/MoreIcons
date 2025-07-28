@@ -37,7 +37,7 @@ bool EditIconPopup::setup(IconType type) {
     auto miType = MoreIconsAPI::convertType(type);
 
     setID("EditIconPopup");
-    setTitle(fmt::format("{} Editor", MoreIcons::uppercase[miType]));
+    setTitle(fmt::format("{} Editor", MoreIconsAPI::uppercase[miType]));
     m_title->setID("edit-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -85,7 +85,7 @@ bool EditIconPopup::setup(IconType type) {
             for (int j = 0; j < subSuffixes.size(); j++) {
                 auto& suffix = subSuffixes[j];
 
-                auto spriteFrame = MoreIconsAPI::getFrame("{}01{}", prefix, suffix);
+                auto spriteFrame = MoreIconsAPI::getFrame(fmt::format("{}01{}", prefix, suffix));
                 if (spriteFrame) m_frames->setObject(spriteFrame, suffix);
 
                 auto sprite = CCSprite::createWithSpriteFrame(spriteFrame ? spriteFrame : crossFrame);
@@ -345,7 +345,7 @@ void EditIconPopup::addOrUpdateIcon(const std::string& name, const std::filesyst
 
     if (auto icon = MoreIconsAPI::getIcon(name, m_iconType)) MoreIconsAPI::updateIcon(icon);
     else {
-        icon = MoreIconsAPI::addIcon(name, m_iconType,
+        icon = MoreIconsAPI::addIcon(name, name, m_iconType,
             string::pathToString(png), string::pathToString(plist), "", "More Icons", 0, {}, false, false);
         if (MoreIconsAPI::preloadIcons) {
             MoreIconsAPI::createFrames(icon->textures[0], icon->sheetName, icon->name, icon->type).inspect([icon](const ImageResult& image) {
@@ -461,7 +461,7 @@ void EditIconPopup::onClose(CCObject* sender) {
 
     auto type = MoreIconsAPI::convertType(m_iconType);
     createQuickPopup(
-        fmt::format("Exit {} Editor", MoreIcons::uppercase[type]).c_str(),
+        fmt::format("Exit {} Editor", MoreIconsAPI::uppercase[type]).c_str(),
         fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} editor</c>?\n<cr>All unsaved changes will be lost!</c>",
             MoreIconsAPI::lowercase[type]),
         "No",
