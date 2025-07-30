@@ -21,18 +21,7 @@ class $modify(MIGameManager, GameManager) {
         if (!m_reloadTextures) return;
 
         MoreIcons::saveTrails();
-        MoreIconsAPI::icons[IconType::Cube].clear();
-        MoreIconsAPI::icons[IconType::Ship].clear();
-        MoreIconsAPI::icons[IconType::Ball].clear();
-        MoreIconsAPI::icons[IconType::Ufo].clear();
-        MoreIconsAPI::icons[IconType::Wave].clear();
-        MoreIconsAPI::icons[IconType::Robot].clear();
-        MoreIconsAPI::icons[IconType::Spider].clear();
-        MoreIconsAPI::icons[IconType::Swing].clear();
-        MoreIconsAPI::icons[IconType::Jetpack].clear();
-        MoreIconsAPI::icons[IconType::Special].clear();
-        MoreIconsAPI::requestedIcons.clear();
-        MoreIconsAPI::loadedIcons.clear();
+        MoreIconsAPI::reset();
         MoreIcons::logs.clear();
         MoreIcons::severity = Severity::Debug;
         MoreIcons::severities[IconType::Cube] = Severity::Debug;
@@ -70,11 +59,11 @@ class $modify(MIGameManager, GameManager) {
         CCTexture2D* texture = nullptr;
         auto iconKey = keyForIcon(id, type);
 
-        auto pngName = sheetName + ".png";
-        auto textureCache = CCTextureCache::get();
+        auto pngName = fmt::format("{}.png", sheetName);
+        auto textureCache = MoreIconsAPI::get<CCTextureCache>();
         if (m_iconLoadCounts[iconKey] < 1) {
             texture = textureCache->addImage(pngName.c_str(), false);
-            CCSpriteFrameCache::get()->addSpriteFramesWithFile((sheetName + ".plist").c_str(), texture);
+            MoreIconsAPI::get<CCSpriteFrameCache>()->addSpriteFramesWithFile(fmt::format("{}.plist", sheetName).c_str(), texture);
         }
         else texture = textureCache->textureForKey(pngName.c_str());
 

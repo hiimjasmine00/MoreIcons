@@ -43,7 +43,7 @@ Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem
     #ifdef GEODE_IS_ANDROID
     if (!uhd) {
         auto size = 0ul;
-        auto data = CCFileUtils::get()->getFileData(fullSrc.c_str(), "rb", &size);
+        auto data = MoreIconsAPI::get<CCFileUtils>()->getFileData(fullSrc.c_str(), "rb", &size);
         if (!data) return Err("Failed to read file");
 
         vec.assign(data, data + size);
@@ -192,7 +192,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     }
 
     if (info->type <= IconType::Jetpack) {
-        auto itemIcon = GJItemIcon::createBrowserItem(GameManager::get()->iconTypeToUnlockType(info->type), 1);
+        auto itemIcon = GJItemIcon::createBrowserItem(MoreIconsAPI::get<GameManager>()->iconTypeToUnlockType(info->type), 1);
         itemIcon->setScale(1.25f - hasPack * 0.15f);
 
         auto player = static_cast<SimplePlayer*>(itemIcon->m_player);

@@ -188,7 +188,7 @@ void MoreIcons::loadPacks() {
 
 std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuffix) {
     #ifdef GEODE_IS_MOBILE
-    if (!skipSuffix && CCDirector::get()->getContentScaleFactor() >= 4.0f) {
+    if (!skipSuffix && MoreIconsAPI::get<CCDirector>()->getContentScaleFactor() >= 4.0f) {
         if (auto highGraphicsMobile = Loader::get()->getLoadedMod("weebify.high-graphics-android")) {
             auto configDir = highGraphicsMobile->getConfigDir(false) / GEODE_GD_VERSION_STRING;
             if (doesExist(configDir)) return configDir / path;
@@ -224,7 +224,7 @@ void printLog(const std::string& name, int severity, fmt::format_string<Args...>
 }
 
 void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
-    auto factor = CCDirector::get()->getContentScaleFactor();
+    auto factor = MoreIconsAPI::get<CCDirector>()->getContentScaleFactor();
     auto pathFilename = string::pathToString(path.filename());
     auto pathStem = string::pathToString(path.stem());
     auto pathString = string::pathToString(path);
@@ -280,7 +280,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
 }
 
 void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
-    auto factor = CCDirector::get()->getContentScaleFactor();
+    auto factor = MoreIconsAPI::get<CCDirector>()->getContentScaleFactor();
     auto pathFilename = string::pathToString(path.filename());
     auto pathStem = string::pathToString(path.stem());
     auto pathString = string::pathToString(path);
@@ -310,7 +310,8 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
 
     auto plistPath = replaceEnd(pathString, 4, ".plist");
     if (!MoreIcons::doesExist(plistPath)) plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", pathStem), false);
-    if (!CCFileUtils::get()->isFileExist(plistPath)) return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
+    if (!MoreIconsAPI::get<CCFileUtils>()->isFileExist(plistPath))
+        return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
 
     if (auto icon = MoreIconsAPI::getIcon(name, currentType)) {
         auto& icons = MoreIconsAPI::icons[currentType];
@@ -483,7 +484,7 @@ void MoreIcons::saveTrails() {
 }
 
 ColorInfo MoreIcons::vanillaColors(bool dual) {
-    auto gameManager = GameManager::get();
+    auto gameManager = MoreIconsAPI::get<GameManager>();
     auto sdi = dual ? Loader::get()->getLoadedMod("weebify.separate_dual_icons") : nullptr;
     return {
         .color1 = gameManager->colorForIdx(sdi ? sdi->getSavedValue("color1", 0) : gameManager->m_playerColor),
@@ -494,7 +495,7 @@ ColorInfo MoreIcons::vanillaColors(bool dual) {
 }
 
 int MoreIcons::vanillaIcon(IconType type, bool dual) {
-    auto gameManager = GameManager::get();
+    auto gameManager = MoreIconsAPI::get<GameManager>();
     auto sdi = dual ? Loader::get()->getLoadedMod("weebify.separate_dual_icons") : nullptr;
     switch (type) {
         case IconType::Cube: return sdi ? sdi->getSavedValue("cube", 1) : gameManager->m_playerFrame;
@@ -515,10 +516,10 @@ int MoreIcons::vanillaIcon(IconType type, bool dual) {
 
 void MoreIcons::updateGarage(GJGarageLayer* layer) {
     auto noLayer = layer == nullptr;
-    if (noLayer) layer = CCScene::get()->getChildByType<GJGarageLayer>(0);
+    if (noLayer) layer = MoreIconsAPI::get<CCScene>()->getChildByType<GJGarageLayer>(0);
     if (!layer) return;
 
-    auto gameManager = GameManager::get();
+    auto gameManager = MoreIconsAPI::get<GameManager>();
     auto player1 = layer->m_playerObject;
     auto iconType1 = gameManager->m_playerIconType;
     if (noLayer) player1->updatePlayerFrame(vanillaIcon(iconType1, false), iconType1);

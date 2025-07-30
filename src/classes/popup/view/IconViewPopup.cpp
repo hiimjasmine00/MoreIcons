@@ -28,7 +28,7 @@ bool IconViewPopup::setup(IconType type, bool custom) {
     m_bgSprite->setID("background");
     m_closeBtn->setID("close-button");
 
-    auto gameManager = GameManager::get();
+    auto gameManager = MoreIconsAPI::get<GameManager>();
     auto scrollLayer = BiggerScrollLayer::create(400.0f, 230.0f, 5.0f, 15.0f);
     scrollLayer->m_contentLayer->setLayout(
         RowLayout::create()->setGap(roundf(7.5f / GJItemIcon::scaleForType(gameManager->iconTypeToUnlockType(type))))->setGrowCrossAxis(true));

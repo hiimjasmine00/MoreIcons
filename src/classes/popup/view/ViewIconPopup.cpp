@@ -66,7 +66,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         m_mainLayer->addChild(player);
 
         auto prefix = info ? GEODE_MOD_ID "/" + info->name : fmt::format("{}{:02}", MoreIconsAPI::prefixes[miType], id);
-        auto spriteFrameCache = CCSpriteFrameCache::get();
+        auto spriteFrameCache = MoreIconsAPI::get<CCSpriteFrameCache>();
         for (int i = 0; i < suffixes.size(); i++) {
             auto container = CCNode::create();
             container->setPosition({ 175.0f, 100.0f + isRobot * 40.0f - i * 30.0f + std::max(i - 1, 0) * 10.0f });
@@ -125,7 +125,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         streak->setScaleX(info->trailInfo.stroke / size.width);
         streak->setScaleY(320.0f / size.height);
         if (info->trailInfo.tint) {
-            auto gameManager = GameManager::get();
+            auto gameManager = MoreIconsAPI::get<GameManager>();
             auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
             streak->setColor(gameManager->colorForIdx(
                 sdi && sdi->getSavedValue("2pselected", false) ? sdi->getSavedValue("color2", 0) : gameManager->m_playerColor2));

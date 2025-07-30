@@ -72,7 +72,7 @@ bool EditIconPopup::setup(IconType type) {
         m_mainLayer->addChild(m_player);
 
         auto prefix = MoreIconsAPI::prefixes[miType];
-        auto spriteFrameCache = CCSpriteFrameCache::get();
+        auto spriteFrameCache = MoreIconsAPI::get<CCSpriteFrameCache>();
         auto crossFrame = spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
         for (int i = 0; i < suffixes.size(); i++) {
             auto frameMenu = CCMenu::create();
@@ -179,7 +179,7 @@ bool EditIconPopup::setup(IconType type) {
         }
         else if (m_iconType <= IconType::Jetpack) {
             auto parent = configDir / folder;
-            auto factor = CCDirector::get()->getContentScaleFactor();
+            auto factor = MoreIconsAPI::get<CCDirector>()->getContentScaleFactor();
             auto filename = iconName + (factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : "");
             auto png = parent / (filename + ".png");
             auto plist = parent / (filename + ".plist");
@@ -251,7 +251,7 @@ void EditIconPopup::pickFile(int index, std::string_view suffix) {
         GEODE_UNWRAP_OR_ELSE(image, err, texpack::fromPNG(png))
             return notify(NotificationIcon::Error, "Failed to load image: {}", err);
 
-        auto texture = MoreIconsAPI::createRef<CCTexture2D>();
+        Autorelease<CCTexture2D> texture;
         texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
             (float)image.width,
             (float)image.height
@@ -282,7 +282,7 @@ void EditIconPopup::pickFile(int index, std::string_view suffix) {
 }
 
 void EditIconPopup::updateSprites() {
-    auto crossFrame = CCSpriteFrameCache::get()->spriteFrameByName("GJ_deleteIcon_001.png");
+    auto crossFrame = MoreIconsAPI::get<CCSpriteFrameCache>()->spriteFrameByName("GJ_deleteIcon_001.png");
     for (auto [prefix, sprite] : CCDictionaryExt<gd::string, CCSprite*>(m_sprites)) {
         auto spriteFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(prefix));
         sprite->setDisplayFrame(spriteFrame ? spriteFrame : crossFrame);
@@ -341,7 +341,7 @@ void EditIconPopup::updateSprites() {
 
 void EditIconPopup::addOrUpdateIcon(const std::string& name, const std::filesystem::path& png, const std::filesystem::path& plist) {
     Popup::onClose(nullptr);
-    if (auto moreIconsPopup = CCScene::get()->getChildByType<MoreIconsPopup>(0)) moreIconsPopup->close();
+    if (auto moreIconsPopup = MoreIconsAPI::get<CCScene>()->getChildByType<MoreIconsPopup>(0)) moreIconsPopup->close();
 
     if (auto icon = MoreIconsAPI::getIcon(name, m_iconType)) MoreIconsAPI::updateIcon(icon);
     else {
@@ -367,7 +367,7 @@ bool EditIconPopup::checkFrame(std::string_view suffix) {
 }
 
 texpack::Image getImage(CCSprite* sprite) {
-    auto director = CCDirector::get();
+    auto director = MoreIconsAPI::get<CCDirector>();
     auto size = sprite->getContentSize() * director->getContentScaleFactor();
     uint32_t width = size.width;
     uint32_t height = size.height;

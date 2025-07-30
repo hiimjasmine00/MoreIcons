@@ -117,7 +117,7 @@ bool MoreIconsPopup::setup() {
         label->setID("info-label");
         gamemodeMenu->addChild(label);
 
-        auto vanillaCount = GameManager::get()->countForType(type);
+        auto vanillaCount = MoreIconsAPI::get<GameManager>()->countForType(type);
         auto customCount = MoreIconsAPI::icons[type].size();
         auto logCount = std::ranges::count_if(MoreIcons::logs, [type](const LogData& log) { return log.type == type; });
 

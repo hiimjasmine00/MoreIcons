@@ -1,11 +1,60 @@
-#include <Geode/utils/cocos.hpp>
+#include <cocos2d.h>
+#include <Geode/GeneratedPredeclare.hpp>
 #include <IconInfo.hpp>
+
+template <class T>
+struct Autorelease {
+    T* data;
+
+    Autorelease() : data(nullptr) {}
+    Autorelease(T* data) : data(data) {}
+    Autorelease(const Autorelease& other) : data(other.data) {}
+    Autorelease(Autorelease&& other) : data(other.data) {
+        other.data = nullptr;
+    }
+
+    ~Autorelease() {
+        CC_SAFE_RELEASE(data);
+    }
+
+    Autorelease& operator=(T* obj) {
+        if (data != obj) {
+            CC_SAFE_RELEASE(data);
+            data = obj;
+            CC_SAFE_RETAIN(data);
+        }
+        return *this;
+    }
+    Autorelease& operator=(const Autorelease& other) {
+        if (this != &other) {
+            CC_SAFE_RELEASE(data);
+            data = other.data;
+            CC_SAFE_RETAIN(data);
+        }
+        return *this;
+    }
+    Autorelease& operator=(Autorelease&& other) {
+        if (this != &other) {
+            data = other.data;
+            other.data = nullptr;
+        }
+        return *this;
+    }
+
+    operator T*() const {
+        return data;
+    }
+    T* operator->() const {
+        return data;
+    }
+
+};
 
 struct ImageResult {
     std::string name;
     std::vector<uint8_t> data;
-    geode::Ref<cocos2d::CCTexture2D> texture;
-    geode::Ref<cocos2d::CCDictionary> frames;
+    Autorelease<cocos2d::CCTexture2D> texture;
+    Autorelease<cocos2d::CCDictionary> frames;
     uint32_t width;
     uint32_t height;
 };
@@ -52,11 +101,8 @@ public:
         return (int)type - (type >= IconType::DeathEffect) * 89;
     }
     template <class T>
-    static geode::Ref<T> createRef() {
-        geode::Ref ret = new T();
-        ret->release();
-        return ret;
-    }
+    static T* get();
+    static void reset();
     static cocos2d::CCSpriteFrame* getFrame(std::string_view name);
     static cocos2d::CCSprite* customTrail(const std::string& png);
     static cocos2d::CCTexture2D* loadIcon(const std::string& name, IconType type, int requestID);
@@ -77,7 +123,7 @@ public:
     static void updatePlayerObject(PlayerObject* object, IconType type, bool dual);
     static void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type);
     static geode::Result<ImageResult> createFrames(const std::string& png, const std::string& plist, const std::string& name, IconType type);
-    static geode::Result<geode::Ref<cocos2d::CCDictionary>> createFrames(
+    static geode::Result<Autorelease<cocos2d::CCDictionary>> createFrames(
         const std::string& path, cocos2d::CCTexture2D* texture, const std::string& name, IconType type, bool fixNames = true
     );
     static cocos2d::CCTexture2D* addFrames(const ImageResult& image, std::vector<std::string>& frameNames);

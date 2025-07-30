@@ -106,7 +106,7 @@ bool IconNamePopup::setup(IconInfo* info) {
             }
 
             Popup::onClose(nullptr);
-            if (auto moreInfoPopup = CCScene::get()->getChildByType<MoreInfoPopup>(0)) moreInfoPopup->close();
+            if (auto moreInfoPopup = MoreIconsAPI::get<CCScene>()->getChildByType<MoreInfoPopup>(0)) moreInfoPopup->close();
             MoreIconsAPI::renameIcon(info, name);
             Notification::create(fmt::format("{} renamed to {}!", old, name), NotificationIcon::Success)->show();
             MoreIcons::updateGarage();
