@@ -272,8 +272,6 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
     auto texturePath = replaceEnd(pathString, 6, ".png");
     if (!MoreIcons::doesExist(texturePath)) return printLog(name, Severity::Error, "Texture file {}.png not found", pathStem);
 
-    if (MoreIconsAPI::hasIcon(name, currentType)) return printLog(name, Severity::Warning, "Duplicate icon name");
-
     MoreIconsAPI::addIcon(name, shortName, currentType, texturePath, pathString, pack.id, pack.name, 0, {}, false, pack.zipped);
 
     safeDebug("Finished pre-loading icon {} from {}", name, pack.name);
@@ -313,11 +311,6 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     if (!MoreIconsAPI::get<CCFileUtils>()->isFileExist(plistPath))
         return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
 
-    if (auto icon = MoreIconsAPI::getIcon(name, currentType)) {
-        auto& icons = MoreIconsAPI::icons[currentType];
-        icons.erase(icons.begin() + (icon - icons.data()));
-    }
-
     MoreIconsAPI::addIcon(name, shortName, currentType, pathString, plistPath, pack.id, pack.name, 0, {}, true, pack.zipped);
 
     safeDebug("Finished pre-loading vanilla icon {} from {}", name, pack.name);
@@ -331,8 +324,6 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
     safeDebug("Pre-loading trail {} from {}", name, pack.name);
 
     if (pathString.empty() && !path.empty()) printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
-
-    if (MoreIconsAPI::hasIcon(name, IconType::Special)) return printLog(name, Severity::Warning, "Duplicate trail name");
 
     MoreIconsAPI::addIcon(name, pathStem, IconType::Special, pathString, "", pack.id, pack.name, 0,
         file::readFromJson<TrailInfo>(std::filesystem::path(path).replace_extension(".json")).unwrapOrDefault(), false, pack.zipped);
@@ -380,11 +371,6 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
             trailInfo.fade = 1.0f;
             trailInfo.stroke = 3.0f;
             break;
-    }
-
-    if (auto icon = MoreIconsAPI::getIcon(name, IconType::Special)) {
-        auto& icons = MoreIconsAPI::icons[IconType::Special];
-        icons.erase(icons.begin() + (icon - icons.data()));
     }
 
     MoreIconsAPI::addIcon(name, pathStem, IconType::Special, pathString, "", pack.id, pack.name, trailID, trailInfo, true, pack.zipped);

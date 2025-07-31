@@ -365,10 +365,12 @@ IconInfo* MoreIconsAPI::addIcon(
     const std::string& packID, const std::string& packName, int trailID, const TrailInfo& trailInfo, bool vanilla, bool zipped
 ) {
     auto& iconsVec = icons[type];
+    auto it = std::ranges::find_if(iconsVec, [&packID, &shortName, type](const IconInfo& icon) {
+        return icon.compare(packID, shortName, type) >= 0;
+    });
+    if (it != iconsVec.end() && it->type == type && it->name == name) iconsVec.erase(it);
     return std::to_address(iconsVec.emplace(
-        std::ranges::find_if(iconsVec, [&packID, &shortName, type](const IconInfo& icon) {
-            return icon.compare(packID, shortName, type) >= 0;
-        }),
+        it,
         name,
         std::vector<std::string>({ png }),
         std::vector<std::string>(),
@@ -474,7 +476,7 @@ void MoreIconsAPI::renameIcon(IconInfo* info, const std::string& name) {
 
     auto& iconsVec = icons[type];
     auto it = std::ranges::find_if(iconsVec, [info](const IconInfo& icon) {
-        return info->compare(icon) >= 0;
+        return icon.compare(info->packID, info->shortName, info->type) >= 0;
     });
     if (std::to_address(it) == info) return;
 
