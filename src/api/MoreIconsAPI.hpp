@@ -17,14 +17,6 @@ struct Autorelease {
         CC_SAFE_RELEASE(data);
     }
 
-    Autorelease& operator=(T* obj) {
-        if (data != obj) {
-            CC_SAFE_RELEASE(data);
-            data = obj;
-            CC_SAFE_RETAIN(data);
-        }
-        return *this;
-    }
     Autorelease& operator=(const Autorelease& other) {
         if (this != &other) {
             CC_SAFE_RELEASE(data);
@@ -47,7 +39,6 @@ struct Autorelease {
     T* operator->() const {
         return data;
     }
-
 };
 
 struct ImageResult {

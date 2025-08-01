@@ -251,7 +251,7 @@ void EditIconPopup::pickFile(int index, std::string_view suffix) {
         GEODE_UNWRAP_OR_ELSE(image, err, texpack::fromPNG(png))
             return notify(NotificationIcon::Error, "Failed to load image: {}", err);
 
-        Autorelease<CCTexture2D> texture;
+        Autorelease texture = new CCTexture2D();
         texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
             (float)image.width,
             (float)image.height

@@ -256,7 +256,7 @@ void MoreIconsAPI::loadIcons(IconType type, bool logs) {
 
             std::unique_lock lock(imageMutex);
 
-            images.push_back({ image, info });
+            images.emplace_back(std::move(image), info);
         });
     }
     threadPool.wait();
@@ -412,16 +412,14 @@ void MoreIconsAPI::removeIcon(IconInfo* info) {
     get<CCTextureCache>()->removeTextureForKey(info->textures[0].c_str());
 
     if (!preloadIcons) {
-        std::vector<int> requestIDs;
-        for (auto& [requestID, iconRequests] : requestedIcons) {
+        for (auto it = requestedIcons.begin(); it != requestedIcons.end();) {
+            auto& iconRequests = it->second;
             auto iconRequest = iconRequests.find(type);
             if (iconRequest != iconRequests.end() && iconRequest->second == name) {
                 iconRequests.erase(iconRequest);
-                if (iconRequests.empty()) requestIDs.push_back(requestID);
+                if (iconRequests.empty()) it = requestedIcons.erase(it);
+                else ++it;
             }
-        }
-        for (auto& requestID : requestIDs) {
-            requestedIcons.erase(requestID);
         }
     }
 
@@ -709,12 +707,19 @@ Result<ImageResult> MoreIconsAPI::createFrames(const std::string& png, const std
         return fmt::format("Failed to parse image: {}", err);
     }));
 
-    Autorelease<CCTexture2D> texture;
+    Autorelease texture = new CCTexture2D();
     GEODE_UNWRAP_INTO(auto frames, createFrames(plist, texture, name, type, !name.empty()).mapErr([](const std::string& err) {
         return fmt::format("Failed to load frames: {}", err);
     }));
 
-    return Ok<ImageResult>({ png, std::move(image.data), std::move(texture), std::move(frames), image.width, image.height });
+    ImageResult result;
+    result.name = png;
+    result.data = std::move(image.data);
+    result.texture = std::move(texture);
+    result.frames = std::move(frames);
+    result.width = image.width;
+    result.height = image.height;
+    return Ok(std::move(result));
 }
 
 matjson::Value parseNode(const pugi::xml_node& node) {
@@ -765,11 +770,11 @@ Result<Autorelease<CCDictionary>> MoreIconsAPI::createFrames(
         return v.get("format").andThen([](const matjson::Value& v) { return v.as<int>(); });
     }).unwrapOr(0);
 
-    Autorelease<CCDictionary> frames;
+    Autorelease frames = new CCDictionary();
     for (auto& [frameName, obj] : json["frames"]) {
         if (!obj.isObject()) continue;
 
-        Autorelease<CCSpriteFrame> frame;
+        Autorelease frame = new CCSpriteFrame();
         frames->setObject(frame, fixNames ? getFrameName(frameName, name, type) : frameName);
 
         CCRect rect;

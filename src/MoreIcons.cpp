@@ -155,14 +155,14 @@ void migrateFolderIcons(const std::filesystem::path& path) {
 
 void MoreIcons::loadPacks() {
     packs.clear();
-    packs.push_back({ "More Icons", "", dirs::getGeodeDir(), false, false });
+    packs.emplace_back("More Icons", "", dirs::getGeodeDir(), false, false);
     migrateFolderIcons(Mod::get()->getConfigDir());
 
     for (auto& pack : texture_loader::getAppliedPacks()) {
         auto extension = pack.path.extension();
         auto zipped = extension == ".apk" || extension == ".zip";
         if (traditionalPacks) {
-            if (doesExist(pack.resourcesPath / "icons")) packs.push_back({ pack.name, pack.id, pack.resourcesPath, true, zipped });
+            if (doesExist(pack.resourcesPath / "icons")) packs.emplace_back(pack.name, pack.id, pack.resourcesPath, true, zipped);
             else directoryIterator(pack.resourcesPath, [&pack, zipped](const std::filesystem::path& path, std::filesystem::file_type fileType) {
                 if (fileType != std::filesystem::file_type::regular) return false;
 
@@ -170,7 +170,7 @@ void MoreIcons::loadPacks() {
 
                 auto filename = string::pathToString(path.filename());
                 if (filename.starts_with("streak_") && filename.ends_with("_001.png")) {
-                    packs.push_back({ pack.name, pack.id, path.parent_path(), true, zipped });
+                    packs.emplace_back(pack.name, pack.id, path.parent_path(), true, zipped);
                     return true;
                 }
 
@@ -180,7 +180,7 @@ void MoreIcons::loadPacks() {
 
         auto configPath = pack.resourcesPath / "config" / GEODE_MOD_ID;
         if (doesExist(configPath)) {
-            packs.push_back({ pack.name, pack.id, pack.resourcesPath, false, zipped });
+            packs.emplace_back(pack.name, pack.id, pack.resourcesPath, false, zipped);
             migrateFolderIcons(configPath);
         }
     }
@@ -217,7 +217,7 @@ template <typename... Args>
 void printLog(const std::string& name, int severity, fmt::format_string<Args...> message, Args&&... args) {
     auto logMessage = fmt::format(message, std::forward<Args>(args)...);
     log::logImpl(Severity::cast(severity), Mod::get(), "{}: {}", name, logMessage);
-    MoreIcons::logs.push_back({ name, logMessage, currentType, severity });
+    MoreIcons::logs.emplace_back(name, logMessage, currentType, severity);
     auto& currentSeverity = MoreIcons::severities[currentType];
     if (currentSeverity < severity) currentSeverity = severity;
     if (MoreIcons::severity < severity) MoreIcons::severity = severity;
