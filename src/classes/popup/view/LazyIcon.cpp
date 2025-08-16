@@ -154,10 +154,11 @@ void LazyIcon::createComplexIcon() {
         auto usedTexture = static_cast<CCDictionary*>(usedTextures->objectForKey(fmt::format("texture_{}", i)));
         if (!usedTexture) continue;
 
-        std::string_view texture = usedTexture->valueForKey("texture")->m_sString;
+        auto texture = usedTexture->valueForKey("texture")->m_sString;
         if (texture.size() < spider + 11) continue;
 
-        auto index = numFromString<int>(texture.substr(spider + 9, 2)).unwrapOr(0);
+        auto index = 0;
+        std::from_chars(texture.data() + spider + 9, texture.data() + spider + 11, index);
         if (index <= 0) continue;
 
         std::string_view customID = usedTexture->valueForKey("customID")->m_sString;

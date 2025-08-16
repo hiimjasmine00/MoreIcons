@@ -93,8 +93,8 @@ void migrateFolderIcons(const std::filesystem::path& path) {
         directoryIterator(folderPath, [i, &folderPath, &migratedFolders](const std::filesystem::path& path, std::filesystem::file_type fileType) {
             if (fileType != std::filesystem::file_type::directory) return;
 
-            if (std::find(migratedFolders.begin(), migratedFolders.end(), path) != migratedFolders.end()) return;
-            else migratedFolders.push(path);
+            if (std::ranges::find(migratedFolders, path) == migratedFolders.end()) migratedFolders.push(path);
+            else return;
 
             std::vector<std::string> names;
 
@@ -340,7 +340,8 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     if (pathString.empty() && !path.empty()) printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
 
-    auto trailID = numFromString<int>(pathStem.substr(7, pathStem.size() - 11)).unwrapOr(0);
+    auto trailID = 0;
+    std::from_chars(pathStem.data() + 7, pathStem.data() + (pathStem.size() - 4), trailID);
     if (trailID == 0) trailID = -1;
 
     TrailInfo trailInfo;

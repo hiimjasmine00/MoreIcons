@@ -110,8 +110,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         if (btn->m_iconType != IconType::ShipFire) {
             m_cursor1->setOpacity(255);
             m_fields->m_selectedIcon = "";
-            MoreIconsAPI::setIcon("", dual ? (IconType)Loader::get()->getLoadedMod(
-                "weebify.separate_dual_icons")->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
+            MoreIconsAPI::setIcon("", dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
         }
     }
 

@@ -2,7 +2,6 @@
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/Slider.hpp>
 #include <Geode/ui/TextInput.hpp>
-#include <IconInfo.hpp>
 
 using namespace geode::prelude;
 
@@ -25,12 +24,11 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     m_bgSprite->setID("background");
     m_closeBtn->setID("close-button");
 
-    m_fadeTime = info->trailInfo.fade;
-    m_strokeWidth = info->trailInfo.stroke;
+    m_trailInfo = info->trailInfo;
 
     auto fadeTimeSlider = Slider::create(nullptr, nullptr, 0.8f);
     fadeTimeSlider->setPosition({ 100.0f, 87.5f });
-    fadeTimeSlider->setValue(roundf(m_fadeTime * 50.0f) / 100.0f);
+    fadeTimeSlider->setValue(roundf(m_trailInfo.fade * 50.0f) / 100.0f);
     fadeTimeSlider->setID("fade-time-slider");
     m_mainLayer->addChild(fadeTimeSlider);
 
@@ -40,27 +38,32 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     fadeTimeLabel->setID("fade-time-label");
     m_mainLayer->addChild(fadeTimeLabel);
 
-    auto fadeTimeInput = TextInput::create(60.0f, "Num", "bigFont.fnt");
+    auto fadeTimeInput = TextInput::create(60.0f, "Num");
     fadeTimeInput->setPosition({ 150.0f, 110.0f });
     fadeTimeInput->setScale(0.6f);
-    fadeTimeInput->setString(fmt::format("{:.2f}", m_fadeTime));
-    fadeTimeInput->setCommonFilter(CommonFilter::Float);
+    fadeTimeInput->setString(fmt::format("{:.2f}", m_trailInfo.fade));
+    fadeTimeInput->setFilter(".0123456789");
     fadeTimeInput->setMaxCharCount(4);
     fadeTimeInput->setCallback([this, fadeTimeSlider](const std::string& str) {
-        m_fadeTime = roundf(std::clamp(numFromString<float>(str).unwrapOr(0.0f) * 100.0f, 0.0f, 200.0f)) / 100.0f;
-        fadeTimeSlider->setValue(m_fadeTime / 2.0f);
+        #ifdef __cpp_lib_to_chars
+        std::from_chars(str.data(), str.data() + str.size(), m_trailInfo.fade);
+        #else
+        GEODE_UNWRAP_INTO_IF_OK(m_trailInfo.fade, numFromString<float>(str));
+        #endif
+        m_trailInfo.fade = std::clamp(m_trailInfo.fade * 100.0f, 0.0f, 200.0f) / 100.0f;
+        fadeTimeSlider->setValue(m_trailInfo.fade / 2.0f);
     });
     fadeTimeInput->setID("fade-time-input");
     m_mainLayer->addChild(fadeTimeInput);
 
     CCMenuItemExt::assignCallback<SliderThumb>(fadeTimeSlider->m_touchLogic->m_thumb, [this, fadeTimeInput](SliderThumb* sender) {
-        m_fadeTime = roundf(sender->getValue() * 200.0f) / 100.0f;
-        fadeTimeInput->setString(fmt::format("{:.2f}", m_fadeTime));
+        m_trailInfo.fade = roundf(sender->getValue() * 200.0f) / 100.0f;
+        fadeTimeInput->setString(fmt::format("{:.2f}", m_trailInfo.fade));
     });
 
     auto strokeWidthSlider = Slider::create(nullptr, nullptr, 0.8f);
     strokeWidthSlider->setPosition({ 300.0f, 87.5f });
-    strokeWidthSlider->setValue(roundf(m_strokeWidth / 2.0f) / 10.0f);
+    strokeWidthSlider->setValue(roundf(m_trailInfo.stroke / 2.0f) / 10.0f);
     strokeWidthSlider->m_touchLogic->m_thumb->setTag(2);
     strokeWidthSlider->setID("stroke-width-slider");
     m_mainLayer->addChild(strokeWidthSlider);
@@ -71,27 +74,35 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     strokeWidthLabel->setID("stroke-width-label");
     m_mainLayer->addChild(strokeWidthLabel);
 
-    auto strokeWidthInput = TextInput::create(60.0f, "Num", "bigFont.fnt");
+    auto strokeWidthInput = TextInput::create(60.0f, "Num");
     strokeWidthInput->setPosition({ 365.0f, 110.0f });
     strokeWidthInput->setScale(0.6f);
-    strokeWidthInput->setString(fmt::format("{:.1f}", m_strokeWidth));
-    strokeWidthInput->setCommonFilter(CommonFilter::Float);
+    strokeWidthInput->setString(fmt::format("{:.1f}", m_trailInfo.stroke));
+    strokeWidthInput->setFilter(".0123456789");
     strokeWidthInput->setMaxCharCount(4);
     strokeWidthInput->setCallback([this, strokeWidthSlider](const std::string& str) {
-        m_strokeWidth = roundf(std::clamp(numFromString<float>(str).unwrapOr(0.0f) * 10.0f, 0.0f, 200.0f)) / 10.0f;
-        strokeWidthSlider->setValue(m_strokeWidth / 20.0f);
+        #ifdef __cpp_lib_to_chars
+        std::from_chars(str.data(), str.data() + str.size(), m_trailInfo.stroke);
+        #else
+        GEODE_UNWRAP_INTO_IF_OK(m_trailInfo.stroke, numFromString<float>(str));
+        #endif
+        m_trailInfo.stroke = roundf(std::clamp(m_trailInfo.stroke * 10.0f, 0.0f, 200.0f)) / 10.0f;
+        strokeWidthSlider->setValue(m_trailInfo.stroke / 20.0f);
     });
     strokeWidthInput->setID("stroke-width-input");
     m_mainLayer->addChild(strokeWidthInput);
 
     CCMenuItemExt::assignCallback<SliderThumb>(strokeWidthSlider->m_touchLogic->m_thumb, [this, strokeWidthInput](SliderThumb* sender) {
-        m_strokeWidth = roundf(sender->getValue() * 200.0f) / 10.0f;
-        strokeWidthInput->setString(fmt::format("{:.1f}", m_strokeWidth));
+        m_trailInfo.stroke = roundf(sender->getValue() * 200.0f) / 10.0f;
+        strokeWidthInput->setString(fmt::format("{:.1f}", m_trailInfo.stroke));
     });
 
-    auto blendToggle = CCMenuItemToggler::createWithStandardSprites(nullptr, nullptr, 0.8f);
+    //auto blendToggle = CCMenuItemToggler::createWithStandardSprites(nullptr, nullptr, 0.8f);
+    auto blendToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.8f, [this](auto) {
+        m_trailInfo.blend = !m_trailInfo.blend;
+    });
     blendToggle->setPosition({ 60.0f, 60.0f });
-    blendToggle->toggle(info->trailInfo.blend);
+    blendToggle->toggle(m_trailInfo.blend);
     blendToggle->setID("blend-toggle");
     m_buttonMenu->addChild(blendToggle);
 
@@ -102,9 +113,11 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     blendLabel->setID("blend-label");
     m_mainLayer->addChild(blendLabel);
 
-    auto tintToggle = CCMenuItemToggler::createWithStandardSprites(nullptr, nullptr, 0.8f);
+    auto tintToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.8f, [this](auto) {
+        m_trailInfo.tint = !m_trailInfo.tint;
+    });
     tintToggle->setPosition({ 170.0f, 60.0f });
-    tintToggle->toggle(info->trailInfo.tint);
+    tintToggle->toggle(m_trailInfo.tint);
     tintToggle->setID("tint-toggle");
     m_buttonMenu->addChild(tintToggle);
 
@@ -115,9 +128,11 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     tintLabel->setID("tint-label");
     m_mainLayer->addChild(tintLabel);
 
-    auto showToggle = CCMenuItemToggler::createWithStandardSprites(nullptr, nullptr, 0.8f);
+    auto showToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.8f, [this](auto) {
+        m_trailInfo.show = !m_trailInfo.show;
+    });
     showToggle->setPosition({ 280.0f, 60.0f });
-    showToggle->toggle(info->trailInfo.show);
+    showToggle->toggle(m_trailInfo.show);
     showToggle->setID("show-toggle");
     m_buttonMenu->addChild(showToggle);
 
@@ -128,12 +143,8 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     showLabel->setID("show-label");
     m_mainLayer->addChild(showLabel);
 
-    auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", 0.8f), [this, blendToggle, tintToggle, showToggle, info](auto) {
-        info->trailInfo.fade = m_fadeTime;
-        info->trailInfo.stroke = m_strokeWidth;
-        info->trailInfo.blend = blendToggle->m_toggled;
-        info->trailInfo.tint = tintToggle->m_toggled;
-        info->trailInfo.show = showToggle->m_toggled;
+    auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", 0.8f), [this, info](auto) {
+        info->trailInfo = m_trailInfo;
         onClose(nullptr);
     });
     saveButton->setPosition({ 200.0f, 25.0f });

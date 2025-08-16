@@ -1,11 +1,9 @@
 #include <Geode/ui/Popup.hpp>
-
-class IconInfo;
+#include <IconInfo.hpp>
 
 class SpecialSettingsPopup : public geode::Popup<IconInfo*> {
 protected:
-    float m_fadeTime;
-    float m_strokeWidth;
+    TrailInfo m_trailInfo;
 
     bool setup(IconInfo*) override;
 public:

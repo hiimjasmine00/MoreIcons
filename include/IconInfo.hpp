@@ -13,6 +13,15 @@ struct TrailInfo {
     bool operator==(const TrailInfo& other) const {
         return blend == other.blend && tint == other.tint && show == other.show && fade == other.fade && stroke == other.stroke;
     }
+
+    TrailInfo& operator=(const TrailInfo& other) {
+        blend = other.blend;
+        tint = other.tint;
+        show = other.show;
+        fade = other.fade;
+        stroke = other.stroke;
+        return *this;
+    }
 };
 
 template <>
