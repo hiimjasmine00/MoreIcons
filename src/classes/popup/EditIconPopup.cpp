@@ -155,7 +155,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     auto pngButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create(isIcon ? "PNG + Plist" : "PNG", "goldFont.fnt", "GJ_button_05.png"),
         [this](auto) {
-            pickFile(0, 0);
+            pickFile(0, "");
         });
     pngButton->setID("png-button");
     bottomMenu->addChild(pngButton);
