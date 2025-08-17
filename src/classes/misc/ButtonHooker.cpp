@@ -14,6 +14,7 @@ ButtonHooker* ButtonHooker::create(CCMenuItem* button, CCObject* listener, SEL_M
 }
 
 void ButtonHooker::call(CCObject* button) {
-    if (auto hooker = static_cast<ButtonHooker*>(static_cast<CCNode*>(button)->getUserObject(GEODE_MOD_ID "/hooker")))
+    if (auto hooker = static_cast<ButtonHooker*>(static_cast<CCNode*>(button)->getUserObject(GEODE_MOD_ID "/hooker"))) {
         (hooker->m_listener->*hooker->m_selector)(button);
+    }
 }

@@ -13,11 +13,12 @@
 
 using namespace geode::prelude;
 
-EditIconPopup* EditIconPopup::create(IconType type) {
+EditIconPopup* EditIconPopup::create(MoreIconsPopup* popup, IconType type) {
     auto ret = new EditIconPopup();
     if (ret->initAnchored(
         350.0f,
         180.0f + (type <= IconType::Jetpack) * 50.0f + (type == IconType::Robot || type == IconType::Spider) * 30.0f,
+        popup,
         type,
         "geode.loader/GE_square03.png"
     )) {
@@ -33,7 +34,7 @@ void notify(NotificationIcon icon, fmt::format_string<T...> message, T&&... args
     Notification::create(fmt::format(message, std::forward<T>(args)...), icon)->show();
 }
 
-bool EditIconPopup::setup(IconType type) {
+bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto miType = MoreIconsAPI::convertType(type);
 
     setID("EditIconPopup");
@@ -44,6 +45,7 @@ bool EditIconPopup::setup(IconType type) {
     m_bgSprite->setID("background");
     m_closeBtn->setID("close-button");
 
+    m_parentPopup = popup;
     m_frames = CCDictionary::create();
     m_sprites = CCDictionary::create();
     m_iconType = type;
@@ -183,7 +185,7 @@ bool EditIconPopup::setup(IconType type) {
             auto filename = iconName + (factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : "");
             auto png = parent / (filename + ".png");
             auto plist = parent / (filename + ".plist");
-            if (MoreIcons::doesExist(png) || MoreIcons::doesExist(plist))
+            if (MoreIcons::doesExist(png) || MoreIcons::doesExist(plist)) {
                 createQuickPopup(
                     "Existing Icon",
                     fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
@@ -193,6 +195,7 @@ bool EditIconPopup::setup(IconType type) {
                         if (btn2) saveIcon(png, plist);
                     }
                 );
+            }
             else saveIcon(png, plist);
         }
     });
@@ -302,8 +305,9 @@ void EditIconPopup::updateSprites() {
                 secondSprite->setPosition(spritePart->getContentSize() / 2.0f);
             }
 
-            if (auto glowChild = getChild<CCSprite>(sprite->m_glowSprite, i))
+            if (auto glowChild = sprite->m_glowSprite->getChildByIndex<CCSprite>(i)) {
                 glowChild->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_glow_001.png", tag))));
+            }
 
             if (spritePart == sprite->m_headSprite) {
                 auto extraFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_extra_001.png", tag)));
@@ -340,8 +344,8 @@ void EditIconPopup::updateSprites() {
 }
 
 void EditIconPopup::addOrUpdateIcon(const std::string& name, const std::filesystem::path& png, const std::filesystem::path& plist) {
+    m_parentPopup->close();
     Popup::onClose(nullptr);
-    if (auto moreIconsPopup = MoreIconsAPI::get<CCScene>()->getChildByType<MoreIconsPopup>(0)) moreIconsPopup->close();
 
     if (auto icon = MoreIconsAPI::getIcon(name, m_iconType)) MoreIconsAPI::updateIcon(icon);
     else {
@@ -422,8 +426,9 @@ texpack::Image getImage(CCSprite* sprite) {
 }
 
 void EditIconPopup::saveTrail(const std::filesystem::path& path) {
-    if (GEODE_UNWRAP_IF_ERR(err, texpack::toPNG(path, getImage(m_streak)))) return notify(NotificationIcon::Error, "Failed to save image: {}", err);
-
+    if (GEODE_UNWRAP_IF_ERR(err, texpack::toPNG(path, getImage(m_streak)))) {
+        return notify(NotificationIcon::Error, "Failed to save image: {}", err);
+    }
     addOrUpdateIcon(m_textInput->getString(), path, "");
 }
 
@@ -448,10 +453,15 @@ void EditIconPopup::saveIcon(const std::filesystem::path& png, const std::filesy
         packer.frame(name + frameName, getImage(static_cast<CCSprite*>(m_sprites->objectForKey(frameName))));
     }
 
-    if (GEODE_UNWRAP_IF_ERR(err, packer.pack())) return notify(NotificationIcon::Error, "Failed to pack frames: {}", err);
-    if (GEODE_UNWRAP_IF_ERR(err, packer.png(png))) return notify(NotificationIcon::Error, "Failed to save image: {}", err);
-    if (GEODE_UNWRAP_IF_ERR(err, packer.plist(plist, "icons/" + string::pathToString(png.filename()), "    ")))
+    if (GEODE_UNWRAP_IF_ERR(err, packer.pack())) {
+        return notify(NotificationIcon::Error, "Failed to pack frames: {}", err);
+    }
+    if (GEODE_UNWRAP_IF_ERR(err, packer.png(png))) {
+        return notify(NotificationIcon::Error, "Failed to save image: {}", err);
+    }
+    if (GEODE_UNWRAP_IF_ERR(err, packer.plist(plist, "icons/" + string::pathToString(png.filename()), "    "))) {
         return notify(NotificationIcon::Error, "Failed to save plist: {}", err);
+    }
 
     addOrUpdateIcon(name, png, plist);
 }

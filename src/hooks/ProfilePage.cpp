@@ -12,8 +12,9 @@ class $modify(MIProfilePage, ProfilePage) {
     }
 
     static void updatePlayer(CCNode* node, IconType type, bool dual) {
-        if (auto player = findFirstChildRecursive<SimplePlayer>(node, [](auto) { return true; }))
+        if (auto player = findFirstChildRecursive<SimplePlayer>(node, [](auto) { return true; })) {
             MoreIconsAPI::updateSimplePlayer(player, type, dual);
+        }
     }
 
     void changePlayers() {
@@ -39,9 +40,10 @@ class $modify(MIProfilePage, ProfilePage) {
         changePlayers();
 
         if (Loader::get()->isModLoaded("weebify.separate_dual_icons")) {
-            if (auto leftMenu = m_mainLayer->getChildByID("left-menu"))
+            if (auto leftMenu = m_mainLayer->getChildByID("left-menu")) {
                 ButtonHooker::create(static_cast<CCMenuItem*>(leftMenu->getChildByID("2p-toggler")),
                     this, menu_selector(MIProfilePage::newOn2PToggle));
+            }
         }
     }
 

@@ -137,11 +137,6 @@ CCFileUtils* MoreIconsAPI::get() {
     return globalFileUtils;
 }
 
-template <>
-CCScene* MoreIconsAPI::get() {
-    return get<CCDirector>()->getRunningScene();
-}
-
 CCShaderCache* globalShaderCache = nullptr;
 template <>
 CCShaderCache* MoreIconsAPI::get() {
@@ -461,12 +456,14 @@ void MoreIconsAPI::renameIcon(IconInfo* info, const std::string& name) {
     }
 
     if (auto it = loadedIcons.find({ oldName, type }); it != loadedIcons.end()) {
-        loadedIcons[{ newName, type }] = it->second;
+        loadedIcons.emplace(std::make_pair(newName, type), it->second);
         loadedIcons.erase(it);
     }
 
     for (auto& iconRequests : std::views::values(requestedIcons)) {
-        if (auto found = iconRequests.find(type); found != iconRequests.end() && found->second == oldName) iconRequests[type] = newName;
+        if (auto found = iconRequests.find(type); found != iconRequests.end() && found->second == oldName) {
+            found->second = newName;
+        }
     }
 
     if (activeIcon(type, false) == oldName) setIcon(newName, type, false);

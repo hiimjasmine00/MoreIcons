@@ -77,7 +77,9 @@ class $modify(MIGameManager, GameManager) {
         if (auto foundRequests = MoreIconsAPI::requestedIcons.find(requestID); foundRequests != MoreIconsAPI::requestedIcons.end()) {
             auto iconType = (IconType)type;
             auto& iconRequests = foundRequests->second;
-            if (auto found = iconRequests.find(iconType); found != iconRequests.end()) MoreIconsAPI::unloadIcon(found->second, iconType, requestID);
+            if (auto found = iconRequests.find(iconType); found != iconRequests.end()) {
+                MoreIconsAPI::unloadIcon(found->second, iconType, requestID);
+            }
         }
 
         return texture;

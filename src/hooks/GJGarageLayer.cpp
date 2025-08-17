@@ -278,14 +278,15 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
     std::span<IconInfo> getPage() {
         auto customPage = m_fields->m_pages[m_iconType] - (MoreIconsAPI::get<GameManager>()->countForType(m_iconType) + 35) / 36;
-        if (customPage < 0) return {};
-
-        auto& icons = MoreIconsAPI::icons[m_iconType];
-        auto size = icons.size();
-        if (size == 0) return {};
-
-        auto index = customPage * 36;
-        return { size > index ? icons.data() + index : nullptr, size > index ? std::min<size_t>(36, size - index) : 0 };
+        if (customPage >= 0) {
+            auto& icons = MoreIconsAPI::icons[m_iconType];
+            auto size = icons.size();
+            if (size > 0) {
+                auto index = customPage * 36;
+                if (size > index) return { icons.data() + index, std::min<size_t>(36, size - index) };
+            }
+        }
+        return {};
     }
 
     void setupCustomPage(int page) {
@@ -298,7 +299,9 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         }
 
         auto gameManager = MoreIconsAPI::get<GameManager>();
-        if (MoreIconsAPI::icons[m_iconType].size() <= 0 || page * 36 < gameManager->countForType(m_iconType)) return createNavMenu();
+        if (MoreIconsAPI::icons[m_iconType].size() <= 0 || page * 36 < gameManager->countForType(m_iconType)) {
+            return createNavMenu();
+        }
 
         m_cursor1->setOpacity(255);
         m_iconSelection->setVisible(false);
@@ -387,8 +390,9 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             f->m_pageBar = nullptr;
         }
 
-        if (MoreIconsAPI::icons[m_iconType].size() <= 0 || page * 36 < MoreIconsAPI::get<GameManager>()->countForType(m_iconType))
+        if (MoreIconsAPI::icons[m_iconType].size() <= 0 || page * 36 < MoreIconsAPI::get<GameManager>()->countForType(m_iconType)) {
             return createNavMenu();
+        }
 
         m_cursor1->setOpacity(255);
         m_iconSelection->setVisible(false);

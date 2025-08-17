@@ -124,7 +124,8 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updateStreakBlend(bool blend) {
         PlayerObject::updateStreakBlend(blend);
 
-        if (auto info = p1() ? MoreIconsAPI::getIcon(IconType::Special, false) : p2() ? MoreIconsAPI::getIcon(IconType::Special, true) : nullptr)
+        if (auto info = p1() ? MoreIconsAPI::getIcon(IconType::Special, false) : p2() ? MoreIconsAPI::getIcon(IconType::Special, true) : nullptr) {
             m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)GL_ONE_MINUS_SRC_ALPHA - info->trailInfo.blend * (uint32_t)GL_SRC_ALPHA });
+        }
     }
 };

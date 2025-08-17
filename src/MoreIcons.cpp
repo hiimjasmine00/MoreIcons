@@ -126,11 +126,14 @@ void migrateFolderIcons(const std::filesystem::path& path) {
             texpack::Packer packer;
 
             for (auto& filename : names) {
-                if (GEODE_UNWRAP_IF_ERR(err, packer.frame(filename, path / filename)))
+                if (GEODE_UNWRAP_IF_ERR(err, packer.frame(filename, path / filename))) {
                     return log::error("{}: Failed to load frame {}: {}", path, filename, err);
+                }
             }
 
-            if (GEODE_UNWRAP_IF_ERR(err, packer.pack())) return log::error("{}: Failed to pack frames: {}", path, err);
+            if (GEODE_UNWRAP_IF_ERR(err, packer.pack())) {
+                return log::error("{}: Failed to pack frames: {}", path, err);
+            }
 
             auto pngPath = folderPath / path.filename().concat(".png");
             MoreIcons::renameFile(pngPath, folderPath / path.filename().concat(".png")).inspectErr([&path](const std::string& err) {
@@ -235,13 +238,15 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
         name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
         if (factor < 4.0f && factor >= 2.0f) {
-            if (!MoreIcons::doesExist(replaceEnd(pathString, 10, "-hd.plist")) && !MoreIcons::doesExist(replaceEnd(pathString, 9, ".plist")))
+            if (!MoreIcons::doesExist(replaceEnd(pathString, 10, "-hd.plist")) && !MoreIcons::doesExist(replaceEnd(pathString, 9, ".plist"))) {
                 printLog(name, Severity::Warning, "Ignoring high-quality icon on medium texture quality");
+            }
             return;
         }
         else if (factor < 2.0f) {
-            if (!MoreIcons::doesExist(replaceEnd(pathString, 10, ".plist")))
+            if (!MoreIcons::doesExist(replaceEnd(pathString, 10, ".plist"))) {
                 printLog(name, Severity::Warning, "Ignoring high-quality icon on low texture quality");
+            }
             return;
         }
     }
@@ -250,8 +255,9 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
         name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
         if (factor < 2.0f) {
-            if (!MoreIcons::doesExist(replaceEnd(pathString, 9, ".plist")))
+            if (!MoreIcons::doesExist(replaceEnd(pathString, 9, ".plist"))) {
                 printLog(name, Severity::Warning, "Ignoring medium-quality icon on low texture quality");
+            }
             return;
         }
 
@@ -270,7 +276,9 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
     if (pathString.empty() && !path.empty()) printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
 
     auto texturePath = replaceEnd(pathString, 6, ".png");
-    if (!MoreIcons::doesExist(texturePath)) return printLog(name, Severity::Error, "Texture file {}.png not found", pathStem);
+    if (!MoreIcons::doesExist(texturePath)) {
+        return printLog(name, Severity::Error, "Texture file {}.png not found", pathStem);
+    }
 
     MoreIconsAPI::addIcon(name, shortName, currentType, texturePath, pathString, pack.id, pack.name, 0, {}, false, pack.zipped);
 
@@ -307,9 +315,12 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     if (pathString.empty() && !path.empty()) printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
 
     auto plistPath = replaceEnd(pathString, 4, ".plist");
-    if (!MoreIcons::doesExist(plistPath)) plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", pathStem), false);
-    if (!MoreIconsAPI::get<CCFileUtils>()->isFileExist(plistPath))
+    if (!MoreIcons::doesExist(plistPath)) {
+        plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", pathStem), false);
+    }
+    if (!MoreIconsAPI::get<CCFileUtils>()->isFileExist(plistPath)) {
         return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
+    }
 
     MoreIconsAPI::addIcon(name, shortName, currentType, pathString, plistPath, pack.id, pack.name, 0, {}, true, pack.zipped);
 
@@ -503,7 +514,7 @@ int MoreIcons::vanillaIcon(IconType type, bool dual) {
 
 void MoreIcons::updateGarage(GJGarageLayer* layer) {
     auto noLayer = layer == nullptr;
-    if (noLayer) layer = MoreIconsAPI::get<CCScene>()->getChildByType<GJGarageLayer>(0);
+    if (noLayer) layer = MoreIconsAPI::get<CCDirector>()->getRunningScene()->getChildByType<GJGarageLayer>(0);
     if (!layer) return;
 
     auto gameManager = MoreIconsAPI::get<GameManager>();

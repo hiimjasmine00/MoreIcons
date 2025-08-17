@@ -150,8 +150,8 @@ bool MoreIconsPopup::setup() {
 
         auto addSprite = ButtonSprite::create("Add", "goldFont.fnt", "GJ_button_05.png", 0.8f);
         addSprite->setScale(0.6f);
-        auto addButton = CCMenuItemExt::createSpriteExtra(addSprite, [type](auto) {
-            EditIconPopup::create(type)->show();
+        auto addButton = CCMenuItemExt::createSpriteExtra(addSprite, [this, type](auto) {
+            EditIconPopup::create(this, type)->show();
         });
         addButton->setPosition({ 24.0f, 15.0f });
         addButton->setID("add-button");
@@ -174,7 +174,9 @@ bool MoreIconsPopup::setup() {
     m_mainLayer->addChild(gamemodesNode);
 
     auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [](auto) {
-        GEODE_UNWRAP_OR_ELSE(trashDir, err, MoreIcons::createTrash()) return Notification::create(err, NotificationIcon::Error)->show();
+        GEODE_UNWRAP_OR_ELSE(trashDir, err, MoreIcons::createTrash()) {
+            return Notification::create(err, NotificationIcon::Error)->show();
+        }
         file::openFolder(trashDir);
     });
     trashButton->setPosition({ 435.0f, 5.0f });

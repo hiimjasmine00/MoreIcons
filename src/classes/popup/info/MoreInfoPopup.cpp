@@ -70,20 +70,22 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
 
     if (m_info->type == IconType::Special) {
         auto filename = texturePath.filename();
-        if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(texturePath, directory / filename, false, true)))
+        if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(texturePath, directory / filename, false, true))) {
             return notify(NotificationIcon::Error, "Failed to {} {}: {}", trash ? "trash" : "move", filename, err);
-
+        }
         auto jsonName = texturePath.filename().replace_extension(".json");
         auto jsonPath = parentDir / jsonName;
         if (trash) {
             if (MoreIcons::doesExist(jsonPath)) {
-                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(jsonPath, directory / jsonName, false, true)))
+                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(jsonPath, directory / jsonName, false, true))) {
                     return notify(NotificationIcon::Error, "Failed to trash {}: {}", jsonName, err);
+                }
             }
         }
         else {
-            if (GEODE_UNWRAP_IF_ERR(err, file::writeToJson(jsonPath, m_info->trailInfo)))
+            if (GEODE_UNWRAP_IF_ERR(err, file::writeToJson(jsonPath, m_info->trailInfo))) {
                 return notify(NotificationIcon::Error, "Failed to write trail info to {}: {}", jsonName, err);
+            }
         }
     }
     else if (m_info->type <= IconType::Jetpack) {
@@ -97,8 +99,9 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                if (GEODE_UNWRAP_IF_ERR(err, copyVanillaFile("icons/" + filename, directory / filename, true)))
+                if (GEODE_UNWRAP_IF_ERR(err, copyVanillaFile("icons/" + filename, directory / filename, true))) {
                     return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, err);
+                }
             }
         }
 
@@ -109,8 +112,9 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                if (GEODE_UNWRAP_IF_ERR(err, copyVanillaFile("icons/" + filename, directory / filename, false)))
+                if (GEODE_UNWRAP_IF_ERR(err, copyVanillaFile("icons/" + filename, directory / filename, false))) {
                     return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, err);
+                }
             }
         }
 
@@ -121,8 +125,9 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                if (GEODE_UNWRAP_IF_ERR(err, copyVanillaFile("icons/" + filename, directory / filename, false)))
+                if (GEODE_UNWRAP_IF_ERR(err, copyVanillaFile("icons/" + filename, directory / filename, false))) {
                     return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, err);
+                }
             }
         }
 
@@ -259,8 +264,8 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     else if (!info->zipped) {
         m_title->setPosition({ 140.0f, m_size.height - 16.0f });
 
-        auto editButton = CCMenuItemExt::createSpriteExtraWithFilename("MI_pencil_001.png"_spr, 0.7f, [info](auto) {
-            IconNamePopup::create(info)->show();
+        auto editButton = CCMenuItemExt::createSpriteExtraWithFilename("MI_pencil_001.png"_spr, 0.7f, [this, info](auto) {
+            IconNamePopup::create(this, info)->show();
         });
         editButton->setPosition(m_title->getPosition() + CCPoint { m_title->getScaledContentWidth() / 2.0f + 10.0f, 0.0f });
         editButton->setID("edit-button");

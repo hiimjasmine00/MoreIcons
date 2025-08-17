@@ -106,7 +106,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
             for (auto node : CCArrayExt<CCNode*>(container->getChildren())) {
                 auto height = container->getContentHeight() * node->getScale();
                 node->setContentSize({ height, height });
-                getChild(node, 0)->setPosition({ height / 2.0f, height / 2.0f });
+                node->getChildByIndex(0)->setPosition({ height / 2.0f, height / 2.0f });
             }
 
             container->updateLayout();
