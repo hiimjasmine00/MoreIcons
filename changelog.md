@@ -1,4 +1,8 @@
 # More Icons Changelog
+## v1.14.6 (2025-08-18)
+- Refactored the icon kit code to improve mod compatibility ([#44](https://github.com/hiimjasmine00/MoreIcons/pull/44))
+- Update by [NyteLyte](user:26352471) and [hiimjasmine00](user:7466002)
+
 ## v1.14.5 (2025-07-17)
 - Fixed a rare crash when unloading icons ([#41](https://github.com/hiimjasmine00/MoreIcons/issues/41))
 

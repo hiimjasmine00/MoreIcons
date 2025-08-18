@@ -10,6 +10,7 @@ on:
       - "docs/**"
       - "include/**"
       - "fix-docs.js"
+      - "flash.toml"
 
 permissions:
   contents: read
