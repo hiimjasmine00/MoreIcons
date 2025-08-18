@@ -176,8 +176,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         if (iconCount <= 0) return;
 
         f->m_navMenu->removeAllChildren();
-        auto navDotAmount = (iconCount + 35) / 36;
-        for (int i = count; i < navDotAmount + count; i++) {
+        auto navDotAmount = count + (iconCount + 35) / 36;
+        for (int i = count; i < navDotAmount; i++) {
             auto dotSprite = CCSprite::createWithSpriteFrameName(i == page ? "gj_navDotBtn_on_001.png" : "gj_navDotBtn_off_001.png");
             dotSprite->setScale(0.9f);
             auto dot = CCMenuItemSpriteExtra::create(dotSprite, this, menu_selector(GJGarageLayer::onNavigate));
@@ -215,7 +215,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         m_iconPages[type] = page;
         createNavMenu(page, type);
 
-        auto found = MoreIconsAPI::iconSpans.find(m_iconType);
+        auto found = MoreIconsAPI::iconSpans.find(type);
         if (found == MoreIconsAPI::iconSpans.end()) return;
 
         auto gameManager = GameManager::get();
@@ -279,6 +279,11 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         }
 
         auto f = m_fields.self();
+        if (f->m_pageBar) {
+            f->m_pageBar->removeFromParent();
+            f->m_pageBar = nullptr;
+        }
+
         f->m_pageBar = ListButtonBar::create(objs, CCDirector::get()->getWinSize() / 2.0f - CCPoint { 0.0f, 65.0f },
             12, 3, 5.0f, 5.0f, 25.0f, 220.0f, 1);
         f->m_pageBar->m_scrollLayer->togglePageIndicators(false);
