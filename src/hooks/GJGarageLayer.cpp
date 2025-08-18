@@ -281,6 +281,11 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         }
 
         auto f = m_fields.self();
+        if (f->m_pageBar) {
+            f->m_pageBar->removeFromParent();
+            f->m_pageBar = nullptr;
+        }
+
         f->m_pageBar = ListButtonBar::create(objs, MoreIconsAPI::get<CCDirector>()->getWinSize() / 2.0f - CCPoint { 0.0f, 65.0f },
             12, 3, 5.0f, 5.0f, 25.0f, 220.0f, 1);
         f->m_pageBar->m_scrollLayer->togglePageIndicators(false);
