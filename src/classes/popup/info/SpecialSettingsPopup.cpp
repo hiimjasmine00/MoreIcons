@@ -2,6 +2,7 @@
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/Slider.hpp>
 #include <Geode/ui/TextInput.hpp>
+#include <IconInfo.hpp>
 
 using namespace geode::prelude;
 

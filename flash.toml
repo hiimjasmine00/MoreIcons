@@ -18,7 +18,8 @@ include = [
 [include]
 patterns-name = [
     "IconInfo",
-    "MoreIcons"
+    "MoreIcons",
+    "TrailInfo"
 ]
 
 [cmake]
