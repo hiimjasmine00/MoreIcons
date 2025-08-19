@@ -530,5 +530,5 @@ void MoreIcons::updateGarage(GJGarageLayer* layer) {
         MoreIconsAPI::updateSimplePlayer(player2, iconType2, true);
     }
 
-    layer->selectTab(layer->m_iconType);
+    if (noLayer) layer->selectTab(layer->m_iconType);
 }
