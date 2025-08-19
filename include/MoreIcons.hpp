@@ -1,5 +1,6 @@
 #pragma once
 #include "IconInfo.hpp"
+#include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/binding/GJRobotSprite.hpp>
 #include <Geode/binding/PlayerObject.hpp>
 #include <Geode/loader/Dispatch.hpp>
@@ -31,9 +32,7 @@ constexpr auto operator""_mi() {
     return Str.buffer;
 }
 
-/**
- * A class that provides an API for interacting with the More Icons mod.
- */
+/// A class that provides an API for interacting with the More Icons mod.
 class MoreIcons {
 public:
     using SimplePlayerFilter = geode::DispatchFilter<SimplePlayer*, std::string, IconType>;
@@ -45,6 +44,7 @@ public:
     using LoadIconFilter = geode::DispatchFilter<std::string, IconType, int>;
     using UnloadIconFilter = geode::DispatchFilter<std::string, IconType, int>;
     using UnloadIconsFilter = geode::DispatchFilter<int>;
+    using InfoPopupFilter = geode::DispatchFilter<FLAlertLayer**, std::string, IconType>;
 
     using SimplePlayerEvent = SimplePlayerFilter::Event;
     using RobotSpriteEvent = RobotSpriteFilter::Event;
@@ -55,114 +55,91 @@ public:
     using LoadIconEvent = LoadIconFilter::Event;
     using UnloadIconEvent = UnloadIconFilter::Event;
     using UnloadIconsEvent = UnloadIconsFilter::Event;
+    using InfoPopupEvent = InfoPopupFilter::Event;
 
-    /**
-     * Checks if the More Icons mod is loaded.
-     * @returns Whether or not the More Icons mod is loaded.
-     */
+    /// Checks if the More Icons mod is loaded.
+    /// @returns Whether or not the More Icons mod is loaded.
     static bool loaded() {
         return geode::Loader::get()->isModLoaded(MORE_ICONS_ID);
     }
 
-    /**
-     * Returns the Mod object for the More Icons mod.
-     * @returns The Mod object for the More Icons mod, or nullptr if the mod is not loaded.
-     */
+    /// Returns the Mod object for the More Icons mod.
+    /// @returns The Mod object for the More Icons mod, or nullptr if the mod is not loaded.
     static geode::Mod* get() {
         return geode::Loader::get()->getLoadedMod(MORE_ICONS_ID);
     }
 
-    /**
-     * Loads a custom icon into the texture cache.
-     * @param name The name of the icon to load.
-     * @param type The type of icon to load.
-     * @param requestID The request ID of the icon to load.
-     */
+    /// Loads a custom icon into the texture cache.
+    /// @param name The name of the icon to load.
+    /// @param type The type of icon to load.
+    /// @param requestID The request ID of the icon to load.
     static void loadIcon(const std::string& name, IconType type, int requestID) {
         if (loaded()) LoadIconEvent("load-icon"_mi, name, type, requestID).post();
     }
 
-    /**
-     * Unloads a custom icon from the texture cache.
-     * @param name The name of the icon to unload.
-     * @param type The type of icon to unload.
-     * @param requestID The request ID of the icon to unload.
-     */
+    /// Unloads a custom icon from the texture cache.
+    /// @param name The name of the icon to unload.
+    /// @param type The type of icon to unload.
+    /// @param requestID The request ID of the icon to unload.
     static void unloadIcon(const std::string& name, IconType type, int requestID) {
         if (loaded()) UnloadIconEvent("unload-icon"_mi, name, type, requestID).post();
     }
 
-    /**
-     * Unloads all custom icons associated with a request ID.
-     * @param requestID The request ID of the icons to unload.
-     */
+    /// Unloads all custom icons associated with a request ID.
+    /// @param requestID The request ID of the icons to unload.
     static void unloadIcons(int requestID) {
         if (loaded()) UnloadIconsEvent("unload-icons"_mi, requestID).post();
     }
 
-    /**
-     * Changes the icon of a SimplePlayer object to a custom icon.
-     * @param player The SimplePlayer object to change the icon of.
-     * @param type The type of icon to change to.
-     * @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
-     */
+    /// Changes the icon of a SimplePlayer object to a custom icon.
+    /// @param player The SimplePlayer object to change the icon of.
+    /// @param type The type of icon to change to.
+    /// @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
     static void updateSimplePlayer(SimplePlayer* player, IconType type, bool dual = false) {
         updateSimplePlayer(player, activeIcon(type, dual), type);
     }
 
-    /**
-     * Changes the icon of a SimplePlayer object to a custom icon.
-     * @param player The SimplePlayer object to change the icon of.
-     * @param icon The name of the icon to change to.
-     * @param type The type of icon to change to.
-     */
+    /// Changes the icon of a SimplePlayer object to a custom icon.
+    /// @param player The SimplePlayer object to change the icon of.
+    /// @param icon The name of the icon to change to.
+    /// @param type The type of icon to change to.
     static void updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type) {
         if (player && !icon.empty() && loaded()) SimplePlayerEvent("simple-player"_mi, player, icon, type).post();
     }
 
-    /**
-     * Changes the icon of a GJRobotSprite object to a custom icon.
-     * @param sprite The GJRobotSprite object to change the icon of.
-     * @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
-     */
+    /// Changes the icon of a GJRobotSprite object to a custom icon.
+    /// @param sprite The GJRobotSprite object to change the icon of.
+    /// @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
     static void updateRobotSprite(GJRobotSprite* sprite, bool dual = false) {
         updateRobotSprite(sprite, sprite->m_iconType, dual);
     }
 
-    /**
-     * Changes the icon of a GJRobotSprite object to a custom icon.
-     * @param sprite The GJRobotSprite object to change the icon of.
-     * @param icon The name of the icon to change to.
-     */
+    /// Changes the icon of a GJRobotSprite object to a custom icon.
+    /// @param sprite The GJRobotSprite object to change the icon of.
+    /// @param icon The name of the icon to change to.
     static void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon) {
         updateRobotSprite(sprite, icon, sprite->m_iconType);
     }
 
-    /**
-     * Changes the icon of a GJRobotSprite object to a custom icon.
-     * @param sprite The GJRobotSprite object to change the icon of.
-     * @param type The type of icon to change to.
-     * @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
-     */
+    /// Changes the icon of a GJRobotSprite object to a custom icon.
+    /// @param sprite The GJRobotSprite object to change the icon of.
+    /// @param type The type of icon to change to.
+    /// @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
     static void updateRobotSprite(GJRobotSprite* sprite, IconType type, bool dual = false) {
         updateRobotSprite(sprite, activeIcon(type, dual), type);
     }
 
-    /**
-     * Changes the icon of a GJRobotSprite object to a custom icon.
-     * @param sprite The GJRobotSprite object to change the icon of.
-     * @param icon The name of the icon to change to.
-     * @param type The type of icon to change to.
-     */
+    /// Changes the icon of a GJRobotSprite object to a custom icon.
+    /// @param sprite The GJRobotSprite object to change the icon of.
+    /// @param icon The name of the icon to change to.
+    /// @param type The type of icon to change to.
     static void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type) {
         if (sprite && !icon.empty() && loaded()) RobotSpriteEvent("robot-sprite"_mi, sprite, icon, type).post();
     }
 
-    /**
-     * Returns the icon type for the given player object.
-     * @param object The player object to get the icon type for.
-     * @returns The icon type for the given player object, or IconType::Cube if the object is null.
-     */
+    /// Returns the icon type for the given player object.
+    /// @param object The player object to get the icon type for.
+    /// @returns The icon type for the given player object, or IconType::Cube if the object is null.
     static IconType getIconType(PlayerObject* object) {
         if (!object) return IconType::Cube;
 
@@ -179,93 +156,75 @@ public:
         else return IconType::Cube;
     }
 
-    /**
-     * Changes the icon of a PlayerObject object to a custom icon.
-     * @param object The PlayerObject object to change the icon of.
-     * @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
-     */
+    /// Changes the icon of a PlayerObject object to a custom icon.
+    /// @param object The PlayerObject object to change the icon of.
+    /// @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
     static void updatePlayerObject(PlayerObject* object, bool dual = false) {
         updatePlayerObject(object, getIconType(object), dual);
     }
 
-    /**
-     * Changes the icon of a PlayerObject object to a custom icon.
-     * @param object The PlayerObject object to change the icon of.
-     * @param icon The name of the icon to change to.
-     */
+    /// Changes the icon of a PlayerObject object to a custom icon.
+    /// @param object The PlayerObject object to change the icon of.
+    /// @param icon The name of the icon to change to.
     static void updatePlayerObject(PlayerObject* object, const std::string& icon) {
         updatePlayerObject(object, icon, getIconType(object));
     }
 
-    /**
-     * Changes the icon of a PlayerObject object to a custom icon.
-     * @param object The PlayerObject object to change the icon of.
-     * @param type The type of icon to change to.
-     * @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
-     */
+    /// Changes the icon of a PlayerObject object to a custom icon.
+    /// @param object The PlayerObject object to change the icon of.
+    /// @param type The type of icon to change to.
+    /// @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
     static void updatePlayerObject(PlayerObject* object, IconType type, bool dual = false) {
         updatePlayerObject(object, activeIcon(type, dual), type);
     }
 
-    /**
-     * Changes the icon of a PlayerObject object to a custom icon.
-     * @param object The PlayerObject object to change the icon of.
-     * @param icon The name of the icon to change to.
-     * @param type The type of icon to change to.
-     */
+    /// Changes the icon of a PlayerObject object to a custom icon.
+    /// @param object The PlayerObject object to change the icon of.
+    /// @param icon The name of the icon to change to.
+    /// @param type The type of icon to change to.
     static void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type) {
         if (object && !icon.empty() && loaded()) PlayerObjectEvent("player-object"_mi, object, icon, type).post();
     }
 
-    /**
-     * Returns a vector of all custom icons.
-     * @returns A vector of all custom icons.
-     */
+    /// Returns a vector of all custom icons.
+    /// @returns A vector of all custom icons.
     static std::vector<IconInfo*> getIcons() {
         std::vector<IconInfo*> vec;
         if (loaded()) AllIconsEvent("all-icons"_mi, &vec).post();
         return vec;
     }
 
-    /**
-     * Returns a vector of all icons for a specific type.
-     * @param type The type of icon to get all icons for.
-     * @returns A vector of all icons for the specified type.
-     */
+    /// Returns a vector of all icons for a specific type.
+    /// @param type The type of icon to get all icons for.
+    /// @returns A vector of all icons for the specified type.
     static std::vector<IconInfo*> getIcons(IconType type) {
         std::vector<IconInfo*> vec;
         if (loaded()) GetIconsEvent("get-icons"_mi, &vec, type).post();
         return vec;
     }
 
-    /**
-     * Returns the icon info for a specific icon.
-     * @param name The name of the icon to get the info for.
-     * @param type The type of icon to get the info for.
-     * @returns The icon info for the specified icon, or nullptr if the icon is not found.
-     */
+    /// Returns the icon info for a specific icon.
+    /// @param name The name of the icon to get the info for.
+    /// @param type The type of icon to get the info for.
+    /// @returns The icon info for the specified icon, or nullptr if the icon is not found.
     static IconInfo* getIcon(const std::string& name, IconType type) {
         IconInfo* info = nullptr;
         if (loaded()) GetIconEvent("get-icon"_mi, &info, name, type).post();
         return info;
     }
 
-    /**
-     * Returns the icon info for the active icon of a specific type.
-     * @param type The type of icon to get the info for.
-     * @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
-     * @returns The icon info for the active icon of the specified type, or nullptr if the icon is not found.
-     */
+    /// Returns the icon info for the active icon of a specific type.
+    /// @param type The type of icon to get the info for.
+    /// @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
+    /// @returns The icon info for the active icon of the specified type, or nullptr if the icon is not found.
     static IconInfo* getIcon(IconType type, bool dual = false) {
         return getIcon(activeIcon(type, dual), type);
     }
 
-    /**
-     * Returns the save key for the given icon type.
-     * @param type The type of icon to get the save key for.
-     * @param dual Whether or not to use the icon for the dual player.
-     * @returns The save key for the given icon type, or an empty string if there is none.
-     */
+    /// Returns the save key for the given icon type.
+    /// @param type The type of icon to get the save key for.
+    /// @param dual Whether or not to use the icon for the dual player.
+    /// @returns The save key for the given icon type, or an empty string if there is none.
     static std::string_view saveKey(IconType type, bool dual) {
         auto isDual = geode::Loader::get()->isModLoaded("weebify.separate_dual_icons") && dual;
         switch (type) {
@@ -283,39 +242,44 @@ public:
         }
     }
 
-    /**
-     * Returns the active icon for a specific type.
-     * @param type The type of icon to get the active icon for.
-     * @param dual Whether or not to get the active icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
-     * @returns The active icon for the specified type, or an empty string if the icon is not set.
-     */
+    /// Returns the active icon for a specific type.
+    /// @param type The type of icon to get the active icon for.
+    /// @param dual Whether or not to get the active icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
+    /// @returns The active icon for the specified type, or an empty string if the icon is not set.
     static std::string activeIcon(IconType type, bool dual = false) {
         if (!loaded()) return "";
         auto savedType = saveKey(type, dual);
         return !savedType.empty() ? get()->getSavedValue<std::string>(savedType, "") : "";
     }
 
-    /**
-     * Sets the icon for a specific type.
-     * @param icon The name of the icon to set.
-     * @param type The type of icon to set.
-     * @param dual Whether or not to set the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
-     * @returns The name of the previous icon for the specified type, or an empty string if the icon was not set.
-     */
+    /// Sets the icon for a specific type.
+    /// @param icon The name of the icon to set.
+    /// @param type The type of icon to set.
+    /// @param dual Whether or not to set the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
+    /// @returns The name of the previous icon for the specified type, or an empty string if the icon was not set.
     static std::string setIcon(const std::string& icon, IconType type, bool dual = false) {
         if (!loaded()) return "";
         auto savedType = saveKey(type, dual);
         return !savedType.empty() ? get()->setSavedValue(savedType, icon) : "";
     }
 
-    /**
-     * Returns the custom icon name of a node. (cocos2d::CCMotionStreak, CCMenuItemSpriteExtra, GJRobotSprite, PlayerObject, SimplePlayer)
-     * @param node The node to get the icon name of.
-     * @returns The icon name of the specified node, or an empty string if the icon name is not set.
-     */
+    /// Returns the custom icon name of a node. (cocos2d::CCMotionStreak, CCMenuItemSpriteExtra, GJRobotSprite, PlayerObject, SimplePlayer)
+    /// @param node The node to get the icon name of.
+    /// @returns The icon name of the specified node, or an empty string if the icon name is not set.
     static std::string getIconName(cocos2d::CCNode* node) {
         if (!node || !loaded()) return "";
         auto userObject = static_cast<cocos2d::CCString*>(node->getUserObject("name"_mi));
         return userObject ? userObject->m_sString : "";
+    }
+
+    /// Creates a popup with information about an icon.
+    /// @param name The name of the icon.
+    /// @param type The type of the icon.
+    /// @returns A pointer to the created popup, or nullptr if the popup could not be created.
+    static FLAlertLayer* createInfoPopup(const std::string& name, IconType type) {
+        if (!loaded()) return nullptr;
+        FLAlertLayer* popup = nullptr;
+        InfoPopupEvent("info-popup"_mi, &popup, name, type).post();
+        return popup;
     }
 };
