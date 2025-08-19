@@ -272,6 +272,10 @@ public:
         return userObject ? userObject->m_sString : "";
     }
 
+    /// Creates a popup with information about an icon.
+    /// @param name The name of the icon.
+    /// @param type The type of the icon.
+    /// @returns A pointer to the created popup, or nullptr if the popup could not be created.
     static FLAlertLayer* createInfoPopup(const std::string& name, IconType type) {
         if (!loaded()) return nullptr;
         FLAlertLayer* popup = nullptr;
