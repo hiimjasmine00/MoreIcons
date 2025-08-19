@@ -1,4 +1,8 @@
 # More Icons Changelog
+## v1.14.7 (2025-08-19)
+- Added an API method to open the icon info popup (Suggested by [NyteLyte](user:26352471))
+- Removed API macros and replaced `MORE_ICONS_EXPAND` with operator `""_mi`
+
 ## v1.14.6 (2025-08-18)
 - Refactored the icon kit code to improve mod compatibility ([#44](https://github.com/hiimjasmine00/MoreIcons/pull/44))
 - Update by [NyteLyte](user:26352471) and [hiimjasmine00](user:7466002)

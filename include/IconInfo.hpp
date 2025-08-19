@@ -3,9 +3,7 @@
 #include <string>
 #include <vector>
 
-/**
- * A struct that contains information about a custom icon.
- */
+/// A struct that contains information about a custom icon.
 struct IconInfo {
     std::string name;
     std::vector<std::string> textures;

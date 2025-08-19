@@ -9,10 +9,18 @@
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/ListButtonBar.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/loader/Dispatch.hpp>
 #include <Geode/modify/GJGarageLayer.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
 
 using namespace geode::prelude;
+
+$execute {
+    new EventListener(+[](FLAlertLayer** layer, const std::string& name, IconType type) {
+        if (auto info = MoreIconsAPI::getIcon(name, type)) *layer = MoreInfoPopup::create(info);
+        return ListenerResult::Propagate;
+    }, DispatchFilter<FLAlertLayer**, std::string, IconType>("info-popup"_spr));
+}
 
 class $modify(MIGarageLayer, GJGarageLayer) {
     struct Fields {
@@ -99,8 +107,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         if (btn->m_iconType != IconType::ShipFire) {
             m_cursor1->setOpacity(255);
             m_fields->m_selectedIcon = "";
-            MoreIconsAPI::setIcon("", dual ? (IconType)Loader::get()->getLoadedMod(
-                "weebify.separate_dual_icons")->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
+            MoreIconsAPI::setIcon("", dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
         }
     }
 
@@ -145,8 +152,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
     void createNavMenu(int page, IconType type) {
         auto f = m_fields.self();
-        auto winSize = CCDirector::get()->getWinSize();
         if (!f->m_navMenu) {
+            auto winSize = CCDirector::get()->getWinSize();
             f->m_navMenu = CCMenu::create();
             f->m_navMenu->setPosition({ winSize.width / 2.0f, 15.0f });
             f->m_navMenu->setContentSize({ winSize.width - 60.0f, 20.0f });
@@ -163,8 +170,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             m_navDotMenu->setEnabled(true);
             m_navDotMenu->removeAllChildren();
             auto firstDot = static_cast<CCMenuItemSprite*>(m_pageButtons->objectAtIndex(0));
-            static_cast<CCSprite*>(firstDot->getNormalImage())->setDisplayFrame(CCSpriteFrameCache::get()->spriteFrameByName(
-                f->m_pageBar && iconCount > 0 ? "gj_navDotBtn_off_001.png" : "gj_navDotBtn_on_001.png"));
+            static_cast<CCSprite*>(firstDot->getNormalImage())->setDisplayFrame(
+                CCSpriteFrameCache::get()->spriteFrameByName("gj_navDotBtn_on_001.png"));
             m_navDotMenu->addChild(firstDot);
             m_navDotMenu->updateLayout();
             m_leftArrow->setVisible(true);
@@ -311,8 +318,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             MoreIconsAPI::updateSimplePlayer(player, name, m_iconType);
             player->setScale(m_iconType == IconType::Jetpack ? 1.5f : 1.6f);
         }
-        auto selectedIconType = dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType;
-        if (selectedIcon == name && selectedIconType == m_iconType) {
+
+        if (name == selectedIcon && m_iconType == (dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType)) {
             if (auto info = MoreIconsAPI::getIcon(name, m_iconType)) MoreInfoPopup::create(info)->show();
         }
 
