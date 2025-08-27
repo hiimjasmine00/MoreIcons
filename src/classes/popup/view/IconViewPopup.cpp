@@ -45,13 +45,23 @@ bool IconViewPopup::setup(IconType type, bool custom) {
         auto& icons = MoreIconsAPI::icons[type];
         auto count = icons.size();
         for (int i = 0; i < count; i++) {
-            scrollLayer->m_contentLayer->addChild(LazyIcon::create(type, 0, icons.data() + i));
+            auto lazyIcon = LazyIcon::create(type, 0, icons.data() + i);
+            auto iconMenu = CCMenu::createWithItem(lazyIcon);
+            iconMenu->setContentSize(lazyIcon->getContentSize());
+            iconMenu->ignoreAnchorPointForPosition(false);
+            iconMenu->setID(fmt::format("{}-menu", lazyIcon->getID()));
+            scrollLayer->m_contentLayer->addChild(iconMenu);
         }
     }
     else {
         auto count = gameManager->countForType(type);
         for (int i = 1; i <= count; i++) {
-            scrollLayer->m_contentLayer->addChild(LazyIcon::create(type, i, nullptr));
+            auto lazyIcon = LazyIcon::create(type, i, nullptr);
+            auto iconMenu = CCMenu::createWithItem(lazyIcon);
+            iconMenu->setContentSize(lazyIcon->getContentSize());
+            iconMenu->ignoreAnchorPointForPosition(false);
+            iconMenu->setID(fmt::format("{}-menu", lazyIcon->getID()));
+            scrollLayer->m_contentLayer->addChild(iconMenu);
         }
     }
 

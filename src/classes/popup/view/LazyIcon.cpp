@@ -26,6 +26,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info) {
     if (!CCMenuItemSpriteExtra::init(normalImage, nullptr, nullptr, nullptr)) return false;
 
     auto contentSize = MoreIconsAPI::get<CCSpriteFrameCache>()->spriteFrameByName("playerSquare_001.png")->getOriginalSize();
+    setPosition(contentSize / 2.0f);
     setContentSize(contentSize);
     normalImage->setPosition(contentSize / 2.0f);
 

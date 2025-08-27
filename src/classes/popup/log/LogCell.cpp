@@ -53,8 +53,7 @@ bool LogCell::init(const std::string& name, const std::string& message, int seve
     });
     viewButton->setID("view-button");
 
-    auto buttonMenu = CCMenu::create();
-    buttonMenu->addChild(viewButton);
+    auto buttonMenu = CCMenu::createWithItem(viewButton);
     buttonMenu->setPosition({ 370.0f, 15.0f });
     buttonMenu->setID("button-menu");
     addChild(buttonMenu);

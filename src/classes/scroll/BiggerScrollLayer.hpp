@@ -9,10 +9,6 @@ protected:
 public:
     static BiggerScrollLayer* create(float, float, float = 0.0f, float = 0.0f);
 
-    bool ccTouchBegan(cocos2d::CCTouch*, cocos2d::CCEvent*) override;
-    void ccTouchMoved(cocos2d::CCTouch*, cocos2d::CCEvent*) override;
-    void ccTouchEnded(cocos2d::CCTouch*, cocos2d::CCEvent*) override;
-    void ccTouchCancelled(cocos2d::CCTouch*, cocos2d::CCEvent*) override;
     void onEnter() override;
     void onEnterTransitionDidFinish() override;
     void onExit() override;

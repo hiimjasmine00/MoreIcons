@@ -45,22 +45,6 @@ BiggerScrollLayer* BiggerScrollLayer::create(float width, float height, float st
     return ret;
 }
 
-bool BiggerScrollLayer::ccTouchBegan(CCTouch* touch, CCEvent* event) {
-    return m_contentLayer->isTouchEnabled() ? m_contentLayer->ccTouchBegan(touch, event) : CCScrollLayerExt::ccTouchBegan(touch, event);
-}
-
-void BiggerScrollLayer::ccTouchMoved(CCTouch* touch, CCEvent* event) {
-    return m_contentLayer->isTouchEnabled() ? m_contentLayer->ccTouchMoved(touch, event) : CCScrollLayerExt::ccTouchMoved(touch, event);
-}
-
-void BiggerScrollLayer::ccTouchEnded(CCTouch* touch, CCEvent* event) {
-    return m_contentLayer->isTouchEnabled() ? m_contentLayer->ccTouchEnded(touch, event) : CCScrollLayerExt::ccTouchEnded(touch, event);
-}
-
-void BiggerScrollLayer::ccTouchCancelled(CCTouch* touch, CCEvent* event) {
-    return m_contentLayer->isTouchEnabled() ? m_contentLayer->ccTouchCancelled(touch, event) : CCScrollLayerExt::ccTouchCancelled(touch, event);
-}
-
 void BiggerScrollLayer::onEnter() {
     CCLayer::onEnter();
     m_stencil->onEnter();
