@@ -723,14 +723,14 @@ matjson::Value parseNode(const pugi::xml_node& node) {
     std::string_view name = node.name();
     if (name == "dict") {
         auto json = matjson::Value::object();
-        for (auto child = node.child("key"); child; child = child.next_sibling("key")) {
+        for (auto child = node.child("key"); !child.empty(); child = child.next_sibling("key")) {
             json[child.text().as_string()] = parseNode(child.next_sibling());
         }
         return json;
     }
     else if (name == "array") {
         auto json = matjson::Value::array();
-        for (auto child = node.first_child(); child; child = child.next_sibling()) {
+        for (auto child = node.first_child(); !child.empty(); child = child.next_sibling()) {
             json.push(parseNode(child));
         }
         return json;

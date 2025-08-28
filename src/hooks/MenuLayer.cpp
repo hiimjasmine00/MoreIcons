@@ -21,7 +21,9 @@ class $modify(MIMenuLayer, MenuLayer) {
                     });
                 }, ModStateFilter(iconProfile, ModEventType::Loaded));
             }
-        }).inspectErr([](const std::string& err) { log::error("Failed to get MenuLayer::init hook: {}", err); });
+        }).inspectErr([](const std::string& err) {
+            log::error("Failed to get MenuLayer::init hook: {}", err);
+        });
     }
 
     static void afterPriority(Hook* hook, Mod* mod) {

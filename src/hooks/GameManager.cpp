@@ -8,11 +8,13 @@ class $modify(MIGameManager, GameManager) {
     inline static Hook* sheetHook = nullptr;
 
     static void onModify(ModifyBase<ModifyDerive<MIGameManager, GameManager>>& self) {
-        (void)self.setHookPriority("GameManager::loadIcon", 999999999);
+        (void)self.setHookPriority("GameManager::loadIcon", Priority::Replace);
         self.getHook("GameManager::sheetNameForIcon").inspect([](Hook* hook) {
             hook->setAutoEnable(Mod::get()->getSettingValue<bool>("traditional-packs"));
             sheetHook = hook;
-        }).inspectErr([](const std::string& err) { log::error("Failed to get GameManager::sheetNameForIcon hook: {}", err); });
+        }).inspectErr([](const std::string& err) {
+            log::error("Failed to get GameManager::sheetNameForIcon hook: {}", err);
+        });
     }
 
     void reloadAllStep2() {
@@ -37,11 +39,8 @@ class $modify(MIGameManager, GameManager) {
         MoreIcons::loadSettings();
 
         if (sheetHook) {
-            if (MoreIcons::traditionalPacks) sheetHook->enable().inspectErr([](const std::string& err) {
-                log::error("Failed to enable GameManager::sheetNameForIcon hook: {}", err);
-            });
-            else sheetHook->disable().inspectErr([](const std::string& err) {
-                log::error("Failed to disable GameManager::sheetNameForIcon hook: {}", err);
+            sheetHook->toggle(MoreIcons::traditionalPacks).inspectErr([](const std::string& err) {
+                log::error("Failed to toggle GameManager::sheetNameForIcon hook: {}", err);
             });
         }
     }
