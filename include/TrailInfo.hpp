@@ -31,8 +31,8 @@ struct matjson::Serialize<TrailInfo> {
             GEODE_UNWRAP_INTO_IF_OK(info.blend, value.get("blend").andThen([](const matjson::Value& v) { return v.asBool(); }));
             GEODE_UNWRAP_INTO_IF_OK(info.tint, value.get("tint").andThen([](const matjson::Value& v) { return v.asBool(); }));
             GEODE_UNWRAP_INTO_IF_OK(info.show, value.get("show").andThen([](const matjson::Value& v) { return v.asBool(); }));
-            GEODE_UNWRAP_INTO_IF_OK(info.fade, value.get("fade").andThen([](const matjson::Value& v) { return v.as<float>(); }));
-            GEODE_UNWRAP_INTO_IF_OK(info.stroke, value.get("stroke").andThen([](const matjson::Value& v) { return v.as<float>(); }));
+            GEODE_UNWRAP_INTO_IF_OK(info.fade, value.get("fade").andThen([](const matjson::Value& v) { return v.asDouble(); }));
+            GEODE_UNWRAP_INTO_IF_OK(info.stroke, value.get("stroke").andThen([](const matjson::Value& v) { return v.asDouble(); }));
         }
         return geode::Ok(info);
     }

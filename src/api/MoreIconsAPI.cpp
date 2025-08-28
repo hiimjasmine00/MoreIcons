@@ -764,7 +764,7 @@ Result<Autorelease<CCDictionary>> MoreIconsAPI::createFrames(
     if (!json.contains("frames")) return Err("No frames <dict> element found");
 
     auto format = json.get("metadata").andThen([](const matjson::Value& v) {
-        return v.get("format").andThen([](const matjson::Value& v) { return v.as<int>(); });
+        return v.get("format").andThen([](const matjson::Value& v) { return v.asInt(); });
     }).unwrapOr(0);
 
     Autorelease frames = new CCDictionary();
@@ -781,29 +781,17 @@ Result<Autorelease<CCDictionary>> MoreIconsAPI::createFrames(
 
         switch (format) {
             case 0: {
-                GEODE_UNWRAP_INTO_IF_OK(rect.origin.x, obj.get("x").andThen([](const matjson::Value& v) {
-                    return v.as<float>();
-                }));
-                GEODE_UNWRAP_INTO_IF_OK(rect.origin.y, obj.get("y").andThen([](const matjson::Value& v) {
-                    return v.as<float>();
-                }));
-                GEODE_UNWRAP_INTO_IF_OK(rect.size.width, obj.get("width").andThen([](const matjson::Value& v) {
-                    return v.as<float>();
-                }));
-                GEODE_UNWRAP_INTO_IF_OK(rect.size.height, obj.get("height").andThen([](const matjson::Value& v) {
-                    return v.as<float>();
-                }));
-                GEODE_UNWRAP_INTO_IF_OK(offset.x, obj.get("offsetX").andThen([](const matjson::Value& v) {
-                    return v.as<float>();
-                }));
-                GEODE_UNWRAP_INTO_IF_OK(offset.y, obj.get("offsetY").andThen([](const matjson::Value& v) {
-                    return v.as<float>();
-                }));
+                GEODE_UNWRAP_INTO_IF_OK(rect.origin.x, obj.get("x").andThen([](const matjson::Value& v) { return v.asDouble(); }));
+                GEODE_UNWRAP_INTO_IF_OK(rect.origin.y, obj.get("y").andThen([](const matjson::Value& v) { return v.asDouble(); }));
+                GEODE_UNWRAP_INTO_IF_OK(rect.size.width, obj.get("width").andThen([](const matjson::Value& v) { return v.asDouble(); }));
+                GEODE_UNWRAP_INTO_IF_OK(rect.size.height, obj.get("height").andThen([](const matjson::Value& v) { return v.asDouble(); }));
+                GEODE_UNWRAP_INTO_IF_OK(offset.x, obj.get("offsetX").andThen([](const matjson::Value& v) { return v.asDouble(); }));
+                GEODE_UNWRAP_INTO_IF_OK(offset.y, obj.get("offsetY").andThen([](const matjson::Value& v) { return v.asDouble(); }));
                 GEODE_UNWRAP_INTO_IF_OK(originalSize.width, obj.get("originalWidth").andThen([](const matjson::Value& v) {
-                    return v.asInt().map([](intmax_t v) -> float { return imaxabs(v); });
+                    return v.asInt().map([](intmax_t v) { return abs(v); });
                 }));
                 GEODE_UNWRAP_INTO_IF_OK(originalSize.height, obj.get("originalHeight").andThen([](const matjson::Value& v) {
-                    return v.asInt().map([](intmax_t v) -> float { return imaxabs(v); });
+                    return v.asInt().map([](intmax_t v) { return abs(v); });
                 }));
                 break;
             }
