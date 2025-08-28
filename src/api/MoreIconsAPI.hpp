@@ -52,15 +52,15 @@ struct ImageResult {
 
 class MoreIconsAPI {
 public:
-    inline static constexpr std::array prefixes = {
+    static constexpr std::array prefixes = {
         "player_", "ship_", "player_ball_", "bird_", "dart_", "robot_", "spider_",
         "swing_", "jetpack_", "PlayerExplosion_", "streak_", "", "shipfire"
     };
-    inline static constexpr std::array lowercase = {
+    static constexpr std::array lowercase = {
         "icon", "ship", "ball", "UFO", "wave", "robot", "spider",
         "swing", "jetpack", "death effect", "trail", "", "ship fire"
     };
-    inline static constexpr std::array uppercase = {
+    static constexpr std::array uppercase = {
         "Icon", "Ship", "Ball", "UFO", "Wave", "Robot", "Spider",
         "Swing", "Jetpack", "Death Effect", "Trail", "", "Ship Fire"
     };

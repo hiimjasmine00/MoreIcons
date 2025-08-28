@@ -30,10 +30,10 @@ struct ColorInfo {
 
 class MoreIcons {
 public:
-    inline static constexpr std::array severityFrames = {
+    static constexpr std::array severityFrames = {
         "cc_2x2_white_image", "GJ_infoIcon_001.png", "geode.loader/info-warning.png", "geode.loader/info-alert.png"
     };
-    inline static constexpr std::array folders = {
+    static constexpr std::array folders = {
         "icon", "ship", "ball", "ufo", "wave", "robot", "spider",
         "swing", "jetpack", "death", "trail", "", "fire"
     };
