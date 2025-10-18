@@ -49,7 +49,7 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
         #ifdef __cpp_lib_to_chars
         std::from_chars(str.data(), str.data() + str.size(), m_trailInfo.fade);
         #else
-        GEODE_UNWRAP_INTO_IF_OK(m_trailInfo.fade, numFromString<float>(str));
+        if (auto res = numFromString<float>(str)) m_trailInfo.fade = res.unwrap();
         #endif
         m_trailInfo.fade = std::clamp(m_trailInfo.fade * 100.0f, 0.0f, 200.0f) / 100.0f;
         fadeTimeSlider->setValue(m_trailInfo.fade / 2.0f);
@@ -85,7 +85,7 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
         #ifdef __cpp_lib_to_chars
         std::from_chars(str.data(), str.data() + str.size(), m_trailInfo.stroke);
         #else
-        GEODE_UNWRAP_INTO_IF_OK(m_trailInfo.stroke, numFromString<float>(str));
+        if (auto res = numFromString<float>(str)) m_trailInfo.stroke = res.unwrap();
         #endif
         m_trailInfo.stroke = roundf(std::clamp(m_trailInfo.stroke * 10.0f, 0.0f, 200.0f)) / 10.0f;
         strokeWidthSlider->setValue(m_trailInfo.stroke / 20.0f);

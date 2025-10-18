@@ -64,21 +64,14 @@ public:
         "Icon", "Ship", "Ball", "UFO", "Wave", "Robot", "Spider",
         "Swing", "Jetpack", "Death Effect", "Trail", "", "Ship Fire"
     };
-    inline static std::map<IconType, std::vector<IconInfo>> icons = {
-        { IconType::Cube, {} },
-        { IconType::Ship, {} },
-        { IconType::Ball, {} },
-        { IconType::Ufo, {} },
-        { IconType::Wave, {} },
-        { IconType::Robot, {} },
-        { IconType::Spider, {} },
-        { IconType::Swing, {} },
-        { IconType::Jetpack, {} },
-        { IconType::Special, {} }
-    };
-    inline static std::map<int, std::map<IconType, std::string>> requestedIcons;
-    inline static std::map<std::pair<std::string, IconType>, int> loadedIcons;
-    inline static bool preloadIcons = false;
+    static std::map<IconType, std::vector<IconInfo>> icons;
+    static std::map<int, std::map<IconType, std::string>> requestedIcons;
+    static std::map<std::pair<std::string, IconType>, int> loadedIcons;
+    static bool preloadIcons;
+
+    static int convertType(IconType type) {
+        return (int)type - (type >= IconType::DeathEffect) * 89;
+    }
 
     static IconInfo* getIcon(const std::string& name, IconType type);
     static IconInfo* getIcon(IconType type, bool dual);
@@ -88,16 +81,20 @@ public:
     static std::string getIconName(cocos2d::CCNode* node);
     static bool hasIcon(const std::string& icon, IconType type);
     static bool hasIcon(IconType type, bool dual);
-    static int convertType(IconType type) {
-        return (int)type - (type >= IconType::DeathEffect) * 89;
-    }
-    template <class T>
-    static T* get();
+    static CCAnimateFrameCache* getAnimateFrameCache();
+    static cocos2d::CCAnimationCache* getAnimationCache();
+    static cocos2d::CCFileUtils* getFileUtils();
+    static cocos2d::CCDirector* getDirector();
+    static cocos2d::CCShaderCache* getShaderCache();
+    static cocos2d::CCSpriteFrameCache* getSpriteFrameCache();
+    static cocos2d::CCTextureCache* getTextureCache();
+    static GameManager* getGameManager();
+    static ObjectManager* getObjectManager();
     static void reset();
     static cocos2d::CCSpriteFrame* getFrame(std::string_view name);
     static cocos2d::CCSprite* customTrail(const std::string& png);
     static cocos2d::CCTexture2D* loadIcon(const std::string& name, IconType type, int requestID);
-    static void loadIcons(IconType type, bool logs);
+    static void loadIcons(IconType type);
     static void unloadIcon(const std::string& name, IconType type, int requestID);
     static void unloadIcons(int requestID);
     static IconInfo* addIcon(

@@ -93,31 +93,31 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
             auto parent = std::filesystem::path(info->textures[0]).parent_path();
 
             if (info->type == IconType::Special) {
-                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + ".png"), parent / (name + ".png")))) {
-                    return Notification::create(fmt::format("Failed to rename {}.png: {}", old, err), NotificationIcon::Error)->show();
+                if (auto err = MoreIcons::renameFile(parent / (old + ".png"), parent / (name + ".png")).err()) {
+                    return Notification::create(fmt::format("Failed to rename {}.png: {}", old, *err), NotificationIcon::Error)->show();
                 }
-                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + ".json"), parent / (name + ".json")))) {
-                    return Notification::create(fmt::format("Failed to rename {}.json: {}", old, err), NotificationIcon::Error)->show();
+                if (auto err = MoreIcons::renameFile(parent / (old + ".json"), parent / (name + ".json")).err()) {
+                    return Notification::create(fmt::format("Failed to rename {}.json: {}", old, *err), NotificationIcon::Error)->show();
                 }
             }
             else if (info->type <= IconType::Jetpack) {
-                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + "-uhd.png"), parent / (name + "-uhd.png")))) {
-                    return Notification::create(fmt::format("Failed to rename {}-uhd.png: {}", old, err), NotificationIcon::Error)->show();
+                if (auto err = MoreIcons::renameFile(parent / (old + "-uhd.png"), parent / (name + "-uhd.png")).err()) {
+                    return Notification::create(fmt::format("Failed to rename {}-uhd.png: {}", old, *err), NotificationIcon::Error)->show();
                 }
-                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + "-hd.png"), parent / (name + "-hd.png")))) {
-                    return Notification::create(fmt::format("Failed to rename {}-hd.png: {}", old, err), NotificationIcon::Error)->show();
+                if (auto err = MoreIcons::renameFile(parent / (old + "-hd.png"), parent / (name + "-hd.png")).err()) {
+                    return Notification::create(fmt::format("Failed to rename {}-hd.png: {}", old, *err), NotificationIcon::Error)->show();
                 }
-                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + ".png"), parent / (name + ".png")))) {
-                    return Notification::create(fmt::format("Failed to rename {}.png: {}", old, err), NotificationIcon::Error)->show();
+                if (auto err = MoreIcons::renameFile(parent / (old + ".png"), parent / (name + ".png")).err()) {
+                    return Notification::create(fmt::format("Failed to rename {}.png: {}", old, *err), NotificationIcon::Error)->show();
                 }
-                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + "-uhd.plist"), parent / (name + "-uhd.plist")))) {
-                    return Notification::create(fmt::format("Failed to rename {}-uhd.plist: {}", old, err), NotificationIcon::Error)->show();
+                if (auto err = MoreIcons::renameFile(parent / (old + "-uhd.plist"), parent / (name + "-uhd.plist")).err()) {
+                    return Notification::create(fmt::format("Failed to rename {}-uhd.plist: {}", old, *err), NotificationIcon::Error)->show();
                 }
-                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + "-hd.plist"), parent / (name + "-hd.plist")))) {
-                    return Notification::create(fmt::format("Failed to rename {}-hd.plist: {}", old, err), NotificationIcon::Error)->show();
+                if (auto err = MoreIcons::renameFile(parent / (old + "-hd.plist"), parent / (name + "-hd.plist")).err()) {
+                    return Notification::create(fmt::format("Failed to rename {}-hd.plist: {}", old, *err), NotificationIcon::Error)->show();
                 }
-                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(parent / (old + ".plist"), parent / (name + ".plist")))) {
-                    return Notification::create(fmt::format("Failed to rename {}.plist: {}", old, err), NotificationIcon::Error)->show();
+                if (auto err = MoreIcons::renameFile(parent / (old + ".plist"), parent / (name + ".plist")).err()) {
+                    return Notification::create(fmt::format("Failed to rename {}.plist: {}", old, *err), NotificationIcon::Error)->show();
                 }
             }
 

@@ -100,7 +100,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void resetTrail() {
         m_regularTrail->setUserObject("name"_spr, nullptr);
         if (!MoreIcons::traditionalPacks || (Loader::get()->isModLoaded("acaruso.pride") && m_playerStreak == 2)) return;
-        m_regularTrail->setTexture(MoreIconsAPI::get<CCTextureCache>()->addImage(
+        m_regularTrail->setTexture(MoreIconsAPI::getTextureCache()->addImage(
             MoreIcons::vanillaTexturePath(fmt::format("streak_{:02}_001.png", m_playerStreak), true).c_str(), false));
         if (m_playerStreak == 6) m_regularTrail->enableRepeatMode(0.1f);
     }

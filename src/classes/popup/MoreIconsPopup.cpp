@@ -117,9 +117,11 @@ bool MoreIconsPopup::setup() {
         label->setID("info-label");
         gamemodeMenu->addChild(label);
 
-        auto vanillaCount = MoreIconsAPI::get<GameManager>()->countForType(type);
+        auto vanillaCount = MoreIconsAPI::getGameManager()->countForType(type);
         auto customCount = MoreIconsAPI::icons[type].size();
-        auto logCount = std::ranges::count_if(MoreIcons::logs, [type](const LogData& log) { return log.type == type; });
+        auto logCount = std::ranges::count_if(MoreIcons::logs, [type](const LogData& log) {
+            return log.type == type;
+        });
 
         auto vanillaLabel = CCLabelBMFont::create(fmt::format("Vanilla: {}", vanillaCount).c_str(), "goldFont.fnt");
         vanillaLabel->limitLabelWidth(65.0f, 0.4f, 0.0f);
@@ -174,10 +176,8 @@ bool MoreIconsPopup::setup() {
     m_mainLayer->addChild(gamemodesNode);
 
     auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [](auto) {
-        GEODE_UNWRAP_OR_ELSE(trashDir, err, MoreIcons::createTrash()) {
-            return Notification::create(err, NotificationIcon::Error)->show();
-        }
-        file::openFolder(trashDir);
+        if (auto res = MoreIcons::createTrash()) file::openFolder(res.unwrap());
+        else Notification::create(res.unwrapErr(), NotificationIcon::Error)->show();
     });
     trashButton->setPosition({ 435.0f, 5.0f });
     trashButton->setID("trash-button");

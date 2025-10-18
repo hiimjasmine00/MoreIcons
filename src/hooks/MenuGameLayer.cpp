@@ -15,7 +15,7 @@ class $modify(MIMenuGameLayer, MenuGameLayer) {
         MenuGameLayer::resetPlayer();
 
         auto type = MoreIconsAPI::getIconType(m_playerObject);
-        auto gameManager = MoreIconsAPI::get<GameManager>();
+        auto gameManager = MoreIconsAPI::getGameManager();
 
         auto& icons = MoreIconsAPI::icons[type];
         auto iconCount = gameManager->countForType(type);

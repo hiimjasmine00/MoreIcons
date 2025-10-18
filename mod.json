@@ -1,5 +1,5 @@
 {
-    "geode": "4.8.0",
+    "geode": "4.9.0",
     "gd": {
         "android": "2.2074",
         "win": "2.2074",
@@ -39,6 +39,7 @@
             "name": "Info Logs",
             "description": "Whether to enable info logs in the mod.",
             "type": "bool",
+            "enable-if": "!debug-logs",
             "default": true
         },
         "traditional-packs": {

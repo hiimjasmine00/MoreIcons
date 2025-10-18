@@ -37,22 +37,11 @@ public:
         "icon", "ship", "ball", "ufo", "wave", "robot", "spider",
         "swing", "jetpack", "death", "trail", "", "fire"
     };
-    inline static std::vector<IconPack> packs;
-    inline static std::vector<LogData> logs;
-    inline static std::map<IconType, int> severities = {
-        { IconType::Cube, 0 },
-        { IconType::Ship, 0 },
-        { IconType::Ball, 0 },
-        { IconType::Ufo, 0 },
-        { IconType::Wave, 0 },
-        { IconType::Robot, 0 },
-        { IconType::Spider, 0 },
-        { IconType::Swing, 0 },
-        { IconType::Jetpack, 0 },
-        { IconType::Special, 0 }
-    };
-    inline static int severity = 0;
-    inline static bool traditionalPacks = true;
+    static std::vector<IconPack> packs;
+    static std::vector<LogData> logs;
+    static std::map<IconType, int> severities;
+    static int severity;
+    static bool traditionalPacks;
 
     static geode::Result<std::filesystem::path> createTrash();
     static bool doesExist(const std::filesystem::path& path);

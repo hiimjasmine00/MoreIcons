@@ -12,7 +12,9 @@ class $modify(MIProfilePage, ProfilePage) {
     }
 
     static void updatePlayer(CCNode* node, IconType type, bool dual) {
-        if (auto player = findFirstChildRecursive<SimplePlayer>(node, [](auto) { return true; })) {
+        if (auto player = findFirstChildRecursive<SimplePlayer>(node, [](auto) {
+            return true;
+        })) {
             MoreIconsAPI::updateSimplePlayer(player, type, dual);
         }
     }

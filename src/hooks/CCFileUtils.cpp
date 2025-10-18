@@ -8,7 +8,7 @@ class $modify(MIFileUtils, CCFileUtils) {
         auto ret = CCFileUtils::fullPathForFilename(filename, skipSuffix);
         if (ret.empty() || skipSuffix || !isAbsolutePath(filename)) return ret;
 
-        auto factor = MoreIconsAPI::get<CCDirector>()->getContentScaleFactor();
+        auto factor = MoreIconsAPI::getDirector()->getContentScaleFactor();
         if (factor >= 4.0f) {
             auto uhdSuffix = addSuffix(ret, "-uhd");
             if (isFileExist(uhdSuffix)) return uhdSuffix;

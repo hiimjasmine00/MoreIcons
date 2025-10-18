@@ -8,14 +8,14 @@ To use the More Icons API, you must add it as a suggested dependency in your `mo
 {
     "dependencies": {
         "hiimjustin000.more_icons": {
-            "version": ">=v1.14.0",
+            "version": ">=v1.15.0",
             "importance": "suggested"
         }
     }
 }
 ```
 
-## Supported [Icon Types](https://github.com/geode-sdk/bindings/blob/bfd6e27b9e00cee4d46e531de8599d0012e0a220/bindings/include/Geode/Enums.hpp#L764)
+## Supported [Icon Types](https://github.com/geode-sdk/bindings/blob/6a06e8cb926f551f34183aea673008967ee5c4e8/bindings/include/Geode/Enums.hpp#L864)
 - `IconType::Cube` (0)
 - `IconType::Ship` (1)
 - `IconType::Ball` (2)

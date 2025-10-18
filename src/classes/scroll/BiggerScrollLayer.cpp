@@ -118,7 +118,7 @@ void BiggerScrollLayer::visit() {
 
     glStencilFunc(GL_NEVER, 1, 1);
     glStencilOp(GL_ZERO, GL_KEEP, GL_KEEP);
-    ccDrawSolidRect({ 0.0f, 0.0f }, MoreIconsAPI::get<CCDirector>()->getWinSize(), { 1.0f, 1.0f, 1.0f, 1.0f });
+    ccDrawSolidRect({ 0.0f, 0.0f }, MoreIconsAPI::getDirector()->getWinSize(), { 1.0f, 1.0f, 1.0f, 1.0f });
     glStencilFunc(GL_NEVER, 1, 1);
     glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
 
@@ -134,7 +134,7 @@ void BiggerScrollLayer::visit() {
     glEnable(GL_ALPHA_TEST);
     glAlphaFunc(GL_GREATER, 0.05f);
     #else
-    auto program = MoreIconsAPI::get<CCShaderCache>()->programForKey("ShaderPositionTextureColorAlphaTest");
+    auto program = MoreIconsAPI::getShaderCache()->programForKey("ShaderPositionTextureColorAlphaTest");
     auto alphaValueLocation = glGetUniformLocation(program->getProgram(), "CC_alpha_value");
     program->use();
     program->setUniformLocationWith1f(alphaValueLocation, 0.05f);

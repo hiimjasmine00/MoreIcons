@@ -70,6 +70,8 @@ class $modify(MILoadingLayer, LoadingLayer) {
         }
 
         f->m_iconLoadStep++;
-        queueInMainThread([this] { loadAssets(); });
+        queueInMainThread([this] {
+            loadAssets();
+        });
     }
 };

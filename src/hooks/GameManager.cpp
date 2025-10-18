@@ -9,12 +9,10 @@ class $modify(MIGameManager, GameManager) {
 
     static void onModify(ModifyBase<ModifyDerive<MIGameManager, GameManager>>& self) {
         (void)self.setHookPriority("GameManager::loadIcon", Priority::Replace);
-        self.getHook("GameManager::sheetNameForIcon").inspect([](Hook* hook) {
-            hook->setAutoEnable(Mod::get()->getSettingValue<bool>("traditional-packs"));
-            sheetHook = hook;
-        }).inspectErr([](const std::string& err) {
-            log::error("Failed to get GameManager::sheetNameForIcon hook: {}", err);
-        });
+        if (auto it = self.m_hooks.find("GameManager::sheetNameForIcon"); it != self.m_hooks.end()) {
+            sheetHook = it->second.get();
+            sheetHook->setAutoEnable(Mod::get()->getSettingValue<bool>("traditional-packs"));
+        }
     }
 
     void reloadAllStep2() {
@@ -39,9 +37,9 @@ class $modify(MIGameManager, GameManager) {
         MoreIcons::loadSettings();
 
         if (sheetHook) {
-            sheetHook->toggle(MoreIcons::traditionalPacks).inspectErr([](const std::string& err) {
-                log::error("Failed to toggle GameManager::sheetNameForIcon hook: {}", err);
-            });
+            if (auto err = sheetHook->toggle(MoreIcons::traditionalPacks).err()) {
+                log::error("Failed to toggle GameManager::sheetNameForIcon hook: {}", *err);
+            }
         }
     }
 
@@ -59,10 +57,10 @@ class $modify(MIGameManager, GameManager) {
         auto iconKey = keyForIcon(id, type);
 
         auto pngName = fmt::format("{}.png", sheetName);
-        auto textureCache = MoreIconsAPI::get<CCTextureCache>();
+        auto textureCache = MoreIconsAPI::getTextureCache();
         if (m_iconLoadCounts[iconKey] < 1) {
             texture = textureCache->addImage(pngName.c_str(), false);
-            MoreIconsAPI::get<CCSpriteFrameCache>()->addSpriteFramesWithFile(fmt::format("{}.plist", sheetName).c_str(), texture);
+            MoreIconsAPI::getSpriteFrameCache()->addSpriteFramesWithFile(fmt::format("{}.plist", sheetName).c_str(), texture);
         }
         else texture = textureCache->textureForKey(pngName.c_str());
 

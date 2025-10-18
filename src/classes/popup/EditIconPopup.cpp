@@ -74,7 +74,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
         m_mainLayer->addChild(m_player);
 
         auto prefix = MoreIconsAPI::prefixes[miType];
-        auto spriteFrameCache = MoreIconsAPI::get<CCSpriteFrameCache>();
+        auto spriteFrameCache = MoreIconsAPI::getSpriteFrameCache();
         auto crossFrame = spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
         for (int i = 0; i < suffixes.size(); i++) {
             auto frameMenu = CCMenu::create();
@@ -181,7 +181,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
         }
         else if (m_iconType <= IconType::Jetpack) {
             auto parent = configDir / folder;
-            auto factor = MoreIconsAPI::get<CCDirector>()->getContentScaleFactor();
+            auto factor = MoreIconsAPI::getDirector()->getContentScaleFactor();
             auto filename = iconName + (factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : "");
             auto png = parent / (filename + ".png");
             auto plist = parent / (filename + ".plist");
@@ -251,8 +251,10 @@ void EditIconPopup::pickFile(int index, std::string_view suffix) {
         else if (plistEmpty) return notify(NotificationIcon::Info, "Please select a Plist file");
         else if (pngEmpty) return notify(NotificationIcon::Info, "Please select a PNG file");
 
-        GEODE_UNWRAP_OR_ELSE(image, err, texpack::fromPNG(png))
-            return notify(NotificationIcon::Error, "Failed to load image: {}", err);
+        auto imageRes = texpack::fromPNG(png);
+        if (imageRes.isErr()) return notify(NotificationIcon::Error, "Failed to load image: {}", imageRes.unwrapErr());
+
+        auto image = std::move(imageRes).unwrap();
 
         Autorelease texture = new CCTexture2D();
         texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
@@ -266,8 +268,10 @@ void EditIconPopup::pickFile(int index, std::string_view suffix) {
             return updateSprites();
         }
 
-        GEODE_UNWRAP_OR_ELSE(frames, err, MoreIconsAPI::createFrames(string::pathToString(plist), texture, "", m_iconType))
-            return notify(NotificationIcon::Error, "Failed to load frames: {}", err);
+        auto framesRes = MoreIconsAPI::createFrames(string::pathToString(plist), texture, "", m_iconType);
+        if (framesRes.isErr()) return notify(NotificationIcon::Error, "Failed to load frames: {}", framesRes.unwrapErr());
+
+        auto frames = std::move(framesRes).unwrap();
 
         if (m_textInput->getString().empty() && !name.empty()) m_textInput->setString(name);
 
@@ -285,7 +289,7 @@ void EditIconPopup::pickFile(int index, std::string_view suffix) {
 }
 
 void EditIconPopup::updateSprites() {
-    auto crossFrame = MoreIconsAPI::get<CCSpriteFrameCache>()->spriteFrameByName("GJ_deleteIcon_001.png");
+    auto crossFrame = MoreIconsAPI::getSpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
     for (auto [prefix, sprite] : CCDictionaryExt<gd::string, CCSprite*>(m_sprites)) {
         auto spriteFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(prefix));
         sprite->setDisplayFrame(spriteFrame ? spriteFrame : crossFrame);
@@ -352,11 +356,12 @@ void EditIconPopup::addOrUpdateIcon(const std::string& name, const std::filesyst
         icon = MoreIconsAPI::addIcon(name, name, m_iconType,
             string::pathToString(png), string::pathToString(plist), "", "More Icons", 0, {}, false, false);
         if (MoreIconsAPI::preloadIcons) {
-            MoreIconsAPI::createFrames(icon->textures[0], icon->sheetName, icon->name, icon->type).inspect([icon](const ImageResult& image) {
-                MoreIconsAPI::addFrames(image, icon->frameNames);
-            }).inspectErr([icon](const std::string& err) {
-                log::error("{}: {}", icon->name, err);
-            });
+            if (auto res = MoreIconsAPI::createFrames(icon->textures[0], icon->sheetName, icon->name, icon->type)) {
+                MoreIconsAPI::addFrames(res.unwrap(), icon->frameNames);
+            }
+            else {
+                log::error("{}: {}", icon->name, res.unwrapErr());
+            }
         }
     }
 
@@ -371,7 +376,7 @@ bool EditIconPopup::checkFrame(std::string_view suffix) {
 }
 
 texpack::Image getImage(CCSprite* sprite) {
-    auto director = MoreIconsAPI::get<CCDirector>();
+    auto director = MoreIconsAPI::getDirector();
     auto size = sprite->getContentSize() * director->getContentScaleFactor();
     uint32_t width = size.width;
     uint32_t height = size.height;
@@ -426,8 +431,8 @@ texpack::Image getImage(CCSprite* sprite) {
 }
 
 void EditIconPopup::saveTrail(const std::filesystem::path& path) {
-    if (GEODE_UNWRAP_IF_ERR(err, texpack::toPNG(path, getImage(m_streak)))) {
-        return notify(NotificationIcon::Error, "Failed to save image: {}", err);
+    if (auto err = texpack::toPNG(path, getImage(m_streak)).err()) {
+        return notify(NotificationIcon::Error, "Failed to save image: {}", *err);
     }
     addOrUpdateIcon(m_textInput->getString(), path, "");
 }
@@ -453,14 +458,14 @@ void EditIconPopup::saveIcon(const std::filesystem::path& png, const std::filesy
         packer.frame(name + frameName, getImage(static_cast<CCSprite*>(m_sprites->objectForKey(frameName))));
     }
 
-    if (GEODE_UNWRAP_IF_ERR(err, packer.pack())) {
-        return notify(NotificationIcon::Error, "Failed to pack frames: {}", err);
+    if (auto err = packer.pack().err()) {
+        return notify(NotificationIcon::Error, "Failed to pack frames: {}", *err);
     }
-    if (GEODE_UNWRAP_IF_ERR(err, packer.png(png))) {
-        return notify(NotificationIcon::Error, "Failed to save image: {}", err);
+    if (auto err = packer.png(png).err()) {
+        return notify(NotificationIcon::Error, "Failed to save image: {}", *err);
     }
-    if (GEODE_UNWRAP_IF_ERR(err, packer.plist(plist, "icons/" + string::pathToString(png.filename()), "    "))) {
-        return notify(NotificationIcon::Error, "Failed to save plist: {}", err);
+    if (auto err = packer.plist(plist, "icons/" + string::pathToString(png.filename()), "    ").err()) {
+        return notify(NotificationIcon::Error, "Failed to save plist: {}", *err);
     }
 
     addOrUpdateIcon(name, png, plist);

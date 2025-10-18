@@ -39,20 +39,20 @@ Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem
     #else
     auto fullSrc = dirs::getResourcesDir() / src;
     #endif
-    std::vector<unsigned char> vec;
+    std::vector<uint8_t> vec;
     #ifdef GEODE_IS_ANDROID
-    if (!uhd) {
+    if (uhd) {
+        GEODE_UNWRAP_INTO(vec, file::readBinary(fullSrc).mapErr([](const std::string& err) {
+            return fmt::format("Failed to read file: {}", err);
+        }));
+    }
+    else {
         auto size = 0ul;
-        auto data = MoreIconsAPI::get<CCFileUtils>()->getFileData(fullSrc.c_str(), "rb", &size);
+        auto data = MoreIconsAPI::getFileUtils()->getFileData(fullSrc.c_str(), "rb", &size);
         if (!data) return Err("Failed to read file");
 
         vec.assign(data, data + size);
         delete[] data;
-    }
-    else {
-        GEODE_UNWRAP_INTO(vec, file::readBinary(fullSrc).mapErr([](const std::string& err) {
-            return fmt::format("Failed to read file: {}", err);
-        }));
     }
     #else
     GEODE_UNWRAP_INTO(vec, file::readBinary(fullSrc).mapErr([](const std::string& err) {
@@ -70,21 +70,21 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
 
     if (m_info->type == IconType::Special) {
         auto filename = texturePath.filename();
-        if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(texturePath, directory / filename, false, true))) {
-            return notify(NotificationIcon::Error, "Failed to {} {}: {}", trash ? "trash" : "move", filename, err);
+        if (auto err = MoreIcons::renameFile(texturePath, directory / filename, false, true).err()) {
+            return notify(NotificationIcon::Error, "Failed to {} {}: {}", trash ? "trash" : "move", filename, *err);
         }
         auto jsonName = texturePath.filename().replace_extension(".json");
         auto jsonPath = parentDir / jsonName;
         if (trash) {
             if (MoreIcons::doesExist(jsonPath)) {
-                if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(jsonPath, directory / jsonName, false, true))) {
-                    return notify(NotificationIcon::Error, "Failed to trash {}: {}", jsonName, err);
+                if (auto err = MoreIcons::renameFile(jsonPath, directory / jsonName, false, true).err()) {
+                    return notify(NotificationIcon::Error, "Failed to trash {}: {}", jsonName, *err);
                 }
             }
         }
         else {
-            if (GEODE_UNWRAP_IF_ERR(err, file::writeToJson(jsonPath, m_info->trailInfo))) {
-                return notify(NotificationIcon::Error, "Failed to write trail info to {}: {}", jsonName, err);
+            if (auto err = file::writeToJson(jsonPath, m_info->trailInfo).err()) {
+                return notify(NotificationIcon::Error, "Failed to write trail info to {}: {}", jsonName, *err);
             }
         }
     }
@@ -99,8 +99,8 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                if (GEODE_UNWRAP_IF_ERR(err, copyVanillaFile("icons/" + filename, directory / filename, true))) {
-                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, err);
+                if (auto err = copyVanillaFile("icons/" + filename, directory / filename, true).err()) {
+                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, *err);
                 }
             }
         }
@@ -112,8 +112,8 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                if (GEODE_UNWRAP_IF_ERR(err, copyVanillaFile("icons/" + filename, directory / filename, false))) {
-                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, err);
+                if (auto err = copyVanillaFile("icons/" + filename, directory / filename, false).err()) {
+                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, *err);
                 }
             }
         }
@@ -125,8 +125,8 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                if (GEODE_UNWRAP_IF_ERR(err, copyVanillaFile("icons/" + filename, directory / filename, false))) {
-                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, err);
+                if (auto err = copyVanillaFile("icons/" + filename, directory / filename, false).err()) {
+                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, *err);
                 }
             }
         }
@@ -134,12 +134,12 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
         for (int i = 0; i < files.size(); i++) {
             auto& file = files[i];
             auto filename = file.filename();
-            if (GEODE_UNWRAP_IF_ERR(err, MoreIcons::renameFile(file, directory / filename, false, true))) {
+            if (auto err = MoreIcons::renameFile(file, directory / filename, false, true).err()) {
                 for (int j = 0; j < i; j++) {
                     auto& file2 = files[j];
                     (void)MoreIcons::renameFile(directory / file2.filename(), file2, false);
                 }
-                return notify(NotificationIcon::Error, "Failed to {} {}: {}", trash ? "trash" : "move", filename, err);
+                return notify(NotificationIcon::Error, "Failed to {} {}: {}", trash ? "trash" : "move", filename, *err);
             }
         }
     }
@@ -197,7 +197,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     }
 
     if (info->type <= IconType::Jetpack) {
-        auto itemIcon = GJItemIcon::createBrowserItem(MoreIconsAPI::get<GameManager>()->iconTypeToUnlockType(info->type), 1);
+        auto itemIcon = GJItemIcon::createBrowserItem(MoreIconsAPI::getGameManager()->iconTypeToUnlockType(info->type), 1);
         itemIcon->setScale(1.25f - hasPack * 0.15f);
 
         auto player = static_cast<SimplePlayer*>(itemIcon->m_player);
@@ -254,8 +254,8 @@ bool MoreInfoPopup::setup(IconInfo* info) {
                     auto parent = std::filesystem::path(m_info->textures[0]).parent_path();
                     if (type <= IconType::Jetpack) parent = parent.parent_path();
                     auto dir = parent / "config" / GEODE_MOD_ID / MoreIcons::folders[miType];
-                    if (GEODE_UNWRAP_IF_ERR(err, file::createDirectoryAll(dir))) return notify(NotificationIcon::Error, err);
-                    moveIcon(dir, false);
+                    if (auto res = file::createDirectoryAll(dir)) moveIcon(dir, false);
+                    else notify(NotificationIcon::Error, res.unwrapErr());
                 }
             );
         });
@@ -280,9 +280,8 @@ bool MoreInfoPopup::setup(IconInfo* info) {
                 [this](auto, bool btn2) {
                     if (!btn2) return;
 
-                    GEODE_UNWRAP_OR_ELSE(trashDir, err, MoreIcons::createTrash()) return notify(NotificationIcon::Error, err);
-
-                    moveIcon(trashDir, true);
+                    if (auto res = MoreIcons::createTrash()) moveIcon(res.unwrap(), true);
+                    else notify(NotificationIcon::Error, res.unwrapErr());
                 }
             );
         });

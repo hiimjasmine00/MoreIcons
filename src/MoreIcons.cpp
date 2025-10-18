@@ -21,6 +21,22 @@ $on_mod(DataSaved) {
 
 bool debugLogs = true;
 bool infoLogs = true;
+std::vector<IconPack> MoreIcons::packs;
+std::vector<LogData> MoreIcons::logs;
+std::map<IconType, int> MoreIcons::severities = {
+    { IconType::Cube, 0 },
+    { IconType::Ship, 0 },
+    { IconType::Ball, 0 },
+    { IconType::Ufo, 0 },
+    { IconType::Wave, 0 },
+    { IconType::Robot, 0 },
+    { IconType::Spider, 0 },
+    { IconType::Swing, 0 },
+    { IconType::Jetpack, 0 },
+    { IconType::Special, 0 }
+};
+int MoreIcons::severity = 0;
+bool MoreIcons::traditionalPacks = true;
 
 void MoreIcons::loadSettings() {
     auto mod = Mod::get();
@@ -68,18 +84,8 @@ void directoryIterator(const std::filesystem::path& path, auto&& func) {
     if (code) return log::error("{}: Failed to iterate over directory: {}", path, code.message());
 }
 
-template <typename... Args>
-void safeDebug(fmt::format_string<Args...> message, Args&&... args) {
-    if (debugLogs) log::debug(message, std::forward<Args>(args)...);
-}
-
-template <typename... Args>
-void safeInfo(fmt::format_string<Args...> message, Args&&... args) {
-    if (infoLogs) log::info(message, std::forward<Args>(args)...);
-}
-
 void migrateFolderIcons(const std::filesystem::path& path) {
-    safeInfo("Beginning folder icon migration in {}", path);
+    log::info("Beginning folder icon migration in {}", path);
 
     auto& saveContainer = Mod::get()->getSaveContainer();
     if (!saveContainer.contains("migrated-folders")) saveContainer.set("migrated-folders", matjson::Value::array());
@@ -93,8 +99,8 @@ void migrateFolderIcons(const std::filesystem::path& path) {
         directoryIterator(folderPath, [i, &folderPath, &migratedFolders](const std::filesystem::path& path, std::filesystem::file_type fileType) {
             if (fileType != std::filesystem::file_type::directory) return;
 
-            if (std::ranges::find(migratedFolders, path) == migratedFolders.end()) migratedFolders.push(path);
-            else return;
+            if (std::ranges::contains(migratedFolders, path)) return;
+            else migratedFolders.push(path);
 
             std::vector<std::string> names;
 
@@ -126,34 +132,34 @@ void migrateFolderIcons(const std::filesystem::path& path) {
             texpack::Packer packer;
 
             for (auto& filename : names) {
-                if (GEODE_UNWRAP_IF_ERR(err, packer.frame(filename, path / filename))) {
-                    return log::error("{}: Failed to load frame {}: {}", path, filename, err);
+                if (auto err = packer.frame(filename, path / filename).err()) {
+                    return log::error("{}: Failed to load frame {}: {}", path, filename, *err);
                 }
             }
 
-            if (GEODE_UNWRAP_IF_ERR(err, packer.pack())) {
-                return log::error("{}: Failed to pack frames: {}", path, err);
+            if (auto err = packer.pack().err()) {
+                return log::error("{}: Failed to pack frames: {}", path, *err);
             }
 
             auto pngPath = folderPath / path.filename().concat(".png");
-            MoreIcons::renameFile(pngPath, folderPath / path.filename().concat(".png")).inspectErr([&path](const std::string& err) {
-                log::error("{}: Failed to rename existing image: {}", path, err);
-            });
-            packer.png(pngPath).inspectErr([&path](const std::string& err) {
-                log::error("{}: Failed to save image: {}", path, err);
-            });
+            if (auto err = MoreIcons::renameFile(pngPath, folderPath / path.filename().concat(".png")).err()) {
+                log::error("{}: Failed to rename existing image: {}", path, *err);
+            }
+            if (auto err = packer.png(pngPath).err()) {
+                log::error("{}: Failed to save image: {}", path, *err);
+            }
 
             auto plistPath = folderPath / path.filename().concat(".plist");
-            MoreIcons::renameFile(plistPath, folderPath / path.filename().concat(".plist")).inspectErr([&path](const std::string& err) {
-                log::error("{}: Failed to rename existing plist: {}", path, err);
-            });
-            packer.plist(plistPath, "icons/" + string::pathToString(pngPath.filename()), "    ").inspectErr([&path](const std::string& err) {
-                log::error("{}: Failed to save plist: {}", path, err);
-            });
+            if (auto err = MoreIcons::renameFile(plistPath, folderPath / path.filename().concat(".plist")).err()) {
+                log::error("{}: Failed to rename existing plist: {}", path, *err);
+            }
+            if (auto err = packer.plist(plistPath, "icons/" + string::pathToString(pngPath.filename()), "    ").err()) {
+                log::error("{}: Failed to save plist: {}", path, *err);
+            }
         });
     }
 
-    safeInfo("Finished folder icon migration in {}", path);
+    log::info("Finished folder icon migration in {}", path);
 }
 
 void MoreIcons::loadPacks() {
@@ -191,7 +197,7 @@ void MoreIcons::loadPacks() {
 
 std::string MoreIcons::vanillaTexturePath(const std::string& path, bool skipSuffix) {
     #ifdef GEODE_IS_MOBILE
-    if (!skipSuffix && MoreIconsAPI::get<CCDirector>()->getContentScaleFactor() >= 4.0f) {
+    if (!skipSuffix && MoreIconsAPI::getDirector()->getContentScaleFactor() >= 4.0f) {
         if (auto highGraphicsMobile = Loader::get()->getLoadedMod("weebify.high-graphics-android")) {
             auto configDir = highGraphicsMobile->getConfigDir(false) / GEODE_GD_VERSION_STRING;
             if (doesExist(configDir)) return configDir / path;
@@ -227,7 +233,7 @@ void printLog(const std::string& name, int severity, fmt::format_string<Args...>
 }
 
 void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
-    auto factor = MoreIconsAPI::get<CCDirector>()->getContentScaleFactor();
+    auto factor = MoreIconsAPI::getDirector()->getContentScaleFactor();
     auto pathFilename = string::pathToString(path.filename());
     auto pathStem = string::pathToString(path.stem());
     auto pathString = string::pathToString(path);
@@ -271,7 +277,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
         else if (MoreIcons::doesExist(replaceEnd(pathString, 6, "-hd.plist")) && factor >= 2.0f) return;
     }
 
-    safeDebug("Pre-loading icon {} from {}", name, pack.name);
+    log::debug("Pre-loading icon {} from {}", name, pack.name);
 
     if (pathString.empty() && !path.empty()) printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
 
@@ -282,11 +288,11 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
 
     MoreIconsAPI::addIcon(name, shortName, currentType, texturePath, pathString, pack.id, pack.name, 0, {}, false, pack.zipped);
 
-    safeDebug("Finished pre-loading icon {} from {}", name, pack.name);
+    log::debug("Finished pre-loading icon {} from {}", name, pack.name);
 }
 
 void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
-    auto factor = MoreIconsAPI::get<CCDirector>()->getContentScaleFactor();
+    auto factor = MoreIconsAPI::getDirector()->getContentScaleFactor();
     auto pathFilename = string::pathToString(path.filename());
     auto pathStem = string::pathToString(path.stem());
     auto pathString = string::pathToString(path);
@@ -310,7 +316,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
         name = fmt::format("{}:{}", pack.id, shortName);
     }
 
-    safeDebug("Pre-loading vanilla icon {} from {}", name, pack.name);
+    log::debug("Pre-loading vanilla icon {} from {}", name, pack.name);
 
     if (pathString.empty() && !path.empty()) printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
 
@@ -318,13 +324,13 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     if (!MoreIcons::doesExist(plistPath)) {
         plistPath = MoreIcons::vanillaTexturePath(fmt::format("icons/{}.plist", pathStem), false);
     }
-    if (!MoreIconsAPI::get<CCFileUtils>()->isFileExist(plistPath)) {
+    if (!MoreIconsAPI::getFileUtils()->isFileExist(plistPath)) {
         return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
     }
 
     MoreIconsAPI::addIcon(name, shortName, currentType, pathString, plistPath, pack.id, pack.name, 0, {}, true, pack.zipped);
 
-    safeDebug("Finished pre-loading vanilla icon {} from {}", name, pack.name);
+    log::debug("Finished pre-loading vanilla icon {} from {}", name, pack.name);
 }
 
 void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
@@ -332,14 +338,14 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
     auto pathString = string::pathToString(path);
     auto name = pack.id.empty() ? pathStem : fmt::format("{}:{}", pack.id, pathStem);
 
-    safeDebug("Pre-loading trail {} from {}", name, pack.name);
+    log::debug("Pre-loading trail {} from {}", name, pack.name);
 
     if (pathString.empty() && !path.empty()) printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
 
     MoreIconsAPI::addIcon(name, pathStem, IconType::Special, pathString, "", pack.id, pack.name, 0,
         file::readFromJson<TrailInfo>(std::filesystem::path(path).replace_extension(".json")).unwrapOrDefault(), false, pack.zipped);
 
-    safeDebug("Finished pre-loading trail {} from {}", name, pack.name);
+    log::debug("Finished pre-loading trail {} from {}", name, pack.name);
 }
 
 void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
@@ -347,7 +353,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
     auto pathString = string::pathToString(path);
     auto name = fmt::format("{}:{}", pack.id, pathStem);
 
-    safeDebug("Pre-loading vanilla trail {} from {}", name, pack.name);
+    log::debug("Pre-loading vanilla trail {} from {}", name, pack.name);
 
     if (pathString.empty() && !path.empty()) printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
 
@@ -387,7 +393,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     MoreIconsAPI::addIcon(name, pathStem, IconType::Special, pathString, "", pack.id, pack.name, trailID, trailInfo, true, pack.zipped);
 
-    safeDebug("Finished pre-loading vanilla trail {} from {}", name, pack.name);
+    log::debug("Finished pre-loading vanilla trail {} from {}", name, pack.name);
 }
 
 void MoreIcons::loadIcons(IconType type) {
@@ -405,7 +411,7 @@ void MoreIcons::loadIcons(IconType type) {
             auto path = pack.path / "config" / GEODE_MOD_ID / folder;
             if (!doesExist(path)) {
                 if (i == 0) {
-                    if (GEODE_UNWRAP_IF_ERR(err, file::createDirectoryAll(path))) log::error("{}: {}", path, err);
+                    if (auto err = file::createDirectoryAll(path).err()) log::error("{}: {}", path, *err);
                 }
                 continue;
             }
@@ -416,7 +422,7 @@ void MoreIcons::loadIcons(IconType type) {
                 if (code) log::error("{}: Failed to change permissions: {}", path, code.message());
             }
 
-            safeInfo("Pre-loading {}s from {}", name, path);
+            log::info("Pre-loading {}s from {}", name, path);
 
             directoryIterator(path, [type, &pack](const std::filesystem::path& path, std::filesystem::file_type fileType) {
                 if (fileType != std::filesystem::file_type::regular) return;
@@ -429,13 +435,13 @@ void MoreIcons::loadIcons(IconType type) {
                 }
             });
 
-            safeInfo("Finished pre-loading {}s from {}", name, path);
+            log::info("Finished pre-loading {}s from {}", name, path);
         }
         else if (traditionalPacks) {
             auto path = type == IconType::Special ? pack.path : pack.path / "icons";
             if (!doesExist(path)) continue;
 
-            safeInfo("Pre-loading {}s from {}", name, path);
+            log::info("Pre-loading {}s from {}", name, path);
 
             directoryIterator(path, [type, &pack, prefix](const std::filesystem::path& path, std::filesystem::file_type fileType) {
                 if (fileType != std::filesystem::file_type::regular) return;
@@ -456,11 +462,11 @@ void MoreIcons::loadIcons(IconType type) {
                 }
             });
 
-            safeInfo("Finished pre-loading {}s from {}", name, path);
+            log::info("Finished pre-loading {}s from {}", name, path);
         }
     }
 
-    MoreIconsAPI::loadIcons(type, infoLogs);
+    MoreIconsAPI::loadIcons(type);
 
     if (type == IconType::Special) {
         packs.clear();
@@ -473,16 +479,15 @@ void MoreIcons::loadIcons(IconType type) {
 void MoreIcons::saveTrails() {
     for (auto& info : MoreIconsAPI::icons[IconType::Special]) {
         if (info.trailID == 0) {
-            file::writeToJson(std::filesystem::path(info.textures[0]).replace_extension(".json"), info.trailInfo)
-                .inspectErr([&info](const std::string& err) {
-                    log::error("{}: Failed to save trail info: {}", info.name, err);
-                });
+            if (auto err = file::writeToJson(std::filesystem::path(info.textures[0]).replace_extension(".json"), info.trailInfo).err()) {
+                log::error("{}: Failed to save trail info: {}", info.name, *err);
+            }
         }
     }
 }
 
 ColorInfo MoreIcons::vanillaColors(bool dual) {
-    auto gameManager = MoreIconsAPI::get<GameManager>();
+    auto gameManager = MoreIconsAPI::getGameManager();
     auto sdi = dual ? Loader::get()->getLoadedMod("weebify.separate_dual_icons") : nullptr;
     return {
         .color1 = gameManager->colorForIdx(sdi ? sdi->getSavedValue("color1", 0) : gameManager->m_playerColor),
@@ -493,7 +498,7 @@ ColorInfo MoreIcons::vanillaColors(bool dual) {
 }
 
 int MoreIcons::vanillaIcon(IconType type, bool dual) {
-    auto gameManager = MoreIconsAPI::get<GameManager>();
+    auto gameManager = MoreIconsAPI::getGameManager();
     auto sdi = dual ? Loader::get()->getLoadedMod("weebify.separate_dual_icons") : nullptr;
     switch (type) {
         case IconType::Cube: return sdi ? sdi->getSavedValue("cube", 1) : gameManager->m_playerFrame;
@@ -514,10 +519,10 @@ int MoreIcons::vanillaIcon(IconType type, bool dual) {
 
 void MoreIcons::updateGarage(GJGarageLayer* layer) {
     auto noLayer = layer == nullptr;
-    if (noLayer) layer = MoreIconsAPI::get<CCDirector>()->getRunningScene()->getChildByType<GJGarageLayer>(0);
+    if (noLayer) layer = MoreIconsAPI::getDirector()->getRunningScene()->getChildByType<GJGarageLayer>(0);
     if (!layer) return;
 
-    auto gameManager = MoreIconsAPI::get<GameManager>();
+    auto gameManager = MoreIconsAPI::getGameManager();
     auto player1 = layer->m_playerObject;
     auto iconType1 = gameManager->m_playerIconType;
     if (noLayer) player1->updatePlayerFrame(vanillaIcon(iconType1, false), iconType1);
