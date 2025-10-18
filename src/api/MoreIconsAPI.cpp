@@ -803,95 +803,81 @@ Result<Autorelease<CCDictionary>> MoreIconsAPI::createFrames(
 
         switch (format) {
             case 0: {
-                auto x = obj.get("x").andThen([](const matjson::Value& v) {
+                if (auto x = obj.get("x").andThen([](const matjson::Value& v) {
                     return v.as<float>();
-                });
-                if (x.isOk()) rect.origin.x = x.unwrap();
+                }).ok()) rect.origin.x = *x;
 
-                auto y = obj.get("y").andThen([](const matjson::Value& v) {
+                if (auto y = obj.get("y").andThen([](const matjson::Value& v) {
                     return v.as<float>();
-                });
-                if (y.isOk()) rect.origin.y = y.unwrap();
+                }).ok()) rect.origin.y = *y;
 
-                auto w = obj.get("width").andThen([](const matjson::Value& v) {
+                if (auto w = obj.get("width").andThen([](const matjson::Value& v) {
                     return v.as<float>();
-                });
-                if (w.isOk()) rect.size.width = w.unwrap();
+                }).ok()) rect.size.width = *w;
 
-                auto h = obj.get("height").andThen([](const matjson::Value& v) {
+                if (auto h = obj.get("height").andThen([](const matjson::Value& v) {
                     return v.as<float>();
-                });
-                if (h.isOk()) rect.size.height = h.unwrap();
+                }).ok()) rect.size.height = *h;
 
-                auto offsetX = obj.get("offsetX").andThen([](const matjson::Value& v) {
+                if (auto offsetX = obj.get("offsetX").andThen([](const matjson::Value& v) {
                     return v.as<float>();
-                });
-                if (offsetX.isOk()) offset.x = offsetX.unwrap();
+                }).ok()) offset.x = *offsetX;
 
-                auto offsetY = obj.get("offsetY").andThen([](const matjson::Value& v) {
+                if (auto offsetY = obj.get("offsetY").andThen([](const matjson::Value& v) {
                     return v.as<float>();
-                });
-                if (offsetY.isOk()) offset.y = offsetY.unwrap();
+                }).ok()) offset.y = *offsetY;
 
-                auto originalWidth = obj.get("originalWidth").andThen([](const matjson::Value& v) {
+                if (auto originalWidth = obj.get("originalWidth").andThen([](const matjson::Value& v) {
                     return v.as<float>().map([](float v) {
                         return abs(floor(v));
                     });
-                });
-                if (originalWidth.isOk()) originalSize.width = originalWidth.unwrap();
+                }).ok()) originalSize.width = *originalWidth;
 
-                auto originalHeight = obj.get("originalHeight").andThen([](const matjson::Value& v) {
+                if (auto originalHeight = obj.get("originalHeight").andThen([](const matjson::Value& v) {
                     return v.as<float>().map([](float v) {
                         return abs(floor(v));
                     });
-                });
-                if (originalHeight.isOk()) originalSize.height = originalHeight.unwrap();
+                }).ok()) originalSize.height = *originalHeight;
                 break;
             }
             case 1: case 2: case 3: {
                 if (format == 3) {
-                    auto textureRect = obj.get("textureRect").andThen([](const matjson::Value& v) {
+                    if (auto textureRect = obj.get("textureRect").andThen([](const matjson::Value& v) {
                         return v.asString().map([](const std::string& s) {
                             return CCRectFromString(s.c_str()).origin;
                         });
-                    });
-                    if (textureRect.isOk()) rect.origin = textureRect.unwrap();
+                    }).ok()) rect.origin = *textureRect;
 
-                    auto spriteSize = obj.get("spriteSize").andThen([](const matjson::Value& v) {
+                    if (auto spriteSize = obj.get("spriteSize").andThen([](const matjson::Value& v) {
                         return v.asString().map([](const std::string& s) {
                             return CCSizeFromString(s.c_str());
                         });
-                    });
-                    if (spriteSize.isOk()) rect.size = spriteSize.unwrap();
+                    }).ok()) rect.size = *spriteSize;
                 }
                 else {
-                    auto textureRect = obj.get("frame").andThen([](const matjson::Value& v) {
+                    if (auto textureRect = obj.get("frame").andThen([](const matjson::Value& v) {
                         return v.asString().map([](const std::string& s) {
                             return CCRectFromString(s.c_str());
                         });
-                    });
-                    if (textureRect.isOk()) rect = textureRect.unwrap();
+                    }).ok()) rect = *textureRect;
                 }
 
-                auto spriteOffset = obj.get(format == 3 ? "spriteOffset" : "offset").andThen([](const matjson::Value& v) {
+                if (auto spriteOffset = obj.get(format == 3 ? "spriteOffset" : "offset").andThen([](const matjson::Value& v) {
                     return v.asString().map([](const std::string& s) {
                         return CCPointFromString(s.c_str());
                     });
-                });
-                if (spriteOffset.isOk()) offset = spriteOffset.unwrap();
+                }).ok()) offset = *spriteOffset;
 
-                auto spriteSourceSize = obj.get(format == 3 ? "spriteSourceSize" : "sourceSize").andThen([](const matjson::Value& v) {
+                if (auto spriteSourceSize = obj.get(format == 3 ? "spriteSourceSize" : "sourceSize").andThen([](const matjson::Value& v) {
                     return v.asString().map([](const std::string& s) {
                         return CCSizeFromString(s.c_str());
                     });
-                });
-                if (spriteSourceSize.isOk()) originalSize = spriteSourceSize.unwrap();
+                }).ok()) originalSize = *spriteSourceSize;
 
                 if (format > 1) {
-                    auto textureRotated = obj.get(format == 3 ? "textureRotated" : "rotated").andThen([](const matjson::Value& v) {
+                    if (auto textureRotated = obj.get(format == 3 ? "textureRotated" : "rotated").andThen([](const matjson::Value& v) {
                         return v.asBool();
-                    });
-                    if (textureRotated.isOk()) rotated = textureRotated.unwrap();
+                    }).ok()) rotated = *textureRotated;
                 }
                 break;
             }
