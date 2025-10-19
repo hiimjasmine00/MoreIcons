@@ -98,7 +98,6 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
         strokeWidthInput->setString(fmt::format("{:.1f}", m_trailInfo.stroke));
     });
 
-    //auto blendToggle = CCMenuItemToggler::createWithStandardSprites(nullptr, nullptr, 0.8f);
     auto blendToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.8f, [this](auto) {
         m_trailInfo.blend = !m_trailInfo.blend;
     });
