@@ -19,9 +19,6 @@ $on_mod(DataSaved) {
     MoreIcons::saveTrails();
 }
 
-bool debugLogs = true;
-bool infoLogs = true;
-std::vector<IconPack> MoreIcons::packs;
 std::vector<LogData> MoreIcons::logs;
 std::map<IconType, int> MoreIcons::severities = {
     { IconType::Cube, 0 },
@@ -38,10 +35,31 @@ std::map<IconType, int> MoreIcons::severities = {
 int MoreIcons::severity = 0;
 bool MoreIcons::traditionalPacks = true;
 
+std::unordered_map<std::string, decltype(Severity::Debug)> severityMap = {
+    { "Debug", Severity::Debug },
+    { "Info", Severity::Info },
+    { "Warning", Severity::Warning },
+    { "Error", Severity::Error },
+    { "None", Severity::cast(4) }
+};
+
 void MoreIcons::loadSettings() {
     auto mod = Mod::get();
-    debugLogs = mod->getSettingValue<bool>("debug-logs");
-    infoLogs = mod->getSettingValue<bool>("info-logs");
+    if (!mod->setSavedValue("migrated-log-level", true)) {
+        auto& data = mod->getSavedSettingsData();
+        auto debugLogs = data.get<bool>("debug-logs").unwrapOr(true);
+        auto infoLogs = data.get<bool>("info-logs").unwrapOr(true);
+        if (!data.get<bool>("info-logs").unwrapOr(true)) {
+            mod->setSettingValue<std::string>("log-level", "Warning");
+        }
+        else if (!data.get<bool>("debug-logs").unwrapOr(true)) {
+            mod->setSettingValue<std::string>("log-level", "Info");
+        }
+        else {
+            mod->setSettingValue<std::string>("log-level", "Debug");
+        }
+    }
+    mod->setLogLevel(severityMap[mod->getSettingValue<std::string>("log-level")]);
     traditionalPacks = mod->getSettingValue<bool>("traditional-packs");
     MoreIconsAPI::preloadIcons = mod->getSettingValue<bool>("preload-icons");
 }
@@ -161,6 +179,16 @@ void migrateFolderIcons(const std::filesystem::path& path) {
 
     log::info("Finished folder icon migration in {}", path);
 }
+
+struct IconPack {
+    std::string name;
+    std::string id;
+    std::filesystem::path path;
+    bool vanilla;
+    bool zipped;
+};
+
+std::vector<IconPack> packs;
 
 void MoreIcons::loadPacks() {
     packs.clear();

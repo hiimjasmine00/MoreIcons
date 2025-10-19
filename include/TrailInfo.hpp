@@ -28,25 +28,11 @@ struct matjson::Serialize<TrailInfo> {
     static geode::Result<TrailInfo> fromJson(const matjson::Value& value) {
         TrailInfo info;
         if (value.isObject()) {
-            if (auto blend = value.get("blend").andThen([](const matjson::Value& v) {
-                return v.asBool();
-            }).ok()) info.blend = *blend;
-
-            if (auto tint = value.get("tint").andThen([](const matjson::Value& v) {
-                return v.asBool();
-            }).ok()) info.tint = *tint;
-
-            if (auto show = value.get("show").andThen([](const matjson::Value& v) {
-                return v.asBool();
-            }).ok()) info.show = *show;
-
-            if (auto fade = value.get("fade").andThen([](const matjson::Value& v) {
-                return v.asDouble();
-            }).ok()) info.fade = *fade;
-
-            if (auto stroke = value.get("stroke").andThen([](const matjson::Value& v) {
-                return v.asDouble();
-            }).ok()) info.stroke = *stroke;
+            if (auto blend = value.get<bool>("blend").ok()) info.blend = *blend;
+            if (auto tint = value.get<bool>("tint").ok()) info.tint = *tint;
+            if (auto show = value.get<bool>("show").ok()) info.show = *show;
+            if (auto fade = value.get<float>("fade").ok()) info.fade = *fade;
+            if (auto stroke = value.get<float>("stroke").ok()) info.stroke = *stroke;
         }
         return geode::Ok(info);
     }

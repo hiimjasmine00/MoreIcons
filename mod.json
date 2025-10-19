@@ -29,18 +29,18 @@
         ]
     },
     "settings": {
-        "debug-logs": {
-            "name": "Debug Logs",
-            "description": "Whether to enable debug logs in the mod.",
-            "type": "bool",
-            "default": true
-        },
-        "info-logs": {
-            "name": "Info Logs",
-            "description": "Whether to enable info logs in the mod.",
-            "type": "bool",
-            "enable-if": "!debug-logs",
-            "default": true
+        "log-level": {
+            "name": "Log Level",
+            "description": "The log level for More Icons.",
+            "type": "string",
+            "one-of": [
+                "Debug",
+                "Info",
+                "Warning",
+                "Error",
+                "None"
+            ],
+            "default": "Debug"
         },
         "traditional-packs": {
             "name": "Load from Traditional Packs",

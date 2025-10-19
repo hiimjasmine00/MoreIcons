@@ -6,14 +6,6 @@
 #include <Geode/Result.hpp>
 #include <map>
 
-struct IconPack {
-    std::string name;
-    std::string id;
-    std::filesystem::path path;
-    bool vanilla;
-    bool zipped;
-};
-
 struct LogData {
     std::string name;
     std::string message;
@@ -37,7 +29,6 @@ public:
         "icon", "ship", "ball", "ufo", "wave", "robot", "spider",
         "swing", "jetpack", "death", "trail", "", "fire"
     };
-    static std::vector<IconPack> packs;
     static std::vector<LogData> logs;
     static std::map<IconType, int> severities;
     static int severity;

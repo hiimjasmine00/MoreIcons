@@ -8,7 +8,9 @@ struct Autorelease {
 
     Autorelease() : data(nullptr) {}
     Autorelease(T* data) : data(data) {}
-    Autorelease(const Autorelease& other) : data(other.data) {}
+    Autorelease(const Autorelease& other) : data(other.data) {
+        CC_SAFE_RETAIN(data);
+    }
     Autorelease(Autorelease&& other) : data(other.data) {
         other.data = nullptr;
     }
@@ -91,7 +93,7 @@ public:
     static GameManager* getGameManager();
     static ObjectManager* getObjectManager();
     static void reset();
-    static cocos2d::CCSpriteFrame* getFrame(std::string_view name);
+    static cocos2d::CCSpriteFrame* getFrame(const std::string& name);
     static cocos2d::CCSprite* customTrail(const std::string& png);
     static cocos2d::CCTexture2D* loadIcon(const std::string& name, IconType type, int requestID);
     static void loadIcons(IconType type);
