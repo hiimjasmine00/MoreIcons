@@ -10,8 +10,29 @@ using namespace geode::prelude;
 class $modify(MIMenuGameLayer, MenuGameLayer) {
     static void onModify(ModifyBase<ModifyDerive<MIMenuGameLayer, MenuGameLayer>>& self) {
         auto loader = Loader::get();
-        jasmine::hook::get(self.m_hooks, "MenuGameLayer::resetPlayer",
-            !loader->isModLoaded("iandyhd3.known_players") && !loader->isModLoaded("kittenchilly.pity_title_screen_secret_icons"));
+        auto hook = jasmine::hook::get(self.m_hooks, "MenuGameLayer::resetPlayer", true);
+        if (auto knownPlayers = loader->getInstalledMod("iandyhd3.known_players")) {
+            if (knownPlayers->isEnabled()) {
+                hook->setAutoEnable(false);
+            }
+            else {
+                new EventListener([hook](ModStateEvent*) {
+                    jasmine::hook::toggle(hook, false);
+                    return ListenerResult::Propagate;
+                }, ModStateFilter(knownPlayers, ModEventType::Loaded));
+            }
+        }
+        if (auto pityIcons = loader->getInstalledMod("kittenchilly.pity_title_screen_secret_icons")) {
+            if (pityIcons->isEnabled()) {
+                hook->setAutoEnable(false);
+            }
+            else {
+                new EventListener([hook](ModStateEvent*) {
+                    jasmine::hook::toggle(hook, false);
+                    return ListenerResult::Propagate;
+                }, ModStateFilter(pityIcons, ModEventType::Loaded));
+            }
+        }
     }
 
     void resetPlayer() {
