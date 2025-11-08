@@ -2,13 +2,16 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/PlayerObject.hpp>
 #include <Geode/modify/MenuGameLayer.hpp>
+#include <jasmine/hook.hpp>
+#include <jasmine/random.hpp>
 
 using namespace geode::prelude;
 
 class $modify(MIMenuGameLayer, MenuGameLayer) {
     static void onModify(ModifyBase<ModifyDerive<MIMenuGameLayer, MenuGameLayer>>& self) {
-        (void)self.setHookPriorityBeforePost("MenuGameLayer::resetPlayer", "iandyhd3.known_players");
-        (void)self.setHookPriorityBeforePost("MenuGameLayer::resetPlayer", "kittenchilly.pity_title_screen_secret_icons");
+        auto loader = Loader::get();
+        jasmine::hook::get(self.m_hooks, "MenuGameLayer::resetPlayer",
+            !loader->isModLoaded("iandyhd3.known_players") && !loader->isModLoaded("kittenchilly.pity_title_screen_secret_icons"));
     }
 
     void resetPlayer() {
@@ -19,7 +22,7 @@ class $modify(MIMenuGameLayer, MenuGameLayer) {
 
         auto& icons = MoreIconsAPI::icons[type];
         auto iconCount = gameManager->countForType(type);
-        auto icon = (int)roundf((rand() / (float)RAND_MAX) * (iconCount + icons.size() - 1)) + 1;
+        auto icon = (int)round(jasmine::random::get() * (iconCount + icons.size() - 1)) + 1;
 
         if (icon > iconCount) MoreIconsAPI::updatePlayerObject(m_playerObject, icons[icon - iconCount - 1].name, type);
         else if (m_playerObject->m_isShip) m_playerObject->updatePlayerShipFrame(icon);
@@ -34,7 +37,7 @@ class $modify(MIMenuGameLayer, MenuGameLayer) {
         if (m_playerObject->m_isShip || m_playerObject->m_isBird) {
             auto& cubes = MoreIconsAPI::icons[IconType::Cube];
             auto cubeCount = gameManager->countForType(IconType::Cube);
-            auto cube = (int)roundf((rand() / (float)RAND_MAX) * (cubeCount + cubes.size() - 1)) + 1;
+            auto cube = (int)round(jasmine::random::get() * (cubeCount + cubes.size() - 1)) + 1;
 
             if (cube > cubeCount) MoreIconsAPI::updatePlayerObject(m_playerObject, cubes[cube - cubeCount - 1].name, IconType::Cube);
             else m_playerObject->updatePlayerFrame(cube);

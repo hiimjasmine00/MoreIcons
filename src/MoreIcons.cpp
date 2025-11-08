@@ -7,6 +7,8 @@
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <geode.texture-loader/include/TextureLoader.hpp>
+#include <jasmine/convert.hpp>
+#include <jasmine/setting.hpp>
 #include <texpack.hpp>
 
 using namespace geode::prelude;
@@ -44,24 +46,17 @@ std::unordered_map<std::string, decltype(Severity::Debug)> severityMap = {
 };
 
 void MoreIcons::loadSettings() {
+    auto logLevel = jasmine::setting::get<std::string>("log-level");
     auto mod = Mod::get();
     if (!mod->setSavedValue("migrated-log-level", true)) {
         auto& data = mod->getSavedSettingsData();
-        auto debugLogs = data.get<bool>("debug-logs").unwrapOr(true);
-        auto infoLogs = data.get<bool>("info-logs").unwrapOr(true);
-        if (!data.get<bool>("info-logs").unwrapOr(true)) {
-            mod->setSettingValue<std::string>("log-level", "Warning");
-        }
-        else if (!data.get<bool>("debug-logs").unwrapOr(true)) {
-            mod->setSettingValue<std::string>("log-level", "Info");
-        }
-        else {
-            mod->setSettingValue<std::string>("log-level", "Debug");
-        }
+        if (!data.get<bool>("info-logs").unwrapOr(true)) logLevel->setValue("Warning");
+        else if (!data.get<bool>("debug-logs").unwrapOr(true)) logLevel->setValue("Info");
+        else logLevel->setValue("Debug");
     }
-    mod->setLogLevel(severityMap[mod->getSettingValue<std::string>("log-level")]);
-    traditionalPacks = mod->getSettingValue<bool>("traditional-packs");
-    MoreIconsAPI::preloadIcons = mod->getSettingValue<bool>("preload-icons");
+    mod->setLogLevel(severityMap[logLevel->getValue()]);
+    traditionalPacks = jasmine::setting::getValue<bool>("traditional-packs");
+    MoreIconsAPI::preloadIcons = jasmine::setting::getValue<bool>("preload-icons");
 }
 
 bool MoreIcons::doesExist(const std::filesystem::path& path) {
@@ -150,29 +145,29 @@ void migrateFolderIcons(const std::filesystem::path& path) {
             texpack::Packer packer;
 
             for (auto& filename : names) {
-                if (auto err = packer.frame(filename, path / filename).err()) {
-                    return log::error("{}: Failed to load frame {}: {}", path, filename, *err);
+                if (auto res = packer.frame(filename, path / filename); res.isErr()) {
+                    return log::error("{}: Failed to load frame {}: {}", path, filename, res.unwrapErr());
                 }
             }
 
-            if (auto err = packer.pack().err()) {
-                return log::error("{}: Failed to pack frames: {}", path, *err);
+            if (auto res = packer.pack(); res.isErr()) {
+                return log::error("{}: Failed to pack frames: {}", path, res.unwrapErr());
             }
 
             auto pngPath = folderPath / path.filename().concat(".png");
-            if (auto err = MoreIcons::renameFile(pngPath, folderPath / path.filename().concat(".png")).err()) {
-                log::error("{}: Failed to rename existing image: {}", path, *err);
+            if (auto res = MoreIcons::renameFile(pngPath, folderPath / path.filename().concat(".png")); res.isErr()) {
+                log::error("{}: Failed to rename existing image: {}", path, res.unwrapErr());
             }
-            if (auto err = packer.png(pngPath).err()) {
-                log::error("{}: Failed to save image: {}", path, *err);
+            if (auto res = packer.png(pngPath); res.isErr()) {
+                log::error("{}: Failed to save image: {}", path, res.unwrapErr());
             }
 
             auto plistPath = folderPath / path.filename().concat(".plist");
-            if (auto err = MoreIcons::renameFile(plistPath, folderPath / path.filename().concat(".plist")).err()) {
-                log::error("{}: Failed to rename existing plist: {}", path, *err);
+            if (auto res = MoreIcons::renameFile(plistPath, folderPath / path.filename().concat(".plist")); res.isErr()) {
+                log::error("{}: Failed to rename existing plist: {}", path, res.unwrapErr());
             }
-            if (auto err = packer.plist(plistPath, "icons/" + string::pathToString(pngPath.filename()), "    ").err()) {
-                log::error("{}: Failed to save plist: {}", path, *err);
+            if (auto res = packer.plist(plistPath, "icons/" + string::pathToString(pngPath.filename()), "    "); res.isErr()) {
+                log::error("{}: Failed to save plist: {}", path, res.unwrapErr());
             }
         });
     }
@@ -385,8 +380,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     if (pathString.empty() && !path.empty()) printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
 
-    auto trailID = 0;
-    std::from_chars(pathStem.data() + 7, pathStem.data() + (pathStem.size() - 4), trailID);
+    auto trailID = jasmine::convert::getInt<int>(std::string_view(pathStem).substr(7, pathStem.size() - 11)).value_or(0);
     if (trailID == 0) trailID = -1;
 
     TrailInfo trailInfo;
@@ -439,7 +433,7 @@ void MoreIcons::loadIcons(IconType type) {
             auto path = pack.path / "config" / GEODE_MOD_ID / folder;
             if (!doesExist(path)) {
                 if (i == 0) {
-                    if (auto err = file::createDirectoryAll(path).err()) log::error("{}: {}", path, *err);
+                    if (auto res = file::createDirectoryAll(path); res.isErr()) log::error("{}: {}", path, res.unwrapErr());
                 }
                 continue;
             }
@@ -507,8 +501,8 @@ void MoreIcons::loadIcons(IconType type) {
 void MoreIcons::saveTrails() {
     for (auto& info : MoreIconsAPI::icons[IconType::Special]) {
         if (info.trailID == 0) {
-            if (auto err = file::writeToJson(std::filesystem::path(info.textures[0]).replace_extension(".json"), info.trailInfo).err()) {
-                log::error("{}: Failed to save trail info: {}", info.name, *err);
+            if (auto res = file::writeToJson(std::filesystem::path(info.textures[0]).replace_extension(".json"), info.trailInfo); res.isErr()) {
+                log::error("{}: Failed to save trail info: {}", info.name, res.unwrapErr());
             }
         }
     }

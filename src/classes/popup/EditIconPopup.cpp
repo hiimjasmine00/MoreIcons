@@ -431,8 +431,8 @@ texpack::Image getImage(CCSprite* sprite) {
 }
 
 void EditIconPopup::saveTrail(const std::filesystem::path& path) {
-    if (auto err = texpack::toPNG(path, getImage(m_streak)).err()) {
-        return notify(NotificationIcon::Error, "Failed to save image: {}", *err);
+    if (auto res = texpack::toPNG(path, getImage(m_streak)); res.isErr()) {
+        return notify(NotificationIcon::Error, "Failed to save image: {}", res.unwrapErr());
     }
     addOrUpdateIcon(m_textInput->getString(), path, "");
 }
@@ -458,14 +458,14 @@ void EditIconPopup::saveIcon(const std::filesystem::path& png, const std::filesy
         packer.frame(name + frameName, getImage(static_cast<CCSprite*>(m_sprites->objectForKey(frameName))));
     }
 
-    if (auto err = packer.pack().err()) {
-        return notify(NotificationIcon::Error, "Failed to pack frames: {}", *err);
+    if (auto res = packer.pack(); res.isErr()) {
+        return notify(NotificationIcon::Error, "Failed to pack frames: {}", res.unwrapErr());
     }
-    if (auto err = packer.png(png).err()) {
-        return notify(NotificationIcon::Error, "Failed to save image: {}", *err);
+    if (auto res = packer.png(png); res.isErr()) {
+        return notify(NotificationIcon::Error, "Failed to save image: {}", res.unwrapErr());
     }
-    if (auto err = packer.plist(plist, "icons/" + string::pathToString(png.filename()), "    ").err()) {
-        return notify(NotificationIcon::Error, "Failed to save plist: {}", *err);
+    if (auto res = packer.plist(plist, "icons/" + string::pathToString(png.filename()), "    "); res.isErr()) {
+        return notify(NotificationIcon::Error, "Failed to save plist: {}", res.unwrapErr());
     }
 
     addOrUpdateIcon(name, png, plist);

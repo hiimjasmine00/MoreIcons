@@ -92,9 +92,7 @@ $execute {
 IconInfo* MoreIconsAPI::getIcon(const std::string& name, IconType type) {
     if (name.empty()) return nullptr;
     auto& iconsVec = icons[type];
-    auto found = std::ranges::find_if(iconsVec, [&name](const IconInfo& info) {
-        return info.name == name;
-    });
+    auto found = std::ranges::find(iconsVec, name, &IconInfo::name);
     return found < iconsVec.end() ? std::to_address(found) : nullptr;
 }
 
@@ -119,10 +117,7 @@ std::string MoreIconsAPI::getIconName(cocos2d::CCNode* node) {
 }
 
 bool MoreIconsAPI::hasIcon(const std::string& icon, IconType type) {
-    if (icon.empty()) return false;
-    return std::ranges::any_of(icons[type], [&icon](const IconInfo& info) {
-        return info.name == icon;
-    });
+    return !icon.empty() && std::ranges::contains(icons[type], icon, &IconInfo::name);
 }
 
 bool MoreIconsAPI::hasIcon(IconType type, bool dual) {
@@ -328,7 +323,7 @@ void MoreIconsAPI::unloadIcons(int requestID) {
 }
 
 std::string getFrameName(const std::string& name, const std::string& prefix, IconType type) {
-    auto suffix = "";
+    std::string suffix;
     auto isRobot = type == IconType::Robot || type == IconType::Spider;
 
     if (name.ends_with("_2_001.png")) {
@@ -366,7 +361,7 @@ std::string getFrameName(const std::string& name, const std::string& prefix, Ico
         else suffix = "_001.png";
     }
 
-    return *suffix ? prefix.empty() ? suffix : GEODE_MOD_ID "/" + prefix + suffix : name;
+    return suffix.empty() ? name : prefix.empty() ? suffix : fmt::format("{}{}"_spr, prefix, suffix);
 }
 
 IconInfo* MoreIconsAPI::addIcon(
@@ -442,7 +437,7 @@ void MoreIconsAPI::renameIcon(IconInfo* info, const std::string& name) {
     info->name = newName;
     info->shortName = name;
 
-    auto quality = "";
+    std::string_view quality;
     auto oldPng = info->textures[0];
     auto type = info->type;
     if (type <= IconType::Jetpack) {
@@ -801,48 +796,64 @@ Result<Autorelease<CCDictionary>> MoreIconsAPI::createFrames(
 
         switch (format) {
             case 0: {
-                if (auto x = obj.get<float>("x").ok()) rect.origin.x = *x;
-                if (auto y = obj.get<float>("y").ok()) rect.origin.y = *y;
-                if (auto w = obj.get<float>("width").ok()) rect.size.width = *w;
-                if (auto h = obj.get<float>("height").ok()) rect.size.height = *h;
-                if (auto offsetX = obj.get<float>("offsetX").ok()) offset.x = *offsetX;
-                if (auto offsetY = obj.get<float>("offsetY").ok()) offset.y = *offsetY;
-                if (auto originalWidth = obj.get<float>("originalWidth").map([](float v) {
-                    return abs(floor(v));
-                }).ok()) originalSize.width = *originalWidth;
-                if (auto originalHeight = obj.get<float>("originalHeight").map([](float v) {
-                    return abs(floor(v));
-                }).ok()) originalSize.height = *originalHeight;
+                if (auto x = obj.get<float>("x")) {
+                    rect.origin.x = x.unwrap();
+                }
+                if (auto y = obj.get<float>("y")) {
+                    rect.origin.y = y.unwrap();
+                }
+                if (auto w = obj.get<float>("width")) {
+                    rect.size.width = w.unwrap();
+                }
+                if (auto h = obj.get<float>("height")) {
+                    rect.size.height = h.unwrap();
+                }
+                if (auto offsetX = obj.get<float>("offsetX")) {
+                    offset.x = offsetX.unwrap();
+                }
+                if (auto offsetY = obj.get<float>("offsetY")) {
+                    offset.y = offsetY.unwrap();
+                }
+                if (auto originalWidth = obj.get<float>("originalWidth")) {
+                    originalSize.width = abs(floor(originalWidth.unwrap()));
+                }
+                if (auto originalHeight = obj.get<float>("originalHeight")) {
+                    originalSize.height = abs(floor(originalHeight.unwrap()));
+                }
                 break;
             }
-            case 1: case 2: case 3: {
-                if (format == 3) {
-                    if (auto textureRect = obj.get<std::string>("textureRect").map([](const std::string& s) {
-                        return CCRectFromString(s.c_str()).origin;
-                    }).ok()) rect.origin = *textureRect;
-
-                    if (auto spriteSize = obj.get<std::string>("spriteSize").map([](const std::string& s) {
-                        return CCSizeFromString(s.c_str());
-                    }).ok()) rect.size = *spriteSize;
+            case 1: case 2: {
+                if (auto textureRect = obj.get<std::string>("frame")) {
+                    rect = CCRectFromString(textureRect.unwrap().c_str());
                 }
-                else {
-                    if (auto textureRect = obj.get<std::string>("frame").map([](const std::string& s) {
-                        return CCRectFromString(s.c_str());
-                    }).ok()) rect = *textureRect;
+                if (auto spriteSize = obj.get<std::string>("sourceSize")) {
+                    originalSize = CCSizeFromString(spriteSize.unwrap().c_str());
                 }
-
-                if (auto spriteOffset = obj.get<std::string>(format == 3 ? "spriteOffset" : "offset").map([](const std::string& s) {
-                    return CCPointFromString(s.c_str());
-                }).ok()) offset = *spriteOffset;
-
-                if (auto spriteSourceSize = obj.get<std::string>(format == 3 ? "spriteSourceSize" : "sourceSize").map([](const std::string& s) {
-                    return CCSizeFromString(s.c_str());
-                }).ok()) originalSize = *spriteSourceSize;
-
-                if (format > 1) {
-                    if (auto textureRotated = obj.get<bool>(format == 3 ? "textureRotated" : "rotated").ok()) rotated = *textureRotated;
+                if (auto spriteOffset = obj.get<std::string>("offset")) {
+                    offset = CCPointFromString(spriteOffset.unwrap().c_str());
                 }
-                break;
+                if (format == 2) {
+                    if (auto textureRotated = obj.get<bool>("rotated")) {
+                        rotated = textureRotated.unwrap();
+                    }
+                }
+            }
+            case 3: {
+                if (auto textureRect = obj.get<std::string>("textureRect")) {
+                    rect.origin = CCRectFromString(textureRect.unwrap().c_str()).origin;
+                }
+                if (auto spriteSize = obj.get<std::string>("spriteSize")) {
+                    rect.size = CCSizeFromString(spriteSize.unwrap().c_str());
+                }
+                if (auto spriteOffset = obj.get<std::string>("spriteOffset")) {
+                    offset = CCPointFromString(spriteOffset.unwrap().c_str());
+                }
+                if (auto spriteSourceSize = obj.get<std::string>("spriteSourceSize")) {
+                    originalSize = CCSizeFromString(spriteSourceSize.unwrap().c_str());
+                }
+                if (auto textureRotated = obj.get<bool>("textureRotated")) {
+                    rotated = textureRotated.unwrap();
+                }
             }
         }
 

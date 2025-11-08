@@ -70,21 +70,21 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
 
     if (m_info->type == IconType::Special) {
         auto filename = texturePath.filename();
-        if (auto err = MoreIcons::renameFile(texturePath, directory / filename, false, true).err()) {
-            return notify(NotificationIcon::Error, "Failed to {} {}: {}", trash ? "trash" : "move", filename, *err);
+        if (auto res = MoreIcons::renameFile(texturePath, directory / filename, false, true); res.isErr()) {
+            return notify(NotificationIcon::Error, "Failed to {} {}: {}", trash ? "trash" : "move", filename, res.unwrapErr());
         }
         auto jsonName = texturePath.filename().replace_extension(".json");
         auto jsonPath = parentDir / jsonName;
         if (trash) {
             if (MoreIcons::doesExist(jsonPath)) {
-                if (auto err = MoreIcons::renameFile(jsonPath, directory / jsonName, false, true).err()) {
-                    return notify(NotificationIcon::Error, "Failed to trash {}: {}", jsonName, *err);
+                if (auto res = MoreIcons::renameFile(jsonPath, directory / jsonName, false, true); res.isErr()) {
+                    return notify(NotificationIcon::Error, "Failed to trash {}: {}", jsonName, res.unwrapErr());
                 }
             }
         }
         else {
-            if (auto err = file::writeToJson(jsonPath, m_info->trailInfo).err()) {
-                return notify(NotificationIcon::Error, "Failed to write trail info to {}: {}", jsonName, *err);
+            if (auto res = file::writeToJson(jsonPath, m_info->trailInfo); res.isErr()) {
+                return notify(NotificationIcon::Error, "Failed to write trail info to {}: {}", jsonName, res.unwrapErr());
             }
         }
     }
@@ -99,8 +99,8 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                if (auto err = copyVanillaFile("icons/" + filename, directory / filename, true).err()) {
-                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, *err);
+                if (auto res = copyVanillaFile("icons/" + filename, directory / filename, true); res.isErr()) {
+                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, res.unwrapErr());
                 }
             }
         }
@@ -112,8 +112,8 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                if (auto err = copyVanillaFile("icons/" + filename, directory / filename, false).err()) {
-                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, *err);
+                if (auto res = copyVanillaFile("icons/" + filename, directory / filename, false); res.isErr()) {
+                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, res.unwrapErr());
                 }
             }
         }
@@ -125,8 +125,8 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                if (auto err = copyVanillaFile("icons/" + filename, directory / filename, false).err()) {
-                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, *err);
+                if (auto res = copyVanillaFile("icons/" + filename, directory / filename, false); res.isErr()) {
+                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, res.unwrapErr());
                 }
             }
         }
@@ -134,12 +134,12 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
         for (int i = 0; i < files.size(); i++) {
             auto& file = files[i];
             auto filename = file.filename();
-            if (auto err = MoreIcons::renameFile(file, directory / filename, false, true).err()) {
+            if (auto res = MoreIcons::renameFile(file, directory / filename, false, true); res.isErr()) {
                 for (int j = 0; j < i; j++) {
                     auto& file2 = files[j];
                     (void)MoreIcons::renameFile(directory / file2.filename(), file2, false);
                 }
-                return notify(NotificationIcon::Error, "Failed to {} {}: {}", trash ? "trash" : "move", filename, *err);
+                return notify(NotificationIcon::Error, "Failed to {} {}: {}", trash ? "trash" : "move", filename, res.unwrapErr());
             }
         }
     }

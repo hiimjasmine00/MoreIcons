@@ -3,6 +3,7 @@
 #include <Geode/binding/Slider.hpp>
 #include <Geode/ui/TextInput.hpp>
 #include <IconInfo.hpp>
+#include <jasmine/convert.hpp>
 
 using namespace geode::prelude;
 
@@ -46,11 +47,7 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     fadeTimeInput->setFilter(".0123456789");
     fadeTimeInput->setMaxCharCount(4);
     fadeTimeInput->setCallback([this, fadeTimeSlider](const std::string& str) {
-        #ifdef __cpp_lib_to_chars
-        std::from_chars(str.data(), str.data() + str.size(), m_trailInfo.fade);
-        #else
-        if (auto num = numFromString<float>(str).ok()) m_trailInfo.fade = *num;
-        #endif
+        jasmine::convert::toFloat(str, m_trailInfo.fade);
         m_trailInfo.fade = std::clamp(m_trailInfo.fade * 100.0f, 0.0f, 200.0f) / 100.0f;
         fadeTimeSlider->setValue(m_trailInfo.fade / 2.0f);
     });
@@ -82,11 +79,7 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     strokeWidthInput->setFilter(".0123456789");
     strokeWidthInput->setMaxCharCount(4);
     strokeWidthInput->setCallback([this, strokeWidthSlider](const std::string& str) {
-        #ifdef __cpp_lib_to_chars
-        std::from_chars(str.data(), str.data() + str.size(), m_trailInfo.stroke);
-        #else
-        if (auto num = numFromString<float>(str).ok()) m_trailInfo.stroke = *num;
-        #endif
+        jasmine::convert::toFloat(str, m_trailInfo.stroke);
         m_trailInfo.stroke = roundf(std::clamp(m_trailInfo.stroke * 10.0f, 0.0f, 200.0f)) / 10.0f;
         strokeWidthSlider->setValue(m_trailInfo.stroke / 20.0f);
     });

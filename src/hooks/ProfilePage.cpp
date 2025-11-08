@@ -1,10 +1,11 @@
 #include "../MoreIcons.hpp"
 #include "../api/MoreIconsAPI.hpp"
-#include "../classes/misc/ButtonHooker.hpp"
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/ProfilePage.hpp>
+#include <jasmine/button.hpp>
 
 using namespace geode::prelude;
+using namespace jasmine::button;
 
 class $modify(MIProfilePage, ProfilePage) {
     static void onModify(ModifyBase<ModifyDerive<MIProfilePage, ProfilePage>>& self) {
@@ -12,9 +13,7 @@ class $modify(MIProfilePage, ProfilePage) {
     }
 
     static void updatePlayer(CCNode* node, IconType type, bool dual) {
-        if (auto player = findFirstChildRecursive<SimplePlayer>(node, [](auto) {
-            return true;
-        })) {
+        if (auto player = findFirstChildRecursive<SimplePlayer>(node, [](auto) { return true; })) {
             MoreIconsAPI::updateSimplePlayer(player, type, dual);
         }
     }

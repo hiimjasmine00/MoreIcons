@@ -1,6 +1,8 @@
 #include "../MoreIcons.hpp"
 #include "../api/MoreIconsAPI.hpp"
 #include <Geode/modify/GameManager.hpp>
+#include <jasmine/hook.hpp>
+#include <jasmine/setting.hpp>
 
 using namespace geode::prelude;
 
@@ -9,10 +11,7 @@ class $modify(MIGameManager, GameManager) {
 
     static void onModify(ModifyBase<ModifyDerive<MIGameManager, GameManager>>& self) {
         (void)self.setHookPriority("GameManager::loadIcon", Priority::Replace);
-        if (auto it = self.m_hooks.find("GameManager::sheetNameForIcon"); it != self.m_hooks.end()) {
-            sheetHook = it->second.get();
-            sheetHook->setAutoEnable(Mod::get()->getSettingValue<bool>("traditional-packs"));
-        }
+        sheetHook = jasmine::hook::get(self.m_hooks, "GameManager::sheetNameForIcon", jasmine::setting::getValue<bool>("traditional-packs"));
     }
 
     void reloadAllStep2() {
@@ -35,12 +34,7 @@ class $modify(MIGameManager, GameManager) {
         MoreIcons::severities[IconType::Jetpack] = Severity::Debug;
         MoreIcons::severities[IconType::Special] = Severity::Debug;
         MoreIcons::loadSettings();
-
-        if (sheetHook) {
-            if (auto err = sheetHook->toggle(MoreIcons::traditionalPacks).err()) {
-                log::error("Failed to toggle GameManager::sheetNameForIcon hook: {}", *err);
-            }
-        }
+        jasmine::hook::toggle(sheetHook, MoreIcons::traditionalPacks);
     }
 
     gd::string sheetNameForIcon(int id, int type) {

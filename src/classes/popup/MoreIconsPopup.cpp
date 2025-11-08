@@ -119,9 +119,7 @@ bool MoreIconsPopup::setup() {
 
         auto vanillaCount = MoreIconsAPI::getGameManager()->countForType(type);
         auto customCount = MoreIconsAPI::icons[type].size();
-        auto logCount = std::ranges::count_if(MoreIcons::logs, [type](const LogData& log) {
-            return log.type == type;
-        });
+        auto logCount = std::ranges::count(MoreIcons::logs, type, &LogData::type);
 
         auto vanillaLabel = CCLabelBMFont::create(fmt::format("Vanilla: {}", vanillaCount).c_str(), "goldFont.fnt");
         vanillaLabel->limitLabelWidth(65.0f, 0.4f, 0.0f);

@@ -28,11 +28,11 @@ struct matjson::Serialize<TrailInfo> {
     static geode::Result<TrailInfo> fromJson(const matjson::Value& value) {
         TrailInfo info;
         if (value.isObject()) {
-            if (auto blend = value.get<bool>("blend").ok()) info.blend = *blend;
-            if (auto tint = value.get<bool>("tint").ok()) info.tint = *tint;
-            if (auto show = value.get<bool>("show").ok()) info.show = *show;
-            if (auto fade = value.get<float>("fade").ok()) info.fade = *fade;
-            if (auto stroke = value.get<float>("stroke").ok()) info.stroke = *stroke;
+            if (auto blend = value.get<bool>("blend")) info.blend = blend.unwrap();
+            if (auto tint = value.get<bool>("tint")) info.tint = tint.unwrap();
+            if (auto show = value.get<bool>("show")) info.show = show.unwrap();
+            if (auto fade = value.get<float>("fade")) info.fade = fade.unwrap();
+            if (auto stroke = value.get<float>("stroke")) info.stroke = stroke.unwrap();
         }
         return geode::Ok(info);
     }

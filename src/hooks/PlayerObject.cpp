@@ -5,8 +5,6 @@
 
 using namespace geode::prelude;
 
-using UpdateFunc = void(PlayerObject::*)(int);
-
 class $modify(MIPlayerObject, PlayerObject) {
     static void onModify(ModifyBase<ModifyDerive<MIPlayerObject, PlayerObject>>& self) {
         (void)self.setHookPriorityAfterPost("PlayerObject::setupStreak", "weebify.separate_dual_icons");
@@ -41,7 +39,7 @@ class $modify(MIPlayerObject, PlayerObject) {
         return true;
     }
 
-    void updateIcon(int frame, IconType type, UpdateFunc func) {
+    void updateIcon(int frame, IconType type, void(PlayerObject::*func)(int)) {
         auto player1 = p1();
         auto player2 = p2();
         auto mainPlayer = frame != 0 && (player1 || player2);

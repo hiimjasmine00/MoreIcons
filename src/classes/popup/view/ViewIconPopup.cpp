@@ -65,7 +65,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         player->setID("player-icon");
         m_mainLayer->addChild(player);
 
-        auto prefix = info ? GEODE_MOD_ID "/" + info->name : fmt::format("{}{:02}", MoreIconsAPI::prefixes[miType], id);
+        auto prefix = info ? fmt::format("{}"_spr, info->name) : fmt::format("{}{:02}", MoreIconsAPI::prefixes[miType], id);
         auto spriteFrameCache = MoreIconsAPI::getSpriteFrameCache();
         for (int i = 0; i < suffixes.size(); i++) {
             auto container = CCNode::create();

@@ -2,14 +2,13 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/MenuLayer.hpp>
+#include <jasmine/hook.hpp>
 
 using namespace geode::prelude;
 
 class $modify(MIMenuLayer, MenuLayer) {
     static void onModify(ModifyBase<ModifyDerive<MIMenuLayer, MenuLayer>>& self) {
-        if (auto it = self.m_hooks.find("MenuLayer::init"); it != self.m_hooks.end()) {
-            auto hook = it->second.get();
-            hook->setAutoEnable(false);
+        if (auto hook = jasmine::hook::get(self.m_hooks, "MenuLayer::init", false)) {
             if (auto iconProfile = Loader::get()->getInstalledMod("capeling.icon_profile")) {
                 if (iconProfile->isEnabled()) {
                     hook->setAutoEnable(true);
@@ -17,7 +16,7 @@ class $modify(MIMenuLayer, MenuLayer) {
                 }
                 else new EventListener([hook](ModStateEvent* e) {
                     afterPriority(hook, e->getMod());
-                    if (auto err = hook->enable().err()) log::error("Failed to enable MenuLayer::init hook: {}", *err);
+                    jasmine::hook::toggle(hook, true);
                 }, ModStateFilter(iconProfile, ModEventType::Loaded));
             }
         }

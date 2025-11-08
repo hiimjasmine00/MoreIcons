@@ -52,39 +52,40 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
         auto message = fmt::format("Are you sure you want to rename <cy>{}</c> to <cy>{}</c>?", old, name);
 
         auto parent = std::filesystem::path(info->textures[0]).parent_path();
-        std::string files;
+        fmt::memory_buffer files;
 
         if (info->type == IconType::Special) {
             if (MoreIcons::doesExist(parent / (old + ".png")) && MoreIcons::doesExist(parent / (name + ".png"))) {
-                files += fmt::format("\n<cg>{}.png</c>", name);
+                fmt::format_to(std::back_inserter(files), "\n<cg>{}.png</c>", name);
             }
             if (MoreIcons::doesExist(parent / (old + ".json")) && MoreIcons::doesExist(parent / (name + ".json"))) {
-                files += fmt::format("\n<cg>{}.json</c>", name);
+                fmt::format_to(std::back_inserter(files), "\n<cg>{}.json</c>", name);
             }
         }
         else if (info->type <= IconType::Jetpack) {
             if (MoreIcons::doesExist(parent / (old + "-uhd.png")) && MoreIcons::doesExist(parent / (name + "-uhd.png"))) {
-                files += fmt::format("\n<cg>{}-uhd.png</c>", name);
+                fmt::format_to(std::back_inserter(files), "\n<cg>{}-uhd.png</c>", name);
             }
             if (MoreIcons::doesExist(parent / (old + "-hd.png")) && MoreIcons::doesExist(parent / (name + "-hd.png"))) {
-                files += fmt::format("\n<cg>{}-hd.png</c>", name);
+                fmt::format_to(std::back_inserter(files), "\n<cg>{}-hd.png</c>", name);
             }
             if (MoreIcons::doesExist(parent / (old + ".png")) && MoreIcons::doesExist(parent / (name + ".png"))) {
-                files += fmt::format("\n<cg>{}.png</c>", name);
+                fmt::format_to(std::back_inserter(files), "\n<cg>{}.png</c>", name);
             }
             if (MoreIcons::doesExist(parent / (old + "-uhd.plist")) && MoreIcons::doesExist(parent / (name + "-uhd.plist"))) {
-                files += fmt::format("\n<cg>{}-uhd.plist</c>", name);
+                fmt::format_to(std::back_inserter(files), "\n<cg>{}-uhd.plist</c>", name);
             }
             if (MoreIcons::doesExist(parent / (old + "-hd.plist")) && MoreIcons::doesExist(parent / (name + "-hd.plist"))) {
-                files += fmt::format("\n<cg>{}-hd.plist</c>", name);
+                fmt::format_to(std::back_inserter(files), "\n<cg>{}-hd.plist</c>", name);
             }
             if (MoreIcons::doesExist(parent / (old + ".plist")) && MoreIcons::doesExist(parent / (name + ".plist"))) {
-                files += fmt::format("\n<cg>{}.plist</c>", name);
+                fmt::format_to(std::back_inserter(files), "\n<cg>{}.plist</c>", name);
             }
         }
 
-        if (!files.empty()) {
-            message += "\n<cr>This will overwrite the following files:</c>" + files + "\n<cr>These cannot be restored!</c>";
+        if (files.size() > 0) {
+            message += fmt::format(
+                "\n<cr>This will overwrite the following files:</c>{}\n<cr>These cannot be restored!</c>", fmt::to_string(files));
         }
 
         createQuickPopup(fmt::format("Rename {}", unlockName).c_str(), message, "No", "Yes", [this, info, old, name, popup](auto, bool btn2) {
@@ -93,31 +94,39 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
             auto parent = std::filesystem::path(info->textures[0]).parent_path();
 
             if (info->type == IconType::Special) {
-                if (auto err = MoreIcons::renameFile(parent / (old + ".png"), parent / (name + ".png")).err()) {
-                    return Notification::create(fmt::format("Failed to rename {}.png: {}", old, *err), NotificationIcon::Error)->show();
+                if (auto res = MoreIcons::renameFile(parent / (old + ".png"), parent / (name + ".png")); res.isErr()) {
+                    return Notification::create(
+                        fmt::format("Failed to rename {}.png: {}", old, res.unwrapErr()), NotificationIcon::Error)->show();
                 }
-                if (auto err = MoreIcons::renameFile(parent / (old + ".json"), parent / (name + ".json")).err()) {
-                    return Notification::create(fmt::format("Failed to rename {}.json: {}", old, *err), NotificationIcon::Error)->show();
+                if (auto res = MoreIcons::renameFile(parent / (old + ".json"), parent / (name + ".json")); res.isErr()) {
+                    return Notification::create(
+                        fmt::format("Failed to rename {}.json: {}", old, res.unwrapErr()), NotificationIcon::Error)->show();
                 }
             }
             else if (info->type <= IconType::Jetpack) {
-                if (auto err = MoreIcons::renameFile(parent / (old + "-uhd.png"), parent / (name + "-uhd.png")).err()) {
-                    return Notification::create(fmt::format("Failed to rename {}-uhd.png: {}", old, *err), NotificationIcon::Error)->show();
+                if (auto res = MoreIcons::renameFile(parent / (old + "-uhd.png"), parent / (name + "-uhd.png")); res.isErr()) {
+                    return Notification::create(
+                        fmt::format("Failed to rename {}-uhd.png: {}", old, res.unwrapErr()), NotificationIcon::Error)->show();
                 }
-                if (auto err = MoreIcons::renameFile(parent / (old + "-hd.png"), parent / (name + "-hd.png")).err()) {
-                    return Notification::create(fmt::format("Failed to rename {}-hd.png: {}", old, *err), NotificationIcon::Error)->show();
+                if (auto res = MoreIcons::renameFile(parent / (old + "-hd.png"), parent / (name + "-hd.png")); res.isErr()) {
+                    return Notification::create(
+                        fmt::format("Failed to rename {}-hd.png: {}", old, res.unwrapErr()), NotificationIcon::Error)->show();
                 }
-                if (auto err = MoreIcons::renameFile(parent / (old + ".png"), parent / (name + ".png")).err()) {
-                    return Notification::create(fmt::format("Failed to rename {}.png: {}", old, *err), NotificationIcon::Error)->show();
+                if (auto res = MoreIcons::renameFile(parent / (old + ".png"), parent / (name + ".png")); res.isErr()) {
+                    return Notification::create(
+                        fmt::format("Failed to rename {}.png: {}", old, res.unwrapErr()), NotificationIcon::Error)->show();
                 }
-                if (auto err = MoreIcons::renameFile(parent / (old + "-uhd.plist"), parent / (name + "-uhd.plist")).err()) {
-                    return Notification::create(fmt::format("Failed to rename {}-uhd.plist: {}", old, *err), NotificationIcon::Error)->show();
+                if (auto res = MoreIcons::renameFile(parent / (old + "-uhd.plist"), parent / (name + "-uhd.plist")); res.isErr()) {
+                    return Notification::create(
+                        fmt::format("Failed to rename {}-uhd.plist: {}", old, res.unwrapErr()), NotificationIcon::Error)->show();
                 }
-                if (auto err = MoreIcons::renameFile(parent / (old + "-hd.plist"), parent / (name + "-hd.plist")).err()) {
-                    return Notification::create(fmt::format("Failed to rename {}-hd.plist: {}", old, *err), NotificationIcon::Error)->show();
+                if (auto res = MoreIcons::renameFile(parent / (old + "-hd.plist"), parent / (name + "-hd.plist")); res.isErr()) {
+                    return Notification::create(
+                        fmt::format("Failed to rename {}-hd.plist: {}", old, res.unwrapErr()), NotificationIcon::Error)->show();
                 }
-                if (auto err = MoreIcons::renameFile(parent / (old + ".plist"), parent / (name + ".plist")).err()) {
-                    return Notification::create(fmt::format("Failed to rename {}.plist: {}", old, *err), NotificationIcon::Error)->show();
+                if (auto res = MoreIcons::renameFile(parent / (old + ".plist"), parent / (name + ".plist")); res.isErr()) {
+                    return Notification::create(
+                        fmt::format("Failed to rename {}.plist: {}", old, res.unwrapErr()), NotificationIcon::Error)->show();
                 }
             }
 

@@ -7,7 +7,8 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/ObjectManager.hpp>
 #include <Geode/binding/SpriteDescription.hpp>
-#include <Geode/loader/Loader.hpp>
+#include <Geode/loader/Mod.hpp>
+#include <jasmine/convert.hpp>
 
 using namespace geode::prelude;
 
@@ -76,7 +77,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info) {
 
 void LazyIcon::createSimpleIcon() {
     auto ufo = m_type == IconType::Ufo;
-    auto iconName = (m_info ? GEODE_MOD_ID "/" : "") + m_name;
+    auto iconName = m_info ? fmt::format("{}"_spr, m_name) : m_name;
     auto primaryFrame = MoreIconsAPI::getFrame(iconName + "_001.png");
     auto secondaryFrame = MoreIconsAPI::getFrame(iconName + "_2_001.png");
     auto tertiaryFrame = ufo ? MoreIconsAPI::getFrame(iconName + "_3_001.png") : nullptr;
@@ -142,7 +143,7 @@ void LazyIcon::createComplexIcon() {
         definition->valueForKey("animDesc")->getCString())->objectForKey("usedTextures"));
     if (!usedTextures) return;
 
-    auto iconName = m_info ? fmt::format(GEODE_MOD_ID "/{}", m_name) : m_name;
+    auto iconName = m_info ? fmt::format("{}"_spr, m_name) : m_name;
     auto normalImage = getNormalImage();
 
     auto glowNode = CCNode::create();
@@ -155,11 +156,10 @@ void LazyIcon::createComplexIcon() {
         auto usedTexture = static_cast<CCDictionary*>(usedTextures->objectForKey(fmt::format("texture_{}", i)));
         if (!usedTexture) continue;
 
-        auto texture = usedTexture->valueForKey("texture")->m_sString;
+        std::string_view texture = usedTexture->valueForKey("texture")->m_sString;
         if (texture.size() < spider + 11) continue;
 
-        auto index = 0;
-        std::from_chars(texture.data() + spider + 9, texture.data() + spider + 11, index);
+        auto index = jasmine::convert::getInt<int>(texture.substr(spider + 9, 2)).value_or(0);
         if (index <= 0) continue;
 
         std::string_view customID = usedTexture->valueForKey("customID")->m_sString;

@@ -15,9 +15,9 @@ ThreadPool::ThreadPool() {
 void ThreadPool::pushTask(std::function<void()> task) {
     std::unique_lock lock(m_mutex);
 
-    if (!std::any_of(m_threadsBusy.get(), m_threadsBusy.get() + m_threadsInit, [](const std::atomic_bool& busy) {
-        return !busy;
-    })) tryAllocThread();
+    if (std::all_of(m_threadsBusy.get(), m_threadsBusy.get() + m_threadsInit, std::identity())) {
+        tryAllocThread();
+    }
 
     m_tasks.emplace(std::move(task));
     m_spinCount++;
