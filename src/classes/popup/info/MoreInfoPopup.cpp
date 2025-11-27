@@ -92,40 +92,40 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
         auto& shortName = m_info->shortName;
         std::vector<std::filesystem::path> files;
 
-        auto uhdPng = parentDir / (shortName + "-uhd.png");
+        auto uhdPng = parentDir / fmt::format("{}-uhd.png", shortName);
         if (MoreIcons::doesExist(uhdPng)) {
             files.push_back(uhdPng);
-            auto filename = shortName + "-uhd.plist";
+            auto filename = fmt::format("{}-uhd.plist", shortName);
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                if (auto res = copyVanillaFile("icons/" + filename, directory / filename, true); res.isErr()) {
+                if (auto res = copyVanillaFile(fmt::format("icons/{}", filename), directory / filename, true); res.isErr()) {
                     return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, res.unwrapErr());
                 }
             }
         }
 
-        auto hdPng = parentDir / (shortName + "-hd.png");
+        auto hdPng = parentDir / fmt::format("{}-hd.png", shortName);
         if (MoreIcons::doesExist(hdPng)) {
             files.push_back(hdPng);
-            auto filename = shortName + "-hd.plist";
+            auto filename = fmt::format("{}-hd.plist", shortName);
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                if (auto res = copyVanillaFile("icons/" + filename, directory / filename, false); res.isErr()) {
+                if (auto res = copyVanillaFile(fmt::format("icons/{}", filename), directory / filename, false); res.isErr()) {
                     return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, res.unwrapErr());
                 }
             }
         }
 
-        auto png = parentDir / (shortName + ".png");
+        auto png = parentDir / fmt::format("{}.png", shortName);
         if (MoreIcons::doesExist(png)) {
             files.push_back(png);
-            auto filename = shortName + ".plist";
+            auto filename = fmt::format("{}.plist", shortName);
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
-                if (auto res = copyVanillaFile("icons/" + filename, directory / filename, false); res.isErr()) {
+                if (auto res = copyVanillaFile(fmt::format("icons/{}", filename), directory / filename, false); res.isErr()) {
                     return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, res.unwrapErr());
                 }
             }
@@ -198,7 +198,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
 
     if (info->type <= IconType::Jetpack) {
         auto itemIcon = GJItemIcon::createBrowserItem(MoreIconsAPI::getGameManager()->iconTypeToUnlockType(info->type), 1);
-        itemIcon->setScale(1.25f - hasPack * 0.15f);
+        itemIcon->setScale(hasPack ? 1.1f : 1.25f);
 
         auto player = static_cast<SimplePlayer*>(itemIcon->m_player);
         MoreIconsAPI::updateSimplePlayer(player, info->name, info->type);
@@ -216,14 +216,14 @@ bool MoreInfoPopup::setup(IconInfo* info) {
             player->m_hasGlowOutline = m_toggled && glow;
             player->updateColors();
         });
-        iconButton->setPosition({ 150.0f, 171.0f - hasPack * 6.0f });
+        iconButton->setPosition({ 150.0f, hasPack ? 165.0f : 171.0f });
         iconButton->setID("icon-button");
         m_buttonMenu->addChild(iconButton);
     }
     else if (info->type == IconType::Special) {
         auto square = MoreIconsAPI::customTrail(info->textures[0]);
-        square->setPosition({ 150.0f, 171.0f - hasPack * 6.0f });
-        square->setScale(1.25f - hasPack * 0.15f);
+        square->setPosition({ 150.0f, hasPack ? 165.0f : 171.0f });
+        square->setScale(hasPack ? 1.1f : 1.25f);
         square->setID("trail-square");
         m_mainLayer->addChild(square);
 

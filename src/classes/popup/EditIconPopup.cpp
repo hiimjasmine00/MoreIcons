@@ -17,7 +17,7 @@ EditIconPopup* EditIconPopup::create(MoreIconsPopup* popup, IconType type) {
     auto ret = new EditIconPopup();
     if (ret->initAnchored(
         350.0f,
-        180.0f + (type <= IconType::Jetpack) * 50.0f + (type == IconType::Robot || type == IconType::Spider) * 30.0f,
+        180.0f + (type <= IconType::Jetpack ? 50.0f : 0.0f) + (type == IconType::Robot || type == IconType::Spider ? 30.0f : 0.0f),
         popup,
         type,
         "geode.loader/GE_square03.png"
@@ -54,7 +54,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     if (isIcon) {
         auto isRobot = type == IconType::Robot || type == IconType::Spider;
         std::vector<std::vector<std::string>> suffixes;
-        suffixes.reserve(isRobot * 3 + 1);
+        suffixes.reserve(isRobot ? 4 : 1);
         if (isRobot) {
             suffixes.push_back({ "_01_001.png", "_01_2_001.png", "_01_glow_001.png", "_01_extra_001.png" });
             suffixes.push_back({ "_02_001.png", "_02_2_001.png", "_02_glow_001.png" });
@@ -69,7 +69,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
         m_player = SimplePlayer::create(1);
         m_player->updatePlayerFrame(1, type);
         m_player->setGlowOutline({ 255, 255, 255 });
-        m_player->setPosition({ 175.0f, 150.0f + isRobot * 80.0f - suffixes.size() * 30.0f });
+        m_player->setPosition({ 175.0f, (isRobot ? 230.0f : 150.0f) - suffixes.size() * 30.0f });
         m_player->setID("player-icon");
         m_mainLayer->addChild(m_player);
 
@@ -78,7 +78,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
         auto crossFrame = spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
         for (int i = 0; i < suffixes.size(); i++) {
             auto frameMenu = CCMenu::create();
-            frameMenu->setPosition({ 175.0f, 170.0f + isRobot * 40.0f - i * 30.0f + std::max(i - 1, 0) * 10.0f });
+            frameMenu->setPosition({ 175.0f, (isRobot ? 210.0f : 170.0f) - i * 30.0f + std::max(i - 1, 0) * 10.0f });
             frameMenu->setContentSize({ 350.0f, 30.0f });
             frameMenu->setID(fmt::format("frame-menu-{}", i + 1));
 
@@ -182,9 +182,9 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
         else if (m_iconType <= IconType::Jetpack) {
             auto parent = configDir / folder;
             auto factor = MoreIconsAPI::getDirector()->getContentScaleFactor();
-            auto filename = iconName + (factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : "");
-            auto png = parent / (filename + ".png");
-            auto plist = parent / (filename + ".plist");
+            auto suffix = factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : "";
+            auto png = parent / fmt::format("{}{}.png", iconName, suffix);
+            auto plist = parent / fmt::format("{}{}.plist", iconName, suffix);
             if (MoreIcons::doesExist(png) || MoreIcons::doesExist(plist)) {
                 createQuickPopup(
                     "Existing Icon",
@@ -455,7 +455,7 @@ void EditIconPopup::saveIcon(const std::filesystem::path& png, const std::filesy
 
     texpack::Packer packer;
     for (auto [frameName, frame] : CCDictionaryExt<std::string, CCSpriteFrame*>(m_frames)) {
-        packer.frame(name + frameName, getImage(static_cast<CCSprite*>(m_sprites->objectForKey(frameName))));
+        packer.frame(fmt::format("{}{}", name, frameName), getImage(static_cast<CCSprite*>(m_sprites->objectForKey(frameName))));
     }
 
     if (auto res = packer.pack(); res.isErr()) {
@@ -464,7 +464,7 @@ void EditIconPopup::saveIcon(const std::filesystem::path& png, const std::filesy
     if (auto res = packer.png(png); res.isErr()) {
         return notify(NotificationIcon::Error, "Failed to save image: {}", res.unwrapErr());
     }
-    if (auto res = packer.plist(plist, "icons/" + string::pathToString(png.filename()), "    "); res.isErr()) {
+    if (auto res = packer.plist(plist, fmt::format("icons/{}", string::pathToString(png.filename())), "    "); res.isErr()) {
         return notify(NotificationIcon::Error, "Failed to save plist: {}", res.unwrapErr());
     }
 

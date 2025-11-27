@@ -78,12 +78,11 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info) {
 void LazyIcon::createSimpleIcon() {
     auto ufo = m_type == IconType::Ufo;
     auto iconName = m_info ? fmt::format("{}"_spr, m_name) : m_name;
-    auto primaryFrame = MoreIconsAPI::getFrame(iconName + "_001.png");
-    auto secondaryFrame = MoreIconsAPI::getFrame(iconName + "_2_001.png");
-    auto tertiaryFrame = ufo ? MoreIconsAPI::getFrame(iconName + "_3_001.png") : nullptr;
-    auto glowFrame = MoreIconsAPI::getFrame(iconName + "_glow_001.png");
-    auto extraFrame = MoreIconsAPI::getFrame(iconName + "_extra_001.png");
-
+    auto primaryFrame = MoreIconsAPI::getFrame(fmt::format("{}_001.png", iconName));
+    auto secondaryFrame = MoreIconsAPI::getFrame(fmt::format("{}_2_001.png", iconName));
+    auto tertiaryFrame = ufo ? MoreIconsAPI::getFrame(fmt::format("{}_3_001.png", iconName)) : nullptr;
+    auto glowFrame = MoreIconsAPI::getFrame(fmt::format("{}_glow_001.png", iconName));
+    auto extraFrame = MoreIconsAPI::getFrame(fmt::format("{}_extra_001.png", iconName));
     auto normalImage = getNormalImage();
 
     if (primaryFrame) {
@@ -163,7 +162,7 @@ void LazyIcon::createComplexIcon() {
         if (index <= 0) continue;
 
         std::string_view customID = usedTexture->valueForKey("customID")->m_sString;
-        uint8_t spriteColor = customID == "back01" || customID == "back02" || customID == "back03" ? 178 - (spider * 51) : 255;
+        uint8_t spriteColor = customID == "back01" || customID == "back02" || customID == "back03" ? (spider ? 127 : 178) : 255;
         ccColor3B spriteColor3B = { spriteColor, spriteColor, spriteColor };
 
         auto partNode = new CCSpritePlus();

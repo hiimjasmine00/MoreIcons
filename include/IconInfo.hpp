@@ -17,6 +17,14 @@ struct IconInfo {
     bool vanilla;
     bool zipped;
 
+    IconInfo(
+        const std::string& name, const std::string& texture, const std::string& sheetName,
+        const std::string& packName, const std::string& packID, IconType type, int trailID,
+        const TrailInfo& trailInfo, const std::string& shortName, bool vanilla, bool zipped
+    ) : name(name), textures({ texture }), sheetName(sheetName), packName(packName),
+        packID(packID), type(type), trailID(trailID), trailInfo(trailInfo),
+        shortName(shortName), vanilla(vanilla), zipped(zipped) {}
+
     bool operator==(const IconInfo& other) const {
         return type == other.type && name == other.name;
     }
@@ -44,11 +52,11 @@ struct IconInfo {
         for (size_t aIt = 0, bIt = 0; aIt < a.size() && bIt < b.size();) {
             if (isdigit(a[aIt]) && isdigit(b[bIt])) {
                 auto aStart = aIt;
-                for (; aIt < a.size() && isdigit(a[aIt]); aIt++);
+                while (aIt < a.size() && isdigit(a[aIt])) aIt++;
                 auto aSize = aIt - aStart;
 
                 auto bStart = bIt;
-                for (; bIt < b.size() && isdigit(b[bIt]); bIt++);
+                while (bIt < b.size() && isdigit(b[bIt])) bIt++;
                 auto bSize = bIt - bStart;
 
                 comparison = aSize == bSize ? a.substr(aStart, aSize) <=> b.substr(bStart, bSize) : aSize <=> bSize;

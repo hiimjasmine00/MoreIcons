@@ -74,7 +74,7 @@ bool MoreIconsPopup::setup() {
         background->setID("background");
         gamemodeMenu->addChild(background);
 
-        auto type = (IconType)(i + (i > 8) * 89);
+        auto type = MoreIconsAPI::convertType(i);
         auto id = MoreIcons::vanillaIcon(type, dual);
         if (i < 9) {
             auto icon = SimplePlayer::create(1);

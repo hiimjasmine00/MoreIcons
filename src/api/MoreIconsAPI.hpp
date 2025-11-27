@@ -72,7 +72,11 @@ public:
     static bool preloadIcons;
 
     static int convertType(IconType type) {
-        return (int)type - (type >= IconType::DeathEffect) * 89;
+        return (int)type - (type >= IconType::DeathEffect ? 89 : 0);
+    }
+
+    static IconType convertType(int type) {
+        return (IconType)(type + (type > 8 ? 89 : 0));
     }
 
     static IconInfo* getIcon(const std::string& name, IconType type);

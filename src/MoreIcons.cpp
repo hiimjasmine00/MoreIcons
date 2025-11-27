@@ -9,6 +9,7 @@
 #include <geode.texture-loader/include/TextureLoader.hpp>
 #include <jasmine/convert.hpp>
 #include <jasmine/setting.hpp>
+#include <std23/function_ref.h>
 #include <texpack.hpp>
 
 using namespace geode::prelude;
@@ -37,7 +38,7 @@ std::map<IconType, int> MoreIcons::severities = {
 int MoreIcons::severity = 0;
 bool MoreIcons::traditionalPacks = true;
 
-std::unordered_map<std::string, decltype(Severity::Debug)> severityMap = {
+std::unordered_map<std::string, Severity::type> severityMap = {
     { "Debug", Severity::Debug },
     { "Info", Severity::Info },
     { "Warning", Severity::Warning },
@@ -83,16 +84,17 @@ Result<> MoreIcons::renameFile(const std::filesystem::path& from, const std::fil
     return code ? Err("Failed to rename {}: {}", from.filename(), code.message()) : Result<>(Ok());
 }
 
-void directoryIterator(const std::filesystem::path& path, auto&& func) {
+void directoryIterator(
+    const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<bool(const std::filesystem::path&)> func
+) {
     std::error_code code;
     std::filesystem::directory_iterator it(path, code);
     if (code) return log::error("{}: Failed to create directory iterator: {}", path, code.message());
     for (; it != std::filesystem::end(it); it.increment(code)) {
         std::error_code code;
+        if (it->status(code).type() != type) continue;
         auto& itPath = it->path();
-        auto type = it->status(code).type();
-        if constexpr (std::is_void_v<decltype(func(itPath, type))>) func(itPath, type);
-        else if (func(itPath, type)) break;
+        if (func(itPath)) break;
     }
     if (code) return log::error("{}: Failed to iterate over directory: {}", path, code.message());
 }
@@ -109,16 +111,14 @@ void migrateFolderIcons(const std::filesystem::path& path) {
         auto folderPath = path / MoreIcons::folders[i];
         if (!MoreIcons::doesExist(folderPath)) continue;
 
-        directoryIterator(folderPath, [i, &folderPath, &migratedFolders](const std::filesystem::path& path, std::filesystem::file_type fileType) {
-            if (fileType != std::filesystem::file_type::directory) return;
-
-            if (std::ranges::contains(migratedFolders, path)) return;
+        directoryIterator(folderPath, std::filesystem::file_type::directory, [i, &folderPath, &migratedFolders](const std::filesystem::path& path) {
+            if (std::ranges::contains(migratedFolders, path)) return false;
             else migratedFolders.push(path);
 
             std::vector<std::string> names;
 
-            directoryIterator(path, [i, &names](const std::filesystem::path& path, std::filesystem::file_type fileType) {
-                if (fileType != std::filesystem::file_type::regular || path.extension() != ".png") return;
+            directoryIterator(path, std::filesystem::file_type::regular, [i, &names](const std::filesystem::path& path) {
+                if (path.extension() != ".png") return false;
 
                 auto pathFilename = string::pathToString(path.filename());
                 auto pathStem = string::pathToString(path.stem());
@@ -138,20 +138,23 @@ void migrateFolderIcons(const std::filesystem::path& path) {
                     if ((i != 5 && i != 6) || pathStem.ends_with("_01_001") || pathStem.ends_with("_02_001") ||
                         pathStem.ends_with("_03_001") || pathStem.ends_with("_04_001")) names.push_back(pathFilename);
                 }
+                return false;
             });
 
-            if (names.empty()) return;
+            if (names.empty()) return false;
 
             texpack::Packer packer;
 
             for (auto& filename : names) {
                 if (auto res = packer.frame(filename, path / filename); res.isErr()) {
-                    return log::error("{}: Failed to load frame {}: {}", path, filename, res.unwrapErr());
+                    log::error("{}: Failed to load frame {}: {}", path, filename, res.unwrapErr());
+                    return false;
                 }
             }
 
             if (auto res = packer.pack(); res.isErr()) {
-                return log::error("{}: Failed to pack frames: {}", path, res.unwrapErr());
+                log::error("{}: Failed to pack frames: {}", path, res.unwrapErr());
+                return false;
             }
 
             auto pngPath = folderPath / path.filename().concat(".png");
@@ -166,9 +169,11 @@ void migrateFolderIcons(const std::filesystem::path& path) {
             if (auto res = MoreIcons::renameFile(plistPath, folderPath / path.filename().concat(".plist")); res.isErr()) {
                 log::error("{}: Failed to rename existing plist: {}", path, res.unwrapErr());
             }
-            if (auto res = packer.plist(plistPath, "icons/" + string::pathToString(pngPath.filename()), "    "); res.isErr()) {
+            if (auto res = packer.plist(plistPath, fmt::format("icons/{}", string::pathToString(pngPath.filename())), "    "); res.isErr()) {
                 log::error("{}: Failed to save plist: {}", path, res.unwrapErr());
             }
+
+            return false;
         });
     }
 
@@ -194,15 +199,15 @@ void MoreIcons::loadPacks() {
         auto extension = pack.path.extension();
         auto zipped = extension == ".apk" || extension == ".zip";
         if (traditionalPacks) {
-            if (doesExist(pack.resourcesPath / "icons")) packs.emplace_back(pack.name, pack.id, pack.resourcesPath, true, zipped);
-            else directoryIterator(pack.resourcesPath, [&pack, zipped](const std::filesystem::path& path, std::filesystem::file_type fileType) {
-                if (fileType != std::filesystem::file_type::regular) return false;
-
+            if (doesExist(pack.resourcesPath / "icons")) {
+                packs.emplace_back(std::move(pack.name), std::move(pack.id), std::move(pack.resourcesPath), true, zipped);
+            }
+            else directoryIterator(pack.resourcesPath, std::filesystem::file_type::regular, [&pack, zipped](const std::filesystem::path& path) {
                 if (path.extension() != ".png") return false;
 
                 auto filename = string::pathToString(path.filename());
                 if (filename.starts_with("streak_") && filename.ends_with("_001.png")) {
-                    packs.emplace_back(pack.name, pack.id, path.parent_path(), true, zipped);
+                    packs.emplace_back(std::move(pack.name), std::move(pack.id), path.parent_path(), true, zipped);
                     return true;
                 }
 
@@ -212,7 +217,7 @@ void MoreIcons::loadPacks() {
 
         auto configPath = pack.resourcesPath / "config" / GEODE_MOD_ID;
         if (doesExist(configPath)) {
-            packs.emplace_back(pack.name, pack.id, pack.resourcesPath, false, zipped);
+            packs.emplace_back(std::move(pack.name), std::move(pack.id), std::move(pack.resourcesPath), false, zipped);
             migrateFolderIcons(configPath);
         }
     }
@@ -247,9 +252,9 @@ IconType currentType = IconType::Cube;
 
 template <typename... Args>
 void printLog(const std::string& name, int severity, fmt::format_string<Args...> message, Args&&... args) {
-    auto logMessage = fmt::format(message, std::forward<Args>(args)...);
+    std::string logMessage = fmt::format(message, std::forward<Args>(args)...);
     log::logImpl(Severity::cast(severity), Mod::get(), "{}: {}", name, logMessage);
-    MoreIcons::logs.emplace_back(name, logMessage, currentType, severity);
+    MoreIcons::logs.emplace_back(name, std::move(logMessage), currentType, severity);
     auto& currentSeverity = MoreIcons::severities[currentType];
     if (currentSeverity < severity) currentSeverity = severity;
     if (MoreIcons::severity < severity) MoreIcons::severity = severity;
@@ -446,15 +451,14 @@ void MoreIcons::loadIcons(IconType type) {
 
             log::info("Pre-loading {}s from {}", name, path);
 
-            directoryIterator(path, [type, &pack](const std::filesystem::path& path, std::filesystem::file_type fileType) {
-                if (fileType != std::filesystem::file_type::regular) return;
-
+            directoryIterator(path, std::filesystem::file_type::regular, [type, &pack](const std::filesystem::path& path) {
                 if (type <= IconType::Jetpack) {
                     if (path.extension() == ".plist") loadIcon(path, pack);
                 }
                 else if (type == IconType::Special) {
                     if (path.extension() == ".png") loadTrail(path, pack);
                 }
+                return false;
             });
 
             log::info("Finished pre-loading {}s from {}", name, path);
@@ -465,13 +469,11 @@ void MoreIcons::loadIcons(IconType type) {
 
             log::info("Pre-loading {}s from {}", name, path);
 
-            directoryIterator(path, [type, &pack, prefix](const std::filesystem::path& path, std::filesystem::file_type fileType) {
-                if (fileType != std::filesystem::file_type::regular) return;
-
-                if (path.extension() != ".png") return;
+            directoryIterator(path, std::filesystem::file_type::regular, [type, &pack, prefix](const std::filesystem::path& path) {
+                if (path.extension() != ".png") return false;
 
                 auto filename = string::pathToString(path.filename());
-                if (!filename.starts_with(prefix)) return;
+                if (!filename.starts_with(prefix)) return false;
 
                 if (type <= IconType::Jetpack) {
                     if (type != IconType::Cube || !filename.starts_with("player_ball_")) {
@@ -482,6 +484,7 @@ void MoreIcons::loadIcons(IconType type) {
                 else if (type == IconType::Special) {
                     if (filename.ends_with("_001.png")) loadVanillaTrail(path, pack);
                 }
+                return false;
             });
 
             log::info("Finished pre-loading {}s from {}", name, path);

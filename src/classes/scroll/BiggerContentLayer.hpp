@@ -3,7 +3,6 @@
 class BiggerContentLayer : public CCContentLayer {
 protected:
     float m_sizeOffset;
-    cocos2d::CCMenuItem* m_selectedItem;
 
     bool init(float, float, float);
 public:

@@ -6,20 +6,20 @@
 using namespace geode::prelude;
 
 class $modify(MIPlayerObject, PlayerObject) {
+    struct Fields {
+        bool m_player1 = false;
+        bool m_player2 = false;
+    };
+
     static void onModify(ModifyBase<ModifyDerive<MIPlayerObject, PlayerObject>>& self) {
         (void)self.setHookPriorityAfterPost("PlayerObject::setupStreak", "weebify.separate_dual_icons");
     }
 
-    bool p1() {
-        return m_gameLayer && (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this);
-    }
-
-    bool p2() {
-        return m_gameLayer && (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this);
-    }
-
-    void updateIcon(IconType type, bool dual) {
-        auto icon = MoreIconsAPI::activeIcon(type, dual);
+    void updateIcon(IconType type) {
+        std::string icon;
+        auto f = m_fields.self();
+        if (f->m_player1) icon = MoreIconsAPI::activeIcon(type, false);
+        else if (f->m_player2) icon = MoreIconsAPI::activeIcon(type, true);
         if (!icon.empty()) MoreIconsAPI::updatePlayerObject(this, icon, type);
         else setUserObject("name"_spr, nullptr);
     }
@@ -27,36 +27,41 @@ class $modify(MIPlayerObject, PlayerObject) {
     bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool playLayer) {
         if (!PlayerObject::init(player, ship, gameLayer, layer, playLayer)) return false;
 
-        if (p1()) {
-            updateIcon(IconType::Cube, false);
-            updateIcon(IconType::Ship, false);
-        }
-        else if (p2()) {
-            updateIcon(IconType::Cube, true);
-            updateIcon(IconType::Ship, true);
+        if (!gameLayer) return true;
+
+        auto f = m_fields.self();
+        if (!gameLayer->m_player1 || gameLayer->m_player1 == this) f->m_player1 = true;
+        else if (!gameLayer->m_player2 || gameLayer->m_player2 == this) f->m_player2 = true;
+
+        if (f->m_player1 || f->m_player2) {
+            updateIcon(IconType::Cube);
+            updateIcon(IconType::Ship);
         }
 
         return true;
     }
 
     void updateIcon(int frame, IconType type, void(PlayerObject::*func)(int)) {
-        auto player1 = p1();
-        auto player2 = p2();
-        auto mainPlayer = frame != 0 && (player1 || player2);
-        std::string iconName;
-        if (mainPlayer && !MoreIconsAPI::preloadIcons) {
+        auto f = m_fields.self();
+        if (frame == 0 || (!f->m_player1 && !f->m_player2)) {
+            (this->*func)(frame);
+            return setUserObject("name"_spr, nullptr);
+        }
+
+        int* loadedIcon = nullptr;
+        if (!MoreIconsAPI::preloadIcons) {
             if (auto foundRequests = MoreIconsAPI::requestedIcons.find(m_iconRequestID); foundRequests != MoreIconsAPI::requestedIcons.end()) {
                 auto& iconRequests = foundRequests->second;
-                if (auto found = iconRequests.find(type); found != iconRequests.end()) iconName = found->second;
+                if (auto found = iconRequests.find(type); found != iconRequests.end()) {
+                    loadedIcon = &MoreIconsAPI::loadedIcons[{ found->second, type }];
+                }
             }
         }
 
-        if (!iconName.empty()) MoreIconsAPI::loadedIcons[{ iconName, type }]++;
+        if (loadedIcon) (*loadedIcon)++;
         (this->*func)(frame);
-        if (!mainPlayer) return setUserObject("name"_spr, nullptr);
-        if (player1) updateIcon(type, false);
-        else if (player2) updateIcon(type, true);
-        if (!iconName.empty()) MoreIconsAPI::loadedIcons[{ iconName, type }]--;
+        updateIcon(type);
+        if (loadedIcon) (*loadedIcon)--;
     }
 
     void updatePlayerFrame(int frame) {
@@ -95,6 +100,34 @@ class $modify(MIPlayerObject, PlayerObject) {
         updateIcon(frame, IconType::Jetpack, &PlayerObject::updatePlayerJetpackFrame);
     }
 
+    void toggleRobotMode(bool enable, bool noEffects) {
+        auto isRobot = m_isRobot;
+        PlayerObject::toggleRobotMode(enable, noEffects);
+
+        if (!isRobot && m_isRobot) {
+            auto f = m_fields.self();
+            if (!f->m_player1 && !f->m_player2) return;
+            std::string iconName;
+            if (f->m_player1) iconName = MoreIconsAPI::activeIcon(IconType::Robot, false);
+            else if (f->m_player2) iconName = MoreIconsAPI::activeIcon(IconType::Robot, true);
+            if (!iconName.empty()) m_iconSprite->setDisplayFrame(MoreIconsAPI::getFrame(fmt::format("{}_01_001.png"_spr, iconName)));
+        }
+    }
+
+    void toggleSpiderMode(bool enable, bool noEffects) {
+        auto isSpider = m_isSpider;
+        PlayerObject::toggleSpiderMode(enable, noEffects);
+
+        if (!isSpider && m_isSpider) {
+            auto f = m_fields.self();
+            if (!f->m_player1 && !f->m_player2) return;
+            std::string iconName;
+            if (f->m_player1) iconName = MoreIconsAPI::activeIcon(IconType::Spider, false);
+            else if (f->m_player2) iconName = MoreIconsAPI::activeIcon(IconType::Spider, true);
+            if (!iconName.empty()) m_iconSprite->setDisplayFrame(MoreIconsAPI::getFrame(fmt::format("{}_01_001.png"_spr, iconName)));
+        }
+    }
+
     void resetTrail() {
         m_regularTrail->setUserObject("name"_spr, nullptr);
         if (!MoreIcons::traditionalPacks || (Loader::get()->isModLoaded("acaruso.pride") && m_playerStreak == 2)) return;
@@ -103,10 +136,17 @@ class $modify(MIPlayerObject, PlayerObject) {
         if (m_playerStreak == 6) m_regularTrail->enableRepeatMode(0.1f);
     }
 
+    IconInfo* getTrailInfo() {
+        auto f = m_fields.self();
+        if (f->m_player1) return MoreIconsAPI::getIcon(IconType::Special, false);
+        else if (f->m_player2) return MoreIconsAPI::getIcon(IconType::Special, true);
+        else return nullptr;
+    }
+
     void setupStreak() {
         PlayerObject::setupStreak();
 
-        auto info = p1() ? MoreIconsAPI::getIcon(IconType::Special, false) : p2() ? MoreIconsAPI::getIcon(IconType::Special, true) : nullptr;
+        auto info = getTrailInfo();
         if (!info) return resetTrail();
 
         m_streakStrokeWidth = info->trailInfo.stroke;
@@ -122,8 +162,8 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updateStreakBlend(bool blend) {
         PlayerObject::updateStreakBlend(blend);
 
-        if (auto info = p1() ? MoreIconsAPI::getIcon(IconType::Special, false) : p2() ? MoreIconsAPI::getIcon(IconType::Special, true) : nullptr) {
-            m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)GL_ONE_MINUS_SRC_ALPHA - info->trailInfo.blend * (uint32_t)GL_SRC_ALPHA });
+        if (auto info = getTrailInfo()) {
+            m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)(info->trailInfo.blend ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA) });
         }
     }
 };

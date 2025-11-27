@@ -10,7 +10,7 @@ ViewIconPopup* ViewIconPopup::create(IconType type, int id, IconInfo* info) {
     auto ret = new ViewIconPopup();
     if (ret->initAnchored(
         350.0f,
-        120.0f + (type <= IconType::Jetpack) * 50.0f + (type == IconType::Robot || type == IconType::Spider) * 30.0f,
+        120.0f + (type <= IconType::Jetpack ? 50.0f : 0.0f) + (type == IconType::Robot || type == IconType::Spider ? 30.0f : 0.0f),
         type,
         id,
         info,
@@ -45,7 +45,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
     if (type <= IconType::Jetpack) {
         auto isRobot = type == IconType::Robot || type == IconType::Spider;
         std::vector<std::vector<std::string>> suffixes;
-        suffixes.reserve(isRobot * 3 + 1);
+        suffixes.reserve(isRobot ? 4 : 1);
         if (isRobot) {
             suffixes.push_back({ "_01_001.png", "_01_2_001.png", "_01_glow_001.png", "_01_extra_001.png" });
             suffixes.push_back({ "_02_001.png", "_02_2_001.png", "_02_glow_001.png" });
@@ -61,7 +61,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         if (info) MoreIconsAPI::updateSimplePlayer(player, info->name, type, false);
         else player->updatePlayerFrame(id, type);
         player->setGlowOutline({ 255, 255, 255 });
-        player->setPosition({ 175.0f, 80.0f + isRobot * 80.0f - suffixes.size() * 30.0f });
+        player->setPosition({ 175.0f, (isRobot ? 160.0f : 80.0f) - suffixes.size() * 30.0f });
         player->setID("player-icon");
         m_mainLayer->addChild(player);
 
@@ -69,7 +69,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         auto spriteFrameCache = MoreIconsAPI::getSpriteFrameCache();
         for (int i = 0; i < suffixes.size(); i++) {
             auto container = CCNode::create();
-            container->setPosition({ 175.0f, 100.0f + isRobot * 40.0f - i * 30.0f + std::max(i - 1, 0) * 10.0f });
+            container->setPosition({ 175.0f, (isRobot ? 140.0f : 100.0f) - i * 30.0f + std::max(i - 1, 0) * 10.0f });
             container->setAnchorPoint({ 0.5f, 0.5f });
             container->setContentSize({ 350.0f, 30.0f });
             container->setID(fmt::format("frame-container-{}", i + 1));
@@ -117,7 +117,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         auto streak = CCSprite::create((info ? info->textures[0] : fmt::format("streak_{:02}_001.png", id)).c_str());
         streak->setBlendFunc({
             GL_SRC_ALPHA,
-            (uint32_t)GL_ONE_MINUS_SRC_ALPHA - (info && info->trailInfo.blend) * (uint32_t)GL_SRC_ALPHA
+            (uint32_t)(info && info->trailInfo.blend ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
         });
         streak->setPosition({ 175.0f, 50.0f });
         streak->setRotation(-90.0f);

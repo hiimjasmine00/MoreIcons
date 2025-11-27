@@ -124,23 +124,15 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         selectTab(m_iconType);
     }
 
-    static void swapDual(IconType type) {
-        MoreIconsAPI::setIcon(MoreIconsAPI::setIcon(MoreIconsAPI::activeIcon(type, true), type, false), type, true);
-    }
-
     void newSwap2PKit(CCObject* sender) {
         ButtonHooker::call(sender);
 
-        swapDual(IconType::Cube);
-        swapDual(IconType::Ship);
-        swapDual(IconType::Ball);
-        swapDual(IconType::Ufo);
-        swapDual(IconType::Wave);
-        swapDual(IconType::Robot);
-        swapDual(IconType::Spider);
-        swapDual(IconType::Swing);
-        swapDual(IconType::Jetpack);
-        swapDual(IconType::Special);
+        for (int i = 0; i < 11; i++) {
+            if (i == 9) continue;
+            auto type = MoreIconsAPI::convertType(i);
+            MoreIconsAPI::setIcon(MoreIconsAPI::setIcon(MoreIconsAPI::activeIcon(type, true), type, false), type, true);
+        }
+
         MoreIconsAPI::updateSimplePlayer(m_playerObject, MoreIconsAPI::getGameManager()->m_playerIconType, false);
         MoreIconsAPI::updateSimplePlayer(static_cast<SimplePlayer*>(getChildByID("player2-icon")),
             (IconType)Loader::get()->getLoadedMod("weebify.separate_dual_icons")->getSavedValue("lastmode", 0), true);

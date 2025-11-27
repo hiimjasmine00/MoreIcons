@@ -373,21 +373,7 @@ IconInfo* MoreIconsAPI::addIcon(
         return icon.compare(packID, shortName, type) >= 0;
     });
     if (it != iconsVec.end() && it->type == type && it->name == name) iconsVec.erase(it);
-    return std::to_address(iconsVec.emplace(
-        it,
-        name,
-        std::vector<std::string>({ png }),
-        std::vector<std::string>(),
-        plist,
-        packName,
-        packID,
-        type,
-        trailID,
-        trailInfo,
-        shortName,
-        vanilla,
-        zipped
-    ));
+    return std::to_address(iconsVec.emplace(it, name, png, plist, packName, packID, type, trailID, trailInfo, shortName, vanilla, zipped));
 }
 
 void MoreIconsAPI::moveIcon(IconInfo* info, const std::filesystem::path& path) {

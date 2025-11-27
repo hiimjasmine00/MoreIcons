@@ -12,10 +12,15 @@ class $modify(MIProfilePage, ProfilePage) {
         (void)self.setHookPriorityAfterPost("ProfilePage::loadPageFromUserInfo", "weebify.separate_dual_icons");
     }
 
-    static void updatePlayer(CCNode* node, IconType type, bool dual) {
-        if (auto player = findFirstChildRecursive<SimplePlayer>(node, [](auto) { return true; })) {
+    static bool updatePlayer(CCNode* node, IconType type, bool dual) {
+        if (auto player = typeinfo_cast<SimplePlayer*>(node)) {
             MoreIconsAPI::updateSimplePlayer(player, type, dual);
+            return true;
         }
+        for (auto child : CCArrayExt<CCNode*>(node->getChildren())) {
+            if (updatePlayer(child, type, dual)) return true;
+        }
+        return false;
     }
 
     void changePlayers() {
