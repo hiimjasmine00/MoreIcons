@@ -1,9 +1,9 @@
-#include <functional>
 #include <queue>
+#include <std23/move_only_function.h>
 #include <thread>
 #include <mutex>
 
-// https://github.com/geode-sdk/geode/blob/v4.9.0/loader/src/ui/nodes/LazySprite.cpp
+// https://github.com/geode-sdk/geode/blob/v4.10.0/loader/src/ui/nodes/LazySprite.cpp
 
 class ThreadPool {
 private:
@@ -11,7 +11,7 @@ private:
     size_t m_threadsMax = 0;
     size_t m_tasksBusy = 0;
     std::mutex m_mutex;
-    std::queue<std::function<void()>> m_tasks;
+    std::queue<std23::move_only_function<void()>> m_tasks;
     std::unique_ptr<std::thread[]> m_threads;
     std::unique_ptr<std::atomic_bool[]> m_threadsBusy;
     std::atomic_size_t m_spinCount = 0;
@@ -28,7 +28,7 @@ public:
     ThreadPool(ThreadPool&&) = delete;
     ThreadPool& operator=(ThreadPool&&) = delete;
 
-    void pushTask(std::function<void()> task);
+    void pushTask(std23::move_only_function<void()> task);
     void wait();
 
     ~ThreadPool();

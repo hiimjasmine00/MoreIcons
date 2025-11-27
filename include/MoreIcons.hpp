@@ -8,7 +8,7 @@
 
 #define MORE_ICONS_ID "hiimjustin000.more_icons"
 
-// https://github.com/geode-sdk/geode/blob/v4.7.0/loader/include/Geode/loader/Mod.hpp#L503
+// https://github.com/geode-sdk/geode/blob/v4.10.0/loader/include/Geode/loader/Mod.hpp#L513
 namespace __moreicons {
     template <size_t N>
     struct BoyIfYouDontGet {
