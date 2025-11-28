@@ -6,20 +6,22 @@
 using namespace geode::prelude;
 
 class $modify(MIPlayerObject, PlayerObject) {
-    struct Fields {
-        bool m_player1 = false;
-        bool m_player2 = false;
-    };
-
     static void onModify(ModifyBase<ModifyDerive<MIPlayerObject, PlayerObject>>& self) {
         (void)self.setHookPriorityAfterPost("PlayerObject::setupStreak", "weebify.separate_dual_icons");
     }
 
+    bool isPlayer1() {
+        return m_gameLayer && (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this);
+    }
+
+    bool isPlayer2() {
+        return m_gameLayer && (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this);
+    }
+
     void updateIcon(IconType type) {
         std::string icon;
-        auto f = m_fields.self();
-        if (f->m_player1) icon = MoreIconsAPI::activeIcon(type, false);
-        else if (f->m_player2) icon = MoreIconsAPI::activeIcon(type, true);
+        if (isPlayer1()) icon = MoreIconsAPI::activeIcon(type, false);
+        else if (isPlayer2()) icon = MoreIconsAPI::activeIcon(type, true);
         if (!icon.empty()) MoreIconsAPI::updatePlayerObject(this, icon, type);
         else setUserObject("name"_spr, nullptr);
     }
@@ -27,13 +29,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool playLayer) {
         if (!PlayerObject::init(player, ship, gameLayer, layer, playLayer)) return false;
 
-        if (!gameLayer) return true;
-
-        auto f = m_fields.self();
-        if (!gameLayer->m_player1 || gameLayer->m_player1 == this) f->m_player1 = true;
-        else if (!gameLayer->m_player2 || gameLayer->m_player2 == this) f->m_player2 = true;
-
-        if (f->m_player1 || f->m_player2) {
+        if (isPlayer1() || isPlayer2()) {
             updateIcon(IconType::Cube);
             updateIcon(IconType::Ship);
         }
@@ -42,8 +38,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     }
 
     void updateIcon(int frame, IconType type, void(PlayerObject::*func)(int)) {
-        auto f = m_fields.self();
-        if (frame == 0 || (!f->m_player1 && !f->m_player2)) {
+        if (frame == 0 || (!isPlayer1() && !isPlayer2())) {
             (this->*func)(frame);
             return setUserObject("name"_spr, nullptr);
         }
@@ -57,6 +52,8 @@ class $modify(MIPlayerObject, PlayerObject) {
                 }
             }
         }
+
+        log::info("Loaded icon ref: {}", fmt::ptr(loadedIcon));
 
         if (loadedIcon) (*loadedIcon)++;
         (this->*func)(frame);
@@ -105,11 +102,9 @@ class $modify(MIPlayerObject, PlayerObject) {
         PlayerObject::toggleRobotMode(enable, noEffects);
 
         if (!isRobot && m_isRobot) {
-            auto f = m_fields.self();
-            if (!f->m_player1 && !f->m_player2) return;
             std::string iconName;
-            if (f->m_player1) iconName = MoreIconsAPI::activeIcon(IconType::Robot, false);
-            else if (f->m_player2) iconName = MoreIconsAPI::activeIcon(IconType::Robot, true);
+            if (isPlayer1()) iconName = MoreIconsAPI::activeIcon(IconType::Robot, false);
+            else if (isPlayer2()) iconName = MoreIconsAPI::activeIcon(IconType::Robot, true);
             if (!iconName.empty()) m_iconSprite->setDisplayFrame(MoreIconsAPI::getFrame(fmt::format("{}_01_001.png"_spr, iconName)));
         }
     }
@@ -119,11 +114,9 @@ class $modify(MIPlayerObject, PlayerObject) {
         PlayerObject::toggleSpiderMode(enable, noEffects);
 
         if (!isSpider && m_isSpider) {
-            auto f = m_fields.self();
-            if (!f->m_player1 && !f->m_player2) return;
             std::string iconName;
-            if (f->m_player1) iconName = MoreIconsAPI::activeIcon(IconType::Spider, false);
-            else if (f->m_player2) iconName = MoreIconsAPI::activeIcon(IconType::Spider, true);
+            if (isPlayer1()) iconName = MoreIconsAPI::activeIcon(IconType::Spider, false);
+            else if (isPlayer2()) iconName = MoreIconsAPI::activeIcon(IconType::Spider, true);
             if (!iconName.empty()) m_iconSprite->setDisplayFrame(MoreIconsAPI::getFrame(fmt::format("{}_01_001.png"_spr, iconName)));
         }
     }
@@ -137,9 +130,8 @@ class $modify(MIPlayerObject, PlayerObject) {
     }
 
     IconInfo* getTrailInfo() {
-        auto f = m_fields.self();
-        if (f->m_player1) return MoreIconsAPI::getIcon(IconType::Special, false);
-        else if (f->m_player2) return MoreIconsAPI::getIcon(IconType::Special, true);
+        if (isPlayer1()) return MoreIconsAPI::getIcon(IconType::Special, false);
+        else if (isPlayer2()) return MoreIconsAPI::getIcon(IconType::Special, true);
         else return nullptr;
     }
 

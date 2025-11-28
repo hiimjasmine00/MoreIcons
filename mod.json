@@ -13,6 +13,7 @@
     "description": "Custom icons without the hassle.",
     "dependencies": {
         "geode.node-ids": ">=v1.17.0",
+        "alphalaneous.happy_textures": ">=v2.0.0",
         "geode.texture-loader": {
             "importance": "suggested",
             "version": ">=v1.7.0"

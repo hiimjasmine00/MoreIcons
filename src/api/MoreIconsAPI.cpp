@@ -222,7 +222,7 @@ CCTexture2D* MoreIconsAPI::loadIcon(const std::string& name, IconType type, int 
 
     if (loadedIcon < 1) {
         if (auto res = createFrames(info->textures[0], info->sheetName, info->name, info->type)) {
-            addFrames(res.unwrap(), info->frameNames);
+            texture = addFrames(res.unwrap(), info->frameNames);
         }
         else {
             log::error("{}: {}", info->name, res.unwrapErr());

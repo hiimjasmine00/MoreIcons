@@ -1,5 +1,5 @@
 #include "MoreIconsPopup.hpp"
-#include "EditIconPopup.hpp"
+#include "edit/EditIconPopup.hpp"
 #include "log/LogLayer.hpp"
 #include "view/IconViewPopup.hpp"
 #include "../../MoreIcons.hpp"
