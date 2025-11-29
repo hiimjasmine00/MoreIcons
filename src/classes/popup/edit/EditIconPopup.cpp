@@ -1,12 +1,18 @@
 #include "EditIconPopup.hpp"
 #include "../../../api/MoreIconsAPI.hpp"
+#include <Geode/binding/CCPartAnimSprite.hpp>
+#include <Geode/binding/CCSpritePart.hpp>
+#include <Geode/binding/GJSpiderSprite.hpp>
+#include <Geode/binding/SpriteDescription.hpp>
 #include <Geode/binding/Slider.hpp>
+#include <jasmine/mod.hpp>
 
 using namespace geode::prelude;
+using namespace jasmine::mod;
 
-EditIconPopup* EditIconPopup::create(MoreIconsPopup* parent, IconType type) {
+EditIconPopup* EditIconPopup::create(MoreIconsPopup* popup, IconType type) {
     auto ret = new EditIconPopup();
-    if (ret->initAnchored(450.0f, 280.0f, parent, type, "geode.loader/GE_square03.png")) {
+    if (ret->initAnchored(450.0f, 280.0f, popup, type, "geode.loader/GE_square03.png")) {
         ret->autorelease();
         return ret;
     }
@@ -14,7 +20,22 @@ EditIconPopup* EditIconPopup::create(MoreIconsPopup* parent, IconType type) {
     return nullptr;
 }
 
-bool EditIconPopup::setup(MoreIconsPopup* parent, IconType type) {
+CCArray* arrayWithObject(CCObject* obj) {
+    auto arr = CCArray::create();
+    if (obj) arr->addObject(obj);
+    return arr;
+}
+
+template <class... T>
+CCArray* arrayWithObjects(CCArray* parent, T... indices) {
+    auto arr = CCArray::create();
+    for (auto index : { indices... }) {
+        if (auto obj = parent->objectAtIndex(index)) arr->addObject(obj);
+    }
+    return arr;
+}
+
+bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     setID("EditIconPopup");
     setTitle(fmt::format("{} Editor", MoreIconsAPI::uppercase[(int)type]));
     m_title->setID("edit-icon-title");
@@ -23,6 +44,9 @@ bool EditIconPopup::setup(MoreIconsPopup* parent, IconType type) {
     m_bgSprite->setID("background");
     m_closeBtn->setID("close-button");
 
+    m_parentPopup = popup;
+    m_pieceArrays = CCArray::create();
+    m_pieceDefinitions = CCDictionary::create();
     m_iconType = type;
 
     auto isRobot = type == IconType::Robot || type == IconType::Spider;
@@ -41,128 +65,211 @@ bool EditIconPopup::setup(MoreIconsPopup* parent, IconType type) {
     piecesBackground->setID("pieces-background");
     m_mainLayer->addChild(piecesBackground);
 
+    m_pieceMenu = CCMenu::create();
+    m_pieceMenu->setPosition({ 270.0f, 222.0f });
+    m_pieceMenu->setContentSize({ isRobot ? 260.0f : 330.f, 45.0f });
+    m_pieceMenu->ignoreAnchorPointForPosition(false);
+    m_pieceMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Even));
+    m_pieceMenu->setID("piece-menu");
+    m_mainLayer->addChild(m_pieceMenu);
+
+    m_player = SimplePlayer::create(1);
+    m_player->updatePlayerFrame(1, type);
+    m_player->m_hasGlowOutline = true;
+    m_player->updateColors();
+
+    auto previewNode = CCNode::create();
+    previewNode->setPosition({ 55.0f, 205.0f });
+    previewNode->setScale(2.0f);
+    previewNode->setAnchorPoint({ 0.5f, 0.5f });
+    transferPlayerToNode(previewNode, m_player);
+    previewNode->setID("preview-node");
+    m_mainLayer->addChild(previewNode);
+
     if (isRobot) {
+        m_suffix = "_01_001";
+
         auto prevSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_01_001.png");
         prevSprite->setScale(0.8f);
-        auto prevButton = CCMenuItemExt::createSpriteExtra(prevSprite, [](auto) {});
+        auto prevButton = CCMenuItemExt::createSpriteExtra(prevSprite, [this](auto) {
+            goToPage(m_page - 1);
+        });
         prevButton->setPosition({ 120.0f, 222.0f });
         prevButton->setID("prev-button");
-        m_mainLayer->addChild(prevButton);
+        m_buttonMenu->addChild(prevButton);
 
         auto nextSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_01_001.png");
         nextSprite->setScale(0.8f);
         nextSprite->setFlipX(true);
-        auto nextButton = CCMenuItemExt::createSpriteExtra(nextSprite, [](auto) {});
+        auto nextButton = CCMenuItemExt::createSpriteExtra(nextSprite, [this](auto) {
+            goToPage(m_page + 1);
+        });
         nextButton->setPosition({ 420.0f, 222.0f });
         nextButton->setID("next-button");
-        m_mainLayer->addChild(nextButton);
+        m_buttonMenu->addChild(nextButton);
+
+        auto isSpider = type == IconType::Spider;
+        auto robotSprite = isSpider ? m_player->m_spiderSprite : m_player->m_robotSprite;
+        auto firstArray = robotSprite->m_paSprite->m_spriteParts;
+        auto secondArray = robotSprite->m_secondArray;
+        auto glowArray = robotSprite->m_glowSprite->getChildren();
+
+        addPieceButton("_01_001", 0, arrayWithObjects(firstArray, 3));
+        addPieceButton("_01_2_001", 0, arrayWithObjects(secondArray, 3));
+        addPieceButton("_01_glow_001", 0, arrayWithObjects(glowArray, 3));
+        addPieceButton("_01_extra_001", 0, arrayWithObject(robotSprite->m_extraSprite));
+        if (isSpider) {
+            addPieceButton("_02_001", 1, arrayWithObjects(firstArray, 0, 1, 5));
+            addPieceButton("_02_2_001", 1, arrayWithObjects(secondArray, 0, 1, 5));
+            addPieceButton("_02_glow_001", 1, arrayWithObjects(glowArray, 0, 1, 5));
+            addPieceButton("_03_001", 2, arrayWithObjects(firstArray, 4));
+            addPieceButton("_03_2_001", 2, arrayWithObjects(secondArray, 4));
+            addPieceButton("_03_glow_001", 2, arrayWithObjects(glowArray, 4));
+            addPieceButton("_04_001", 3, arrayWithObjects(firstArray, 2));
+            addPieceButton("_04_2_001", 3, arrayWithObjects(secondArray, 2));
+            addPieceButton("_04_glow_001", 3, arrayWithObjects(glowArray, 2));
+        }
+        else {
+            addPieceButton("_02_001", 1, arrayWithObjects(firstArray, 1, 5));
+            addPieceButton("_02_2_001", 1, arrayWithObjects(secondArray, 1, 5));
+            addPieceButton("_02_glow_001", 1, arrayWithObjects(glowArray, 1, 5));
+            addPieceButton("_03_001", 2, arrayWithObjects(firstArray, 0, 4));
+            addPieceButton("_03_2_001", 2, arrayWithObjects(secondArray, 0, 4));
+            addPieceButton("_03_glow_001", 2, arrayWithObjects(glowArray, 0, 4));
+            addPieceButton("_04_001", 3, arrayWithObjects(firstArray, 2, 6));
+            addPieceButton("_04_2_001", 3, arrayWithObjects(secondArray, 2, 6));
+            addPieceButton("_04_glow_001", 3, arrayWithObjects(glowArray, 2, 6));
+        }
+    }
+    else {
+        m_suffix = "_001";
+
+        addPieceButton("_001", 0, arrayWithObject(m_player->m_firstLayer));
+        addPieceButton("_2_001", 0, arrayWithObject(m_player->m_secondLayer));
+        if (type == IconType::Ufo) addPieceButton("_3_001", 0, arrayWithObject(m_player->m_birdDome));
+        addPieceButton("_glow_001", 0, arrayWithObject(m_player->m_outlineSprite));
+        addPieceButton("_extra_001", 0, arrayWithObject(m_player->m_detailSprite));
     }
 
-    auto offsetXSlider = Slider::create(nullptr, nullptr, 0.75f);
-    offsetXSlider->setPosition({ 185.0f, 165.0f });
-    offsetXSlider->setValue((m_offsetX + 20.0f) / 40.0f);
-    offsetXSlider->setID("offset-x-slider");
-    m_mainLayer->addChild(offsetXSlider);
+    m_pieceMenu->updateLayout();
 
-    auto offsetXLabel = CCLabelBMFont::create(fmt::format("Offset X: {:.1f}", m_offsetX).c_str(), "goldFont.fnt");
-    offsetXLabel->setPosition({ 185.0f, 185.0f });
-    offsetXLabel->setScale(0.6f);
-    offsetXLabel->setID("offset-x-label");
-    m_mainLayer->addChild(offsetXLabel);
+    m_selectSprite = CCSprite::createWithSpriteFrameName("GJ_select_001.png");
+    m_selectSprite->setPosition(m_mainLayer->convertToNodeSpace(m_pieceMenu->convertToWorldSpace(m_pieceMenu->getChildByIndex(0)->getPosition())));
+    m_selectSprite->setTag(0);
+    m_selectSprite->setID("select-sprite");
+    m_mainLayer->addChild(m_selectSprite);
 
-    CCMenuItemExt::assignCallback<SliderThumb>(offsetXSlider->m_touchLogic->m_thumb, [this, offsetXLabel](SliderThumb* sender) {
+    m_offsetXSlider = Slider::create(nullptr, nullptr, 0.75f);
+    m_offsetXSlider->setPosition({ 185.0f, 165.0f });
+    m_offsetXSlider->setValue((m_offsetX + 20.0f) / 40.0f);
+    m_offsetXSlider->setID("offset-x-slider");
+    m_mainLayer->addChild(m_offsetXSlider);
+
+    m_offsetXLabel = CCLabelBMFont::create(fmt::format("Offset X: {:.1f}", m_offsetX).c_str(), "goldFont.fnt");
+    m_offsetXLabel->setPosition({ 185.0f, 185.0f });
+    m_offsetXLabel->setScale(0.6f);
+    m_offsetXLabel->setID("offset-x-label");
+    m_mainLayer->addChild(m_offsetXLabel);
+
+    CCMenuItemExt::assignCallback<SliderThumb>(m_offsetXSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_offsetX = roundf(sender->getValue() * 400.0f - 200.0f) / 10.0f;
-        offsetXLabel->setString(fmt::format("Offset X: {:.1f}", m_offsetX).c_str());
+        updateTargets();
+        m_offsetXLabel->setString(fmt::format("Offset X: {:.1f}", m_offsetX).c_str());
         m_hasChanged = true;
     });
 
-    auto offsetYSlider = Slider::create(nullptr, nullptr, 0.75f);
-    offsetYSlider->setPosition({ 355.0f, 165.0f });
-    offsetYSlider->setValue((m_offsetY + 20.0f) / 40.0f);
-    offsetYSlider->setID("offset-y-slider");
-    m_mainLayer->addChild(offsetYSlider);
+    m_offsetYSlider = Slider::create(nullptr, nullptr, 0.75f);
+    m_offsetYSlider->setPosition({ 355.0f, 165.0f });
+    m_offsetYSlider->setValue((m_offsetY + 20.0f) / 40.0f);
+    m_offsetYSlider->setID("offset-y-slider");
+    m_mainLayer->addChild(m_offsetYSlider);
 
-    auto offsetYLabel = CCLabelBMFont::create(fmt::format("Offset Y: {:.1f}", m_offsetY).c_str(), "goldFont.fnt");
-    offsetYLabel->setPosition({ 355.0f, 185.0f });
-    offsetYLabel->setScale(0.6f);
-    offsetYLabel->setID("offset-y-label");
-    m_mainLayer->addChild(offsetYLabel);
+    m_offsetYLabel = CCLabelBMFont::create(fmt::format("Offset Y: {:.1f}", m_offsetY).c_str(), "goldFont.fnt");
+    m_offsetYLabel->setPosition({ 355.0f, 185.0f });
+    m_offsetYLabel->setScale(0.6f);
+    m_offsetYLabel->setID("offset-y-label");
+    m_mainLayer->addChild(m_offsetYLabel);
 
-    CCMenuItemExt::assignCallback<SliderThumb>(offsetYSlider->m_touchLogic->m_thumb, [this, offsetYLabel](SliderThumb* sender) {
+    CCMenuItemExt::assignCallback<SliderThumb>(m_offsetYSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_offsetY = roundf(sender->getValue() * 400.0f - 200.0f) / 10.0f;
-        offsetYLabel->setString(fmt::format("Offset Y: {:.1f}", m_offsetY).c_str());
+        updateTargets();
+        m_offsetYLabel->setString(fmt::format("Offset Y: {:.1f}", m_offsetY).c_str());
         m_hasChanged = true;
     });
 
-    auto rotationXSlider = Slider::create(nullptr, nullptr, 0.75f);
-    rotationXSlider->setPosition({ 185.0f, 125.0f });
-    rotationXSlider->setValue(m_rotationX / 360.0f);
-    rotationXSlider->setID("rotation-x-slider");
-    m_mainLayer->addChild(rotationXSlider);
+    m_rotationXSlider = Slider::create(nullptr, nullptr, 0.75f);
+    m_rotationXSlider->setPosition({ 185.0f, 125.0f });
+    m_rotationXSlider->setValue(m_rotationX / 360.0f);
+    m_rotationXSlider->setID("rotation-x-slider");
+    m_mainLayer->addChild(m_rotationXSlider);
 
-    auto rotationXLabel = CCLabelBMFont::create(fmt::format("Rotation X: {:.0f}", m_rotationX).c_str(), "goldFont.fnt");
-    rotationXLabel->setPosition({ 185.0f, 145.0f });
-    rotationXLabel->setScale(0.6f);
-    rotationXLabel->setID("rotation-x-label");
-    m_mainLayer->addChild(rotationXLabel);
+    m_rotationXLabel = CCLabelBMFont::create(fmt::format("Rotation X: {:.0f}", m_rotationX).c_str(), "goldFont.fnt");
+    m_rotationXLabel->setPosition({ 185.0f, 145.0f });
+    m_rotationXLabel->setScale(0.6f);
+    m_rotationXLabel->setID("rotation-x-label");
+    m_mainLayer->addChild(m_rotationXLabel);
 
-    CCMenuItemExt::assignCallback<SliderThumb>(rotationXSlider->m_touchLogic->m_thumb, [this, rotationXLabel](SliderThumb* sender) {
+    CCMenuItemExt::assignCallback<SliderThumb>(m_rotationXSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_rotationX = roundf(sender->getValue() * 360.0f);
-        rotationXLabel->setString(fmt::format("Rotation X: {:.0f}", m_rotationX).c_str());
+        updateTargets();
+        m_rotationXLabel->setString(fmt::format("Rotation X: {:.0f}", m_rotationX).c_str());
         m_hasChanged = true;
     });
 
-    auto rotationYSlider = Slider::create(nullptr, nullptr, 0.75f);
-    rotationYSlider->setPosition({ 355.0f, 125.0f });
-    rotationYSlider->setValue(m_rotationY / 360.0f);
-    rotationYSlider->setID("rotation-y-slider");
-    m_mainLayer->addChild(rotationYSlider);
+    m_rotationYSlider = Slider::create(nullptr, nullptr, 0.75f);
+    m_rotationYSlider->setPosition({ 355.0f, 125.0f });
+    m_rotationYSlider->setValue(m_rotationY / 360.0f);
+    m_rotationYSlider->setID("rotation-y-slider");
+    m_mainLayer->addChild(m_rotationYSlider);
 
-    auto rotationYLabel = CCLabelBMFont::create(fmt::format("Rotation Y: {:.0f}", m_rotationY).c_str(), "goldFont.fnt");
-    rotationYLabel->setPosition({ 355.0f, 145.0f });
-    rotationYLabel->setScale(0.6f);
-    rotationYLabel->setID("rotation-y-label");
-    m_mainLayer->addChild(rotationYLabel);
+    m_rotationYLabel = CCLabelBMFont::create(fmt::format("Rotation Y: {:.0f}", m_rotationY).c_str(), "goldFont.fnt");
+    m_rotationYLabel->setPosition({ 355.0f, 145.0f });
+    m_rotationYLabel->setScale(0.6f);
+    m_rotationYLabel->setID("rotation-y-label");
+    m_mainLayer->addChild(m_rotationYLabel);
 
-    CCMenuItemExt::assignCallback<SliderThumb>(rotationYSlider->m_touchLogic->m_thumb, [this, rotationYLabel](SliderThumb* sender) {
+    CCMenuItemExt::assignCallback<SliderThumb>(m_rotationYSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_rotationY = roundf(sender->getValue() * 360.0f);
-        rotationYLabel->setString(fmt::format("Rotation Y: {:.0f}", m_rotationY).c_str());
+        updateTargets();
+        m_rotationYLabel->setString(fmt::format("Rotation Y: {:.0f}", m_rotationY).c_str());
         m_hasChanged = true;
     });
 
-    auto scaleXSlider = Slider::create(nullptr, nullptr, 0.75f);
-    scaleXSlider->setPosition({ 185.0f, 85.0f });
-    scaleXSlider->setValue((m_scaleX + 10.0f) / 20.0f);
-    scaleXSlider->setID("scale-x-slider");
-    m_mainLayer->addChild(scaleXSlider);
+    m_scaleXSlider = Slider::create(nullptr, nullptr, 0.75f);
+    m_scaleXSlider->setPosition({ 185.0f, 85.0f });
+    m_scaleXSlider->setValue((m_scaleX + 10.0f) / 20.0f);
+    m_scaleXSlider->setID("scale-x-slider");
+    m_mainLayer->addChild(m_scaleXSlider);
 
-    auto scaleXLabel = CCLabelBMFont::create(fmt::format("Scale X: {:.1f}", m_scaleX).c_str(), "goldFont.fnt");
-    scaleXLabel->setPosition({ 185.0f, 105.0f });
-    scaleXLabel->setScale(0.6f);
-    scaleXLabel->setID("scale-x-label");
-    m_mainLayer->addChild(scaleXLabel);
+    m_scaleXLabel = CCLabelBMFont::create(fmt::format("Scale X: {:.1f}", m_scaleX).c_str(), "goldFont.fnt");
+    m_scaleXLabel->setPosition({ 185.0f, 105.0f });
+    m_scaleXLabel->setScale(0.6f);
+    m_scaleXLabel->setID("scale-x-label");
+    m_mainLayer->addChild(m_scaleXLabel);
 
-    CCMenuItemExt::assignCallback<SliderThumb>(scaleXSlider->m_touchLogic->m_thumb, [this, scaleXLabel](SliderThumb* sender) {
+    CCMenuItemExt::assignCallback<SliderThumb>(m_scaleXSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_scaleX = roundf(sender->getValue() * 200.0f - 100.0f) / 10.0f;
-        scaleXLabel->setString(fmt::format("Scale X: {:.1f}", m_scaleX).c_str());
+        updateTargets();
+        m_scaleXLabel->setString(fmt::format("Scale X: {:.1f}", m_scaleX).c_str());
         m_hasChanged = true;
     });
 
-    auto scaleYSlider = Slider::create(nullptr, nullptr, 0.75f);
-    scaleYSlider->setPosition({ 355.0f, 85.0f });
-    scaleYSlider->setValue((m_scaleY + 10.0f) / 20.0f);
-    scaleYSlider->setID("scale-y-slider");
-    m_mainLayer->addChild(scaleYSlider);
+    m_scaleYSlider = Slider::create(nullptr, nullptr, 0.75f);
+    m_scaleYSlider->setPosition({ 355.0f, 85.0f });
+    m_scaleYSlider->setValue((m_scaleY + 10.0f) / 20.0f);
+    m_scaleYSlider->setID("scale-y-slider");
+    m_mainLayer->addChild(m_scaleYSlider);
 
-    auto scaleYLabel = CCLabelBMFont::create(fmt::format("Scale Y: {:.1f}", m_scaleY).c_str(), "goldFont.fnt");
-    scaleYLabel->setPosition({ 355.0f, 105.0f });
-    scaleYLabel->setScale(0.6f);
-    scaleYLabel->setID("scale-y-label");
-    m_mainLayer->addChild(scaleYLabel);
+    m_scaleYLabel = CCLabelBMFont::create(fmt::format("Scale Y: {:.1f}", m_scaleY).c_str(), "goldFont.fnt");
+    m_scaleYLabel->setPosition({ 355.0f, 105.0f });
+    m_scaleYLabel->setScale(0.6f);
+    m_scaleYLabel->setID("scale-y-label");
+    m_mainLayer->addChild(m_scaleYLabel);
 
-    CCMenuItemExt::assignCallback<SliderThumb>(scaleYSlider->m_touchLogic->m_thumb, [this, scaleYLabel](SliderThumb* sender) {
+    CCMenuItemExt::assignCallback<SliderThumb>(m_scaleYSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_scaleY = roundf(sender->getValue() * 200.0f - 100.0f) / 10.0f;
-        scaleYLabel->setString(fmt::format("Scale Y: {:.1f}", m_scaleY).c_str());
+        updateTargets();
+        m_scaleYLabel->setString(fmt::format("Scale Y: {:.1f}", m_scaleY).c_str());
         m_hasChanged = true;
     });
 
@@ -171,7 +278,171 @@ bool EditIconPopup::setup(MoreIconsPopup* parent, IconType type) {
     return true;
 }
 
-void EditIconPopup::onClose(cocos2d::CCObject* sender) {
+void EditIconPopup::transferPlayerToNode(CCNode* node, SimplePlayer* player) {
+    auto type = m_iconType;
+    if (type == IconType::Robot || type == IconType::Spider) {
+        auto robotSprite = type == IconType::Spider ? player->m_spiderSprite : player->m_robotSprite;
+
+        auto glowSprite = robotSprite->m_glowSprite;
+        glowSprite->removeFromParentAndCleanup(false);
+        node->addChild(glowSprite);
+
+        auto headSprite = robotSprite->m_headSprite;
+        auto spriteParts = robotSprite->m_paSprite->m_spriteParts;
+        auto secondArray = robotSprite->m_secondArray;
+        for (int i = 0; i < spriteParts->count(); i++) {
+            auto spritePart = static_cast<CCSpritePart*>(spriteParts->objectAtIndex(i));
+            auto scaleX = spritePart->getScaleX();
+            auto scaleY = spritePart->getScaleY();
+            auto rotation = spritePart->getRotation();
+            auto partNode = CCNode::create();
+            partNode->setPosition(spritePart->getPosition());
+            partNode->setAnchorPoint({ 0.5f, 0.5f });
+            node->addChild(partNode, spritePart->getZOrder());
+
+            auto secondSprite = static_cast<CCSprite*>(secondArray->objectAtIndex(i));
+            secondSprite->removeFromParentAndCleanup(false);
+            secondSprite->setPosition({ 0.0f, 0.0f });
+            secondSprite->setScaleX(scaleX);
+            secondSprite->setScaleY(scaleY);
+            secondSprite->setRotation(rotation);
+            partNode->addChild(secondSprite);
+
+            if (spritePart == headSprite) {
+                if (auto extraSprite = robotSprite->m_extraSprite) {
+                    extraSprite->removeFromParentAndCleanup(false);
+                    extraSprite->setPosition({ 0.0f, 0.0f });
+                    partNode->addChild(extraSprite);
+                }
+            }
+
+            spritePart->removeFromParentAndCleanup(false);
+            spritePart->m_followers->removeAllObjects();
+            spritePart->m_hasFollower = false;
+            spritePart->setPosition({ 0.0f, 0.0f });
+            partNode->addChild(spritePart, 0);
+        }
+    }
+    else {
+        Ref firstLayer = player->m_firstLayer;
+        node->setPosition(node->getPosition() + firstLayer->getPosition());
+        auto scale = firstLayer->getScale();
+        for (auto sprite : firstLayer->getChildrenExt<CCSprite*>()) {
+            sprite->removeFromParentAndCleanup(false);
+            sprite->setPosition({ 0.0f, 0.0f });
+            sprite->setScale(scale);
+            node->addChild(sprite);
+        }
+        firstLayer->removeFromParentAndCleanup(false);
+        node->addChild(firstLayer);
+    }
+    player->release();
+}
+
+void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* targets) {
+    m_pieceDefinitions->setObject(CCFloat::create(0.0f), fmt::format("offsetX{}", suffix));
+    m_pieceDefinitions->setObject(CCFloat::create(0.0f), fmt::format("offsetY{}", suffix));
+    m_pieceDefinitions->setObject(CCFloat::create(0.0f), fmt::format("rotationX{}", suffix));
+    m_pieceDefinitions->setObject(CCFloat::create(0.0f), fmt::format("rotationY{}", suffix));
+    m_pieceDefinitions->setObject(CCFloat::create(1.0f), fmt::format("scaleX{}", suffix));
+    m_pieceDefinitions->setObject(CCFloat::create(1.0f), fmt::format("scaleY{}", suffix));
+
+    auto pieceFrame = MoreIconsAPI::getFrame(fmt::format("{}01{}.png", MoreIconsAPI::prefixes[(int)m_iconType], suffix));
+    if (!pieceFrame) pieceFrame = MoreIconsAPI::getFrame("GJ_deleteIcon_001.png");
+    auto pieceSprite = CCSprite::createWithSpriteFrame(pieceFrame);
+    auto pieceButton = CCMenuItemExt::createSpriteExtra(pieceSprite, [this, suffix, page](CCMenuItemSpriteExtra* sender) {
+        m_pieceDefinitions->setObject(CCFloat::create(m_offsetX), fmt::format("offsetX{}", m_suffix));
+        m_pieceDefinitions->setObject(CCFloat::create(m_offsetY), fmt::format("offsetY{}", m_suffix));
+        m_pieceDefinitions->setObject(CCFloat::create(m_rotationX), fmt::format("rotationX{}", m_suffix));
+        m_pieceDefinitions->setObject(CCFloat::create(m_rotationY), fmt::format("rotationY{}", m_suffix));
+        m_pieceDefinitions->setObject(CCFloat::create(m_scaleX), fmt::format("scaleX{}", m_suffix));
+        m_pieceDefinitions->setObject(CCFloat::create(m_scaleY), fmt::format("scaleY{}", m_suffix));
+        m_suffix = suffix;
+        m_offsetX = static_cast<CCFloat*>(m_pieceDefinitions->objectForKey(fmt::format("offsetX{}", suffix)))->getValue();
+        m_offsetXSlider->setValue((m_offsetX + 20.0f) / 40.0f);
+        m_offsetXLabel->setString(fmt::format("Offset X: {:.1f}", m_offsetX).c_str());
+        m_offsetY = static_cast<CCFloat*>(m_pieceDefinitions->objectForKey(fmt::format("offsetY{}", suffix)))->getValue();
+        m_offsetYSlider->setValue((m_offsetY + 20.0f) / 40.0f);
+        m_offsetYLabel->setString(fmt::format("Offset Y: {:.1f}", m_offsetY).c_str());
+        m_rotationX = static_cast<CCFloat*>(m_pieceDefinitions->objectForKey(fmt::format("rotationX{}", suffix)))->getValue();
+        m_rotationXSlider->setValue(m_rotationX / 360.0f);
+        m_rotationXLabel->setString(fmt::format("Rotation X: {:.0f}", m_rotationX).c_str());
+        m_rotationY = static_cast<CCFloat*>(m_pieceDefinitions->objectForKey(fmt::format("rotationY{}", suffix)))->getValue();
+        m_rotationYSlider->setValue(m_rotationY / 360.0f);
+        m_rotationYLabel->setString(fmt::format("Rotation Y: {:.0f}", m_rotationY).c_str());
+        m_scaleX = static_cast<CCFloat*>(m_pieceDefinitions->objectForKey(fmt::format("scaleX{}", suffix)))->getValue();
+        m_scaleXSlider->setValue((m_scaleX + 10.0f) / 20.0f);
+        m_scaleXLabel->setString(fmt::format("Scale X: {:.1f}", m_scaleX).c_str());
+        m_scaleY = static_cast<CCFloat*>(m_pieceDefinitions->objectForKey(fmt::format("scaleY{}", suffix)))->getValue();
+        m_scaleYSlider->setValue((m_scaleY + 10.0f) / 20.0f);
+        m_scaleYLabel->setString(fmt::format("Scale Y: {:.1f}", m_scaleY).c_str());
+        m_targets = static_cast<CCArray*>(sender->getUserObject("targets"_spr));
+        m_descriptions = static_cast<CCArray*>(sender->getUserObject("descriptions"_spr));
+        m_selectSprite->setTag(page);
+        m_selectSprite->setVisible(true);
+        m_selectSprite->setPosition(m_mainLayer->convertToNodeSpace(m_pieceMenu->convertToWorldSpace(sender->getPosition())));
+    });
+    pieceButton->setContentSize({ 30.0f, 30.0f });
+    pieceSprite->setPosition({ 15.0f, 15.0f });
+
+    if (targets) {
+        pieceButton->setUserObject("targets"_spr, targets);
+        auto descriptions = CCArray::create();
+        for (int i = 0; i < targets->count(); i++) {
+            auto target = static_cast<CCSprite*>(targets->objectAtIndex(i));
+            auto description = new SpriteDescription();
+            description->m_position = target->getPosition();
+            description->m_scale.x = target->getScaleX();
+            description->m_scale.y = target->getScaleY();
+            description->m_rotation = target->getRotation();
+            description->autorelease();
+            descriptions->addObject(description);
+        }
+        pieceButton->setUserObject("descriptions"_spr, descriptions);
+        if (m_suffix == suffix) {
+            m_targets = targets;
+            m_descriptions = descriptions;
+        }
+    }
+    pieceButton->setID(fmt::format("piece-button{}", suffix).c_str());
+
+    if (page == 0) m_pieceMenu->addChild(pieceButton);
+
+    if (m_pieceArrays->count() <= page) m_pieceArrays->addObject(CCArray::create());
+    static_cast<CCArray*>(m_pieceArrays->objectAtIndex(page))->addObject(pieceButton);
+}
+
+void EditIconPopup::goToPage(int page) {
+    for (auto sprite : CCArrayExt<CCSprite*>(static_cast<CCArray*>(m_pieceArrays->objectAtIndex(m_page)))) {
+        m_pieceMenu->removeChild(sprite, false);
+    }
+    auto count = m_pieceArrays->count();
+    m_page = ((page % count) + count) % count;
+    m_selectSprite->setVisible(m_selectSprite->getTag() == m_page);
+
+    for (auto sprite : CCArrayExt<CCSprite*>(static_cast<CCArray*>(m_pieceArrays->objectAtIndex(m_page)))) {
+        m_pieceMenu->addChild(sprite);
+    }
+
+    m_pieceMenu->updateLayout();
+}
+
+void EditIconPopup::updateTargets() {
+    if (!m_targets || !m_descriptions) return;
+
+    for (int i = 0; i < m_targets->count(); i++) {
+        auto target = static_cast<CCSprite*>(m_targets->objectAtIndex(i));
+        auto description = static_cast<SpriteDescription*>(m_descriptions->objectAtIndex(i));
+        target->setPositionX(description->m_position.x + m_offsetX);
+        target->setPositionY(description->m_position.y + m_offsetY);
+        target->setRotationX(description->m_rotation + m_rotationX);
+        target->setRotationY(description->m_rotation + m_rotationY);
+        target->setScaleX(description->m_scale.x * m_scaleX);
+        target->setScaleY(description->m_scale.y * m_scaleY);
+    }
+}
+
+void EditIconPopup::onClose(CCObject* sender) {
     if (!m_hasChanged) return Popup::onClose(sender);
 
     auto type = (int)m_iconType;
