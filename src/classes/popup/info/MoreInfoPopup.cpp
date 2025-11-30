@@ -39,26 +39,9 @@ Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem
     #else
     auto fullSrc = dirs::getResourcesDir() / src;
     #endif
-    std::vector<uint8_t> vec;
-    #ifdef GEODE_IS_ANDROID
-    if (uhd) {
-        GEODE_UNWRAP_INTO(vec, file::readBinary(fullSrc).mapErr([](const std::string& err) {
-            return fmt::format("Failed to read file: {}", err);
-        }));
-    }
-    else {
-        auto size = 0ul;
-        auto data = MoreIconsAPI::getFileUtils()->getFileData(fullSrc.c_str(), "rb", &size);
-        if (!data) return Err("Failed to read file");
-
-        vec.assign(data, data + size);
-        delete[] data;
-    }
-    #else
-    GEODE_UNWRAP_INTO(vec, file::readBinary(fullSrc).mapErr([](const std::string& err) {
+    GEODE_UNWRAP_INTO(auto vec, MoreIconsAPI::readBinary(fullSrc).mapErr([](const std::string& err) {
         return fmt::format("Failed to read file: {}", err);
     }));
-    #endif
     return file::writeBinary(dest, vec).mapErr([](const std::string& err) {
         return fmt::format("Failed to write file: {}", err);
     });

@@ -116,6 +116,7 @@ public:
     static void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type, bool load = true);
     static void updatePlayerObject(PlayerObject* object, IconType type, bool dual);
     static void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type);
+    static geode::Result<std::vector<uint8_t>> readBinary(const std::filesystem::path& path);
     static geode::Result<ImageResult> createFrames(const std::string& png, const std::string& plist, const std::string& name, IconType type);
     static geode::Result<Autorelease<cocos2d::CCDictionary>> createFrames(
         const std::string& path, cocos2d::CCTexture2D* texture, const std::string& name, IconType type, bool fixNames = true

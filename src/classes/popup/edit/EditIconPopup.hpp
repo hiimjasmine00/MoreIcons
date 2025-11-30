@@ -30,7 +30,6 @@ protected:
     geode::TextInput* m_scaleYInput;
     std::string_view m_suffix;
     cocos2d::CCArray* m_targets;
-    cocos2d::CCArray* m_descriptions;
     cocos2d::CCSprite* m_selectSprite;
     cocos2d::CCMenu* m_pieceMenu;
     IconType m_iconType;

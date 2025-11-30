@@ -410,6 +410,7 @@ void MoreIconsAPI::removeIcon(IconInfo* info) {
                 if (iconRequests.empty()) it = requestedIcons.erase(it);
                 else ++it;
             }
+            else ++it;
         }
     }
 
@@ -678,10 +679,10 @@ void MoreIconsAPI::updatePlayerObject(PlayerObject* object, const std::string& i
     }
 }
 
-#ifdef GEODE_IS_ANDROID
-Result<std::vector<uint8_t>> readBinary(const std::string& path) {
+Result<std::vector<uint8_t>> MoreIconsAPI::readBinary(const std::filesystem::path& path) {
+    #ifdef GEODE_IS_ANDROID
     static thread_local ZipFile* apkFile = new ZipFile(getApkPath());
-    if (path.starts_with("assets/")) {
+    if (path.native().starts_with("assets/")) {
         auto size = 0ul;
         if (auto data = apkFile->getFileData(path.c_str(), &size)) {
             std::vector<uint8_t> vec(data, data + size);
@@ -690,11 +691,9 @@ Result<std::vector<uint8_t>> readBinary(const std::string& path) {
         }
         else return Err("Failed to read file from APK");
     }
+    #endif
     return file::readBinary(path);
 }
-#else
-using file::readBinary;
-#endif
 
 Result<ImageResult> MoreIconsAPI::createFrames(const std::string& png, const std::string& plist, const std::string& name, IconType type) {
     GEODE_UNWRAP_INTO(auto data, readBinary(png).mapErr([](const std::string& err) {

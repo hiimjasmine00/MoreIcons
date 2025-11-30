@@ -6,6 +6,7 @@
   - Split the PNG and Plist buttons into separate buttons again since that was probably very confusing
   - Added presets taken from vanilla icons and your loaded icons
   - Added the ability to clear individual icon pieces
+  - Added exporting to different icon qualities (SD, HD, UHD)
 - Replaced the "Debug Logs" and "Info Logs" settings with a single "Log Level" setting
 - Fixed a bug where custom robots and spiders would not properly display their ghost trail
 - Added advanced IconInfo comparison operators to the API

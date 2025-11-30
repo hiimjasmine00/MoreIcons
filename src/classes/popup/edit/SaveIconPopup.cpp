@@ -52,22 +52,26 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, CCDictionary* def
         if (iconName.empty()) return notify(NotificationIcon::Info, "Please enter a name.");
 
         auto parent = Mod::get()->getConfigDir() / MoreIcons::folders[miType];
-        auto factor = MoreIconsAPI::getDirector()->getContentScaleFactor();
-        auto suffix = factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : "";
-        auto png = parent / fmt::format("{}{}.png", iconName, suffix);
-        auto plist = parent / fmt::format("{}{}.plist", iconName, suffix);
-        if (MoreIcons::doesExist(png) || MoreIcons::doesExist(plist)) {
+        auto stem = parent / iconName;
+        if (
+            MoreIcons::doesExist(parent / fmt::format("{}.png", iconName)) ||
+            MoreIcons::doesExist(parent / fmt::format("{}-hd.png", iconName)) ||
+            MoreIcons::doesExist(parent / fmt::format("{}-uhd.png", iconName)) ||
+            MoreIcons::doesExist(parent / fmt::format("{}.plist", iconName)) ||
+            MoreIcons::doesExist(parent / fmt::format("{}-hd.plist", iconName)) ||
+            MoreIcons::doesExist(parent / fmt::format("{}-uhd.plist", iconName))
+        ) {
             createQuickPopup(
                 "Existing Icon",
                 fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
                 "No",
                 "Yes",
-                [this, png = std::move(png), plist = std::move(plist)](auto, bool btn2) {
-                    if (btn2) saveIcon(png, plist);
+                [this, stem = std::move(stem)](auto, bool btn2) {
+                    if (btn2) saveIcon(stem);
                 }
             );
         }
-        else saveIcon(png, plist);
+        else saveIcon(stem);
     });
     saveButton->setPosition({ 175.0f, 30.0f });
     saveButton->setID("save-button");
@@ -80,7 +84,7 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, CCDictionary* def
 
 texpack::Image getImage(CCNode* node) {
     auto director = MoreIconsAPI::getDirector();
-    auto size = node->getContentSize() * director->getContentScaleFactor();
+    auto size = node->getScaledContentSize() * director->getContentScaleFactor();
     auto floatWidth = size.width;
     auto floatHeight = size.height;
     uint32_t width = floatWidth;
@@ -145,7 +149,7 @@ bool SaveIconPopup::checkFrame(std::string_view suffix) {
     return frame != nullptr;
 }
 
-void SaveIconPopup::saveIcon(const std::filesystem::path& png, const std::filesystem::path& plist) {
+void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
     auto type = m_iconType;
     if (type == IconType::Robot || type == IconType::Spider) {
         if (!checkFrame("_01_001.png") || !checkFrame("_01_2_001.png") || !checkFrame("_01_glow_001.png")) return;
@@ -162,7 +166,14 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& png, const std::filesy
 
     auto name = m_nameInput->getString();
 
-    texpack::Packer packer;
+    texpack::Packer packers[3];
+    auto scaleFactor = MoreIconsAPI::getDirector()->getContentScaleFactor();
+    float scales[3] = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
+    constexpr std::array suffixes = {
+        std::make_pair("-uhd", "UHD"),
+        std::make_pair("-hd", "HD"),
+        std::make_pair("", "SD")
+    };
     for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(m_frames)) {
         auto suffix = frameName.substr(0, frameName.size() - 4);
         auto offsetX = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetX{}", suffix)))->getValue();
@@ -172,34 +183,51 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& png, const std::filesy
         auto scaleX = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleX{}", suffix)))->getValue();
         auto scaleY = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleY{}", suffix)))->getValue();
 
-        auto node = CCNode::create();
-        auto sprite = CCSprite::createWithSpriteFrame(frame);
-        sprite->setPosition({ offsetX, offsetY });
-        sprite->setScaleX(scaleX);
-        sprite->setScaleY(scaleY);
-        sprite->setRotationX(rotationX);
-        sprite->setRotationY(rotationY);
-        node->addChild(sprite);
-        node->setAnchorPoint({ 0.0f, 0.0f });
-        auto boundingSize = sprite->boundingBox().size;
-        node->setContentSize(boundingSize + CCSize { std::abs(offsetX * 2.0f), std::abs(offsetY * 2.0f) });
-        sprite->setPosition(node->getContentSize() * 0.5f + CCPoint { offsetX, offsetY });
-        packer.frame(fmt::format("{}{}", name, frameName), getImage(node));
-        node->release();
-        sprite->release();
+        auto joinedName = fmt::format("{}{}", name, frameName);
+        for (int i = 0; i < 3; i++) {
+            auto node = CCNode::create();
+            node->setScale(scales[i]);
+            node->setAnchorPoint({ 0.0f, 0.0f });
+            auto sprite = CCSprite::createWithSpriteFrame(frame);
+            sprite->setPosition({ offsetX, offsetY });
+            sprite->setScaleX(scaleX);
+            sprite->setScaleY(scaleY);
+            sprite->setRotationX(rotationX);
+            sprite->setRotationY(rotationY);
+            node->addChild(sprite);
+            auto boundingSize = sprite->boundingBox().size;
+            node->setContentSize(boundingSize + CCSize { std::abs(offsetX * 2.0f), std::abs(offsetY * 2.0f) });
+            sprite->setPosition(node->getContentSize() * 0.5f + sprite->getPosition());
+            sprite->setBlendFunc({ GL_ONE, GL_ZERO });
+            packers[i].frame(joinedName, getImage(node));
+            node->release();
+            sprite->release();
+        }
     }
 
-    if (auto res = packer.pack(); res.isErr()) {
-        return notify(NotificationIcon::Error, "Failed to pack frames: {}", res.unwrapErr());
-    }
-    if (auto res = packer.png(png); res.isErr()) {
-        return notify(NotificationIcon::Error, "Failed to save image: {}", res.unwrapErr());
-    }
-    if (auto res = packer.plist(plist, fmt::format("icons/{}", string::pathToString(png.filename())), "    "); res.isErr()) {
-        return notify(NotificationIcon::Error, "Failed to save plist: {}", res.unwrapErr());
+    std::filesystem::path selectedPNG;
+    std::filesystem::path selectedPlist;
+    for (int i = 0; i < 3; i++) {
+        auto& packer = packers[i];
+        auto [suffix, displayName] = suffixes[i];
+        auto png = std::filesystem::path(stem).concat(fmt::format("{}.png", suffix));
+        auto plist = std::filesystem::path(stem).concat(fmt::format("{}.plist", suffix));
+        if (scales[i] == 1.0f) {
+            selectedPNG = png;
+            selectedPlist = plist;
+        }
+        if (auto res = packer.pack(); res.isErr()) {
+            return notify(NotificationIcon::Error, "Failed to pack {} frames: {}", displayName, res.unwrapErr());
+        }
+        if (auto res = packer.png(png); res.isErr()) {
+            return notify(NotificationIcon::Error, "Failed to save {} image: {}", displayName, res.unwrapErr());
+        }
+        if (auto res = packer.plist(plist, fmt::format("icons/{}", string::pathToString(png.filename())), "    "); res.isErr()) {
+            return notify(NotificationIcon::Error, "Failed to save {} plist: {}", displayName, res.unwrapErr());
+        }
     }
 
-    addOrUpdateIcon(name, png, plist);
+    addOrUpdateIcon(name, selectedPNG, selectedPlist);
 
     m_parentPopup->close();
     Popup::onClose(nullptr);

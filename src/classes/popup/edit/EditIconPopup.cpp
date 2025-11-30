@@ -7,7 +7,6 @@
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
-#include <Geode/binding/SpriteDescription.hpp>
 #include <Geode/binding/Slider.hpp>
 #include <Geode/ui/Notification.hpp>
 #include <Geode/utils/file.hpp>
@@ -668,30 +667,49 @@ void EditIconPopup::transferPlayerToNode(CCNode* node, SimplePlayer* player) {
     if (type == IconType::Robot || type == IconType::Spider) {
         auto robotSprite = type == IconType::Spider ? player->m_spiderSprite : player->m_robotSprite;
 
-        auto glowSprite = robotSprite->m_glowSprite;
-        glowSprite->removeFromParentAndCleanup(false);
-        node->addChild(glowSprite);
+        auto glowNode = CCNode::create();
+        glowNode->setAnchorPoint({ 0.5f, 0.5f });
+        node->addChild(glowNode, -1);
 
         auto headSprite = robotSprite->m_headSprite;
         auto spriteParts = robotSprite->m_paSprite->m_spriteParts;
         auto secondArray = robotSprite->m_secondArray;
+        auto glowArray = robotSprite->m_glowSprite->getChildren();
         for (int i = 0; i < spriteParts->count(); i++) {
             auto spritePart = static_cast<CCSpritePart*>(spriteParts->objectAtIndex(i));
+            auto position = spritePart->getPosition();
             auto scaleX = spritePart->getScaleX();
             auto scaleY = spritePart->getScaleY();
             auto rotation = spritePart->getRotation();
+            auto zOrder = spritePart->getZOrder();
+
             auto partNode = CCNode::create();
-            partNode->setPosition(spritePart->getPosition());
+            partNode->setPosition(position);
+            partNode->setScaleX(scaleX);
+            partNode->setScaleY(scaleY);
+            partNode->setRotation(rotation);
             partNode->setAnchorPoint({ 0.5f, 0.5f });
-            node->addChild(partNode, spritePart->getZOrder());
+            node->addChild(partNode, zOrder);
 
             auto secondSprite = static_cast<CCSprite*>(secondArray->objectAtIndex(i));
             secondSprite->removeFromParentAndCleanup(false);
             secondSprite->setPosition({ 0.0f, 0.0f });
-            secondSprite->setScaleX(scaleX);
-            secondSprite->setScaleY(scaleY);
-            secondSprite->setRotation(rotation);
             partNode->addChild(secondSprite, -1);
+
+            auto glowParent = CCNode::create();
+            glowParent->setPosition(position);
+            glowParent->setScaleX(scaleX);
+            glowParent->setScaleY(scaleY);
+            glowParent->setRotation(rotation);
+            glowParent->setAnchorPoint({ 0.5f, 0.5f });
+            glowNode->addChild(glowParent, zOrder);
+
+            auto glowSprite = static_cast<CCSprite*>(glowArray->objectAtIndex(i));
+            glowSprite->setPosition({ 0.0f, 0.0f });
+            spritePart->setScaleX(1.0f);
+            spritePart->setScaleY(1.0f);
+            spritePart->setRotation(0.0f);
+            glowParent->addChild(glowSprite);
 
             if (spritePart == headSprite) {
                 if (auto extraSprite = robotSprite->m_extraSprite) {
@@ -705,21 +723,24 @@ void EditIconPopup::transferPlayerToNode(CCNode* node, SimplePlayer* player) {
             spritePart->m_followers->removeAllObjects();
             spritePart->m_hasFollower = false;
             spritePart->setPosition({ 0.0f, 0.0f });
+            spritePart->setScaleX(1.0f);
+            spritePart->setScaleY(1.0f);
+            spritePart->setRotation(0.0f);
             partNode->addChild(spritePart, 0);
         }
     }
     else {
         Ref firstLayer = player->m_firstLayer;
-        auto position = firstLayer->getPosition();
-        auto scale = firstLayer->getScale();
-        node->setPosition(node->getPosition() + position);
+        node->setPosition(node->getPosition() + firstLayer->getPosition());
+        node->setScale(node->getScale() * firstLayer->getScale());
         while (firstLayer->getChildrenCount() > 0) {
             auto child = firstLayer->getChildByIndex(0);
             child->removeFromParentAndCleanup(false);
-            child->setPosition(position);
-            child->setScale(scale);
+            child->setPosition({ 0.0f, 0.0f });
             node->addChild(child);
         }
+        firstLayer->setPosition({ 0.0f, 0.0f });
+        firstLayer->setScale(1.0f);
         firstLayer->removeFromParentAndCleanup(false);
         node->addChild(firstLayer, 0);
     }
@@ -758,7 +779,6 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
         m_scaleYSlider->setValue((m_scaleY + 10.0f) / 20.0f);
         m_scaleYInput->setString(fmt::format("{:.1f}", m_scaleY));
         m_targets = static_cast<CCArray*>(sender->getUserObject("piece-targets"));
-        m_descriptions = static_cast<CCArray*>(sender->getUserObject("piece-descriptions"));
         m_selectSprite->setTag(page);
         m_selectSprite->setVisible(true);
         m_selectSprite->setPosition(m_mainLayer->convertToNodeSpace(m_pieceMenu->convertToWorldSpace(sender->getPosition())));
@@ -768,22 +788,7 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
 
     if (targets) {
         pieceButton->setUserObject("piece-targets", targets);
-        auto descriptions = CCArray::create();
-        for (int i = 0; i < targets->count(); i++) {
-            auto target = static_cast<CCSprite*>(targets->objectAtIndex(i));
-            auto description = new SpriteDescription();
-            description->m_position = target->getPosition();
-            description->m_scale.x = target->getScaleX();
-            description->m_scale.y = target->getScaleY();
-            description->m_rotation = target->getRotation();
-            description->autorelease();
-            descriptions->addObject(description);
-        }
-        pieceButton->setUserObject("piece-descriptions", descriptions);
-        if (m_suffix == suffix) {
-            m_targets = targets;
-            m_descriptions = descriptions;
-        }
+        if (m_suffix == suffix) m_targets = targets;
     }
     pieceButton->setID(fmt::format("piece-button{}", suffix));
 
@@ -898,17 +903,16 @@ void EditIconPopup::goToPage(int page) {
 }
 
 void EditIconPopup::updateTargets() {
-    if (!m_targets || !m_descriptions) return;
+    if (!m_targets) return;
 
     for (int i = 0; i < m_targets->count(); i++) {
         auto target = static_cast<CCSprite*>(m_targets->objectAtIndex(i));
-        auto description = static_cast<SpriteDescription*>(m_descriptions->objectAtIndex(i));
-        target->setPositionX(description->m_position.x + m_offsetX);
-        target->setPositionY(description->m_position.y + m_offsetY);
-        target->setRotationX(description->m_rotation + m_rotationX);
-        target->setRotationY(description->m_rotation + m_rotationY);
-        target->setScaleX(description->m_scale.x * m_scaleX);
-        target->setScaleY(description->m_scale.y * m_scaleY);
+        target->setPositionX(m_offsetX);
+        target->setPositionY(m_offsetY);
+        target->setRotationX(m_rotationX);
+        target->setRotationY(m_rotationY);
+        target->setScaleX(m_scaleX);
+        target->setScaleY(m_scaleY);
     }
 }
 
