@@ -12,6 +12,7 @@
 #include <Geode/ui/Notification.hpp>
 #include <Geode/utils/file.hpp>
 #include <Geode/utils/string.hpp>
+#include <jasmine/convert.hpp>
 #include <jasmine/mod.hpp>
 #include <texpack.hpp>
 
@@ -79,6 +80,13 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     piecesBackground->setOpacity(105);
     piecesBackground->setID("pieces-background");
     m_mainLayer->addChild(piecesBackground);
+
+    auto controlBackground = CCScale9Sprite::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
+    controlBackground->setPosition({ 270.0f, 122.0f });
+    controlBackground->setContentSize({ 345.0f, 150.0f });
+    controlBackground->setOpacity(50);
+    controlBackground->setID("control-background");
+    m_mainLayer->addChild(controlBackground);
 
     m_pieceMenu = CCMenu::create();
     m_pieceMenu->setPosition({ 270.0f, 222.0f });
@@ -180,19 +188,55 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_offsetXSlider->setID("offset-x-slider");
     m_mainLayer->addChild(m_offsetXSlider);
 
-    m_offsetXLabel = CCLabelBMFont::create(fmt::format("Offset X: {:.1f}", m_offsetX).c_str(), "goldFont.fnt");
-    m_offsetXLabel->setPosition({ 185.0f, 185.0f });
-    m_offsetXLabel->setScale(0.6f);
-    m_offsetXLabel->setID("offset-x-label");
-    m_mainLayer->addChild(m_offsetXLabel);
-
     CCMenuItemExt::assignCallback<SliderThumb>(m_offsetXSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_offsetX = roundf(sender->getValue() * 400.0f - 200.0f) / 10.0f;
         static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetX{}", m_suffix)))->m_fValue = m_offsetX;
         updateTargets();
-        m_offsetXLabel->setString(fmt::format("Offset X: {:.1f}", m_offsetX).c_str());
+        m_offsetXInput->setString(fmt::format("{:.1f}", m_offsetX));
         m_hasChanged = true;
     });
+
+    auto offsetXMenu = CCMenu::create();
+    offsetXMenu->setPosition({ 185.0f, 185.0f });
+    offsetXMenu->setContentSize({ 150.0f, 30.0f });
+    offsetXMenu->ignoreAnchorPointForPosition(false);
+    offsetXMenu->setLayout(RowLayout::create()->setAutoScale(false));
+    offsetXMenu->setID("offset-x-menu");
+    m_mainLayer->addChild(offsetXMenu);
+
+    auto offsetXLabel = CCLabelBMFont::create("Offset X:", "goldFont.fnt");
+    offsetXLabel->setScale(0.6f);
+    offsetXLabel->setID("offset-x-label");
+    offsetXMenu->addChild(offsetXLabel);
+
+    m_offsetXInput = geode::TextInput::create(60.0f, "Num");
+    m_offsetXInput->setScale(0.5f);
+    m_offsetXInput->setString(fmt::format("{:.1f}", m_offsetX));
+    m_offsetXInput->setCommonFilter(CommonFilter::Float);
+    m_offsetXInput->setMaxCharCount(5);
+    m_offsetXInput->setCallback([this](const std::string& str) {
+        jasmine::convert::toFloat(str, m_offsetX);
+        m_offsetX = std::clamp(m_offsetX, -20.0f, 20.0f);
+        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetX{}", m_suffix)))->m_fValue = m_offsetX;
+        updateTargets();
+        m_offsetXSlider->setValue((m_offsetX + 20.0f) / 40.0f);
+        m_hasChanged = true;
+    });
+    m_offsetXInput->setID("offset-x-input");
+    offsetXMenu->addChild(m_offsetXInput);
+
+    auto resetOffsetXButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [this](auto) {
+        m_offsetX = 0.0f;
+        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetX{}", m_suffix)))->m_fValue = m_offsetX;
+        updateTargets();
+        m_offsetXSlider->setValue((m_offsetX + 20.0f) / 40.0f);
+        m_offsetXInput->setString(fmt::format("{:.1f}", m_offsetX));
+        m_hasChanged = true;
+    });
+    resetOffsetXButton->setID("reset-offset-x-button");
+    offsetXMenu->addChild(resetOffsetXButton);
+
+    offsetXMenu->updateLayout();
 
     m_offsetYSlider = Slider::create(nullptr, nullptr, 0.75f);
     m_offsetYSlider->setPosition({ 355.0f, 165.0f });
@@ -200,19 +244,55 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_offsetYSlider->setID("offset-y-slider");
     m_mainLayer->addChild(m_offsetYSlider);
 
-    m_offsetYLabel = CCLabelBMFont::create(fmt::format("Offset Y: {:.1f}", m_offsetY).c_str(), "goldFont.fnt");
-    m_offsetYLabel->setPosition({ 355.0f, 185.0f });
-    m_offsetYLabel->setScale(0.6f);
-    m_offsetYLabel->setID("offset-y-label");
-    m_mainLayer->addChild(m_offsetYLabel);
-
     CCMenuItemExt::assignCallback<SliderThumb>(m_offsetYSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_offsetY = roundf(sender->getValue() * 400.0f - 200.0f) / 10.0f;
         static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetY{}", m_suffix)))->m_fValue = m_offsetY;
         updateTargets();
-        m_offsetYLabel->setString(fmt::format("Offset Y: {:.1f}", m_offsetY).c_str());
+        m_offsetXInput->setString(fmt::format("{:.1f}", m_offsetY));
         m_hasChanged = true;
     });
+
+    auto offsetYMenu = CCMenu::create();
+    offsetYMenu->setPosition({ 355.0f, 185.0f });
+    offsetYMenu->setContentSize({ 150.0f, 30.0f });
+    offsetYMenu->ignoreAnchorPointForPosition(false);
+    offsetYMenu->setLayout(RowLayout::create()->setAutoScale(false));
+    offsetYMenu->setID("offset-y-menu");
+    m_mainLayer->addChild(offsetYMenu);
+
+    auto offsetYLabel = CCLabelBMFont::create("Offset Y:", "goldFont.fnt");
+    offsetYLabel->setScale(0.6f);
+    offsetYLabel->setID("offset-y-label");
+    offsetYMenu->addChild(offsetYLabel);
+
+    m_offsetYInput = geode::TextInput::create(60.0f, "Num");
+    m_offsetYInput->setScale(0.5f);
+    m_offsetYInput->setString(fmt::format("{:.1f}", m_offsetY));
+    m_offsetYInput->setCommonFilter(CommonFilter::Float);
+    m_offsetYInput->setMaxCharCount(5);
+    m_offsetYInput->setCallback([this](const std::string& str) {
+        jasmine::convert::toFloat(str, m_offsetY);
+        m_offsetY = std::clamp(m_offsetY, -20.0f, 20.0f);
+        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetY{}", m_suffix)))->m_fValue = m_offsetY;
+        updateTargets();
+        m_offsetYSlider->setValue((m_offsetY + 20.0f) / 40.0f);
+        m_hasChanged = true;
+    });
+    m_offsetYInput->setID("offset-y-input");
+    offsetYMenu->addChild(m_offsetYInput);
+
+    auto resetOffsetYButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [this](auto) {
+        m_offsetY = 0.0f;
+        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetY{}", m_suffix)))->m_fValue = m_offsetY;
+        updateTargets();
+        m_offsetYSlider->setValue((m_offsetY + 20.0f) / 40.0f);
+        m_offsetYInput->setString(fmt::format("{:.1f}", m_offsetY));
+        m_hasChanged = true;
+    });
+    resetOffsetYButton->setID("reset-offset-y-button");
+    offsetYMenu->addChild(resetOffsetYButton);
+
+    offsetYMenu->updateLayout();
 
     m_rotationXSlider = Slider::create(nullptr, nullptr, 0.75f);
     m_rotationXSlider->setPosition({ 185.0f, 125.0f });
@@ -220,19 +300,55 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_rotationXSlider->setID("rotation-x-slider");
     m_mainLayer->addChild(m_rotationXSlider);
 
-    m_rotationXLabel = CCLabelBMFont::create(fmt::format("Rotation X: {:.0f}", m_rotationX).c_str(), "goldFont.fnt");
-    m_rotationXLabel->setPosition({ 185.0f, 145.0f });
-    m_rotationXLabel->setScale(0.6f);
-    m_rotationXLabel->setID("rotation-x-label");
-    m_mainLayer->addChild(m_rotationXLabel);
-
     CCMenuItemExt::assignCallback<SliderThumb>(m_rotationXSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_rotationX = roundf(sender->getValue() * 360.0f);
         static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationX{}", m_suffix)))->m_fValue = m_rotationX;
         updateTargets();
-        m_rotationXLabel->setString(fmt::format("Rotation X: {:.0f}", m_rotationX).c_str());
+        m_rotationXInput->setString(fmt::format("{:.0f}", m_rotationX));
         m_hasChanged = true;
     });
+
+    auto rotationXMenu = CCMenu::create();
+    rotationXMenu->setPosition({ 185.0f, 145.0f });
+    rotationXMenu->setContentSize({ 150.0f, 30.0f });
+    rotationXMenu->ignoreAnchorPointForPosition(false);
+    rotationXMenu->setLayout(RowLayout::create()->setAutoScale(false));
+    rotationXMenu->setID("rotation-x-menu");
+    m_mainLayer->addChild(rotationXMenu);
+
+    auto rotationXLabel = CCLabelBMFont::create("Rotation X:", "goldFont.fnt");
+    rotationXLabel->setScale(0.6f);
+    rotationXLabel->setID("rotation-x-label");
+    rotationXMenu->addChild(rotationXLabel);
+
+    m_rotationXInput = geode::TextInput::create(60.0f, "Num");
+    m_rotationXInput->setScale(0.5f);
+    m_rotationXInput->setString(fmt::format("{:.0f}", m_rotationX));
+    m_rotationXInput->setCommonFilter(CommonFilter::Uint);
+    m_rotationXInput->setMaxCharCount(3);
+    m_rotationXInput->setCallback([this](const std::string& str) {
+        jasmine::convert::toFloat(str, m_rotationX);
+        m_rotationX = std::clamp(m_rotationX, 0.0f, 360.0f);
+        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationX{}", m_suffix)))->m_fValue = m_rotationX;
+        updateTargets();
+        m_rotationXSlider->setValue(m_rotationX / 360.0f);
+        m_hasChanged = true;
+    });
+    m_rotationXInput->setID("rotation-x-input");
+    rotationXMenu->addChild(m_rotationXInput);
+
+    auto resetRotationXButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [this](auto) {
+        m_rotationX = 0.0f;
+        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationX{}", m_suffix)))->m_fValue = m_rotationX;
+        updateTargets();
+        m_rotationXSlider->setValue(m_rotationX / 360.0f);
+        m_rotationXInput->setString(fmt::format("{:.0f}", m_rotationX));
+        m_hasChanged = true;
+    });
+    resetRotationXButton->setID("reset-rotation-x-button");
+    rotationXMenu->addChild(resetRotationXButton);
+
+    rotationXMenu->updateLayout();
 
     m_rotationYSlider = Slider::create(nullptr, nullptr, 0.75f);
     m_rotationYSlider->setPosition({ 355.0f, 125.0f });
@@ -240,19 +356,55 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_rotationYSlider->setID("rotation-y-slider");
     m_mainLayer->addChild(m_rotationYSlider);
 
-    m_rotationYLabel = CCLabelBMFont::create(fmt::format("Rotation Y: {:.0f}", m_rotationY).c_str(), "goldFont.fnt");
-    m_rotationYLabel->setPosition({ 355.0f, 145.0f });
-    m_rotationYLabel->setScale(0.6f);
-    m_rotationYLabel->setID("rotation-y-label");
-    m_mainLayer->addChild(m_rotationYLabel);
-
     CCMenuItemExt::assignCallback<SliderThumb>(m_rotationYSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_rotationY = roundf(sender->getValue() * 360.0f);
         static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationY{}", m_suffix)))->m_fValue = m_rotationY;
         updateTargets();
-        m_rotationYLabel->setString(fmt::format("Rotation Y: {:.0f}", m_rotationY).c_str());
+        m_rotationYInput->setString(fmt::format("{:.0f}", m_rotationY));
         m_hasChanged = true;
     });
+
+    auto rotationYMenu = CCMenu::create();
+    rotationYMenu->setPosition({ 355.0f, 145.0f });
+    rotationYMenu->setContentSize({ 150.0f, 30.0f });
+    rotationYMenu->ignoreAnchorPointForPosition(false);
+    rotationYMenu->setLayout(RowLayout::create()->setAutoScale(false));
+    rotationYMenu->setID("rotation-y-menu");
+    m_mainLayer->addChild(rotationYMenu);
+
+    auto rotationYLabel = CCLabelBMFont::create("Rotation Y:", "goldFont.fnt");
+    rotationYLabel->setScale(0.6f);
+    rotationYLabel->setID("rotation-y-label");
+    rotationYMenu->addChild(rotationYLabel);
+
+    m_rotationYInput = geode::TextInput::create(60.0f, "Num");
+    m_rotationYInput->setScale(0.5f);
+    m_rotationYInput->setString(fmt::format("{:.0f}", m_rotationY));
+    m_rotationYInput->setCommonFilter(CommonFilter::Uint);
+    m_rotationYInput->setMaxCharCount(3);
+    m_rotationYInput->setCallback([this](const std::string& str) {
+        jasmine::convert::toFloat(str, m_rotationY);
+        m_rotationY = std::clamp(m_rotationY, 0.0f, 360.0f);
+        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationY{}", m_suffix)))->m_fValue = m_rotationY;
+        updateTargets();
+        m_rotationYSlider->setValue(m_rotationY / 360.0f);
+        m_hasChanged = true;
+    });
+    m_rotationYInput->setID("rotation-y-input");
+    rotationYMenu->addChild(m_rotationYInput);
+
+    auto resetRotationYButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [this](auto) {
+        m_rotationY = 0.0f;
+        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationY{}", m_suffix)))->m_fValue = m_rotationY;
+        updateTargets();
+        m_rotationYSlider->setValue(m_rotationY / 360.0f);
+        m_rotationYInput->setString(fmt::format("{:.0f}", m_rotationY));
+        m_hasChanged = true;
+    });
+    resetRotationYButton->setID("reset-rotation-y-button");
+    rotationYMenu->addChild(resetRotationYButton);
+
+    rotationYMenu->updateLayout();
 
     m_scaleXSlider = Slider::create(nullptr, nullptr, 0.75f);
     m_scaleXSlider->setPosition({ 185.0f, 85.0f });
@@ -260,19 +412,55 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_scaleXSlider->setID("scale-x-slider");
     m_mainLayer->addChild(m_scaleXSlider);
 
-    m_scaleXLabel = CCLabelBMFont::create(fmt::format("Scale X: {:.1f}", m_scaleX).c_str(), "goldFont.fnt");
-    m_scaleXLabel->setPosition({ 185.0f, 105.0f });
-    m_scaleXLabel->setScale(0.6f);
-    m_scaleXLabel->setID("scale-x-label");
-    m_mainLayer->addChild(m_scaleXLabel);
-
     CCMenuItemExt::assignCallback<SliderThumb>(m_scaleXSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_scaleX = roundf(sender->getValue() * 200.0f - 100.0f) / 10.0f;
         static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleX{}", m_suffix)))->m_fValue = m_scaleX;
         updateTargets();
-        m_scaleXLabel->setString(fmt::format("Scale X: {:.1f}", m_scaleX).c_str());
+        m_scaleXInput->setString(fmt::format("{:.1f}", m_scaleX));
         m_hasChanged = true;
     });
+
+    auto scaleXMenu = CCMenu::create();
+    scaleXMenu->setPosition({ 185.0f, 105.0f });
+    scaleXMenu->setContentSize({ 150.0f, 30.0f });
+    scaleXMenu->ignoreAnchorPointForPosition(false);
+    scaleXMenu->setLayout(RowLayout::create()->setAutoScale(false));
+    scaleXMenu->setID("scale-x-menu");
+    m_mainLayer->addChild(scaleXMenu);
+
+    auto scaleXLabel = CCLabelBMFont::create("Scale X:", "goldFont.fnt");
+    scaleXLabel->setScale(0.6f);
+    scaleXLabel->setID("scale-x-label");
+    scaleXMenu->addChild(scaleXLabel);
+
+    m_scaleXInput = geode::TextInput::create(60.0f, "Num");
+    m_scaleXInput->setScale(0.5f);
+    m_scaleXInput->setString(fmt::format("{:.1f}", m_scaleX));
+    m_scaleXInput->setCommonFilter(CommonFilter::Float);
+    m_scaleXInput->setMaxCharCount(5);
+    m_scaleXInput->setCallback([this](const std::string& str) {
+        jasmine::convert::toFloat(str, m_scaleX);
+        m_scaleX = std::clamp(m_scaleX, -10.0f, 10.0f);
+        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleX{}", m_suffix)))->m_fValue = m_scaleX;
+        updateTargets();
+        m_scaleXSlider->setValue((m_scaleX + 10.0f) / 20.0f);
+        m_hasChanged = true;
+    });
+    m_scaleXInput->setID("scale-x-input");
+    scaleXMenu->addChild(m_scaleXInput);
+
+    auto resetScaleXButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [this](auto) {
+        m_scaleX = 1.0f;
+        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleX{}", m_suffix)))->m_fValue = m_scaleX;
+        updateTargets();
+        m_scaleXSlider->setValue((m_scaleX + 10.0f) / 20.0f);
+        m_scaleXInput->setString(fmt::format("{:.1f}", m_scaleX));
+        m_hasChanged = true;
+    });
+    resetScaleXButton->setID("reset-scale-x-button");
+    scaleXMenu->addChild(resetScaleXButton);
+
+    scaleXMenu->updateLayout();
 
     m_scaleYSlider = Slider::create(nullptr, nullptr, 0.75f);
     m_scaleYSlider->setPosition({ 355.0f, 85.0f });
@@ -280,19 +468,55 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_scaleYSlider->setID("scale-y-slider");
     m_mainLayer->addChild(m_scaleYSlider);
 
-    m_scaleYLabel = CCLabelBMFont::create(fmt::format("Scale Y: {:.1f}", m_scaleY).c_str(), "goldFont.fnt");
-    m_scaleYLabel->setPosition({ 355.0f, 105.0f });
-    m_scaleYLabel->setScale(0.6f);
-    m_scaleYLabel->setID("scale-y-label");
-    m_mainLayer->addChild(m_scaleYLabel);
-
     CCMenuItemExt::assignCallback<SliderThumb>(m_scaleYSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_scaleY = roundf(sender->getValue() * 200.0f - 100.0f) / 10.0f;
         static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleY{}", m_suffix)))->m_fValue = m_scaleY;
         updateTargets();
-        m_scaleYLabel->setString(fmt::format("Scale Y: {:.1f}", m_scaleY).c_str());
+        m_scaleYInput->setString(fmt::format("{:.1f}", m_scaleY));
         m_hasChanged = true;
     });
+
+    auto scaleYMenu = CCMenu::create();
+    scaleYMenu->setPosition({ 355.0f, 105.0f });
+    scaleYMenu->setContentSize({ 150.0f, 30.0f });
+    scaleYMenu->ignoreAnchorPointForPosition(false);
+    scaleYMenu->setLayout(RowLayout::create()->setAutoScale(false));
+    scaleYMenu->setID("scale-y-menu");
+    m_mainLayer->addChild(scaleYMenu);
+
+    auto scaleYLabel = CCLabelBMFont::create("Scale Y:", "goldFont.fnt");
+    scaleYLabel->setScale(0.6f);
+    scaleYLabel->setID("scale-y-label");
+    scaleYMenu->addChild(scaleYLabel);
+
+    m_scaleYInput = geode::TextInput::create(60.0f, "Num");
+    m_scaleYInput->setScale(0.5f);
+    m_scaleYInput->setString(fmt::format("{:.1f}", m_scaleY));
+    m_scaleYInput->setCommonFilter(CommonFilter::Float);
+    m_scaleYInput->setMaxCharCount(5);
+    m_scaleYInput->setCallback([this](const std::string& str) {
+        jasmine::convert::toFloat(str, m_scaleY);
+        m_scaleY = std::clamp(m_scaleY, -10.0f, 10.0f);
+        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleY{}", m_suffix)))->m_fValue = m_scaleY;
+        updateTargets();
+        m_scaleYSlider->setValue((m_scaleY + 10.0f) / 20.0f);
+        m_hasChanged = true;
+    });
+    m_scaleYInput->setID("scale-y-input");
+    scaleYMenu->addChild(m_scaleYInput);
+
+    auto resetScaleYButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [this](auto) {
+        m_scaleY = 1.0f;
+        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleY{}", m_suffix)))->m_fValue = m_scaleY;
+        updateTargets();
+        m_scaleYSlider->setValue((m_scaleY + 10.0f) / 20.0f);
+        m_scaleYInput->setString(fmt::format("{:.1f}", m_scaleY));
+        m_hasChanged = true;
+    });
+    resetScaleYButton->setID("reset-scale-y-button");
+    scaleYMenu->addChild(resetScaleYButton);
+
+    scaleYMenu->updateLayout();
 
     auto pieceButtonMenu = CCMenu::create();
     pieceButtonMenu->setPosition({ 270.0f, 60.0f });
@@ -370,8 +594,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     iconButtonMenu->setID("icon-button-menu");
     m_mainLayer->addChild(iconButtonMenu);
 
-    auto pngSprite = ButtonSprite::create("PNG", "goldFont.fnt", "GJ_button_05.png", 0.8f);
-    auto pngButton = CCMenuItemExt::createSpriteExtra(pngSprite, [this](auto) {
+    auto pngButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("PNG", "goldFont.fnt", "GJ_button_05.png", 0.8f), [this](auto) {
         m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
             auto res = event->getValue();
             if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import PNG file: {}", res->unwrapErr());
@@ -391,8 +614,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     pngButton->setID("png-button");
     iconButtonMenu->addChild(pngButton);
 
-    auto plistSprite = ButtonSprite::create("Plist", "goldFont.fnt", "GJ_button_05.png", 0.8f);
-    auto plistButton = CCMenuItemExt::createSpriteExtra(plistSprite, [this](auto) {
+    auto plistButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Plist", "goldFont.fnt", "GJ_button_05.png", 0.8f), [this](auto) {
         m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
             auto res = event->getValue();
             if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import Plist file: {}", res->unwrapErr());
@@ -412,8 +634,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     plistButton->setID("plist-button");
     iconButtonMenu->addChild(plistButton);
 
-    auto presetSprite = ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png", 0.8f);
-    auto presetButton = CCMenuItemExt::createSpriteExtra(presetSprite, [this](auto) {
+    auto presetButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png", 0.8f), [this](auto) {
         IconPresetPopup::create(m_iconType, {}, [this](int id, IconInfo* info) {
             for (auto [suffix, _] : CCDictionaryExt<std::string, CCSprite*>(m_pieces)) {
                 auto key = fmt::format("{}.png", suffix);
@@ -429,8 +650,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     presetButton->setID("preset-button");
     iconButtonMenu->addChild(presetButton);
 
-    auto saveSprite = ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f);
-    auto saveButton = CCMenuItemExt::createSpriteExtra(saveSprite, [this](auto) {
+    auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f), [this](auto) {
         SaveIconPopup::create(this, m_iconType, m_definitions, m_frames)->show();
     });
     saveButton->setID("save-button");
@@ -521,22 +741,22 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
         m_suffix = suffix;
         m_offsetX = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetX{}", suffix)))->getValue();
         m_offsetXSlider->setValue((m_offsetX + 20.0f) / 40.0f);
-        m_offsetXLabel->setString(fmt::format("Offset X: {:.1f}", m_offsetX).c_str());
+        m_offsetXInput->setString(fmt::format("{:.1f}", m_offsetX));
         m_offsetY = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetY{}", suffix)))->getValue();
         m_offsetYSlider->setValue((m_offsetY + 20.0f) / 40.0f);
-        m_offsetYLabel->setString(fmt::format("Offset Y: {:.1f}", m_offsetY).c_str());
+        m_offsetYInput->setString(fmt::format("{:.1f}", m_offsetY));
         m_rotationX = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationX{}", suffix)))->getValue();
         m_rotationXSlider->setValue(m_rotationX / 360.0f);
-        m_rotationXLabel->setString(fmt::format("Rotation X: {:.0f}", m_rotationX).c_str());
+        m_rotationXInput->setString(fmt::format("{:.0f}", m_rotationX));
         m_rotationY = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationY{}", suffix)))->getValue();
         m_rotationYSlider->setValue(m_rotationY / 360.0f);
-        m_rotationYLabel->setString(fmt::format("Rotation Y: {:.0f}", m_rotationY).c_str());
+        m_rotationYInput->setString(fmt::format("{:.0f}", m_rotationY));
         m_scaleX = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleX{}", suffix)))->getValue();
         m_scaleXSlider->setValue((m_scaleX + 10.0f) / 20.0f);
-        m_scaleXLabel->setString(fmt::format("Scale X: {:.1f}", m_scaleX).c_str());
+        m_scaleXInput->setString(fmt::format("{:.1f}", m_scaleX));
         m_scaleY = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleY{}", suffix)))->getValue();
         m_scaleYSlider->setValue((m_scaleY + 10.0f) / 20.0f);
-        m_scaleYLabel->setString(fmt::format("Scale Y: {:.1f}", m_scaleY).c_str());
+        m_scaleYInput->setString(fmt::format("{:.1f}", m_scaleY));
         m_targets = static_cast<CCArray*>(sender->getUserObject("piece-targets"));
         m_descriptions = static_cast<CCArray*>(sender->getUserObject("piece-descriptions"));
         m_selectSprite->setTag(page);
@@ -565,7 +785,7 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
             m_descriptions = descriptions;
         }
     }
-    pieceButton->setID(fmt::format("piece-button{}", suffix).c_str());
+    pieceButton->setID(fmt::format("piece-button{}", suffix));
 
     if (page == 0) m_pieceMenu->addChild(pieceButton);
 

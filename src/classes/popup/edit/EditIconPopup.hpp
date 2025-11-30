@@ -1,5 +1,6 @@
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/ui/Popup.hpp>
+#include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/Task.hpp>
 
 class MoreIconsPopup;
@@ -21,12 +22,12 @@ protected:
     Slider* m_rotationYSlider;
     Slider* m_scaleXSlider;
     Slider* m_scaleYSlider;
-    cocos2d::CCLabelBMFont* m_offsetXLabel;
-    cocos2d::CCLabelBMFont* m_offsetYLabel;
-    cocos2d::CCLabelBMFont* m_rotationXLabel;
-    cocos2d::CCLabelBMFont* m_rotationYLabel;
-    cocos2d::CCLabelBMFont* m_scaleXLabel;
-    cocos2d::CCLabelBMFont* m_scaleYLabel;
+    geode::TextInput* m_offsetXInput;
+    geode::TextInput* m_offsetYInput;
+    geode::TextInput* m_rotationXInput;
+    geode::TextInput* m_rotationYInput;
+    geode::TextInput* m_scaleXInput;
+    geode::TextInput* m_scaleYInput;
     std::string_view m_suffix;
     cocos2d::CCArray* m_targets;
     cocos2d::CCArray* m_descriptions;
