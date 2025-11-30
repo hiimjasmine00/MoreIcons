@@ -10,8 +10,8 @@ protected:
     geode::EventListener<geode::Task<geode::Result<std::filesystem::path>>> m_listener;
     std::filesystem::path m_selectedPNG;
     std::filesystem::path m_selectedPlist;
-    geode::Ref<cocos2d::CCArray> m_pieceArrays;
-    geode::Ref<cocos2d::CCDictionary> m_pieceDefinitions;
+    geode::Ref<cocos2d::CCArray> m_pages;
+    geode::Ref<cocos2d::CCDictionary> m_definitions;
     geode::Ref<cocos2d::CCDictionary> m_pieces;
     geode::Ref<cocos2d::CCDictionary> m_frames;
     geode::Ref<SimplePlayer> m_player;
@@ -52,4 +52,6 @@ protected:
     void onClose(cocos2d::CCObject* sender) override;
 public:
     static EditIconPopup* create(MoreIconsPopup* popup, IconType type);
+
+    void close();
 };

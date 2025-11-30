@@ -53,8 +53,6 @@ class $modify(MIPlayerObject, PlayerObject) {
             }
         }
 
-        log::info("Loaded icon ref: {}", fmt::ptr(loadedIcon));
-
         if (loadedIcon) (*loadedIcon)++;
         (this->*func)(frame);
         updateIcon(type);

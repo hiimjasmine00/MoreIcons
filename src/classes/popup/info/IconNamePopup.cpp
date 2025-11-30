@@ -157,7 +157,7 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
     return true;
 }
 
-void IconNamePopup::onClose(cocos2d::CCObject* sender) {
+void IconNamePopup::onClose(CCObject* sender) {
     if (m_nameInput->getString().empty()) return Popup::onClose(sender);
 
     auto type = MoreIconsAPI::convertType(m_iconType);

@@ -112,7 +112,7 @@ IconType MoreIconsAPI::getIconType(PlayerObject* object) {
     return MoreIcons::getIconType(object);
 }
 
-std::string MoreIconsAPI::getIconName(cocos2d::CCNode* node) {
+std::string MoreIconsAPI::getIconName(CCNode* node) {
     return MoreIcons::getIconName(node);
 }
 
