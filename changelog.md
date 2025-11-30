@@ -1,4 +1,16 @@
 # More Icons Changelog
+## v1.15.0 (2025-11-30)
+- It took me four months to make this update. Let that sink in.
+- Revamped the icon editor UI to support more extensive editing features
+  - Added the ability to customize icon piece positions, scales, and rotations
+  - Split the PNG and Plist buttons into separate buttons again since that was probably very confusing
+  - Added presets taken from vanilla icons and your loaded icons
+  - Added the ability to clear individual icon pieces
+- Replaced the "Debug Logs" and "Info Logs" settings with a single "Log Level" setting
+- Fixed a bug where custom robots and spiders would not properly display their ghost trail
+- Added advanced IconInfo comparison operators to the API
+- Many internal code improvements and optimizations
+
 ## v1.14.7 (2025-08-19)
 - Added an API method to open the icon info popup (Suggested by [NyteLyte](user:26352471))
 - Removed API macros and replaced `MORE_ICONS_EXPAND` with operator `""_mi`
