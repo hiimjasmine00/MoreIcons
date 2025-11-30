@@ -58,7 +58,7 @@ class $modify(MIMenuGameLayer, MenuGameLayer) {
         if (m_playerObject->m_isShip || m_playerObject->m_isBird) {
             auto& cubes = MoreIconsAPI::icons[IconType::Cube];
             auto cubeCount = gameManager->countForType(IconType::Cube);
-            auto cube = round(jasmine::random::get(1, cubeCount + cubes.size()));
+            int cube = round(jasmine::random::get(1, cubeCount + cubes.size()));
 
             if (cube > cubeCount) MoreIconsAPI::updatePlayerObject(m_playerObject, cubes[cube - cubeCount - 1].name, IconType::Cube);
             else m_playerObject->updatePlayerFrame(cube);
