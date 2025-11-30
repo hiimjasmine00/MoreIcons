@@ -17,7 +17,7 @@ class $modify(MIProfilePage, ProfilePage) {
             MoreIconsAPI::updateSimplePlayer(player, type, dual);
             return true;
         }
-        for (auto child : CCArrayExt<CCNode*>(node->getChildren())) {
+        for (auto child : node->getChildrenExt()) {
             if (updatePlayer(child, type, dual)) return true;
         }
         return false;

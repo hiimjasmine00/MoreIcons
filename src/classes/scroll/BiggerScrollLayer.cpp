@@ -76,7 +76,7 @@ void BiggerScrollLayer::scrollWheel(float y, float) {
 void setProgram(CCNode* node, CCGLProgram* program) {
     if (node->getShaderProgram() != program) {
         node->setShaderProgram(program);
-        for (auto child : CCArrayExt<CCNode*>(node->getChildren())) {
+        for (auto child : node->getChildrenExt()) {
             setProgram(child, program);
         }
     }

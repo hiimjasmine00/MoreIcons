@@ -234,7 +234,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         auto sfc = MoreIconsAPI::getSpriteFrameCache();
         auto offFrame = sfc->spriteFrameByName("gj_navDotBtn_off_001.png");
-        for (auto navDot : CCArrayExt<CCMenuItemSpriteExtra*>(m_navDotMenu->getChildren())) {
+        for (auto navDot : m_navDotMenu->getChildrenExt<CCMenuItemSpriteExtra*>()) {
             static_cast<CCSprite*>(navDot->getNormalImage())->setDisplayFrame(offFrame);
         }
 

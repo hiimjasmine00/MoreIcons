@@ -636,7 +636,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     auto presetButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png", 0.8f), [this](auto) {
         IconPresetPopup::create(m_iconType, {}, [this](int id, IconInfo* info) {
-            for (auto [suffix, _] : CCDictionaryExt<std::string, CCSprite*>(m_pieces)) {
+            for (auto [suffix, sprite] : CCDictionaryExt<std::string_view, CCSprite*>(m_pieces)) {
                 auto key = fmt::format("{}.png", suffix);
                 auto frame = MoreIconsAPI::getFrame(info
                     ? fmt::format("{}{}"_spr, info->name, key)
@@ -821,16 +821,16 @@ void EditIconPopup::updateWithSelectedFiles() {
 
     auto frames = std::move(framesRes).unwrap();
     m_frames->removeAllObjects();
-    for (auto [key, frame] : CCDictionaryExt<gd::string, CCSpriteFrame*>(frames)) {
-        m_frames->setObject(frame, key);
+    for (auto [frameName, frame] : CCDictionaryExt<gd::string, CCSpriteFrame*>(frames)) {
+        m_frames->setObject(frame, frameName);
     }
     updatePieces();
 }
 
 void EditIconPopup::updatePieces() {
     auto crossFrame = MoreIconsAPI::getSpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
-    for (auto [prefix, sprite] : CCDictionaryExt<std::string_view, CCSprite*>(m_pieces)) {
-        auto spriteFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("{}.png", prefix)));
+    for (auto [suffix, sprite] : CCDictionaryExt<std::string_view, CCSprite*>(m_pieces)) {
+        auto spriteFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("{}.png", suffix)));
         sprite->setDisplayFrame(spriteFrame ? spriteFrame : crossFrame);
     }
 
