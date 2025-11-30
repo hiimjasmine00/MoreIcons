@@ -1,14 +1,23 @@
 #include "EditIconPopup.hpp"
+#include "IconPresetPopup.hpp"
 #include "../../../api/MoreIconsAPI.hpp"
+#include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SpriteDescription.hpp>
 #include <Geode/binding/Slider.hpp>
-#include <jasmine/mod.hpp>
+#include <Geode/ui/Notification.hpp>
+#include <Geode/utils/file.hpp>
+#include <Geode/utils/string.hpp>
+#include <texpack.hpp>
 
 using namespace geode::prelude;
-using namespace jasmine::mod;
+
+template <typename... T>
+void notify(NotificationIcon icon, fmt::format_string<T...> message, T&&... args) {
+    Notification::create(fmt::format(message, std::forward<T>(args)...), icon)->show();
+}
 
 EditIconPopup* EditIconPopup::create(MoreIconsPopup* popup, IconType type) {
     auto ret = new EditIconPopup();
@@ -47,6 +56,8 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_parentPopup = popup;
     m_pieceArrays = CCArray::create();
     m_pieceDefinitions = CCDictionary::create();
+    m_pieces = CCDictionary::create();
+    m_frames = CCDictionary::create();
     m_iconType = type;
 
     auto isRobot = type == IconType::Robot || type == IconType::Spider;
@@ -60,14 +71,14 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     auto piecesBackground = CCScale9Sprite::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
     piecesBackground->setPosition({ 270.0f, 222.0f });
-    piecesBackground->setContentSize({ isRobot ? 260.0f : 330.f, 45.0f });
+    piecesBackground->setContentSize({ isRobot ? 260.0f : 330.0f, 45.0f });
     piecesBackground->setOpacity(105);
     piecesBackground->setID("pieces-background");
     m_mainLayer->addChild(piecesBackground);
 
     m_pieceMenu = CCMenu::create();
     m_pieceMenu->setPosition({ 270.0f, 222.0f });
-    m_pieceMenu->setContentSize({ isRobot ? 260.0f : 330.f, 45.0f });
+    m_pieceMenu->setContentSize({ isRobot ? 260.0f : 330.0f, 45.0f });
     m_pieceMenu->ignoreAnchorPointForPosition(false);
     m_pieceMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Even));
     m_pieceMenu->setID("piece-menu");
@@ -173,6 +184,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     CCMenuItemExt::assignCallback<SliderThumb>(m_offsetXSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_offsetX = roundf(sender->getValue() * 400.0f - 200.0f) / 10.0f;
+        static_cast<CCFloat*>(m_pieceDefinitions->objectForKey(fmt::format("offsetX{}", m_suffix)))->m_fValue = m_offsetX;
         updateTargets();
         m_offsetXLabel->setString(fmt::format("Offset X: {:.1f}", m_offsetX).c_str());
         m_hasChanged = true;
@@ -192,6 +204,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     CCMenuItemExt::assignCallback<SliderThumb>(m_offsetYSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_offsetY = roundf(sender->getValue() * 400.0f - 200.0f) / 10.0f;
+        static_cast<CCFloat*>(m_pieceDefinitions->objectForKey(fmt::format("offsetY{}", m_suffix)))->m_fValue = m_offsetY;
         updateTargets();
         m_offsetYLabel->setString(fmt::format("Offset Y: {:.1f}", m_offsetY).c_str());
         m_hasChanged = true;
@@ -211,6 +224,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     CCMenuItemExt::assignCallback<SliderThumb>(m_rotationXSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_rotationX = roundf(sender->getValue() * 360.0f);
+        static_cast<CCFloat*>(m_pieceDefinitions->objectForKey(fmt::format("rotationX{}", m_suffix)))->m_fValue = m_rotationX;
         updateTargets();
         m_rotationXLabel->setString(fmt::format("Rotation X: {:.0f}", m_rotationX).c_str());
         m_hasChanged = true;
@@ -230,6 +244,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     CCMenuItemExt::assignCallback<SliderThumb>(m_rotationYSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_rotationY = roundf(sender->getValue() * 360.0f);
+        static_cast<CCFloat*>(m_pieceDefinitions->objectForKey(fmt::format("rotationY{}", m_suffix)))->m_fValue = m_rotationY;
         updateTargets();
         m_rotationYLabel->setString(fmt::format("Rotation Y: {:.0f}", m_rotationY).c_str());
         m_hasChanged = true;
@@ -249,6 +264,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     CCMenuItemExt::assignCallback<SliderThumb>(m_scaleXSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_scaleX = roundf(sender->getValue() * 200.0f - 100.0f) / 10.0f;
+        static_cast<CCFloat*>(m_pieceDefinitions->objectForKey(fmt::format("scaleX{}", m_suffix)))->m_fValue = m_scaleX;
         updateTargets();
         m_scaleXLabel->setString(fmt::format("Scale X: {:.1f}", m_scaleX).c_str());
         m_hasChanged = true;
@@ -268,10 +284,153 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     CCMenuItemExt::assignCallback<SliderThumb>(m_scaleYSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_scaleY = roundf(sender->getValue() * 200.0f - 100.0f) / 10.0f;
+        static_cast<CCFloat*>(m_pieceDefinitions->objectForKey(fmt::format("scaleY{}", m_suffix)))->m_fValue = m_scaleY;
         updateTargets();
         m_scaleYLabel->setString(fmt::format("Scale Y: {:.1f}", m_scaleY).c_str());
         m_hasChanged = true;
     });
+
+    auto pieceButtonMenu = CCMenu::create();
+    pieceButtonMenu->setPosition({ 270.0f, 60.0f });
+    pieceButtonMenu->setContentSize({ 330.0f, 20.0f });
+    pieceButtonMenu->ignoreAnchorPointForPosition(false);
+    pieceButtonMenu->setLayout(RowLayout::create()->setGap(30.0f));
+    pieceButtonMenu->setID("piece-button-menu");
+    m_mainLayer->addChild(pieceButtonMenu);
+
+    auto pieceImportSprite = ButtonSprite::create("Import", "goldFont.fnt", "GJ_button_05.png", 0.8f);
+    pieceImportSprite->setScale(0.6f);
+    auto pieceImportButton = CCMenuItemExt::createSpriteExtra(pieceImportSprite, [this](auto) {
+        m_listener.bind([this](Task<geode::Result<std::filesystem::path>>::Event* event) {
+            auto res = event->getValue();
+            if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import PNG file: {}", res->unwrapErr());
+            if (!res || !res->isOk()) return;
+
+            auto imageRes = texpack::fromPNG(res->unwrap());
+            if (imageRes.isErr()) return notify(NotificationIcon::Error, "Failed to load image: {}", imageRes.unwrapErr());
+
+            auto image = std::move(imageRes).unwrap();
+            Autorelease texture = new CCTexture2D();
+            texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+                (float)image.width,
+                (float)image.height
+            });
+
+            m_frames->setObject(CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }),
+                fmt::format("{}.png", m_suffix));
+            updatePieces();
+        });
+
+        m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
+            .filters = {{
+                .description = "PNG Files",
+                .files = { "*.png" }
+            }}
+        }));
+    });
+    pieceImportButton->setID("piece-import-button");
+    pieceButtonMenu->addChild(pieceImportButton);
+
+    auto piecePresetSprite = ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png", 0.8f);
+    piecePresetSprite->setScale(0.6f);
+    auto piecePresetButton = CCMenuItemExt::createSpriteExtra(piecePresetSprite, [this](auto) {
+        auto key = fmt::format("{}.png", m_suffix);
+        IconPresetPopup::create(m_iconType, key, [this, key](int id, IconInfo* info) {
+            auto frame = MoreIconsAPI::getFrame(info
+                ? fmt::format("{}{}", info->name, key)
+                : fmt::format("{}{:02}{}", MoreIconsAPI::prefixes[(int)m_iconType], id, key));
+            if (frame) m_frames->setObject(frame, key);
+            else m_frames->removeObjectForKey(key);
+            updatePieces();
+        })->show();
+    });
+    piecePresetButton->setID("piece-preset-button");
+    pieceButtonMenu->addChild(piecePresetButton);
+
+    auto pieceClearSprite = ButtonSprite::create("Clear", "goldFont.fnt", "GJ_button_05.png", 0.8f);
+    pieceClearSprite->setScale(0.6f);
+    auto pieceClearButton = CCMenuItemExt::createSpriteExtra(pieceClearSprite, [this](auto) {
+        m_frames->setObject(MoreIconsAPI::getFrame("emptyFrame.png"), fmt::format("{}.png", m_suffix));
+        updatePieces();
+    });
+    pieceClearButton->setID("piece-clear-button");
+    pieceButtonMenu->addChild(pieceClearButton);
+
+    pieceButtonMenu->updateLayout();
+
+    auto iconButtonMenu = CCMenu::create();
+    iconButtonMenu->setPosition({ 225.0f, 30.0f });
+    iconButtonMenu->setContentSize({ 450.0f, 30.0f });
+    iconButtonMenu->ignoreAnchorPointForPosition(false);
+    iconButtonMenu->setLayout(RowLayout::create()->setGap(30.0f));
+    iconButtonMenu->setID("icon-button-menu");
+    m_mainLayer->addChild(iconButtonMenu);
+
+    auto pngSprite = ButtonSprite::create("PNG", "goldFont.fnt", "GJ_button_05.png", 0.8f);
+    auto pngButton = CCMenuItemExt::createSpriteExtra(pngSprite, [this](auto) {
+        m_listener.bind([this](Task<geode::Result<std::filesystem::path>>::Event* event) {
+            auto res = event->getValue();
+            if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import PNG file: {}", res->unwrapErr());
+            if (!res || !res->isOk()) return;
+
+            m_selectedPNG = res->unwrap();
+            if (!m_selectedPlist.empty()) updateWithSelectedFiles();
+        });
+
+        m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
+            .filters = {{
+                .description = "PNG Files",
+                .files = { "*.png" }
+            }}
+        }));
+    });
+    pngButton->setID("png-button");
+    iconButtonMenu->addChild(pngButton);
+
+    auto plistSprite = ButtonSprite::create("Plist", "goldFont.fnt", "GJ_button_05.png", 0.8f);
+    auto plistButton = CCMenuItemExt::createSpriteExtra(plistSprite, [this](auto) {
+        m_listener.bind([this](Task<geode::Result<std::filesystem::path>>::Event* event) {
+            auto res = event->getValue();
+            if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import Plist file: {}", res->unwrapErr());
+            if (!res || !res->isOk()) return;
+
+            m_selectedPlist = res->unwrap();
+            if (!m_selectedPNG.empty()) updateWithSelectedFiles();
+        });
+
+        m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
+            .filters = {{
+                .description = "Plist Files",
+                .files = { "*.plist" }
+            }}
+        }));
+    });
+    plistButton->setID("plist-button");
+    iconButtonMenu->addChild(plistButton);
+
+    auto presetSprite = ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png", 0.8f);
+    auto presetButton = CCMenuItemExt::createSpriteExtra(presetSprite, [this](auto) {
+        IconPresetPopup::create(m_iconType, {}, [this](int id, IconInfo* info) {
+            for (auto [suffix, _] : CCDictionaryExt<std::string, CCSprite*>(m_pieces)) {
+                auto key = fmt::format("{}.png", suffix);
+                auto frame = MoreIconsAPI::getFrame(info
+                    ? fmt::format("{}{}", info->name, key)
+                    : fmt::format("{}{:02}{}", MoreIconsAPI::prefixes[(int)m_iconType], id, key));
+                if (frame) m_frames->setObject(frame, key);
+                else m_frames->removeObjectForKey(key);
+            }
+            updatePieces();
+        })->show();
+    });
+    presetButton->setID("preset-button");
+    iconButtonMenu->addChild(presetButton);
+
+    auto saveSprite = ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f);
+    auto saveButton = CCMenuItemExt::createSpriteExtra(saveSprite, [](auto) {});
+    saveButton->setID("save-button");
+    iconButtonMenu->addChild(saveButton);
+
+    iconButtonMenu->updateLayout();
 
     handleTouchPriority(this);
 
@@ -325,18 +484,19 @@ void EditIconPopup::transferPlayerToNode(CCNode* node, SimplePlayer* player) {
     }
     else {
         Ref firstLayer = player->m_firstLayer;
-        node->setPosition(node->getPosition() + firstLayer->getPosition());
+        auto position = firstLayer->getPosition();
         auto scale = firstLayer->getScale();
-        for (auto sprite : firstLayer->getChildrenExt<CCSprite*>()) {
-            sprite->removeFromParentAndCleanup(false);
-            sprite->setPosition({ 0.0f, 0.0f });
-            sprite->setScale(scale);
-            node->addChild(sprite);
+        node->setPosition(node->getPosition() + position);
+        while (firstLayer->getChildrenCount() > 0) {
+            auto child = firstLayer->getChildByIndex(0);
+            child->removeFromParentAndCleanup(false);
+            child->setPosition(position);
+            child->setScale(scale);
+            node->addChild(child);
         }
         firstLayer->removeFromParentAndCleanup(false);
         node->addChild(firstLayer);
     }
-    player->release();
 }
 
 void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* targets) {
@@ -348,15 +508,10 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
     m_pieceDefinitions->setObject(CCFloat::create(1.0f), fmt::format("scaleY{}", suffix));
 
     auto pieceFrame = MoreIconsAPI::getFrame(fmt::format("{}01{}.png", MoreIconsAPI::prefixes[(int)m_iconType], suffix));
-    if (!pieceFrame) pieceFrame = MoreIconsAPI::getFrame("GJ_deleteIcon_001.png");
+    if (pieceFrame) m_frames->setObject(pieceFrame, fmt::format("{}.png", suffix));
+    else pieceFrame = MoreIconsAPI::getFrame("GJ_deleteIcon_001.png");
     auto pieceSprite = CCSprite::createWithSpriteFrame(pieceFrame);
     auto pieceButton = CCMenuItemExt::createSpriteExtra(pieceSprite, [this, suffix, page](CCMenuItemSpriteExtra* sender) {
-        m_pieceDefinitions->setObject(CCFloat::create(m_offsetX), fmt::format("offsetX{}", m_suffix));
-        m_pieceDefinitions->setObject(CCFloat::create(m_offsetY), fmt::format("offsetY{}", m_suffix));
-        m_pieceDefinitions->setObject(CCFloat::create(m_rotationX), fmt::format("rotationX{}", m_suffix));
-        m_pieceDefinitions->setObject(CCFloat::create(m_rotationY), fmt::format("rotationY{}", m_suffix));
-        m_pieceDefinitions->setObject(CCFloat::create(m_scaleX), fmt::format("scaleX{}", m_suffix));
-        m_pieceDefinitions->setObject(CCFloat::create(m_scaleY), fmt::format("scaleY{}", m_suffix));
         m_suffix = suffix;
         m_offsetX = static_cast<CCFloat*>(m_pieceDefinitions->objectForKey(fmt::format("offsetX{}", suffix)))->getValue();
         m_offsetXSlider->setValue((m_offsetX + 20.0f) / 40.0f);
@@ -376,8 +531,8 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
         m_scaleY = static_cast<CCFloat*>(m_pieceDefinitions->objectForKey(fmt::format("scaleY{}", suffix)))->getValue();
         m_scaleYSlider->setValue((m_scaleY + 10.0f) / 20.0f);
         m_scaleYLabel->setString(fmt::format("Scale Y: {:.1f}", m_scaleY).c_str());
-        m_targets = static_cast<CCArray*>(sender->getUserObject("targets"_spr));
-        m_descriptions = static_cast<CCArray*>(sender->getUserObject("descriptions"_spr));
+        m_targets = static_cast<CCArray*>(sender->getUserObject("piece-targets"));
+        m_descriptions = static_cast<CCArray*>(sender->getUserObject("piece-descriptions"));
         m_selectSprite->setTag(page);
         m_selectSprite->setVisible(true);
         m_selectSprite->setPosition(m_mainLayer->convertToNodeSpace(m_pieceMenu->convertToWorldSpace(sender->getPosition())));
@@ -386,7 +541,7 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
     pieceSprite->setPosition({ 15.0f, 15.0f });
 
     if (targets) {
-        pieceButton->setUserObject("targets"_spr, targets);
+        pieceButton->setUserObject("piece-targets", targets);
         auto descriptions = CCArray::create();
         for (int i = 0; i < targets->count(); i++) {
             auto target = static_cast<CCSprite*>(targets->objectAtIndex(i));
@@ -398,7 +553,7 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
             description->autorelease();
             descriptions->addObject(description);
         }
-        pieceButton->setUserObject("descriptions"_spr, descriptions);
+        pieceButton->setUserObject("piece-descriptions", descriptions);
         if (m_suffix == suffix) {
             m_targets = targets;
             m_descriptions = descriptions;
@@ -410,12 +565,102 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
 
     if (m_pieceArrays->count() <= page) m_pieceArrays->addObject(CCArray::create());
     static_cast<CCArray*>(m_pieceArrays->objectAtIndex(page))->addObject(pieceButton);
+    m_pieces->setObject(pieceSprite, gd::string(suffix.data(), suffix.size()));
+}
+
+void EditIconPopup::updateWithSelectedFiles() {
+    auto imageRes = texpack::fromPNG(m_selectedPNG);
+    if (imageRes.isErr()) {
+        notify(NotificationIcon::Error, "Failed to load image: {}", imageRes.unwrapErr());
+        m_selectedPNG.clear();
+        m_selectedPlist.clear();
+        return;
+    }
+
+    auto image = std::move(imageRes).unwrap();
+
+    Autorelease texture = new CCTexture2D();
+    texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+        (float)image.width,
+        (float)image.height
+    });
+
+    auto framesRes = MoreIconsAPI::createFrames(string::pathToString(m_selectedPlist), texture, "", m_iconType);
+    if (framesRes.isErr()) {
+        notify(NotificationIcon::Error, "Failed to load frames: {}", framesRes.unwrapErr());
+        m_selectedPNG.clear();
+        m_selectedPlist.clear();
+        return;
+    }
+
+    auto frames = std::move(framesRes).unwrap();
+    m_frames->removeAllObjects();
+    for (auto [key, frame] : CCDictionaryExt<gd::string, CCSpriteFrame*>(frames)) {
+        m_frames->setObject(frame, key);
+    }
+    updatePieces();
+}
+
+void EditIconPopup::updatePieces() {
+    log::info("Updating pieces");
+    auto crossFrame = MoreIconsAPI::getSpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
+    for (auto [prefix, sprite] : CCDictionaryExt<std::string_view, CCSprite*>(m_pieces)) {
+        auto spriteFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("{}.png", prefix)));
+        sprite->setDisplayFrame(spriteFrame ? spriteFrame : crossFrame);
+    }
+
+    auto type = m_iconType;
+    if (type == IconType::Robot || type == IconType::Spider) {
+        auto sprite = type == IconType::Spider ? m_player->m_spiderSprite : m_player->m_robotSprite;
+        auto spriteParts = sprite->m_paSprite->m_spriteParts;
+        for (int i = 0; i < spriteParts->count(); i++) {
+            auto spritePart = static_cast<CCSprite*>(spriteParts->objectAtIndex(i));
+            auto tag = spritePart->getTag();
+
+            spritePart->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_001.png", tag))));
+            if (auto secondSprite = static_cast<CCSprite*>(sprite->m_secondArray->objectAtIndex(i))) {
+                secondSprite->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_2_001.png", tag))));
+            }
+
+            if (auto glowChild = sprite->m_glowSprite->getChildByIndex<CCSprite>(i)) {
+                glowChild->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_glow_001.png", tag))));
+            }
+
+            if (spritePart == sprite->m_headSprite) {
+                auto extraFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_extra_001.png", tag)));
+                if (extraFrame) {
+                    if (sprite->m_extraSprite) sprite->m_extraSprite->setDisplayFrame(extraFrame);
+                    else {
+                        sprite->m_extraSprite = CCSprite::createWithSpriteFrame(extraFrame);
+                        spritePart->addChild(sprite->m_extraSprite, 2);
+                    }
+                }
+                sprite->m_extraSprite->setVisible(extraFrame != nullptr);
+            }
+        }
+    }
+    else {
+        m_player->m_firstLayer->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_001.png")));
+        m_player->m_secondLayer->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_2_001.png")));
+        if (type == IconType::Ufo) {
+            m_player->m_birdDome->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_3_001.png")));
+        }
+        m_player->m_outlineSprite->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_glow_001.png")));
+        auto extraFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey("_extra_001.png"));
+        m_player->m_detailSprite->setVisible(extraFrame != nullptr);
+        if (extraFrame) {
+            m_player->m_detailSprite->setDisplayFrame(extraFrame);
+        }
+    }
+
+    m_hasChanged = true;
 }
 
 void EditIconPopup::goToPage(int page) {
     for (auto sprite : CCArrayExt<CCSprite*>(static_cast<CCArray*>(m_pieceArrays->objectAtIndex(m_page)))) {
         m_pieceMenu->removeChild(sprite, false);
     }
+
     auto count = m_pieceArrays->count();
     m_page = ((page % count) + count) % count;
     m_selectSprite->setVisible(m_selectSprite->getTag() == m_page);

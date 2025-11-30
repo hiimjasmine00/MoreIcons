@@ -1,13 +1,19 @@
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/ui/Popup.hpp>
+#include <Geode/utils/Task.hpp>
 
 class MoreIconsPopup;
 
 class EditIconPopup : public geode::Popup<MoreIconsPopup*, IconType> {
 protected:
     MoreIconsPopup* m_parentPopup;
+    geode::EventListener<geode::Task<geode::Result<std::filesystem::path>>> m_listener;
+    std::filesystem::path m_selectedPNG;
+    std::filesystem::path m_selectedPlist;
     geode::Ref<cocos2d::CCArray> m_pieceArrays;
     geode::Ref<cocos2d::CCDictionary> m_pieceDefinitions;
+    geode::Ref<cocos2d::CCDictionary> m_pieces;
+    geode::Ref<cocos2d::CCDictionary> m_frames;
     geode::Ref<SimplePlayer> m_player;
     Slider* m_offsetXSlider;
     Slider* m_offsetYSlider;
@@ -39,6 +45,8 @@ protected:
     bool setup(MoreIconsPopup* popup, IconType type) override;
     void transferPlayerToNode(cocos2d::CCNode* node, SimplePlayer* player);
     void addPieceButton(std::string_view suffix, int page, cocos2d::CCArray* targets);
+    void updateWithSelectedFiles();
+    void updatePieces();
     void goToPage(int page);
     void updateTargets();
     void onClose(cocos2d::CCObject* sender) override;

@@ -865,7 +865,7 @@ CCTexture2D* MoreIconsAPI::addFrames(const ImageResult& image, std::vector<std::
         auto spriteFrameCache = getSpriteFrameCache();
         for (auto [frameName, frame] : CCDictionaryExt<std::string, CCSpriteFrame*>(frames)) {
             spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
-            frameNames.push_back(frameName);
+            frameNames.push_back(std::move(frameName));
         }
     }
 

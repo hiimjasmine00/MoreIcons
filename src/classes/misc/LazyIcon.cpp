@@ -1,9 +1,9 @@
 #include "LazyIcon.hpp"
-#include "ViewIconPopup.hpp"
-#include "../../misc/ThreadPool.hpp"
-#include "../../../api/MoreIconsAPI.hpp"
+#include "ThreadPool.hpp"
+#include "../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/CCAnimateFrameCache.hpp>
 #include <Geode/binding/CCSpritePlus.hpp>
+#include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/ObjectManager.hpp>
 #include <Geode/binding/SpriteDescription.hpp>
@@ -12,9 +12,9 @@
 
 using namespace geode::prelude;
 
-LazyIcon* LazyIcon::create(IconType type, int id, IconInfo* info) {
+LazyIcon* LazyIcon::create(IconType type, int id, IconInfo* info, std::string_view suffix, std23::move_only_function<void()> callback) {
     auto ret = new LazyIcon();
-    if (ret->init(type, id, info)) {
+    if (ret->init(type, id, info, suffix, std::move(callback))) {
         ret->autorelease();
         return ret;
     }
@@ -22,7 +22,7 @@ LazyIcon* LazyIcon::create(IconType type, int id, IconInfo* info) {
     return nullptr;
 }
 
-bool LazyIcon::init(IconType type, int id, IconInfo* info) {
+bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suffix, std23::move_only_function<void()> callback) {
     auto normalImage = CCNode::create();
     if (!CCMenuItemSpriteExtra::init(normalImage, nullptr, nullptr, nullptr)) return false;
 
@@ -31,6 +31,8 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info) {
     setContentSize(contentSize);
     normalImage->setPosition(contentSize / 2.0f);
 
+    m_callback = std::move(callback);
+    m_suffix = suffix;
     m_type = type;
     m_id = id;
     m_info = info;
@@ -249,12 +251,21 @@ void LazyIcon::update(float dt) {
 
 void LazyIcon::createIcon() {
     setEnabled(true);
+    auto spriteFrameCache = MoreIconsAPI::getSpriteFrameCache();
     if (m_error.empty()) {
         if (m_loadingSprite) {
             m_loadingSprite->removeFromParent();
             m_loadingSprite = nullptr;
         }
-        if (m_type == IconType::Robot || m_type == IconType::Spider) createComplexIcon();
+        if (!m_suffix.empty()) {
+            auto normalImage = getNormalImage();
+            auto spriteFrame = MoreIconsAPI::getFrame(fmt::format("{}{}", m_info ? fmt::format("{}"_spr, m_name) : m_name, m_suffix));
+            if (!spriteFrame) spriteFrame = spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
+            auto sprite = CCSprite::createWithSpriteFrame(spriteFrame);
+            sprite->setID("custom-sprite");
+            normalImage->addChild(sprite);
+        }
+        else if (m_type == IconType::Robot || m_type == IconType::Spider) createComplexIcon();
         else if (m_type <= IconType::Jetpack) createSimpleIcon();
         else if (m_info && m_type == IconType::Special) {
             auto normalImage = getNormalImage();
@@ -265,7 +276,7 @@ void LazyIcon::createIcon() {
     }
     else {
         m_loadingSprite->stopAllActions();
-        m_loadingSprite->setDisplayFrame(MoreIconsAPI::getSpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png"));
+        m_loadingSprite->setDisplayFrame(spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png"));
         m_loadingSprite->setScale(1.1f);
         m_loadingSprite->setRotation(0.0f);
     }
@@ -274,7 +285,9 @@ void LazyIcon::createIcon() {
 void LazyIcon::activate() {
     if (!m_bEnabled) return;
     CCMenuItemSpriteExtra::activate();
-    if (m_error.empty()) ViewIconPopup::create(m_type, m_id, m_info)->show();
+    if (m_error.empty()) {
+        if (m_callback) m_callback();
+    }
     else FLAlertLayer::create("Error", m_error, "OK")->show();
 }
 
@@ -286,14 +299,39 @@ void LazyIcon::visit() {
     m_visited = true;
 
     ThreadPool::get().pushTask([selfref = WeakRef(this), texture = m_texture, sheet = m_sheet, name = m_info ? m_info->name : "", type = m_type] {
-        auto image = MoreIconsAPI::createFrames(texture, sheet, name, type);
-        queueInMainThread([selfref = std::move(selfref), image = std::move(image)] mutable {
+        auto result = MoreIconsAPI::createFrames(texture, sheet, name, type);
+        queueInMainThread([selfref = std::move(selfref), result = std::move(result)] mutable {
             if (auto self = selfref.lock()) {
-                if (image.isOk()) MoreIconsAPI::addFrames(image.unwrap(), self->m_frames);
-                else if (image.isErr()) {
-                    self->m_error = std::move(image).unwrapErr();
+                if (result.isErr()) {
+                    self->m_error = std::move(result).unwrapErr();
                     log::error("{}: {}", self->m_name, self->m_error);
+                    return self->createIcon();
                 }
+                else if (self->m_suffix.empty()) {
+                    MoreIconsAPI::addFrames(result.unwrap(), self->m_frames);
+                    return self->createIcon();
+                }
+
+                auto image = std::move(result).unwrap();
+                if (auto texture = image.texture.data) {
+                    texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+                        (float)image.width,
+                        (float)image.height
+                    });
+                    texture->m_bHasPremultipliedAlpha = true;
+                    MoreIconsAPI::getTextureCache()->m_pTextures->setObject(texture, image.name);
+                }
+
+                auto& frameNames = self->m_frames;
+                frameNames.clear();
+                auto spriteFrameCache = MoreIconsAPI::getSpriteFrameCache();
+                for (auto [frameName, frame] : CCDictionaryExt<std::string, CCSpriteFrame*>(image.frames)) {
+                    if (frameName.ends_with(self->m_suffix)) {
+                        spriteFrameCache->addSpriteFrame(frame, frameName.data());
+                        frameNames.push_back(std::move(frameName));
+                    }
+                }
+
                 self->createIcon();
             }
         });

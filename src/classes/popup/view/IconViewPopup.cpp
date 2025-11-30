@@ -1,5 +1,6 @@
 #include "IconViewPopup.hpp"
-#include "LazyIcon.hpp"
+#include "ViewIconPopup.hpp"
+#include "../../misc/LazyIcon.hpp"
 #include "../../scroll/BiggerScrollLayer.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../api/MoreIconsAPI.hpp"
@@ -45,7 +46,10 @@ bool IconViewPopup::setup(IconType type, bool custom) {
         auto& icons = MoreIconsAPI::icons[type];
         auto count = icons.size();
         for (int i = 0; i < count; i++) {
-            auto lazyIcon = LazyIcon::create(type, 0, icons.data() + i);
+            auto info = icons.data() + i;
+            auto lazyIcon = LazyIcon::create(type, 0, info, {}, [this, info, type] {
+                ViewIconPopup::create(type, 0, info)->show();
+            });
             auto iconMenu = CCMenu::createWithItem(lazyIcon);
             iconMenu->setContentSize(lazyIcon->getContentSize());
             iconMenu->ignoreAnchorPointForPosition(false);
@@ -56,7 +60,9 @@ bool IconViewPopup::setup(IconType type, bool custom) {
     else {
         auto count = gameManager->countForType(type);
         for (int i = 1; i <= count; i++) {
-            auto lazyIcon = LazyIcon::create(type, i, nullptr);
+            auto lazyIcon = LazyIcon::create(type, i, nullptr, {}, [this, i, type] {
+                ViewIconPopup::create(type, i, nullptr)->show();
+            });
             auto iconMenu = CCMenu::createWithItem(lazyIcon);
             iconMenu->setContentSize(lazyIcon->getContentSize());
             iconMenu->ignoreAnchorPointForPosition(false);
