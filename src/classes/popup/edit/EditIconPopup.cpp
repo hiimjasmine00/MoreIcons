@@ -248,7 +248,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
         m_offsetY = roundf(sender->getValue() * 400.0f - 200.0f) / 10.0f;
         static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetY{}", m_suffix)))->m_fValue = m_offsetY;
         updateTargets();
-        m_offsetXInput->setString(fmt::format("{:.1f}", m_offsetY));
+        m_offsetYInput->setString(fmt::format("{:.1f}", m_offsetY));
         m_hasChanged = true;
     });
 
