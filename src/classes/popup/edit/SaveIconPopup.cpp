@@ -25,7 +25,7 @@ SaveIconPopup* SaveIconPopup::create(EditIconPopup* popup, IconType type, CCDict
 }
 
 bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, CCDictionary* definitions, CCDictionary* frames) {
-    auto miType = MoreIconsAPI::convertType(type);
+    auto miType = (int)type;
     setID("SaveIconPopup");
     setTitle(fmt::format("Save {}", MoreIconsAPI::uppercase[miType]));
     m_title->setID("save-icon-title");
@@ -51,27 +51,23 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, CCDictionary* def
         auto iconName = m_nameInput->getString();
         if (iconName.empty()) return notify(NotificationIcon::Info, "Please enter a name.");
 
-        auto configDir = Mod::get()->getConfigDir();
-        auto folder = MoreIcons::folders[miType];
-        if (m_iconType <= IconType::Jetpack) {
-            auto parent = configDir / folder;
-            auto factor = MoreIconsAPI::getDirector()->getContentScaleFactor();
-            auto suffix = factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : "";
-            auto png = parent / fmt::format("{}{}.png", iconName, suffix);
-            auto plist = parent / fmt::format("{}{}.plist", iconName, suffix);
-            if (MoreIcons::doesExist(png) || MoreIcons::doesExist(plist)) {
-                createQuickPopup(
-                    "Existing Icon",
-                    fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
-                    "No",
-                    "Yes",
-                    [this, png = std::move(png), plist = std::move(plist)](auto, bool btn2) {
-                        if (btn2) saveIcon(png, plist);
-                    }
-                );
-            }
-            else saveIcon(png, plist);
+        auto parent = Mod::get()->getConfigDir() / MoreIcons::folders[miType];
+        auto factor = MoreIconsAPI::getDirector()->getContentScaleFactor();
+        auto suffix = factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : "";
+        auto png = parent / fmt::format("{}{}.png", iconName, suffix);
+        auto plist = parent / fmt::format("{}{}.plist", iconName, suffix);
+        if (MoreIcons::doesExist(png) || MoreIcons::doesExist(plist)) {
+            createQuickPopup(
+                "Existing Icon",
+                fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
+                "No",
+                "Yes",
+                [this, png = std::move(png), plist = std::move(plist)](auto, bool btn2) {
+                    if (btn2) saveIcon(png, plist);
+                }
+            );
         }
+        else saveIcon(png, plist);
     });
     saveButton->setPosition({ 175.0f, 30.0f });
     saveButton->setID("save-button");

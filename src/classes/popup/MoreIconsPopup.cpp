@@ -1,5 +1,6 @@
 #include "MoreIconsPopup.hpp"
 #include "edit/EditIconPopup.hpp"
+#include "edit/EditTrailPopup.hpp"
 #include "log/LogLayer.hpp"
 #include "view/IconViewPopup.hpp"
 #include "../../MoreIcons.hpp"
@@ -151,7 +152,8 @@ bool MoreIconsPopup::setup() {
         auto addSprite = ButtonSprite::create("Add", "goldFont.fnt", "GJ_button_05.png", 0.8f);
         addSprite->setScale(0.6f);
         auto addButton = CCMenuItemExt::createSpriteExtra(addSprite, [this, type](auto) {
-            EditIconPopup::create(this, type)->show();
+            if (type <= IconType::Jetpack) EditIconPopup::create(this, type)->show();
+            else if (type == IconType::Special) EditTrailPopup::create(this)->show();
         });
         addButton->setPosition({ 24.0f, 15.0f });
         addButton->setID("add-button");
