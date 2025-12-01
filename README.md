@@ -17,6 +17,8 @@ Custom icons without the hassle.
 
 ![Edit Icon Popup](https://raw.githubusercontent.com/hiimjasmine00/MoreIcons/refs/heads/master/resources/edit-icon-popup.png)
 
+![Icon Name Popup](https://raw.githubusercontent.com/hiimjasmine00/MoreIcons/refs/heads/master/resources/icon-name-popup.png)
+
 ## Credits
 - [DeepResonanceX](https://gdbrowser.com/u/5668656) - Ideas and funding for the mod
 - [hiimjasmine00](https://gdbrowser.com/u/7466002) - Creator of the mod

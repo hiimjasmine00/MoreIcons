@@ -1,4 +1,9 @@
 # More Icons Changelog
+## v1.15.1 (2025-12-01)
+- Added 2 pixels of transparent padding around exported icon pieces to fix overlapping issues (Suggested by [DeepResonanceX](user:5668656))
+- Fixed a bug where saving an icon with a cleared piece would crash the game (Reported by [UltraDestroya48](user:21986176))
+- Updated the gallery with new screenshots
+
 ## v1.15.0 (2025-11-30)
 - It took me four months to make this update. Let that sink in.
 - Revamped the icon editor UI to support more extensive editing features

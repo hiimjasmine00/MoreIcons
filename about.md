@@ -17,6 +17,8 @@ Custom icons without the hassle.
 
 ![Edit Icon Popup](hiimjustin000.more_icons/edit-icon-popup.png?width=300)
 
+![Icon Name Popup](hiimjustin000.more_icons/icon-name-popup.png?width=300)
+
 ## Credits
 - [DeepResonanceX](user:5668656) - Ideas and funding for the mod
 - [hiimjasmine00](user:7466002) - Creator of the mod

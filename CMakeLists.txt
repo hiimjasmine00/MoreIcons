@@ -10,7 +10,7 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
 set(GEODE_CODEGEN_EXTRA_ARGS "--skip-pugixml")
 
-project(MoreIcons VERSION 1.15.0)
+project(MoreIcons VERSION 1.15.1)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
@@ -27,7 +27,7 @@ endif()
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
 CPMAddPackage("gh:zeux/pugixml@1.15")
-CPMAddPackage("gh:hiimjasmine00/texpack@0.4.0")
+CPMAddPackage("gh:hiimjasmine00/texpack@0.5.0")
 CPMAddPackage("gh:hiimjasmine00/jasmine-tools@1.1.0")
 CPMAddPackage("gh:zhihaoy/nontype_functional@1.0.2")
 if (WIN32)

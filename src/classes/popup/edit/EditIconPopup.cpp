@@ -577,7 +577,16 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto pieceClearSprite = ButtonSprite::create("Clear", "goldFont.fnt", "GJ_button_05.png", 0.8f);
     pieceClearSprite->setScale(0.6f);
     auto pieceClearButton = CCMenuItemExt::createSpriteExtra(pieceClearSprite, [this](auto) {
-        m_frames->setObject(MoreIconsAPI::getFrame("emptyFrame.png"), fmt::format("{}.png", m_suffix));
+        auto emptyFrame = MoreIconsAPI::getFrame("emptyFrame.png"_spr);
+        if (!emptyFrame) {
+            Autorelease texture = new CCTexture2D();
+            auto factor = MoreIconsAPI::getDirector()->getContentScaleFactor();
+            std::vector<uint8_t> data(4.0f * factor * factor, 0);
+            texture->initWithData(data.data(), kCCTexture2DPixelFormat_RGBA8888, factor, factor, { factor, factor });
+            emptyFrame = CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() });
+            MoreIconsAPI::getSpriteFrameCache()->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
+        }
+        m_frames->setObject(emptyFrame, fmt::format("{}.png", m_suffix));
         updatePieces();
     });
     pieceClearButton->setID("piece-clear-button");
