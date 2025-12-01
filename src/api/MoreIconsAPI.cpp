@@ -191,6 +191,14 @@ void MoreIconsAPI::reset() {
     loadedIcons.clear();
 }
 
+void MoreIconsAPI::directorPurged() {
+    globalAnimationCache = nullptr;
+    globalFileUtils = nullptr;
+    globalSpriteFrameCache = nullptr;
+    globalTextureCache = nullptr;
+    globalShaderCache = nullptr;
+}
+
 CCSpriteFrame* MoreIconsAPI::getFrame(const std::string& name) {
     auto spriteFrame = static_cast<CCSpriteFrame*>(getSpriteFrameCache()->m_pSpriteFrames->objectForKey(name));
     if (!spriteFrame || spriteFrame->getTag() == 105871529) spriteFrame = nullptr;
@@ -288,9 +296,13 @@ void MoreIconsAPI::unloadIcon(const std::string& name, IconType type, int reques
     loadedIcon--;
     if (loadedIcon < 1) {
         auto spriteFrameCache = getSpriteFrameCache();
-        for (auto& frame : info->frameNames) {
-            spriteFrameCache->removeSpriteFrameByName(frame.c_str());
+        if (spriteFrameCache->m_pLoadedFileNames) {
+            log::info("There are loaded file names");
+            for (auto& frame : info->frameNames) {
+                spriteFrameCache->removeSpriteFrameByName(frame.c_str());
+            }
         }
+        else log::info("Loaded file names is null");
         info->frameNames.clear();
 
         getTextureCache()->removeTextureForKey(info->textures[0].c_str());

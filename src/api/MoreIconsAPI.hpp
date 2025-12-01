@@ -97,6 +97,7 @@ public:
     static GameManager* getGameManager();
     static ObjectManager* getObjectManager();
     static void reset();
+    static void directorPurged();
     static cocos2d::CCSpriteFrame* getFrame(const std::string& name);
     static cocos2d::CCSprite* customTrail(const std::string& png);
     static cocos2d::CCTexture2D* loadIcon(const std::string& name, IconType type, int requestID);

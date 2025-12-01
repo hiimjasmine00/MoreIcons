@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v1.15.2 (2025-12-01)
+- Fixed a bug where unloading icons on game exit would crash the game (Reported by [DeepResonanceX](user:5668656))
+
 ## v1.15.1 (2025-12-01)
 - Added 2 pixels of transparent padding around exported icon pieces to fix overlapping issues (Suggested by [DeepResonanceX](user:5668656))
 - Fixed a bug where saving an icon with a cleared piece would crash the game (Reported by [UltraDestroya48](user:21986176))
@@ -13,7 +16,7 @@
   - Added the ability to clear individual icon pieces
   - Added exporting to different icon qualities (SD, HD, UHD)
 - Replaced the "Debug Logs" and "Info Logs" settings with a single "Log Level" setting
-- Fixed a bug where custom robots and spiders would not properly display their ghost trail
+- Fixed a bug where custom robots and spiders would not properly display their ghost trail (Reported by [Drongostache](user:11558507))
 - Added advanced IconInfo comparison operators to the API
 - Many internal code improvements and optimizations
 
