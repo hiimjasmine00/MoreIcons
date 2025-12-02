@@ -58,7 +58,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         }
 
         auto player = SimplePlayer::create(1);
-        if (info) MoreIconsAPI::updateSimplePlayer(player, info->name, type, false);
+        if (info) MoreIconsAPI::updateSimplePlayer(player, info->name, type);
         else player->updatePlayerFrame(id, type);
         player->setGlowOutline({ 255, 255, 255 });
         player->setPosition({ 175.0f, (isRobot ? 160.0f : 80.0f) - suffixes.size() * 30.0f });
@@ -138,5 +138,3 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
 
     return true;
 }
-
-

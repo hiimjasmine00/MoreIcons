@@ -52,6 +52,12 @@ struct ImageResult {
     uint32_t height;
 };
 
+#ifdef GEODE_IS_WINDOWS
+#define MI_PATH(x) L##x
+#else
+#define MI_PATH(x) x
+#endif
+
 class MoreIconsAPI {
 public:
     static constexpr std::array prefixes = {
@@ -104,6 +110,7 @@ public:
     static void loadIcons(IconType type);
     static void unloadIcon(const std::string& name, IconType type, int requestID);
     static void unloadIcons(int requestID);
+    static std::filesystem::path strPath(const std::string& path);
     static IconInfo* addIcon(
         const std::string& name, const std::string& shortName, IconType type, const std::string& png, const std::string& plist,
         const std::string& packID, const std::string& packName, int trailID, const TrailInfo& trailInfo, bool vanilla, bool zipped
@@ -112,15 +119,17 @@ public:
     static void removeIcon(IconInfo* info);
     static void renameIcon(IconInfo* info, const std::string& name);
     static void updateIcon(IconInfo* info);
-    static void updateSimplePlayer(SimplePlayer* player, IconType type, bool dual, bool load = true);
-    static void updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type, bool load = true);
-    static void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type, bool load = true);
+    static void updateSimplePlayer(SimplePlayer* player, IconType type, bool dual);
+    static void updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type);
+    static void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type);
     static void updatePlayerObject(PlayerObject* object, IconType type, bool dual);
     static void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type);
     static geode::Result<std::vector<uint8_t>> readBinary(const std::filesystem::path& path);
-    static geode::Result<ImageResult> createFrames(const std::string& png, const std::string& plist, const std::string& name, IconType type);
+    static geode::Result<ImageResult> createFrames(
+        const std::filesystem::path& png, const std::filesystem::path& plist, const std::string& name, IconType type
+    );
     static geode::Result<Autorelease<cocos2d::CCDictionary>> createFrames(
-        const std::string& path, cocos2d::CCTexture2D* texture, const std::string& name, IconType type, bool fixNames = true
+        const std::filesystem::path& path, cocos2d::CCTexture2D* texture, const std::string& name, IconType type, bool fixNames = true
     );
     static cocos2d::CCTexture2D* addFrames(const ImageResult& image, std::vector<std::string>& frameNames);
 };

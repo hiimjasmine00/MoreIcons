@@ -61,7 +61,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
     if (type <= IconType::Jetpack || (type == IconType::Special && info)) {
         if (MoreIconsAPI::getTextureCache()->textureForKey(m_texture.c_str())) {
             m_visited = true;
-            m_texture = "";
+            m_texture.clear();
             createIcon();
         }
         else {
@@ -298,8 +298,10 @@ void LazyIcon::visit() {
 
     m_visited = true;
 
-    ThreadPool::get().pushTask([selfref = WeakRef(this), texture = m_texture, sheet = m_sheet, name = m_info ? m_info->name : "", type = m_type] {
-        auto result = MoreIconsAPI::createFrames(texture, sheet, name, type);
+    ThreadPool::get().pushTask([
+        selfref = WeakRef(this), texture = m_texture, sheet = m_sheet, name = m_info ? m_info->name : std::string(), type = m_type
+    ] {
+        auto result = MoreIconsAPI::createFrames(MoreIconsAPI::strPath(texture), MoreIconsAPI::strPath(sheet), name, type);
         queueInMainThread([selfref = std::move(selfref), result = std::move(result)] mutable {
             if (auto self = selfref.lock()) {
                 if (result.isErr()) {

@@ -65,12 +65,9 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
             if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
-            auto path = res->unwrap();
-            auto name = string::pathToString(path.stem());
-
             m_hasChanged = true;
 
-            auto imageRes = texpack::fromPNG(path);
+            auto imageRes = texpack::fromPNG(res->unwrap());
             if (imageRes.isErr()) return notify(NotificationIcon::Error, "Failed to load image: {}", imageRes.unwrapErr());
 
             auto image = std::move(imageRes).unwrap();
@@ -108,14 +105,13 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
         auto iconName = m_nameInput->getString();
         if (iconName.empty()) return notify(NotificationIcon::Info, "Please enter a name.");
 
-        auto configDir = Mod::get()->getConfigDir();
-        auto path = Mod::get()->getConfigDir() / "trail" / fmt::format("{}.png", iconName);
+        std::filesystem::path path = (Mod::get()->getConfigDir() / MI_PATH("trail") / MoreIconsAPI::strPath(iconName)).native() + MI_PATH(".png");
         if (MoreIcons::doesExist(path)) createQuickPopup(
             "Existing Trail",
             fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
             "No",
             "Yes",
-            [this, path](auto, bool btn2) {
+            [this, path = std::move(path)](auto, bool btn2) {
                 if (btn2) saveTrail(path);
             }
         );
@@ -135,9 +131,9 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
 void EditTrailPopup::addOrUpdateIcon(const std::string& name, const std::filesystem::path& path) {
     if (auto icon = MoreIconsAPI::getIcon(name, IconType::Special)) MoreIconsAPI::updateIcon(icon);
     else {
-        icon = MoreIconsAPI::addIcon(name, name, IconType::Special, string::pathToString(path), "", "", "More Icons", 0, {}, false, false);
+        icon = MoreIconsAPI::addIcon(name, name, IconType::Special, string::pathToString(path), {}, {}, "More Icons", 0, {}, false, false);
         if (MoreIconsAPI::preloadIcons) {
-            if (auto res = MoreIconsAPI::createFrames(icon->textures[0], icon->sheetName, icon->name, icon->type)) {
+            if (auto res = MoreIconsAPI::createFrames(MoreIconsAPI::strPath(icon->textures[0]), std::filesystem::path(), icon->name, icon->type)) {
                 MoreIconsAPI::addFrames(res.unwrap(), icon->frameNames);
             }
             else {

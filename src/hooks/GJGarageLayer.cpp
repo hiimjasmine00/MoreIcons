@@ -23,6 +23,13 @@ $execute {
     }, DispatchFilter<FLAlertLayer**, std::string, IconType>("info-popup"_spr));
 }
 
+namespace more_icons {
+    FLAlertLayer* createInfoPopup(const std::string& name, IconType type) {
+        if (auto info = MoreIconsAPI::getIcon(name, type)) return MoreInfoPopup::create(info);
+        else return nullptr;
+    }
+}
+
 class $modify(MIGarageLayer, GJGarageLayer) {
     struct Fields {
         ListButtonBar* m_pageBar = nullptr;
@@ -109,8 +116,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         if (btn->m_iconType != IconType::ShipFire) {
             m_cursor1->setOpacity(255);
-            m_fields->m_selectedIcon = "";
-            MoreIconsAPI::setIcon("", dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
+            m_fields->m_selectedIcon.clear();
+            MoreIconsAPI::setIcon({}, dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
         }
     }
 

@@ -51,15 +51,16 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, CCDictionary* def
         auto iconName = m_nameInput->getString();
         if (iconName.empty()) return notify(NotificationIcon::Info, "Please enter a name.");
 
-        auto parent = Mod::get()->getConfigDir() / MoreIcons::folders[miType];
-        auto stem = parent / iconName;
+        auto parent = Mod::get()->getConfigDir() / MoreIcons::wfolders[miType];
+        auto stem = parent / MoreIconsAPI::strPath(iconName);
+        auto& stemStr = stem.native();
         if (
-            MoreIcons::doesExist(parent / fmt::format("{}.png", iconName)) ||
-            MoreIcons::doesExist(parent / fmt::format("{}-hd.png", iconName)) ||
-            MoreIcons::doesExist(parent / fmt::format("{}-uhd.png", iconName)) ||
-            MoreIcons::doesExist(parent / fmt::format("{}.plist", iconName)) ||
-            MoreIcons::doesExist(parent / fmt::format("{}-hd.plist", iconName)) ||
-            MoreIcons::doesExist(parent / fmt::format("{}-uhd.plist", iconName))
+            MoreIcons::doesExist(stemStr + MI_PATH(".png")) ||
+            MoreIcons::doesExist(stemStr + MI_PATH("-hd.png")) ||
+            MoreIcons::doesExist(stemStr + MI_PATH("-uhd.png")) ||
+            MoreIcons::doesExist(stemStr + MI_PATH(".plist")) ||
+            MoreIcons::doesExist(stemStr + MI_PATH("-hd.plist")) ||
+            MoreIcons::doesExist(stemStr + MI_PATH("-uhd.plist"))
         ) {
             createQuickPopup(
                 "Existing Icon",
@@ -108,8 +109,8 @@ texpack::Image getImage(CCNode* node) {
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
 
     kmGLMatrixMode(KM_GL_PROJECTION);
-	kmGLPushMatrix();
-	kmGLMatrixMode(KM_GL_MODELVIEW);
+    kmGLPushMatrix();
+    kmGLMatrixMode(KM_GL_MODELVIEW);
     kmGLPushMatrix();
 
     glViewport(0, 0, width, height);
@@ -170,9 +171,9 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
     auto scaleFactor = MoreIconsAPI::getDirector()->getContentScaleFactor();
     float scales[3] = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
     constexpr std::array suffixes = {
-        std::make_pair("-uhd", "UHD"),
-        std::make_pair("-hd", "HD"),
-        std::make_pair("", "SD")
+        std::make_tuple(MI_PATH("-uhd"), "-uhd", "UHD"),
+        std::make_tuple(MI_PATH("-hd"), "-hd", "HD"),
+        std::make_tuple(MI_PATH(""), "", "SD")
     };
     for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(m_frames)) {
         auto suffix = frameName.substr(0, frameName.size() - 4);
@@ -209,9 +210,10 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
     std::filesystem::path selectedPlist;
     for (int i = 0; i < 3; i++) {
         auto& packer = packers[i];
-        auto [suffix, displayName] = suffixes[i];
-        auto png = std::filesystem::path(stem).concat(fmt::format("{}.png", suffix));
-        auto plist = std::filesystem::path(stem).concat(fmt::format("{}.plist", suffix));
+        auto [wsuffix, suffix, displayName] = suffixes[i];
+        auto start = stem.native() + wsuffix;
+        std::filesystem::path png = start + MI_PATH(".png");
+        std::filesystem::path plist = start + MI_PATH(".plist");
         if (scales[i] == 1.0f) {
             selectedPNG = png;
             selectedPlist = plist;
@@ -222,7 +224,7 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
         if (auto res = packer.png(png); res.isErr()) {
             return notify(NotificationIcon::Error, "Failed to save {} image: {}", displayName, res.unwrapErr());
         }
-        if (auto res = packer.plist(plist, fmt::format("icons/{}", string::pathToString(png.filename())), "    "); res.isErr()) {
+        if (auto res = packer.plist(plist, fmt::format("icons/{}{}.png", name, suffix), "    "); res.isErr()) {
             return notify(NotificationIcon::Error, "Failed to save {} plist: {}", displayName, res.unwrapErr());
         }
     }
@@ -238,9 +240,11 @@ void SaveIconPopup::addOrUpdateIcon(const std::string& name, const std::filesyst
     if (auto icon = MoreIconsAPI::getIcon(name, type)) MoreIconsAPI::updateIcon(icon);
     else {
         icon = MoreIconsAPI::addIcon(name, name, type,
-            string::pathToString(png), string::pathToString(plist), "", "More Icons", 0, {}, false, false);
+            string::pathToString(png), string::pathToString(plist), {}, "More Icons", 0, {}, false, false);
         if (MoreIconsAPI::preloadIcons) {
-            if (auto res = MoreIconsAPI::createFrames(icon->textures[0], icon->sheetName, icon->name, icon->type)) {
+            if (auto res = MoreIconsAPI::createFrames(
+                MoreIconsAPI::strPath(icon->textures[0]), MoreIconsAPI::strPath(icon->sheetName), icon->name, icon->type
+            )) {
                 MoreIconsAPI::addFrames(res.unwrap(), icon->frameNames);
             }
             else {

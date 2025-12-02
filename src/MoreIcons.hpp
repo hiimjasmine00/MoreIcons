@@ -20,6 +20,16 @@ struct ColorInfo {
     bool glow;
 };
 
+#ifdef GEODE_IS_WINDOWS
+#define MI_PATH_ID GEODE_CONCAT(L, GEODE_MOD_ID)
+#else
+#define MI_PATH_ID GEODE_MOD_ID
+#endif
+
+namespace std::filesystem {
+    std::string format_as(const path& p);
+}
+
 class MoreIcons {
 public:
     static constexpr std::array severityFrames = {
@@ -29,6 +39,14 @@ public:
         "icon", "ship", "ball", "ufo", "wave", "robot", "spider",
         "swing", "jetpack", "death", "trail", "", "fire"
     };
+    #ifdef GEODE_IS_WINDOWS
+    static constexpr std::array wfolders = {
+        L"icon", L"ship", L"ball", L"ufo", L"wave", L"robot", L"spider",
+        L"swing", L"jetpack", L"death", L"trail", L"", L"fire"
+    };
+    #else
+    static constexpr std::array wfolders = folders;
+    #endif
     static std::vector<LogData> logs;
     static std::map<IconType, int> severities;
     static int severity;

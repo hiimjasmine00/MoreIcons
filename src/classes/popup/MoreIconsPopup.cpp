@@ -162,7 +162,7 @@ bool MoreIconsPopup::setup() {
         auto folderSprite = ButtonSprite::create(
             CCSprite::createWithSpriteFrameName("folderIcon_001.png"), 0, false, 0.0f, "GJ_button_05.png", 0.7f);
         folderSprite->setScale(0.45f);
-        auto folderButton = CCMenuItemExt::createSpriteExtra(folderSprite, [directory = MoreIcons::folders[i]](auto) {
+        auto folderButton = CCMenuItemExt::createSpriteExtra(folderSprite, [directory = MoreIcons::wfolders[i]](auto) {
             file::openFolder(Mod::get()->getConfigDir() / directory);
         });
         folderButton->setPosition({ 54.0f, 15.0f });

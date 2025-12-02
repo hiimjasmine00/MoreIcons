@@ -825,7 +825,7 @@ void EditIconPopup::updateWithSelectedFiles() {
         (float)image.height
     });
 
-    auto framesRes = MoreIconsAPI::createFrames(string::pathToString(m_selectedPlist), texture, "", m_iconType);
+    auto framesRes = MoreIconsAPI::createFrames(m_selectedPlist, texture, {}, m_iconType);
     if (framesRes.isErr()) {
         notify(NotificationIcon::Error, "Failed to load frames: {}", framesRes.unwrapErr());
         m_selectedPNG.clear();
