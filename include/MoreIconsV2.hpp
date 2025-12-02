@@ -253,7 +253,7 @@ namespace more_icons {
     inline std::string getIconName(cocos2d::CCNode* node) {
         if (!node) return {};
         auto userObject = static_cast<cocos2d::CCString*>(node->getUserObject("name"_mi));
-        return userObject ? userObject->m_sString : std::string();
+        return userObject ? GEODE_ANDROID(std::string)(userObject->m_sString) : std::string();
     }
 
     /// Creates a popup with information about an icon.
