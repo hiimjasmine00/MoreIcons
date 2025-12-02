@@ -528,7 +528,7 @@ void MoreIconsAPI::renameIcon(IconInfo* info, const std::string& name) {
 
     auto& iconsVec = icons[type];
     auto it = std::ranges::find_if(iconsVec, [info](const IconInfo& icon) {
-        return icon.compare(info->packID, info->shortName, info->type) >= 0;
+        return icon > *info;
     });
     if (std::to_address(it) == info) return;
 

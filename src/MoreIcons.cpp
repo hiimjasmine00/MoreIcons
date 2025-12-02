@@ -16,7 +16,7 @@
 using namespace geode::prelude;
 
 std::string std::filesystem::format_as(const std::filesystem::path& p) {
-    return GEODE_WINDOWS(string::wideToUtf8)(p.native());
+    return GEODE_WINDOWS(utils::string::wideToUtf8)(p.native());
 }
 
 $on_mod(Loaded) {
@@ -246,7 +246,7 @@ std::filesystem::path vanillaTexturePath(const std::filesystem::path& path, bool
     if (!skipSuffix && MoreIconsAPI::getDirector()->getContentScaleFactor() >= 4.0f) {
         if (auto highGraphicsMobile = Loader::get()->getLoadedMod("weebify.high-graphics-android")) {
             auto configDir = highGraphicsMobile->getConfigDir(false) / GEODE_GD_VERSION_STRING;
-            if (doesExist(configDir)) return configDir / path;
+            if (MoreIcons::doesExist(configDir)) return configDir / path;
         }
         return path;
     }

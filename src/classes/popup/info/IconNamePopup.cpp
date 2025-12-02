@@ -29,7 +29,7 @@ Result<> renameFile(const std::filesystem::path& parent, const std::filesystem::
     return MoreIcons::renameFile(parent / from, parent / to);
 }
 
-template <class... T>
+template <typename... T>
 void notify(NotificationIcon icon, fmt::format_string<T...> message, T&&... args) {
     Notification::create(fmt::format(message, std::forward<T>(args)...), icon)->show();
 }
@@ -46,24 +46,22 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
     m_closeBtn->setID("close-button");
 
     m_iconType = info->type;
+    m_info = info;
 
     m_nameInput = TextInput::create(300.0f, "Name");
     m_nameInput->setPosition({ 175.0f, 70.0f });
     m_nameInput->setFilter("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-. ");
     m_nameInput->setMaxCharCount(100);
+    m_nameInput->setString(info->shortName);
     m_nameInput->setID("name-input");
     m_mainLayer->addChild(m_nameInput);
 
     auto confirmButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Confirm", 0.8f), [this, info, popup, unlockName](auto) {
         auto name = m_nameInput->getString();
-        if (name.empty()) {
-            return notify(NotificationIcon::Info, "Name cannot be empty.");
-        }
+        if (name.empty()) return notify(NotificationIcon::Info, "Name cannot be empty.");
 
         auto& old = info->shortName;
-        if (name == old) {
-            return notify(NotificationIcon::Info, "Name is already set to {}.", name);
-        }
+        if (name == old) return notify(NotificationIcon::Info, "Name is already set to {}.", name);
 
         fmt::memory_buffer message;
         fmt::format_to(std::back_inserter(message), "Are you sure you want to rename <cy>{}</c> to <cy>{}</c>?", old, name);
@@ -165,7 +163,8 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
 }
 
 void IconNamePopup::onClose(CCObject* sender) {
-    if (m_nameInput->getString().empty()) return Popup::onClose(sender);
+    auto name = m_nameInput->getString();
+    if (name.empty() || name == m_info->shortName) return Popup::onClose(sender);
 
     auto type = MoreIconsAPI::convertType(m_iconType);
     createQuickPopup(
