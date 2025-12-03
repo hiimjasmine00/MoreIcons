@@ -1,5 +1,4 @@
 #include "ImageRenderer.hpp"
-#include "../../../api/MoreIconsAPI.hpp"
 
 using namespace geode::prelude;
 
@@ -68,4 +67,16 @@ texpack::Image ImageRenderer::getImage(CCNode* node) {
     }
 
     return { data, width, height };
+}
+
+Result<Autorelease<CCTexture2D>> ImageRenderer::getTexture(const std::filesystem::path& path) {
+    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(path));
+
+    Autorelease texture = new CCTexture2D();
+    texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+        (float)image.width,
+        (float)image.height
+    });
+
+    return Ok(std::move(texture));
 }

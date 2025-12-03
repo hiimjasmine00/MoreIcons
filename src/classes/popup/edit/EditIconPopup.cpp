@@ -1,8 +1,8 @@
 #include "EditIconPopup.hpp"
 #include "IconPresetPopup.hpp"
+#include "ImageRenderer.hpp"
 #include "SaveIconPopup.hpp"
 #include "../MoreIconsPopup.hpp"
-#include "../../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
@@ -13,7 +13,6 @@
 #include <Geode/utils/string.hpp>
 #include <jasmine/convert.hpp>
 #include <jasmine/mod.hpp>
-#include <texpack.hpp>
 
 using namespace geode::prelude;
 using namespace jasmine::mod;
@@ -533,19 +532,13 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
             if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
-            if (auto imageRes = texpack::fromPNG(res->unwrap())) {
-                auto image = std::move(imageRes).unwrap();
-                Autorelease texture = new CCTexture2D();
-                texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
-                    (float)image.width,
-                    (float)image.height
-                });
-
+            if (auto textureRes = ImageRenderer::getTexture(res->unwrap())) {
+                auto texture = std::move(textureRes).unwrap();
                 m_frames->setObject(CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }),
                     fmt::format("{}.png", m_suffix));
                 updatePieces();
             }
-            else if (imageRes.isErr()) return notify(NotificationIcon::Error, "Failed to load image: {}", imageRes.unwrapErr());
+            else if (textureRes.isErr()) return notify(NotificationIcon::Error, "Failed to load image: {}", textureRes.unwrapErr());
         });
 
         m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
@@ -581,8 +574,9 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
         if (!emptyFrame) {
             Autorelease texture = new CCTexture2D();
             auto factor = MoreIconsAPI::getDirector()->getContentScaleFactor();
-            std::vector<uint8_t> data(4.0f * factor * factor, 0);
-            texture->initWithData(data.data(), kCCTexture2DPixelFormat_RGBA8888, factor, factor, { factor, factor });
+            int factorInt = factor;
+            std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(factorInt * factorInt * 4);
+            texture->initWithData(data.get(), kCCTexture2DPixelFormat_RGBA8888, factorInt, factorInt, { factor, factor });
             emptyFrame = CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() });
             MoreIconsAPI::getSpriteFrameCache()->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
         }
@@ -834,14 +828,8 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
 }
 
 void EditIconPopup::updateWithSelectedFiles() {
-    if (auto imageRes = texpack::fromPNG(m_selectedPNG)) {
-        auto image = std::move(imageRes).unwrap();
-        Autorelease texture = new CCTexture2D();
-        texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
-            (float)image.width,
-            (float)image.height
-        });
-
+    if (auto textureRes = ImageRenderer::getTexture(m_selectedPNG)) {
+        auto texture = std::move(textureRes).unwrap();
         if (auto framesRes = MoreIconsAPI::createFrames(m_selectedPlist, texture, {}, m_iconType)) {
             auto frames = std::move(framesRes).unwrap();
             m_frames->removeAllObjects();
@@ -852,7 +840,7 @@ void EditIconPopup::updateWithSelectedFiles() {
         }
         else if (framesRes.isErr()) notify(NotificationIcon::Error, "Failed to load frames: {}", framesRes.unwrapErr());
     }
-    else if (imageRes.isErr()) notify(NotificationIcon::Error, "Failed to load image: {}", imageRes.unwrapErr());
+    else if (textureRes.isErr()) notify(NotificationIcon::Error, "Failed to load image: {}", textureRes.unwrapErr());
 
     m_selectedPNG.clear();
     m_selectedPlist.clear();

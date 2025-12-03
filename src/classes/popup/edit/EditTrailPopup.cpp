@@ -3,7 +3,6 @@
 #include "ImageRenderer.hpp"
 #include "../MoreIconsPopup.hpp"
 #include "../../../MoreIcons.hpp"
-#include "../../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Notification.hpp>
@@ -64,19 +63,11 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
             if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
-            if (auto imageRes = texpack::fromPNG(res->unwrap())) {
-                auto image = std::move(imageRes).unwrap();
-
-                Autorelease texture = new CCTexture2D();
-                texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
-                    (float)image.width,
-                    (float)image.height
-                });
-
-                m_streak->setTexture(texture);
+            if (auto textureRes = ImageRenderer::getTexture(res->unwrap()); textureRes.isOk()) {
+                m_streak->setTexture(textureRes.unwrap());
                 m_hasChanged = true;
             }
-            else if (imageRes.isErr()) return notify(NotificationIcon::Error, "Failed to load image: {}", imageRes.unwrapErr());
+            else if (textureRes.isErr()) return notify(NotificationIcon::Error, "Failed to load image: {}", textureRes.unwrapErr());
         });
 
         m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
@@ -150,6 +141,7 @@ void EditTrailPopup::addOrUpdateIcon(const std::string& name, const std::filesys
 void EditTrailPopup::saveTrail(const std::filesystem::path& path) {
     auto sprite = CCSprite::createWithTexture(m_streak->getTexture());
     sprite->setPosition(sprite->getContentSize() * 0.5f);
+    sprite->setBlendFunc({ GL_ONE, GL_ZERO });
     if (auto res = texpack::toPNG(path, ImageRenderer::getImage(sprite)); res.isErr()) {
         return notify(NotificationIcon::Error, "Failed to save image: {}", res.unwrapErr());
     }
