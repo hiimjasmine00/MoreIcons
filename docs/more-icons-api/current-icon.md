@@ -5,18 +5,18 @@ order: 1
 
 # Getting the Current Icon
 ```cpp
-// Include the MoreIcons.hpp header
-#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
+// Include the MoreIconsV2.hpp header
+#include <hiimjustin000.more_icons/include/MoreIconsV2.hpp>
 
 // Get the current icon
-std::string icon = MoreIcons::activeIcon(IconType::Cube);
+std::string icon = more_icons::activeIcon(IconType::Cube);
 
 // Get the current icon (Separate Dual Icons)
-std::string dualIcon = MoreIcons::activeIcon(IconType::Cube, true);
+std::string dualIcon = more_icons::activeIcon(IconType::Cube, true);
 
 // Get the current icon (Internal behavior)
-if (geode::Mod* MI = MoreIcons::get()) {
-    std::string icon = MI->getSavedValue(MoreIcons::saveKey(IconType::Cube), "");
-    std::string dualIcon = MI->getSavedValue(MoreIcons::saveKey(IconType::Cube, true), "");
+if (geode::Mod* MI = more_icons::get()) {
+    std::string icon = MI->getSavedValue(more_icons::saveKey(IconType::Cube), "");
+    std::string dualIcon = MI->getSavedValue(more_icons::saveKey(IconType::Cube, true), "");
 }
 ```

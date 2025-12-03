@@ -374,10 +374,12 @@ std::string getFrameName(const std::string& name, const std::string& prefix, Ico
 
     std::string suffix;
     auto isRobot = type == IconType::Robot || type == IconType::Spider;
-    auto end = std::string_view(name).substr(0, name.size() - 8);
+    std::string_view end = name;
+    end.remove_suffix(8);
+
     if (end.ends_with("_2")) {
         if (isRobot) {
-            end = end.substr(0, end.size() - 2);
+            end.remove_suffix(2);
             if (end.ends_with("_01")) suffix = "_01_2_001.png";
             else if (end.ends_with("_02")) suffix = "_02_2_001.png";
             else if (end.ends_with("_03")) suffix = "_03_2_001.png";
@@ -390,14 +392,14 @@ std::string getFrameName(const std::string& name, const std::string& prefix, Ico
     }
     else if (end.ends_with("_extra")) {
         if (isRobot) {
-            end = end.substr(0, end.size() - 6);
+            end.remove_suffix(6);
             if (end.ends_with("_01")) suffix = "_01_extra_001.png";
         }
         else suffix = "_extra_001.png";
     }
     else if (end.ends_with("_glow")) {
         if (isRobot) {
-            end = end.substr(0, end.size() - 5);
+            end.remove_suffix(5);
             if (end.ends_with("_01")) suffix = "_01_glow_001.png";
             else if (end.ends_with("_02")) suffix = "_02_glow_001.png";
             else if (end.ends_with("_03")) suffix = "_03_glow_001.png";

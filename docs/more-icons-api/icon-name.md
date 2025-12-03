@@ -5,8 +5,8 @@ order: 5
 
 # Getting a Node's Icon Name
 ```cpp
-// Include the MoreIcons.hpp header
-#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
+// Include the MoreIconsV2.hpp header
+#include <hiimjustin000.more_icons/include/MoreIconsV2.hpp>
 
 // Get the icon name of a node
 // cocos2d::CCMotionStreak (Player trails)
@@ -14,5 +14,5 @@ order: 5
 // GJRobotSprite
 // PlayerObject
 // SimplePlayer
-std::string icon = MoreIcons::getIconName(node);
+std::string icon = more_icons::getIconName(node);
 ```

@@ -5,15 +5,15 @@ order: 4
 
 # Getting an Icon's Information
 ```cpp
-// Include the MoreIcons.hpp header
-#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
+// Include the MoreIconsV2.hpp header
+#include <hiimjustin000.more_icons/include/MoreIconsV2.hpp>
 
 // Get the current icon's information
-IconInfo* icon = MoreIcons::getIcon(IconType::Cube);
+IconInfo* icon = more_icons::getIcon(IconType::Cube);
 
 // Get the current icon's information (Separate Dual Icons)
-IconInfo* icon = MoreIcons::getIcon(IconType::Cube, true);
+IconInfo* icon = more_icons::getIcon(IconType::Cube, true);
 
 // Get the icon's information
-IconInfo* icon = MoreIcons::getIcon("my_custom_icon", IconType::Cube);
+IconInfo* icon = more_icons::getIcon("my_custom_icon", IconType::Cube);
 ```

@@ -5,15 +5,15 @@ order: 8
 
 # Changing a SimplePlayer's Icon
 ```cpp
-// Include the MoreIcons.hpp header
-#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
+// Include the MoreIconsV2.hpp header
+#include <hiimjustin000.more_icons/include/MoreIconsV2.hpp>
 
 // Change the icon of a SimplePlayer to the current icon
-MoreIcons::updateSimplePlayer(player, IconType::Cube);
+more_icons::updateSimplePlayer(player, IconType::Cube);
 
 // Change the icon of a SimplePlayer to the current icon (Separate Dual Icons)
-MoreIcons::updateSimplePlayer(player, IconType::Cube, true);
+more_icons::updateSimplePlayer(player, IconType::Cube, true);
 
 // Change the icon of a SimplePlayer to a custom icon
-MoreIcons::updateSimplePlayer(player, "my_custom_icon", IconType::Cube);
+more_icons::updateSimplePlayer(player, "my_custom_icon", IconType::Cube);
 ```

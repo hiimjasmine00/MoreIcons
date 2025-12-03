@@ -16,15 +16,21 @@ include = [
 ]
 
 [include]
-patterns-name = [
-    "IconInfo",
-    "MoreIcons",
-    "TrailInfo"
+patterns-full = [
+    "^IconInfo",
+    "^more_icons",
+    "^TrailInfo"
+]
+
+[ignore]
+patterns-full = [
+    "^more_icons::internal"
 ]
 
 [cmake]
 config-args = [
     "-G", "Ninja",
+    "-DCMAKE_BUILD_TYPE=Release",
     "-DCMAKE_CXX_COMPILER=clang++",
     "-DCMAKE_C_COMPILER=clang",
     "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
