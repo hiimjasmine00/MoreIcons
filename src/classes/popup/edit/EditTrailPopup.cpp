@@ -1,12 +1,12 @@
 #include "EditTrailPopup.hpp"
 #include "IconPresetPopup.hpp"
+#include "ImageRenderer.hpp"
 #include "../MoreIconsPopup.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../api/MoreIconsAPI.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Notification.hpp>
-#include <texpack.hpp>
 
 using namespace geode::prelude;
 
@@ -37,7 +37,6 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
     m_parentPopup = popup;
 
     m_streak = CCSprite::create("streak_01_001.png");
-    m_streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA });
     m_streak->setPosition({ 175.0f, 120.0f });
     m_streak->setRotation(-90.0f);
     auto& size = m_streak->getContentSize();
@@ -65,20 +64,19 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
             if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
-            m_hasChanged = true;
+            if (auto imageRes = texpack::fromPNG(res->unwrap())) {
+                auto image = std::move(imageRes).unwrap();
 
-            auto imageRes = texpack::fromPNG(res->unwrap());
-            if (imageRes.isErr()) return notify(NotificationIcon::Error, "Failed to load image: {}", imageRes.unwrapErr());
+                Autorelease texture = new CCTexture2D();
+                texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+                    (float)image.width,
+                    (float)image.height
+                });
 
-            auto image = std::move(imageRes).unwrap();
-
-            Autorelease texture = new CCTexture2D();
-            texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
-                (float)image.width,
-                (float)image.height
-            });
-
-            m_streak->setTexture(texture);
+                m_streak->setTexture(texture);
+                m_hasChanged = true;
+            }
+            else if (imageRes.isErr()) return notify(NotificationIcon::Error, "Failed to load image: {}", imageRes.unwrapErr());
         });
 
         m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
@@ -149,55 +147,10 @@ void EditTrailPopup::addOrUpdateIcon(const std::string& name, const std::filesys
     MoreIcons::updateGarage();
 }
 
-texpack::Image getImage(CCSprite* sprite) {
-    auto director = MoreIconsAPI::getDirector();
-    auto size = sprite->getContentSize() * director->getContentScaleFactor();
-    uint32_t width = size.width;
-    uint32_t height = size.height;
-
-    auto texture = 0u;
-    glPixelStorei(GL_PACK_ALIGNMENT, 8);
-    glGenTextures(1, &texture);
-    ccGLBindTexture2D(texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
-
-    auto oldFBO = 0;
-    auto fbo = 0u;
-    glGetIntegerv(GL_FRAMEBUFFER_BINDING, &oldFBO);
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, texture, 0);
-
-    auto winSize = director->getWinSizeInPixels();
-    glViewport(0, 0, winSize.width, winSize.height);
-
-    auto blendFunc = sprite->getBlendFunc();
-    sprite->setBlendFunc({ GL_ONE, GL_ZERO });
-    sprite->draw();
-    sprite->setBlendFunc(blendFunc);
-
-    std::vector<uint8_t> data(width * height * 4);
-    glPixelStorei(GL_PACK_ALIGNMENT, 1);
-    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
-
-    glBindFramebuffer(GL_FRAMEBUFFER, oldFBO);
-    director->setViewport();
-    ccGLDeleteTexture(texture);
-    glDeleteFramebuffers(1, &fbo);
-
-    for (int y = 0; y < height / 2; y++) {
-        std::swap_ranges(data.begin() + y * width * 4, data.begin() + (y + 1) * width * 4, data.end() - (y + 1) * width * 4);
-    }
-
-    return { data, width, height };
-}
-
 void EditTrailPopup::saveTrail(const std::filesystem::path& path) {
-    if (auto res = texpack::toPNG(path, getImage(m_streak)); res.isErr()) {
+    auto sprite = CCSprite::createWithTexture(m_streak->getTexture());
+    sprite->setPosition(sprite->getContentSize() * 0.5f);
+    if (auto res = texpack::toPNG(path, ImageRenderer::getImage(sprite)); res.isErr()) {
         return notify(NotificationIcon::Error, "Failed to save image: {}", res.unwrapErr());
     }
     addOrUpdateIcon(m_nameInput->getString(), path);

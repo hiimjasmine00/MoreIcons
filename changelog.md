@@ -1,7 +1,8 @@
 # More Icons Changelog
 ## v1.16.0 (2025-12-03)
 - Added color previews and load/save state functionality to the icon editor
-- Added green flashing to the PNG/Plist buttons in the icon editor when other one is imported
+- Added green flashing to the PNG/Plist buttons in the icon editor when the other file needs to be selected
+- Added pink selection to the PNG/Plist buttons in the icon editor when the file is selected
 - Refactored the API in `MoreIconsV2.hpp`, utilizing Geode's event export system
   - This will replace `MoreIcons.hpp` in v2.0.0, which will be released after Geometry Dash v2.208
 

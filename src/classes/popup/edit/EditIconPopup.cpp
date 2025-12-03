@@ -208,7 +208,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     offsetXLabel->setID("offset-x-label");
     offsetXMenu->addChild(offsetXLabel);
 
-    m_offsetXInput = geode::TextInput::create(60.0f, "Num");
+    m_offsetXInput = TextInput::create(60.0f, "Num");
     m_offsetXInput->setScale(0.5f);
     m_offsetXInput->setString(fmt::format("{:.1f}", m_offsetX));
     m_offsetXInput->setCommonFilter(CommonFilter::Float);
@@ -264,7 +264,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     offsetYLabel->setID("offset-y-label");
     offsetYMenu->addChild(offsetYLabel);
 
-    m_offsetYInput = geode::TextInput::create(60.0f, "Num");
+    m_offsetYInput = TextInput::create(60.0f, "Num");
     m_offsetYInput->setScale(0.5f);
     m_offsetYInput->setString(fmt::format("{:.1f}", m_offsetY));
     m_offsetYInput->setCommonFilter(CommonFilter::Float);
@@ -320,7 +320,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     rotationXLabel->setID("rotation-x-label");
     rotationXMenu->addChild(rotationXLabel);
 
-    m_rotationXInput = geode::TextInput::create(60.0f, "Num");
+    m_rotationXInput = TextInput::create(60.0f, "Num");
     m_rotationXInput->setScale(0.5f);
     m_rotationXInput->setString(fmt::format("{:.0f}", m_rotationX));
     m_rotationXInput->setCommonFilter(CommonFilter::Uint);
@@ -376,7 +376,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     rotationYLabel->setID("rotation-y-label");
     rotationYMenu->addChild(rotationYLabel);
 
-    m_rotationYInput = geode::TextInput::create(60.0f, "Num");
+    m_rotationYInput = TextInput::create(60.0f, "Num");
     m_rotationYInput->setScale(0.5f);
     m_rotationYInput->setString(fmt::format("{:.0f}", m_rotationY));
     m_rotationYInput->setCommonFilter(CommonFilter::Uint);
@@ -432,7 +432,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     scaleXLabel->setID("scale-x-label");
     scaleXMenu->addChild(scaleXLabel);
 
-    m_scaleXInput = geode::TextInput::create(60.0f, "Num");
+    m_scaleXInput = TextInput::create(60.0f, "Num");
     m_scaleXInput->setScale(0.5f);
     m_scaleXInput->setString(fmt::format("{:.1f}", m_scaleX));
     m_scaleXInput->setCommonFilter(CommonFilter::Float);
@@ -488,7 +488,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     scaleYLabel->setID("scale-y-label");
     scaleYMenu->addChild(scaleYLabel);
 
-    m_scaleYInput = geode::TextInput::create(60.0f, "Num");
+    m_scaleYInput = TextInput::create(60.0f, "Num");
     m_scaleYInput->setScale(0.5f);
     m_scaleYInput->setString(fmt::format("{:.1f}", m_scaleY));
     m_scaleYInput->setCommonFilter(CommonFilter::Float);
@@ -533,19 +533,19 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
             if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
-            auto imageRes = texpack::fromPNG(res->unwrap());
-            if (imageRes.isErr()) return notify(NotificationIcon::Error, "Failed to load image: {}", imageRes.unwrapErr());
+            if (auto imageRes = texpack::fromPNG(res->unwrap())) {
+                auto image = std::move(imageRes).unwrap();
+                Autorelease texture = new CCTexture2D();
+                texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+                    (float)image.width,
+                    (float)image.height
+                });
 
-            auto image = std::move(imageRes).unwrap();
-            Autorelease texture = new CCTexture2D();
-            texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
-                (float)image.width,
-                (float)image.height
-            });
-
-            m_frames->setObject(CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }),
-                fmt::format("{}.png", m_suffix));
-            updatePieces();
+                m_frames->setObject(CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }),
+                    fmt::format("{}.png", m_suffix));
+                updatePieces();
+            }
+            else if (imageRes.isErr()) return notify(NotificationIcon::Error, "Failed to load image: {}", imageRes.unwrapErr());
         });
 
         m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
@@ -602,14 +602,28 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     iconButtonMenu->setID("icon-button-menu");
     m_mainLayer->addChild(iconButtonMenu);
 
-    auto pngButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("PNG", "goldFont.fnt", "GJ_button_05.png", 0.8f), [this](auto) {
-        m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
+    auto pngSprite = ButtonSprite::create("PNG", "goldFont.fnt", "GJ_button_05.png", 0.8f);
+    auto plistSprite = ButtonSprite::create("Plist", "goldFont.fnt", "GJ_button_05.png", 0.8f);
+
+    auto pngButton = CCMenuItemExt::createSpriteExtra(pngSprite, [this, pngSprite, plistSprite](auto) {
+        m_listener.bind([this, pngSprite, plistSprite](Task<Result<std::filesystem::path>>::Event* event) {
             auto res = event->getValue();
             if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
             m_selectedPNG = res->unwrap();
-            if (!m_selectedPlist.empty()) updateWithSelectedFiles();
+            if (m_selectedPlist.empty()) {
+                pngSprite->updateBGImage("GJ_button_03.png");
+                plistSprite->m_BGSprite->runAction(CCRepeat::create(CCSequence::createWithTwoActions(
+                    CCEaseIn::create(CCTintTo::create(0.4f, 127, 255, 127), 2.0f),
+                    CCEaseOut::create(CCTintTo::create(0.4f, 255, 255, 255), 2.0f)
+                ), 2));
+                m_hasChanged = true;
+            }
+            else {
+                plistSprite->updateBGImage("GJ_button_05.png");
+                updateWithSelectedFiles();
+            }
         });
 
         m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
@@ -622,14 +636,25 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     pngButton->setID("png-button");
     iconButtonMenu->addChild(pngButton);
 
-    auto plistButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Plist", "goldFont.fnt", "GJ_button_05.png", 0.8f), [this](auto) {
-        m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
+    auto plistButton = CCMenuItemExt::createSpriteExtra(plistSprite, [this, pngSprite, plistSprite](auto) {
+        m_listener.bind([this, pngSprite, plistSprite](Task<Result<std::filesystem::path>>::Event* event) {
             auto res = event->getValue();
             if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import Plist file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
             m_selectedPlist = res->unwrap();
-            if (!m_selectedPNG.empty()) updateWithSelectedFiles();
+            if (m_selectedPNG.empty()) {
+                plistSprite->updateBGImage("GJ_button_03.png");
+                pngSprite->m_BGSprite->runAction(CCRepeat::create(CCSequence::createWithTwoActions(
+                    CCEaseIn::create(CCTintTo::create(0.4f, 127, 255, 127), 2.0f),
+                    CCEaseOut::create(CCTintTo::create(0.4f, 255, 255, 255), 2.0f)
+                ), 2));
+                m_hasChanged = true;
+            }
+            else {
+                pngSprite->updateBGImage("GJ_button_05.png");
+                updateWithSelectedFiles();
+            }
         });
 
         m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
@@ -809,36 +834,28 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
 }
 
 void EditIconPopup::updateWithSelectedFiles() {
-    auto imageRes = texpack::fromPNG(m_selectedPNG);
-    if (imageRes.isErr()) {
-        notify(NotificationIcon::Error, "Failed to load image: {}", imageRes.unwrapErr());
-        m_selectedPNG.clear();
-        m_selectedPlist.clear();
-        return;
+    if (auto imageRes = texpack::fromPNG(m_selectedPNG)) {
+        auto image = std::move(imageRes).unwrap();
+        Autorelease texture = new CCTexture2D();
+        texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
+            (float)image.width,
+            (float)image.height
+        });
+
+        if (auto framesRes = MoreIconsAPI::createFrames(m_selectedPlist, texture, {}, m_iconType)) {
+            auto frames = std::move(framesRes).unwrap();
+            m_frames->removeAllObjects();
+            for (auto [frameName, frame] : CCDictionaryExt<gd::string, CCSpriteFrame*>(frames)) {
+                m_frames->setObject(frame, frameName);
+            }
+            updatePieces();
+        }
+        else if (framesRes.isErr()) notify(NotificationIcon::Error, "Failed to load frames: {}", framesRes.unwrapErr());
     }
+    else if (imageRes.isErr()) notify(NotificationIcon::Error, "Failed to load image: {}", imageRes.unwrapErr());
 
-    auto image = std::move(imageRes).unwrap();
-
-    Autorelease texture = new CCTexture2D();
-    texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
-        (float)image.width,
-        (float)image.height
-    });
-
-    auto framesRes = MoreIconsAPI::createFrames(m_selectedPlist, texture, {}, m_iconType);
-    if (framesRes.isErr()) {
-        notify(NotificationIcon::Error, "Failed to load frames: {}", framesRes.unwrapErr());
-        m_selectedPNG.clear();
-        m_selectedPlist.clear();
-        return;
-    }
-
-    auto frames = std::move(framesRes).unwrap();
-    m_frames->removeAllObjects();
-    for (auto [frameName, frame] : CCDictionaryExt<gd::string, CCSpriteFrame*>(frames)) {
-        m_frames->setObject(frame, frameName);
-    }
-    updatePieces();
+    m_selectedPNG.clear();
+    m_selectedPlist.clear();
 }
 
 void EditIconPopup::updatePieces() {
