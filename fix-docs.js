@@ -13,9 +13,11 @@ for (const file of files) {
         .replace(/https:\/\/docs\.geode-sdk\.org\/classes\/TrailInfo/g, "/classes/TrailInfo")
         .replace(/\/en\.cppreference\.com/g, "https://en.cppreference.com")
         .replace(/\/w\/cpp\/vector\/vector/g, "/w/cpp/container/vector")
+        .replace(/\/w\/cpp\/vector\.h\/vector/g, "/w/cpp/container/vector")
         .replace(/\/w\/cpp\/xstring\/string/g, "/w/cpp/string/basic_string")
         .replace(/\/w\/cpp\/string\.h\/string/g, "/w/cpp/string/basic_string")
         .replace(/\/w\/cpp\/xstring\/string_view/g, "/w/cpp/string/basic_string_view")
         .replace(/\/w\/cpp\/__msvc_string_view\.hpp\/string_view/g, "/w/cpp/string/basic_string_view")
-        .replace(/\/w\/cpp\/string_view\.h\/string_view/g, "/w/cpp/string/basic_string_view"));
+        .replace(/\/w\/cpp\/string_view\.h\/string_view/g, "/w/cpp/string/basic_string_view"))
+        .replace(/\/w\/cpp\/map\/map/g, "/w/cpp/container/map");
 }
