@@ -12,7 +12,7 @@ protected:
     std::filesystem::path m_selectedPNG;
     std::filesystem::path m_selectedPlist;
     geode::Ref<cocos2d::CCArray> m_pages;
-    geode::Ref<cocos2d::CCDictionary> m_definitions;
+    matjson::Value m_definitions;
     geode::Ref<cocos2d::CCDictionary> m_pieces;
     geode::Ref<cocos2d::CCDictionary> m_frames;
     geode::Ref<SimplePlayer> m_player;

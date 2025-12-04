@@ -13,7 +13,7 @@ void notify(NotificationIcon icon, fmt::format_string<T...> message, T&&... args
     Notification::create(fmt::format(message, std::forward<T>(args)...), icon)->show();
 }
 
-SaveIconPopup* SaveIconPopup::create(EditIconPopup* popup, IconType type, CCDictionary* definitions, CCDictionary* frames) {
+SaveIconPopup* SaveIconPopup::create(EditIconPopup* popup, IconType type, const matjson::Value& definitions, CCDictionary* frames) {
     auto ret = new SaveIconPopup();
     if (ret->initAnchored(350.0f, 130.0f, popup, type, definitions, frames, "geode.loader/GE_square03.png")) {
         ret->autorelease();
@@ -23,7 +23,7 @@ SaveIconPopup* SaveIconPopup::create(EditIconPopup* popup, IconType type, CCDict
     return nullptr;
 }
 
-bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, CCDictionary* definitions, CCDictionary* frames) {
+bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Value& definitions, CCDictionary* frames) {
     auto miType = (int)type;
     setID("SaveIconPopup");
     setTitle(fmt::format("Save {}", MoreIconsAPI::uppercase[miType]));
@@ -115,12 +115,13 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
     };
     for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(m_frames)) {
         auto suffix = frameName.substr(0, frameName.size() - 4);
-        auto offsetX = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetX{}", suffix)))->getValue();
-        auto offsetY = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetY{}", suffix)))->getValue();
-        auto rotationX = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationX{}", suffix)))->getValue();
-        auto rotationY = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationY{}", suffix)))->getValue();
-        auto scaleX = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleX{}", suffix)))->getValue();
-        auto scaleY = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleY{}", suffix)))->getValue();
+        auto& definition = m_definitions[suffix];
+        auto offsetX = definition.get<float>("offsetX").unwrapOr(0.0f);
+        auto offsetY = definition.get<float>("offsetY").unwrapOr(0.0f);
+        auto rotationX = definition.get<float>("rotationX").unwrapOr(0.0f);
+        auto rotationY = definition.get<float>("rotationY").unwrapOr(0.0f);
+        auto scaleX = definition.get<float>("scaleX").unwrapOr(1.0f);
+        auto scaleY = definition.get<float>("scaleY").unwrapOr(1.0f);
 
         auto joinedName = fmt::format("{}{}", name, frameName);
         for (int i = 0; i < 3; i++) {

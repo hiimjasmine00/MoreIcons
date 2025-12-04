@@ -58,7 +58,6 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     m_parentPopup = popup;
     m_pages = CCArray::create();
-    m_definitions = CCDictionary::create();
     m_pieces = CCDictionary::create();
     m_frames = CCDictionary::create();
     m_iconType = type;
@@ -188,7 +187,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     CCMenuItemExt::assignCallback<SliderThumb>(m_offsetXSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_offsetX = roundf(sender->getValue() * 400.0f - 200.0f) / 10.0f;
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetX{}", m_suffix)))->m_fValue = m_offsetX;
+        m_definitions[m_suffix]["offsetX"] = m_offsetX;
         updateTargets();
         m_offsetXInput->setString(fmt::format("{:.1f}", m_offsetX));
         m_hasChanged = true;
@@ -215,7 +214,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_offsetXInput->setCallback([this](const std::string& str) {
         jasmine::convert::toFloat(str, m_offsetX);
         m_offsetX = std::clamp(m_offsetX, -20.0f, 20.0f);
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetX{}", m_suffix)))->m_fValue = m_offsetX;
+        m_definitions[m_suffix]["offsetX"] = m_offsetX;
         updateTargets();
         m_offsetXSlider->setValue((m_offsetX + 20.0f) / 40.0f);
         m_hasChanged = true;
@@ -225,7 +224,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     auto resetOffsetXButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [this](auto) {
         m_offsetX = 0.0f;
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetX{}", m_suffix)))->m_fValue = m_offsetX;
+        m_definitions[m_suffix]["offsetX"] = m_offsetX;
         updateTargets();
         m_offsetXSlider->setValue((m_offsetX + 20.0f) / 40.0f);
         m_offsetXInput->setString(fmt::format("{:.1f}", m_offsetX));
@@ -244,7 +243,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     CCMenuItemExt::assignCallback<SliderThumb>(m_offsetYSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_offsetY = roundf(sender->getValue() * 400.0f - 200.0f) / 10.0f;
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetY{}", m_suffix)))->m_fValue = m_offsetY;
+        m_definitions[m_suffix]["offsetY"] = m_offsetY;
         updateTargets();
         m_offsetYInput->setString(fmt::format("{:.1f}", m_offsetY));
         m_hasChanged = true;
@@ -271,7 +270,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_offsetYInput->setCallback([this](const std::string& str) {
         jasmine::convert::toFloat(str, m_offsetY);
         m_offsetY = std::clamp(m_offsetY, -20.0f, 20.0f);
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetY{}", m_suffix)))->m_fValue = m_offsetY;
+        m_definitions[m_suffix]["offsetY"] = m_offsetY;
         updateTargets();
         m_offsetYSlider->setValue((m_offsetY + 20.0f) / 40.0f);
         m_hasChanged = true;
@@ -281,7 +280,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     auto resetOffsetYButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [this](auto) {
         m_offsetY = 0.0f;
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetY{}", m_suffix)))->m_fValue = m_offsetY;
+        m_definitions[m_suffix]["offsetY"] = m_offsetY;
         updateTargets();
         m_offsetYSlider->setValue((m_offsetY + 20.0f) / 40.0f);
         m_offsetYInput->setString(fmt::format("{:.1f}", m_offsetY));
@@ -300,7 +299,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     CCMenuItemExt::assignCallback<SliderThumb>(m_rotationXSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_rotationX = roundf(sender->getValue() * 360.0f);
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationX{}", m_suffix)))->m_fValue = m_rotationX;
+        m_definitions[m_suffix]["rotationX"] = m_rotationX;
         updateTargets();
         m_rotationXInput->setString(fmt::format("{:.0f}", m_rotationX));
         m_hasChanged = true;
@@ -327,7 +326,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_rotationXInput->setCallback([this](const std::string& str) {
         jasmine::convert::toFloat(str, m_rotationX);
         m_rotationX = std::clamp(m_rotationX, 0.0f, 360.0f);
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationX{}", m_suffix)))->m_fValue = m_rotationX;
+        m_definitions[m_suffix]["rotationX"] = m_rotationX;
         updateTargets();
         m_rotationXSlider->setValue(m_rotationX / 360.0f);
         m_hasChanged = true;
@@ -337,7 +336,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     auto resetRotationXButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [this](auto) {
         m_rotationX = 0.0f;
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationX{}", m_suffix)))->m_fValue = m_rotationX;
+        m_definitions[m_suffix]["rotationX"] = m_rotationX;
         updateTargets();
         m_rotationXSlider->setValue(m_rotationX / 360.0f);
         m_rotationXInput->setString(fmt::format("{:.0f}", m_rotationX));
@@ -356,7 +355,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     CCMenuItemExt::assignCallback<SliderThumb>(m_rotationYSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_rotationY = roundf(sender->getValue() * 360.0f);
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationY{}", m_suffix)))->m_fValue = m_rotationY;
+        m_definitions[m_suffix]["rotationY"] = m_rotationY;
         updateTargets();
         m_rotationYInput->setString(fmt::format("{:.0f}", m_rotationY));
         m_hasChanged = true;
@@ -383,7 +382,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_rotationYInput->setCallback([this](const std::string& str) {
         jasmine::convert::toFloat(str, m_rotationY);
         m_rotationY = std::clamp(m_rotationY, 0.0f, 360.0f);
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationY{}", m_suffix)))->m_fValue = m_rotationY;
+        m_definitions[m_suffix]["rotationY"] = m_rotationY;
         updateTargets();
         m_rotationYSlider->setValue(m_rotationY / 360.0f);
         m_hasChanged = true;
@@ -393,7 +392,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     auto resetRotationYButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [this](auto) {
         m_rotationY = 0.0f;
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationY{}", m_suffix)))->m_fValue = m_rotationY;
+        m_definitions[m_suffix]["rotationY"] = m_rotationY;
         updateTargets();
         m_rotationYSlider->setValue(m_rotationY / 360.0f);
         m_rotationYInput->setString(fmt::format("{:.0f}", m_rotationY));
@@ -412,7 +411,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     CCMenuItemExt::assignCallback<SliderThumb>(m_scaleXSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_scaleX = roundf(sender->getValue() * 200.0f - 100.0f) / 10.0f;
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleX{}", m_suffix)))->m_fValue = m_scaleX;
+        m_definitions[m_suffix]["scaleX"] = m_scaleX;
         updateTargets();
         m_scaleXInput->setString(fmt::format("{:.1f}", m_scaleX));
         m_hasChanged = true;
@@ -439,7 +438,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_scaleXInput->setCallback([this](const std::string& str) {
         jasmine::convert::toFloat(str, m_scaleX);
         m_scaleX = std::clamp(m_scaleX, -10.0f, 10.0f);
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleX{}", m_suffix)))->m_fValue = m_scaleX;
+        m_definitions[m_suffix]["scaleX"] = m_scaleX;
         updateTargets();
         m_scaleXSlider->setValue((m_scaleX + 10.0f) / 20.0f);
         m_hasChanged = true;
@@ -449,7 +448,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     auto resetScaleXButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [this](auto) {
         m_scaleX = 1.0f;
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleX{}", m_suffix)))->m_fValue = m_scaleX;
+        m_definitions[m_suffix]["scaleX"] = m_scaleX;
         updateTargets();
         m_scaleXSlider->setValue((m_scaleX + 10.0f) / 20.0f);
         m_scaleXInput->setString(fmt::format("{:.1f}", m_scaleX));
@@ -468,7 +467,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     CCMenuItemExt::assignCallback<SliderThumb>(m_scaleYSlider->m_touchLogic->m_thumb, [this](SliderThumb* sender) {
         m_scaleY = roundf(sender->getValue() * 200.0f - 100.0f) / 10.0f;
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleY{}", m_suffix)))->m_fValue = m_scaleY;
+        m_definitions[m_suffix]["scaleY"] = m_scaleY;
         updateTargets();
         m_scaleYInput->setString(fmt::format("{:.1f}", m_scaleY));
         m_hasChanged = true;
@@ -495,7 +494,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_scaleYInput->setCallback([this](const std::string& str) {
         jasmine::convert::toFloat(str, m_scaleY);
         m_scaleY = std::clamp(m_scaleY, -10.0f, 10.0f);
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleY{}", m_suffix)))->m_fValue = m_scaleY;
+        m_definitions[m_suffix]["scaleY"] = m_scaleY;
         updateTargets();
         m_scaleYSlider->setValue((m_scaleY + 10.0f) / 20.0f);
         m_hasChanged = true;
@@ -505,7 +504,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     auto resetScaleYButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [this](auto) {
         m_scaleY = 1.0f;
-        static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleY{}", m_suffix)))->m_fValue = m_scaleY;
+        m_definitions[m_suffix]["scaleY"] = m_scaleY;
         updateTargets();
         m_scaleYSlider->setValue((m_scaleY + 10.0f) / 20.0f);
         m_scaleYInput->setString(fmt::format("{:.1f}", m_scaleY));
@@ -775,12 +774,14 @@ void EditIconPopup::transferPlayerToNode(CCNode* node, SimplePlayer* player) {
 }
 
 void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* targets) {
-    m_definitions->setObject(CCFloat::create(0.0f), fmt::format("offsetX{}", suffix));
-    m_definitions->setObject(CCFloat::create(0.0f), fmt::format("offsetY{}", suffix));
-    m_definitions->setObject(CCFloat::create(0.0f), fmt::format("rotationX{}", suffix));
-    m_definitions->setObject(CCFloat::create(0.0f), fmt::format("rotationY{}", suffix));
-    m_definitions->setObject(CCFloat::create(1.0f), fmt::format("scaleX{}", suffix));
-    m_definitions->setObject(CCFloat::create(1.0f), fmt::format("scaleY{}", suffix));
+    m_definitions[suffix] = matjson::makeObject({
+        { "offsetX", 0.0f },
+        { "offsetY", 0.0f },
+        { "rotationX", 0.0f },
+        { "rotationY", 0.0f },
+        { "scaleX", 1.0f },
+        { "scaleY", 1.0f }
+    });
 
     auto pieceFrame = MoreIconsAPI::getFrame(fmt::format("{}01{}.png", MoreIconsAPI::prefixes[(int)m_iconType], suffix));
     if (pieceFrame) m_frames->setObject(pieceFrame, fmt::format("{}.png", suffix));
@@ -788,22 +789,23 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
     auto pieceSprite = CCSprite::createWithSpriteFrame(pieceFrame);
     auto pieceButton = CCMenuItemExt::createSpriteExtra(pieceSprite, [this, suffix, page](CCMenuItemSpriteExtra* sender) {
         m_suffix = suffix;
-        m_offsetX = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetX{}", suffix)))->getValue();
+        auto& definition = m_definitions[suffix];
+        m_offsetX = definition.get<float>("offsetX").unwrapOr(0.0f);
         m_offsetXSlider->setValue((m_offsetX + 20.0f) / 40.0f);
         m_offsetXInput->setString(fmt::format("{:.1f}", m_offsetX));
-        m_offsetY = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("offsetY{}", suffix)))->getValue();
+        m_offsetY = definition.get<float>("offsetY").unwrapOr(0.0f);
         m_offsetYSlider->setValue((m_offsetY + 20.0f) / 40.0f);
         m_offsetYInput->setString(fmt::format("{:.1f}", m_offsetY));
-        m_rotationX = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationX{}", suffix)))->getValue();
+        m_rotationX = definition.get<float>("rotationX").unwrapOr(0.0f);
         m_rotationXSlider->setValue(m_rotationX / 360.0f);
         m_rotationXInput->setString(fmt::format("{:.0f}", m_rotationX));
-        m_rotationY = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("rotationY{}", suffix)))->getValue();
+        m_rotationY = definition.get<float>("rotationY").unwrapOr(0.0f);
         m_rotationYSlider->setValue(m_rotationY / 360.0f);
         m_rotationYInput->setString(fmt::format("{:.0f}", m_rotationY));
-        m_scaleX = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleX{}", suffix)))->getValue();
+        m_scaleX = definition.get<float>("scaleX").unwrapOr(1.0f);
         m_scaleXSlider->setValue((m_scaleX + 10.0f) / 20.0f);
         m_scaleXInput->setString(fmt::format("{:.1f}", m_scaleX));
-        m_scaleY = static_cast<CCFloat*>(m_definitions->objectForKey(fmt::format("scaleY{}", suffix)))->getValue();
+        m_scaleY = definition.get<float>("scaleY").unwrapOr(1.0f);
         m_scaleYSlider->setValue((m_scaleY + 10.0f) / 20.0f);
         m_scaleYInput->setString(fmt::format("{:.1f}", m_scaleY));
         m_targets = static_cast<CCArray*>(sender->getUserObject("piece-targets"));
