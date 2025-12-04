@@ -114,16 +114,39 @@ void more_icons::updatePlayerObject(PlayerObject* object, const std::string& ico
     MoreIconsAPI::updatePlayerObject(object, icon, type);
 }
 
-std::map<IconType, std::vector<IconInfo>> more_icons::getIcons() {
-    return MoreIconsAPI::icons;
+std::map<IconType, std::vector<IconInfo>>* more_icons::getIcons() {
+    return &MoreIconsAPI::icons;
 }
 
-std::vector<IconInfo> more_icons::getIcons(IconType type) {
-    return MoreIconsAPI::icons[type];
+std::vector<IconInfo>* more_icons::getIcons(IconType type) {
+    return &MoreIconsAPI::icons[type];
 }
 
 IconInfo* more_icons::getIcon(const std::string& name, IconType type) {
     return MoreIconsAPI::getIcon(name, type);
+}
+
+IconInfo* more_icons::addIcon(
+    const std::string& name, const std::string& shortName, IconType type, const std::string& png, const std::string& plist,
+    const std::string& packID, const std::string& packName, int trailID, const TrailInfo& trailInfo, bool vanilla, bool zipped
+) {
+    return MoreIconsAPI::addIcon(name, shortName, type, png, plist, packID, packName, trailID, trailInfo, vanilla, zipped);
+}
+
+void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
+    MoreIconsAPI::moveIcon(info, path);
+}
+
+void more_icons::removeIcon(IconInfo* info) {
+    MoreIconsAPI::removeIcon(info);
+}
+
+void more_icons::renameIcon(IconInfo* info, const std::string& name) {
+    MoreIconsAPI::renameIcon(info, name);
+}
+
+void more_icons::updateIcon(IconInfo* info) {
+    MoreIconsAPI::updateIcon(info);
 }
 
 IconInfo* MoreIconsAPI::getIcon(const std::string& name, IconType type) {

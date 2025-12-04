@@ -5,11 +5,9 @@
 #include <Geode/binding/PlayerObject.hpp>
 #if defined(MORE_ICONS_EVENTS) || defined(GEODE_DEFINE_EVENT_EXPORTS)
 #include <Geode/loader/Dispatch.hpp>
-#endif
-#ifdef GEODE_DEFINE_EVENT_EXPORTS
-#define MI_INLINE
-#else
-#define MI_INLINE inline
+#elif !defined(GEODE_EVENT_EXPORT_NORES)
+#define MI_EXPORT_STUB
+#define GEODE_EVENT_EXPORT_NORES(fnPtr, callArgs)
 #endif
 #include <Geode/loader/Mod.hpp>
 
@@ -59,7 +57,7 @@ constexpr auto operator""_mi() {
         #endif
     #endif
 #else
-    #define MORE_ICONS_DLL
+    #define MORE_ICONS_DLL inline
 #endif
 
 namespace more_icons {
@@ -123,23 +121,27 @@ namespace more_icons {
     /// @param name The name of the icon to load.
     /// @param type The type of icon to load.
     /// @param requestID The request ID of the icon to load.
-    MORE_ICONS_DLL cocos2d::CCTexture2D* loadIcon(const std::string& name, IconType type, int requestID);
+    MORE_ICONS_DLL cocos2d::CCTexture2D* loadIcon(const std::string& name, IconType type, int requestID)
+        GEODE_EVENT_EXPORT_NORES(&loadIcon, (name, type, requestID));
 
     /// Unloads a custom icon from the texture cache.
     /// @param name The name of the icon to unload.
     /// @param type The type of icon to unload.
     /// @param requestID The request ID of the icon to unload.
-    MORE_ICONS_DLL void unloadIcon(const std::string& name, IconType type, int requestID);
+    MORE_ICONS_DLL void unloadIcon(const std::string& name, IconType type, int requestID)
+        GEODE_EVENT_EXPORT_NORES(&unloadIcon, (name, type, requestID));
 
     /// Unloads all custom icons associated with a request ID.
     /// @param requestID The request ID of the icons to unload.
-    MORE_ICONS_DLL void unloadIcons(int requestID);
+    MORE_ICONS_DLL void unloadIcons(int requestID)
+        GEODE_EVENT_EXPORT_NORES(&unloadIcons, (requestID));
 
     /// Changes the icon of a SimplePlayer object to a custom icon.
     /// @param player The SimplePlayer object to change the icon of.
     /// @param icon The name of the icon to change to.
     /// @param type The type of icon to change to.
-    MORE_ICONS_DLL void updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type);
+    MORE_ICONS_DLL void updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type)
+        GEODE_EVENT_EXPORT_NORES((void(*)(SimplePlayer*, const std::string&, IconType))(&updateSimplePlayer), (player, icon, type));
 
     /// Changes the icon of a SimplePlayer object to a custom icon.
     /// @param player The SimplePlayer object to change the icon of.
@@ -153,7 +155,8 @@ namespace more_icons {
     /// @param sprite The GJRobotSprite object to change the icon of.
     /// @param icon The name of the icon to change to.
     /// @param type The type of icon to change to.
-    MORE_ICONS_DLL void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type);
+    MORE_ICONS_DLL void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type)
+        GEODE_EVENT_EXPORT_NORES((void(*)(GJRobotSprite*, const std::string&, IconType))(&updateRobotSprite), (sprite, icon, type));
 
     /// Changes the icon of a GJRobotSprite object to a custom icon.
     /// @param sprite The GJRobotSprite object to change the icon of.
@@ -200,7 +203,8 @@ namespace more_icons {
     /// @param object The PlayerObject object to change the icon of.
     /// @param icon The name of the icon to change to.
     /// @param type The type of icon to change to.
-    MORE_ICONS_DLL void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type);
+    MORE_ICONS_DLL void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type)
+        GEODE_EVENT_EXPORT_NORES((void(*)(PlayerObject*, const std::string&, IconType))(&updatePlayerObject), (object, icon, type));
 
     /// Changes the icon of a PlayerObject object to a custom icon.
     /// @param object The PlayerObject object to change the icon of.
@@ -224,20 +228,23 @@ namespace more_icons {
         if (object && !icon.empty()) updatePlayerObject(object, icon, getIconType(object));
     }
 
-    /// Returns a map of all custom icons.
-    /// @returns A map of all custom icons.
-    MORE_ICONS_DLL std::map<IconType, std::vector<IconInfo>> getIcons();
+    /// Returns a pointer to the map of all custom icons.
+    /// @returns A pointer to the map of all custom icons, or nullptr if the mod is not loaded.
+    MORE_ICONS_DLL std::map<IconType, std::vector<IconInfo>>* getIcons()
+        GEODE_EVENT_EXPORT_NORES((std::map<IconType, std::vector<IconInfo>>*(*)())(&getIcons), ());
 
-    /// Returns a vector of all icons for a specific type.
+    /// Returns a pointer to a vector of all icons for a specific type.
     /// @param type The type of icon to get all icons for.
-    /// @returns A vector of all icons for the specified type.
-    MORE_ICONS_DLL std::vector<IconInfo> getIcons(IconType type);
+    /// @returns A pointer to a vector of all icons for the specified type, or nullptr if the mod is not loaded.
+    MORE_ICONS_DLL std::vector<IconInfo>* getIcons(IconType type)
+        GEODE_EVENT_EXPORT_NORES((std::vector<IconInfo>*(*)(IconType))(&getIcons), (type));
 
     /// Returns the icon info for a specific icon.
     /// @param name The name of the icon to get the info for.
     /// @param type The type of icon to get the info for.
     /// @returns The icon info for the specified icon, or nullptr if the icon is not found.
-    MORE_ICONS_DLL IconInfo* getIcon(const std::string& name, IconType type);
+    MORE_ICONS_DLL IconInfo* getIcon(const std::string& name, IconType type)
+        GEODE_EVENT_EXPORT_NORES((IconInfo*(*)(const std::string&, IconType))(&getIcon), (name, type));
 
     /// Returns the icon info for the active icon of a specific type.
     /// @param type The type of icon to get the info for.
@@ -260,28 +267,54 @@ namespace more_icons {
     /// @param name The name of the icon.
     /// @param type The type of the icon.
     /// @returns A pointer to the created popup, or nullptr if the popup could not be created.
-    MORE_ICONS_DLL FLAlertLayer* createInfoPopup(const std::string& name, IconType type);
-
-    #if defined(MORE_ICONS_EVENTS) || defined(GEODE_DEFINE_EVENT_EXPORTS)
-    MI_INLINE cocos2d::CCTexture2D* loadIcon(const std::string& name, IconType type, int requestID)
-        GEODE_EVENT_EXPORT_NORES(&loadIcon, (name, type, requestID));
-    MI_INLINE void unloadIcon(const std::string& name, IconType type, int requestID)
-        GEODE_EVENT_EXPORT_NORES(&unloadIcon, (name, type, requestID));
-    MI_INLINE void unloadIcons(int requestID)
-        GEODE_EVENT_EXPORT_NORES(&unloadIcons, (requestID));
-    MI_INLINE void updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type)
-        GEODE_EVENT_EXPORT_NORES((void(*)(SimplePlayer*, const std::string&, IconType))(&updateSimplePlayer), (player, icon, type));
-    MI_INLINE void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type)
-        GEODE_EVENT_EXPORT_NORES((void(*)(GJRobotSprite*, const std::string&, IconType))(&updateRobotSprite), (sprite, icon, type));
-    MI_INLINE void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type)
-        GEODE_EVENT_EXPORT_NORES((void(*)(PlayerObject*, const std::string&, IconType))(&updatePlayerObject), (object, icon, type));
-    MI_INLINE std::map<IconType, std::vector<IconInfo>> getIcons()
-        GEODE_EVENT_EXPORT_NORES((std::map<IconType, std::vector<IconInfo>>(*)())(&getIcons), ());
-    MI_INLINE std::vector<IconInfo> getIcons(IconType type)
-        GEODE_EVENT_EXPORT_NORES((std::vector<IconInfo>(*)(IconType))(&more_icons::getIcons), (type));
-    MI_INLINE IconInfo* getIcon(const std::string& name, IconType type)
-        GEODE_EVENT_EXPORT_NORES((IconInfo*(*)(const std::string&, IconType))(&getIcon), (name, type));
-    MI_INLINE FLAlertLayer* createInfoPopup(const std::string& name, IconType type)
+    MORE_ICONS_DLL FLAlertLayer* createInfoPopup(const std::string& name, IconType type)
         GEODE_EVENT_EXPORT_NORES(&createInfoPopup, (name, type));
-    #endif
+
+    /// Adds an icon to the icon list.
+    /// @param name The name of the icon.
+    /// @param shortName The name of the icon without the pack prefix.
+    /// @param type The type of the icon.
+    /// @param png The path to the icon's PNG file.
+    /// @param plist The path to the icon's Plist file.
+    /// @param packID The ID of the icon pack.
+    /// @param packName The name of the icon pack.
+    /// @param trailID The ID of the trail this icon originated from.
+    /// @param trailInfo The trail info of the icon.
+    /// @param vanilla Whether or not the icon is a vanilla icon.
+    /// @param zipped Whether or not the icon is zipped.
+    /// @returns A pointer to the added icon info.
+    MORE_ICONS_DLL IconInfo* addIcon(
+        const std::string& name, const std::string& shortName, IconType type, const std::string& png, const std::string& plist,
+        const std::string& packID = {}, const std::string& packName = "More Icons",
+        int trailID = 0, const TrailInfo& trailInfo = {}, bool vanilla = false, bool zipped = false
+    )
+        GEODE_EVENT_EXPORT_NORES(&addIcon, (name, shortName, type, png, plist, packID, packName, trailID, trailInfo, vanilla, zipped));
+
+    /// Moves an icon to a different directory.
+    /// @param info The icon info of the icon to move.
+    /// @param path The path of the directory to move the icon to.
+    MORE_ICONS_DLL void moveIcon(IconInfo* info, const std::filesystem::path& path)
+        GEODE_EVENT_EXPORT_NORES(&moveIcon, (info, path));
+
+    /// Removes an icon from the icon list.
+    /// @param info The icon info of the icon to remove.
+    MORE_ICONS_DLL void removeIcon(IconInfo* info)
+        GEODE_EVENT_EXPORT_NORES(&removeIcon, (info));
+
+    /// Renames an icon.
+    /// @param info The icon info of the icon to rename.
+    /// @param name The new name of the icon.
+    MORE_ICONS_DLL void renameIcon(IconInfo* info, const std::string& name)
+        GEODE_EVENT_EXPORT_NORES(&renameIcon, (info, name));
+
+    /// Updates an icon's image and sheet data.
+    /// @param info The icon info of the icon to update.
+    MORE_ICONS_DLL void updateIcon(IconInfo* info)
+        GEODE_EVENT_EXPORT_NORES(&updateIcon, (info));
 }
+
+#ifdef MI_EXPORT_STUB
+#undef GEODE_EVENT_EXPORT_NORES
+#undef MI_EXPORT_STUB
+#endif
+#undef MY_MOD_ID
