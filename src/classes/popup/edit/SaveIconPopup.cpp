@@ -116,13 +116,12 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
     for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(m_frames)) {
         auto suffix = frameName.substr(0, frameName.size() - 4);
         auto& definition = m_definitions[suffix];
-        auto offsetX = definition.get<float>("offsetX").unwrapOr(0.0f);
-        auto offsetY = definition.get<float>("offsetY").unwrapOr(0.0f);
-        auto rotationX = definition.get<float>("rotationX").unwrapOr(0.0f);
-        auto rotationY = definition.get<float>("rotationY").unwrapOr(0.0f);
-        auto scaleX = definition.get<float>("scaleX").unwrapOr(1.0f);
-        auto scaleY = definition.get<float>("scaleY").unwrapOr(1.0f);
-
+        auto offsetX = definition.get<float>("offset-x").unwrapOr(0.0f);
+        auto offsetY = definition.get<float>("offset-y").unwrapOr(0.0f);
+        auto rotationX = definition.get<float>("rotation-x").unwrapOr(0.0f);
+        auto rotationY = definition.get<float>("rotation-y").unwrapOr(0.0f);
+        auto scaleX = definition.get<float>("scale-x").unwrapOr(1.0f);
+        auto scaleY = definition.get<float>("scale-y").unwrapOr(1.0f);
         auto joinedName = fmt::format("{}{}", name, frameName);
         for (int i = 0; i < 3; i++) {
             auto node = CCNode::create();
