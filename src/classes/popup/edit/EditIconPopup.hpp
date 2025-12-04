@@ -25,6 +25,9 @@ protected:
     cocos2d::CCMenu* m_pieceMenu;
     IconType m_iconType;
     int m_page = 0;
+    int m_firstColor = 12;
+    int m_secondColor = 12;
+    int m_thirdColor = 12;
     bool m_hasChanged = false;
 
     bool setup(MoreIconsPopup* popup, IconType type) override;
@@ -32,6 +35,7 @@ protected:
     void updateControls(std::string_view id, float minimum, float maximum, float defaultValue, bool decimals);
     void transferPlayerToNode(cocos2d::CCNode* node, SimplePlayer* player);
     void addPieceButton(std::string_view suffix, int page, cocos2d::CCArray* targets);
+    void addColorButton(int& index, cocos2d::CCMenu* menu, const char* text, std::string id);
     void updateWithSelectedFiles();
     void updatePieces();
     void goToPage(int page);

@@ -1,4 +1,5 @@
 #include "EditIconPopup.hpp"
+#include "IconColorPopup.hpp"
 #include "IconPresetPopup.hpp"
 #include "ImageRenderer.hpp"
 #include "SaveIconPopup.hpp"
@@ -6,6 +7,7 @@
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
+#include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/Slider.hpp>
 #include <Geode/ui/Notification.hpp>
@@ -174,6 +176,19 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     }
 
     m_pieceMenu->updateLayout();
+
+    auto colorMenu = CCMenu::create();
+    colorMenu->setPosition({ 35.0f, 110.0f });
+    colorMenu->setContentSize({ 30.0f, 100.0f });
+    colorMenu->setLayout(ColumnLayout::create()->setGap(10.0f)->setAxisReverse(true));
+    colorMenu->setID("color-menu");
+    m_mainLayer->addChild(colorMenu);
+
+    addColorButton(m_firstColor, colorMenu, "1", "first-color-button");
+    addColorButton(m_secondColor, colorMenu, "2", "second-color-button");
+    addColorButton(m_thirdColor, colorMenu, "G", "third-color-button");
+
+    colorMenu->updateLayout();
 
     m_selectSprite = CCSprite::createWithSpriteFrameName("GJ_select_001.png");
     m_selectSprite->setPosition(m_mainLayer->convertToNodeSpace(m_pieceMenu->convertToWorldSpace(m_pieceMenu->getChildByIndex(0)->getPosition())));
@@ -362,9 +377,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     return true;
 }
 
-void EditIconPopup::createControls(
-    const cocos2d::CCPoint& pos, const char* text, std::string_view id, float min, float max, float def, bool decimals
-) {
+void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::string_view id, float min, float max, float def, bool decimals) {
     m_settings[id] = def;
     m_definitions[m_suffix][id] = def;
 
@@ -567,6 +580,34 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
     if (m_pages->count() <= page) m_pages->addObject(CCArray::create());
     static_cast<CCArray*>(m_pages->objectAtIndex(page))->addObject(pieceButton);
     m_pieces->setObject(pieceSprite, gd::string(suffix.data(), suffix.size()));
+}
+
+void EditIconPopup::addColorButton(int& index, CCMenu* menu, const char* text, std::string id) {
+    auto color = MoreIconsAPI::getGameManager()->colorForIdx(index);
+    auto sprite = CCSprite::createWithSpriteFrameName("player_special_01_001.png");
+    sprite->setScale(0.85f);
+    sprite->setColor(color);
+    auto label = CCLabelBMFont::create(text, "bigFont.fnt");
+    label->setScale(0.45f);
+    label->setPosition(sprite->getContentSize() / 2.0f);
+    label->setColor(color);
+    sprite->addChild(label);
+    auto button = CCMenuItemExt::createSpriteExtra(sprite, [this, &index, label, sprite](auto) {
+        IconColorPopup::create(index, [this, &index, label, sprite](int newIndex) {
+            index = newIndex;
+            auto gameManager = MoreIconsAPI::getGameManager();
+            auto color = gameManager->colorForIdx(newIndex);
+            sprite->setColor(color);
+            label->setColor(color);
+            m_player->setColor(m_firstColor == newIndex ? color : gameManager->colorForIdx(m_firstColor));
+            m_player->setSecondColor(m_secondColor == newIndex ? color : gameManager->colorForIdx(m_secondColor));
+            m_player->enableCustomGlowColor(m_thirdColor == newIndex ? color : gameManager->colorForIdx(m_thirdColor));
+            m_player->updateColors();
+            m_hasChanged = true;
+        })->show();
+    });
+    button->setID(std::move(id));
+    menu->addChild(button);
 }
 
 void EditIconPopup::updateWithSelectedFiles() {
