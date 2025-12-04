@@ -69,7 +69,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto isRobot = type == IconType::Robot || type == IconType::Spider;
 
     auto iconBackground = CCScale9Sprite::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
-    iconBackground->setPosition({ 55.0f, 205.0f });
+    iconBackground->setPosition({ 51.0f, 205.0f });
     iconBackground->setContentSize({ 80.0f, 80.0f });
     iconBackground->setOpacity(105);
     iconBackground->setID("icon-background");
@@ -103,7 +103,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_player->updateColors();
 
     auto previewNode = CCNode::create();
-    previewNode->setPosition({ 55.0f, 205.0f });
+    previewNode->setPosition({ 51.0f, 205.0f });
     previewNode->setScale(2.0f);
     previewNode->setAnchorPoint({ 0.5f, 0.5f });
     transferPlayerToNode(previewNode, m_player);
@@ -178,7 +178,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_pieceMenu->updateLayout();
 
     auto colorMenu = CCMenu::create();
-    colorMenu->setPosition({ 35.0f, 110.0f });
+    colorMenu->setPosition({ 51.0f, 110.0f });
     colorMenu->setContentSize({ 30.0f, 100.0f });
     colorMenu->setLayout(ColumnLayout::create()->setGap(10.0f)->setAxisReverse(true));
     colorMenu->setID("color-menu");
