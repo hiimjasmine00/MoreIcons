@@ -3,8 +3,6 @@
 #include <thread>
 #include <mutex>
 
-// https://github.com/geode-sdk/geode/blob/v4.10.0/loader/src/ui/nodes/LazySprite.cpp
-
 class ThreadPool {
 private:
     size_t m_threadsInit = 0;

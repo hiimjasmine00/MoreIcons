@@ -17,7 +17,7 @@ To use the More Icons API, you must add it as a suggested dependency in your `mo
 }
 ```
 
-## Supported [Icon Types](https://github.com/geode-sdk/bindings/blob/c949aeae063175eca528b33cf8f5b573935b0079/bindings/include/Geode/Enums.hpp#911)
+## Supported [Icon Types](https://github.com/geode-sdk/bindings/blob/c949aeae063175eca528b33cf8f5b573935b0079/bindings/include/Geode/Enums.hpp#L911)
 - `IconType::Cube` (0)
 - `IconType::Ship` (1)
 - `IconType::Ball` (2)

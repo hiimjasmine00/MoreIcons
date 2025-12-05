@@ -2,7 +2,7 @@
 name = "More Icons"
 version = ""
 repository = "https://github.com/hiimjasmine00/MoreIcons"
-tree = "https://github.com/hiimjasmine00/MoreIcons/tree/master"
+tree = "https://github.com/hiimjasmine00/MoreIcons/blob/master"
 icon = "logo.png"
 
 [tutorials]
