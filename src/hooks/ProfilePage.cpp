@@ -1,4 +1,3 @@
-#include "../MoreIcons.hpp"
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/ProfilePage.hpp>
 #include <jasmine/button.hpp>
@@ -30,8 +29,14 @@ class $modify(MIProfilePage, ProfilePage) {
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
 
-        for (int i = 0; i < 9; i++) {
-            if (auto player = playerMenu->getChildByID(fmt::format("player-{}", MoreIcons::folders[i]))) {
+        constexpr std::array players = {
+            "player-icon", "player-ship", "player-ball",
+            "player-ufo", "player-wave", "player-robot",
+            "player-spider", "player-swing", "player-jetpack"
+        };
+
+        for (int i = 0; i < players.size(); i++) {
+            if (auto player = playerMenu->getChildByID(players[i])) {
                 auto tag = i == 1 ? player->getTag() : -1;
                 updatePlayer(player, (IconType)(tag != -1 ? tag : i), dual);
             }
@@ -47,8 +52,10 @@ class $modify(MIProfilePage, ProfilePage) {
 
         if (Loader::get()->isModLoaded("weebify.separate_dual_icons")) {
             if (auto leftMenu = m_mainLayer->getChildByID("left-menu")) {
-                ButtonHooker::create(static_cast<CCMenuItem*>(leftMenu->getChildByID("2p-toggler")),
-                    this, menu_selector(MIProfilePage::newOn2PToggle));
+                ButtonHooker::create(
+                    static_cast<CCMenuItem*>(leftMenu->getChildByID("2p-toggler")),
+                    this, menu_selector(MIProfilePage::newOn2PToggle)
+                );
             }
         }
     }

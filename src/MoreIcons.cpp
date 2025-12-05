@@ -126,7 +126,7 @@ void migrateFolderIcons(const std::filesystem::path& path) {
     auto& migratedFolders = saveContainer["migrated-folders"];
 
     for (int i = 0; i < 9; i++) {
-        auto folderPath = path / MoreIcons::wfolders[i];
+        auto folderPath = path / MoreIcons::folders[i];
         if (!MoreIcons::doesExist(folderPath)) continue;
 
         directoryIterator(folderPath, std::filesystem::file_type::directory, [i, &folderPath, &migratedFolders](const std::filesystem::path& path) {
@@ -460,7 +460,7 @@ void MoreIcons::loadIcons(IconType type) {
 
     auto miType = convertType(type);
     auto prefix = wprefixes[miType];
-    auto folder = wfolders[miType];
+    auto folder = folders[miType];
     auto name = lowercase[miType];
 
     for (int i = 0; i < packs.size(); i++) {
@@ -687,7 +687,7 @@ CCSpriteFrame* MoreIcons::getFrame(const std::string& name) {
 }
 
 std::filesystem::path MoreIcons::getIconDir(IconType type) {
-    return Mod::get()->getConfigDir() / wfolders[convertType(type)];
+    return Mod::get()->getConfigDir() / folders[convertType(type)];
 }
 
 std::filesystem::path MoreIcons::getIconStem(const std::string& name, IconType type) {

@@ -1,4 +1,3 @@
-#include "../MoreIcons.hpp"
 #include "../utils/Get.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/modify/MenuGameLayer.hpp>

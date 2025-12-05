@@ -39,17 +39,16 @@ public:
     static constexpr std::array severityFrames = {
         "cc_2x2_white_image", "GJ_infoIcon_001.png", "geode.loader/info-warning.png", "geode.loader/info-alert.png"
     };
-    static constexpr std::array folders = {
-        "icon", "ship", "ball", "ufo", "wave", "robot", "spider",
-        "swing", "jetpack", "death", "trail", "", "fire"
-    };
     #ifdef GEODE_IS_WINDOWS
-    static constexpr std::array wfolders = {
+    static constexpr std::array folders = {
         L"icon", L"ship", L"ball", L"ufo", L"wave", L"robot", L"spider",
         L"swing", L"jetpack", L"death", L"trail", L"", L"fire"
     };
     #else
-    static constexpr std::array wfolders = folders;
+    static constexpr std::array folders = {
+        "icon", "ship", "ball", "ufo", "wave", "robot", "spider",
+        "swing", "jetpack", "death", "trail", "", "fire"
+    };
     #endif
 
     static std::map<IconType, std::vector<IconInfo>> icons;
