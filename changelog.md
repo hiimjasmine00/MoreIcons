@@ -7,6 +7,7 @@
 - Removed some logs I left in by accident
 - Refactored the API in `MoreIconsV2.hpp`, utilizing Geode's event export system
   - This will replace `MoreIcons.hpp` in v2.0.0, which will be released after Geometry Dash v2.208
+- Another HUGE internal refactor
 
 ## v1.15.2 (2025-12-01)
 - Fixed a bug where unloading icons on game exit would crash the game (Reported by [DeepResonanceX](user:5668656))

@@ -295,9 +295,6 @@ void printLog(const std::string& name, int severity, fmt::format_string<Args...>
     MoreIcons::logs.emplace(std::ranges::find_if(MoreIcons::logs, [&name, severity](const LogData& log) {
         return log.severity == severity ? log.name > name : log.severity < severity;
     }), name, std::move(logMessage), currentType, severity);
-    auto it = std::ranges::upper_bound(MoreIcons::logs, severity, {}, [](const LogData& log) {
-        return log.severity;
-    });
     auto& currentSeverity = MoreIcons::severities[currentType];
     if (currentSeverity < severity) currentSeverity = severity;
     if (MoreIcons::severity < severity) MoreIcons::severity = severity;
