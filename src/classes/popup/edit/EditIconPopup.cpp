@@ -178,7 +178,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_pieceMenu->updateLayout();
 
     auto colorMenu = CCMenu::create();
-    colorMenu->setPosition({ 51.0f, 110.0f });
+    colorMenu->setPosition({ 35.0f, 110.0f });
     colorMenu->setContentSize({ 30.0f, 100.0f });
     colorMenu->setLayout(ColumnLayout::create()->setGap(10.0f)->setAxisReverse(true));
     colorMenu->setID("color-menu");
