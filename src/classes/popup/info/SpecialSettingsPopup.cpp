@@ -139,8 +139,8 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
 
     auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", 0.8f), [this, info](auto) {
         info->trailInfo = m_trailInfo;
-        auto res = file::writeToJson(MoreIcons::strPath(info->textures[0]).replace_extension(MI_PATH(".json")), info->trailInfo);
-        if (res.isErr()) MoreIcons::notifyFailure("{}: Failed to save trail info: {}", info->name, res.unwrapErr());
+        auto res = file::writeToJson(MoreIcons::strPath(info->textures[0]).replace_extension(MI_PATH(".json")), m_trailInfo);
+        if (res.isErr()) MoreIcons::notifyFailure("Failed to save trail info: {}", res.unwrapErr());
         else onClose(nullptr);
     });
     saveButton->setPosition({ 200.0f, 25.0f });
