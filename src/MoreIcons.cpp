@@ -1,13 +1,13 @@
 #define FMT_CPP_LIB_FILESYSTEM 0
 #include "MoreIcons.hpp"
+#include "classes/misc/ThreadPool.hpp"
 #include "utils/Get.hpp"
 #include "utils/Load.hpp"
-#include "classes/misc/ThreadPool.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/loader/Dirs.hpp>
-#include <Geode/loader/Mod.hpp>
+#include <Geode/ui/Notification.hpp>
 #include <geode.texture-loader/include/TextureLoader.hpp>
 #include <jasmine/convert.hpp>
 #include <jasmine/setting.hpp>
@@ -18,15 +18,11 @@
 using namespace geode::prelude;
 
 std::string std::filesystem::format_as(const std::filesystem::path& p) {
-    return GEODE_WINDOWS(utils::string::wideToUtf8)(p.native());
+    return utils::string::pathToString(p.native());
 }
 
 $on_mod(Loaded) {
     MoreIcons::loadSettings();
-}
-
-$on_mod(DataSaved) {
-    MoreIcons::saveTrails();
 }
 
 std::map<IconType, std::vector<IconInfo>> MoreIcons::icons = {
@@ -444,37 +440,8 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
     auto trailID = jasmine::convert::getInt<int>(std::string_view(pathStem).substr(7, pathStem.size() - 11)).value_or(0);
     if (trailID == 0) trailID = -1;
 
-    TrailInfo trailInfo;
-    trailInfo.blend = true;
-    switch (trailID) {
-        case 1:
-            trailInfo.tint = true;
-            trailInfo.stroke = 10.0f;
-            break;
-        case 3:
-            trailInfo.tint = true;
-            trailInfo.stroke = 8.5f;
-            break;
-        case 4:
-            trailInfo.tint = true;
-            trailInfo.fade = 0.4f;
-            trailInfo.stroke = 10.0f;
-            break;
-        case 5:
-            trailInfo.tint = true;
-            trailInfo.show = true;
-            trailInfo.fade = 0.6f;
-            trailInfo.stroke = 5.0f;
-            break;
-        case 6:
-            trailInfo.tint = true;
-            trailInfo.show = true;
-            trailInfo.fade = 1.0f;
-            trailInfo.stroke = 3.0f;
-            break;
-    }
-
-    more_icons::addIcon(name, pathStem, IconType::Special, pathString, {}, pack.id, pack.name, trailID, trailInfo, true, pack.zipped);
+    more_icons::addIcon(name, pathStem, IconType::Special, pathString, {}, pack.id, pack.name, trailID,
+        MoreIcons::getTrailInfo(trailID), true, pack.zipped);
 
     log::debug("Finished pre-loading vanilla trail {} from {}", name, pack.name);
 }
@@ -597,24 +564,66 @@ void MoreIcons::loadIcons(IconType type) {
     log::info("Finished pre-loading {} {} textures", size, name);
 }
 
-void MoreIcons::saveTrails() {
-    for (auto& info : icons[IconType::Special]) {
-        if (info.trailID == 0) {
-            auto res = file::writeToJson(strPath(info.textures[0]).replace_extension(MI_PATH(".json")), info.trailInfo);
-            if (res.isErr()) log::error("{}: Failed to save trail info: {}", info.name, res.unwrapErr());
-        }
+TrailInfo MoreIcons::getTrailInfo(int trailID) {
+    TrailInfo trailInfo;
+    trailInfo.blend = true;
+    switch (trailID) {
+        case 1:
+            trailInfo.tint = true;
+            trailInfo.stroke = 10.0f;
+            break;
+        case 3:
+            trailInfo.tint = true;
+            trailInfo.stroke = 8.5f;
+            break;
+        case 4:
+            trailInfo.tint = true;
+            trailInfo.fade = 0.4f;
+            trailInfo.stroke = 10.0f;
+            break;
+        case 5:
+            trailInfo.tint = true;
+            trailInfo.show = true;
+            trailInfo.fade = 0.6f;
+            trailInfo.stroke = 5.0f;
+            break;
+        case 6:
+            trailInfo.tint = true;
+            trailInfo.show = true;
+            trailInfo.fade = 1.0f;
+            trailInfo.stroke = 3.0f;
+            break;
     }
+    return trailInfo;
 }
 
-ColorInfo MoreIcons::vanillaColors(bool dual) {
+bool MoreIcons::dualSelected() {
+    auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
+    return sdi && sdi->getSavedValue("2pselected", false);
+}
+
+cocos2d::ccColor3B MoreIcons::vanillaColor1(bool dual) {
     auto gameManager = Get::GameManager();
     auto sdi = dual ? Loader::get()->getLoadedMod("weebify.separate_dual_icons") : nullptr;
-    return {
-        .color1 = gameManager->colorForIdx(sdi ? sdi->getSavedValue("color1", 0) : gameManager->m_playerColor),
-        .color2 = gameManager->colorForIdx(sdi ? sdi->getSavedValue("color2", 0) : gameManager->m_playerColor2),
-        .colorGlow = gameManager->colorForIdx(sdi ? sdi->getSavedValue("colorglow", 0) : gameManager->m_playerGlowColor),
-        .glow = sdi ? sdi->getSavedValue("glow", false) : gameManager->m_playerGlow
-    };
+    return gameManager->colorForIdx(sdi ? sdi->getSavedValue("color1", 0) : gameManager->m_playerColor);
+}
+
+cocos2d::ccColor3B MoreIcons::vanillaColor2(bool dual) {
+    auto gameManager = Get::GameManager();
+    auto sdi = dual ? Loader::get()->getLoadedMod("weebify.separate_dual_icons") : nullptr;
+    return gameManager->colorForIdx(sdi ? sdi->getSavedValue("color2", 0) : gameManager->m_playerColor2);
+}
+
+cocos2d::ccColor3B MoreIcons::vanillaColorGlow(bool dual) {
+    auto gameManager = Get::GameManager();
+    auto sdi = dual ? Loader::get()->getLoadedMod("weebify.separate_dual_icons") : nullptr;
+    return gameManager->colorForIdx(sdi ? sdi->getSavedValue("colorglow", 0) : gameManager->m_playerGlowColor);
+}
+
+bool MoreIcons::vanillaGlow(bool dual) {
+    auto gameManager = Get::GameManager();
+    auto sdi = dual ? Loader::get()->getLoadedMod("weebify.separate_dual_icons") : nullptr;
+    return sdi ? sdi->getSavedValue("glow", false) : gameManager->m_playerGlow;
 }
 
 int MoreIcons::vanillaIcon(IconType type, bool dual) {
@@ -676,3 +685,24 @@ CCSpriteFrame* MoreIcons::getFrame(const std::string& name) {
     if (!spriteFrame || spriteFrame->getTag() == 105871529) spriteFrame = nullptr;
     return spriteFrame;
 }
+
+std::filesystem::path MoreIcons::getIconDir(IconType type) {
+    return Mod::get()->getConfigDir() / wfolders[convertType(type)];
+}
+
+std::filesystem::path MoreIcons::getIconStem(const std::string& name, IconType type) {
+    return getIconDir(type) / strPath(name);
+}
+
+void MoreIcons::notifyFailure(const std::string& message) {
+    Notification::create(message, NotificationIcon::Error)->show();
+}
+
+void MoreIcons::notifyInfo(const std::string& message) {
+    Notification::create(message, NotificationIcon::Info)->show();
+}
+
+void MoreIcons::notifySuccess(const std::string& message) {
+    Notification::create(message, NotificationIcon::Success)->show();
+}
+

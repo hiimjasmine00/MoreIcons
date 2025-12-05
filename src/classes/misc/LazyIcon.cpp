@@ -9,10 +9,12 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/ObjectManager.hpp>
 #include <Geode/binding/SpriteDescription.hpp>
-#include <Geode/loader/Mod.hpp>
+#include <Geode/loader/Loader.hpp>
 #include <jasmine/convert.hpp>
+#include <jasmine/mod.hpp>
 
 using namespace geode::prelude;
+using namespace jasmine::mod;
 
 LazyIcon* LazyIcon::create(IconType type, int id, IconInfo* info, std::string_view suffix, std23::move_only_function<void()> callback) {
     auto ret = new LazyIcon();

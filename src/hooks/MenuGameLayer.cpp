@@ -1,7 +1,6 @@
 #include "../MoreIcons.hpp"
 #include "../utils/Get.hpp"
 #include <Geode/binding/GameManager.hpp>
-#include <Geode/binding/PlayerObject.hpp>
 #include <Geode/modify/MenuGameLayer.hpp>
 #include <jasmine/hook.hpp>
 #include <jasmine/random.hpp>

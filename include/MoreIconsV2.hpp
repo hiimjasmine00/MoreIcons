@@ -1,6 +1,5 @@
 #pragma once
 #include "IconInfo.hpp"
-#include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/binding/GJRobotSprite.hpp>
 #include <Geode/binding/PlayerObject.hpp>
 #if defined(MORE_ICONS_EVENTS) || defined(GEODE_DEFINE_EVENT_EXPORTS)

@@ -5,8 +5,6 @@
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Get.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
-#include <Geode/loader/Mod.hpp>
-#include <Geode/ui/Notification.hpp>
 #include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
@@ -19,11 +17,6 @@ EditTrailPopup* EditTrailPopup::create(MoreIconsPopup* popup) {
     }
     delete ret;
     return nullptr;
-}
-
-template <typename... T>
-void notify(NotificationIcon icon, fmt::format_string<T...> message, T&&... args) {
-    Notification::create(fmt::format(message, std::forward<T>(args)...), icon)->show();
 }
 
 bool EditTrailPopup::setup(MoreIconsPopup* popup) {
@@ -62,14 +55,14 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
     auto pngButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("PNG", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
         m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
             auto res = event->getValue();
-            if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import PNG file: {}", res->unwrapErr());
+            if (res && res->isErr()) return MoreIcons::notifyFailure("Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
             if (auto textureRes = ImageRenderer::getTexture(res->unwrap()); textureRes.isOk()) {
                 m_streak->setTexture(textureRes.unwrap());
                 m_hasChanged = true;
             }
-            else if (textureRes.isErr()) return notify(NotificationIcon::Error, "Failed to load image: {}", textureRes.unwrapErr());
+            else if (textureRes.isErr()) return MoreIcons::notifyFailure("Failed to load image: {}", textureRes.unwrapErr());
         });
 
         m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
@@ -94,9 +87,9 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
 
     auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
         auto iconName = m_nameInput->getString();
-        if (iconName.empty()) return notify(NotificationIcon::Info, "Please enter a name.");
+        if (iconName.empty()) return MoreIcons::notifyInfo("Please enter a name.");
 
-        std::filesystem::path path = (Mod::get()->getConfigDir() / MI_PATH("trail") / MoreIcons::strPath(iconName)).native() + MI_PATH(".png");
+        std::filesystem::path path = MoreIcons::getIconStem(iconName, IconType::Special).native() + MI_PATH(".png");
         if (MoreIcons::doesExist(path)) createQuickPopup(
             "Existing Trail",
             fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
@@ -136,7 +129,7 @@ void EditTrailPopup::addOrUpdateIcon(const std::string& name, const std::filesys
     m_parentPopup->close();
     Popup::onClose(nullptr);
 
-    notify(NotificationIcon::Success, "{} saved!", name);
+    MoreIcons::notifySuccess("{} saved!", name);
     MoreIcons::updateGarage();
 }
 
@@ -145,7 +138,7 @@ void EditTrailPopup::saveTrail(const std::filesystem::path& path) {
     sprite->setPosition(sprite->getContentSize() / 2.0f);
     sprite->setBlendFunc({ GL_ONE, GL_ZERO });
     if (auto res = texpack::toPNG(path, ImageRenderer::getImage(sprite)); res.isErr()) {
-        return notify(NotificationIcon::Error, "Failed to save image: {}", res.unwrapErr());
+        return MoreIcons::notifyFailure("Failed to save image: {}", res.unwrapErr());
     }
     addOrUpdateIcon(m_nameInput->getString(), path);
 }

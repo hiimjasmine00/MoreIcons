@@ -1,4 +1,5 @@
 #include <cocos2d.h>
+#include <fmt/format.h>
 #include <Geode/GeneratedPredeclare.hpp>
 #include <IconInfo.hpp>
 
@@ -7,13 +8,6 @@ struct LogData {
     std::string message;
     IconType type;
     int severity;
-};
-
-struct ColorInfo {
-    cocos2d::ccColor3B color1;
-    cocos2d::ccColor3B color2;
-    cocos2d::ccColor3B colorGlow;
-    bool glow;
 };
 
 #ifdef GEODE_IS_WINDOWS
@@ -75,18 +69,42 @@ public:
         return (IconType)(type + (type > 8 ? 89 : 0));
     }
 
+    template <typename... Args>
+    static void notifyFailure(fmt::format_string<Args...> message, Args&&... args) {
+        notifyFailure(fmt::format(message, std::forward<Args>(args)...));
+    }
+    static void notifyFailure(const std::string& message);
+
+    template <typename... Args>
+    static void notifyInfo(fmt::format_string<Args...> message, Args&&... args) {
+        notifyInfo(fmt::format(message, std::forward<Args>(args)...));
+    }
+    static void notifyInfo(const std::string& message);
+
+   template <typename... Args>
+    static void notifySuccess(fmt::format_string<Args...> message, Args&&... args) {
+        notifySuccess(fmt::format(message, std::forward<Args>(args)...));
+    }
+    static void notifySuccess(const std::string& message);
+
     static geode::Result<std::filesystem::path> createTrash();
     static cocos2d::CCSprite* customTrail(const std::string& png);
+    static bool dualSelected();
     static bool doesExist(const std::filesystem::path& path);
     static cocos2d::CCSpriteFrame* getFrame(const std::string& name);
+    static std::filesystem::path getIconDir(IconType type);
+    static std::filesystem::path getIconStem(const std::string& name, IconType type);
+    static TrailInfo getTrailInfo(int trailID);
     static void loadIcons(IconType type);
     static void loadPacks();
     static void loadSettings();
     static geode::Result<> renameFile(const std::filesystem::path& from, const std::filesystem::path& to, bool overwrite = true, bool copy = false);
-    static void saveTrails();
     static std::filesystem::path strPath(const std::string& path);
     static void updateGarage(GJGarageLayer* layer = nullptr);
-    static ColorInfo vanillaColors(bool dual);
+    static cocos2d::ccColor3B vanillaColor1(bool dual);
+    static cocos2d::ccColor3B vanillaColor2(bool dual);
+    static cocos2d::ccColor3B vanillaColorGlow(bool dual);
+    static bool vanillaGlow(bool dual);
     static int vanillaIcon(IconType type, bool dual);
     static std::string vanillaTexturePath(const std::string& path, bool skipSuffix);
 };

@@ -21,7 +21,6 @@ class $modify(MIGameManager, GameManager) {
 
         if (!m_reloadTextures) return;
 
-        MoreIcons::saveTrails();
         Get::fileUtils = nullptr;
         Get::spriteFrameCache = nullptr;
         Get::textureCache = nullptr;

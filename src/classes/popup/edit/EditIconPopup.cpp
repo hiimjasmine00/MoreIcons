@@ -12,7 +12,6 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/Slider.hpp>
-#include <Geode/ui/Notification.hpp>
 #include <Geode/utils/file.hpp>
 #include <Geode/utils/string.hpp>
 #include <jasmine/convert.hpp>
@@ -20,11 +19,6 @@
 
 using namespace geode::prelude;
 using namespace jasmine::mod;
-
-template <typename... T>
-void notify(NotificationIcon icon, fmt::format_string<T...> message, T&&... args) {
-    Notification::create(fmt::format(message, std::forward<T>(args)...), icon)->show();
-}
 
 EditIconPopup* EditIconPopup::create(MoreIconsPopup* popup, IconType type) {
     auto ret = new EditIconPopup();
@@ -218,7 +212,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto pieceImportButton = CCMenuItemExt::createSpriteExtra(pieceImportSprite, [this](auto) {
         m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
             auto res = event->getValue();
-            if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import PNG file: {}", res->unwrapErr());
+            if (res && res->isErr()) return MoreIcons::notifyFailure("Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
             if (auto textureRes = ImageRenderer::getTexture(res->unwrap())) {
@@ -227,7 +221,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
                     fmt::format("{}.png", m_suffix));
                 updatePieces();
             }
-            else if (textureRes.isErr()) return notify(NotificationIcon::Error, "Failed to load image: {}", textureRes.unwrapErr());
+            else if (textureRes.isErr()) return MoreIcons::notifyFailure("Failed to load image: {}", textureRes.unwrapErr());
         });
 
         m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
@@ -297,7 +291,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto pngButton = CCMenuItemExt::createSpriteExtra(pngSprite, [this, pngSprite, plistSprite](auto) {
         m_listener.bind([this, pngSprite, plistSprite](Task<Result<std::filesystem::path>>::Event* event) {
             auto res = event->getValue();
-            if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import PNG file: {}", res->unwrapErr());
+            if (res && res->isErr()) return MoreIcons::notifyFailure("Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
             m_selectedPNG = res->unwrap();
@@ -328,7 +322,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto plistButton = CCMenuItemExt::createSpriteExtra(plistSprite, [this, pngSprite, plistSprite](auto) {
         m_listener.bind([this, pngSprite, plistSprite](Task<Result<std::filesystem::path>>::Event* event) {
             auto res = event->getValue();
-            if (res && res->isErr()) return notify(NotificationIcon::Error, "Failed to import Plist file: {}", res->unwrapErr());
+            if (res && res->isErr()) return MoreIcons::notifyFailure("Failed to import Plist file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
             m_selectedPlist = res->unwrap();
@@ -628,9 +622,9 @@ void EditIconPopup::updateWithSelectedFiles() {
             }
             updatePieces();
         }
-        else if (framesRes.isErr()) notify(NotificationIcon::Error, "Failed to load frames: {}", framesRes.unwrapErr());
+        else if (framesRes.isErr()) MoreIcons::notifyFailure("Failed to load frames: {}", framesRes.unwrapErr());
     }
-    else if (textureRes.isErr()) notify(NotificationIcon::Error, "Failed to load image: {}", textureRes.unwrapErr());
+    else if (textureRes.isErr()) MoreIcons::notifyFailure("Failed to load image: {}", textureRes.unwrapErr());
 
     m_selectedPNG.clear();
     m_selectedPlist.clear();

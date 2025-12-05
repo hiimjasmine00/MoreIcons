@@ -9,8 +9,6 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
-#include <Geode/loader/Mod.hpp>
-#include <Geode/ui/Notification.hpp>
 #include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
@@ -57,9 +55,11 @@ bool MoreIconsPopup::setup() {
         ccColor3B { 74, 82, 225 }
     };
 
-    auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-    auto dual = sdi && sdi->getSavedValue("2pselected", false);
-    auto [color1, color2, colorGlow, glow] = MoreIcons::vanillaColors(dual);
+    auto dual = MoreIcons::dualSelected();
+    auto color1 = MoreIcons::vanillaColor1(dual);
+    auto color2 = MoreIcons::vanillaColor2(dual);
+    auto colorGlow = MoreIcons::vanillaColorGlow(dual);
+    auto glow = MoreIcons::vanillaGlow(dual);
     for (int i = 0; i < 11; i++) {
         if (i == 9) continue;
 
@@ -163,8 +163,8 @@ bool MoreIconsPopup::setup() {
         auto folderSprite = ButtonSprite::create(
             CCSprite::createWithSpriteFrameName("folderIcon_001.png"), 0, false, 0.0f, "GJ_button_05.png", 0.7f);
         folderSprite->setScale(0.45f);
-        auto folderButton = CCMenuItemExt::createSpriteExtra(folderSprite, [directory = MoreIcons::wfolders[i]](auto) {
-            file::openFolder(Mod::get()->getConfigDir() / directory);
+        auto folderButton = CCMenuItemExt::createSpriteExtra(folderSprite, [directory = MoreIcons::getIconDir(type)](auto) {
+            file::openFolder(directory);
         });
         folderButton->setPosition({ 54.0f, 15.0f });
         folderButton->setID("folder-button");
@@ -178,7 +178,7 @@ bool MoreIconsPopup::setup() {
 
     auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [](auto) {
         if (auto res = MoreIcons::createTrash()) file::openFolder(res.unwrap());
-        else Notification::create(res.unwrapErr(), NotificationIcon::Error)->show();
+        else MoreIcons::notifyFailure(res.unwrapErr());
     });
     trashButton->setPosition({ 435.0f, 5.0f });
     trashButton->setID("trash-button");

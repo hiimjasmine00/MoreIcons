@@ -11,8 +11,6 @@
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/binding/TextArea.hpp>
 #include <Geode/loader/Dirs.hpp>
-#include <Geode/loader/Mod.hpp>
-#include <Geode/ui/Notification.hpp>
 #include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
@@ -25,15 +23,6 @@ MoreInfoPopup* MoreInfoPopup::create(IconInfo* info) {
     }
     delete ret;
     return nullptr;
-}
-
-template <typename... T>
-void notify(NotificationIcon icon, fmt::format_string<T...> message, T&&... args) {
-    Notification::create(fmt::format(message, std::forward<T>(args)...), icon)->show();
-}
-
-void notify(NotificationIcon icon, const std::string& message) {
-    Notification::create(message, icon)->show();
 }
 
 Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem::path& dest, bool uhd) {
@@ -57,20 +46,20 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
     if (m_info->type == IconType::Special) {
         auto filename = texturePath.filename();
         if (auto res = MoreIcons::renameFile(texturePath, directory / filename, false, true); res.isErr()) {
-            return notify(NotificationIcon::Error, "Failed to {} {}: {}", trash ? "trash" : "move", filename, res.unwrapErr());
+            return MoreIcons::notifyFailure("Failed to {} {}: {}", trash ? "trash" : "move", filename, res.unwrapErr());
         }
         auto jsonName = texturePath.filename().replace_extension(MI_PATH(".json"));
         auto jsonPath = parentDir / jsonName;
         if (trash) {
             if (MoreIcons::doesExist(jsonPath)) {
                 if (auto res = MoreIcons::renameFile(jsonPath, directory / jsonName, false, true); res.isErr()) {
-                    return notify(NotificationIcon::Error, "Failed to trash {}: {}", jsonName, res.unwrapErr());
+                    return MoreIcons::notifyFailure("Failed to trash {}: {}", jsonName, res.unwrapErr());
                 }
             }
         }
         else {
             if (auto res = file::writeToJson(jsonPath, m_info->trailInfo); res.isErr()) {
-                return notify(NotificationIcon::Error, "Failed to write trail info to {}: {}", jsonName, res.unwrapErr());
+                return MoreIcons::notifyFailure("Failed to write trail info to {}: {}", jsonName, res.unwrapErr());
             }
         }
     }
@@ -87,7 +76,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
                 if (auto res = copyVanillaFile(MI_PATH("icons") / filename, directory / filename, true); res.isErr()) {
-                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, res.unwrapErr());
+                    return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());
                 }
             }
         }
@@ -100,7 +89,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
                 if (auto res = copyVanillaFile(MI_PATH("icons") / filename, directory / filename, false); res.isErr()) {
-                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, res.unwrapErr());
+                    return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());
                 }
             }
         }
@@ -113,7 +102,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             if (MoreIcons::doesExist(plist)) files.push_back(plist);
             else if (!trash) {
                 if (auto res = copyVanillaFile(MI_PATH("icons") / filename, directory / filename, false); res.isErr()) {
-                    return notify(NotificationIcon::Error, "Failed to copy {}: {}", filename, res.unwrapErr());
+                    return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());
                 }
             }
         }
@@ -126,7 +115,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
                     auto& file2 = files[j];
                     (void)MoreIcons::renameFile(directory / file2.filename(), file2, false);
                 }
-                return notify(NotificationIcon::Error, "Failed to {} {}: {}", trash ? "trash" : "move", filename, res.unwrapErr());
+                return MoreIcons::notifyFailure("Failed to {} {}: {}", trash ? "trash" : "move", filename, res.unwrapErr());
             }
         }
     }
@@ -135,7 +124,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
     onClose(nullptr);
     if (trash) more_icons::removeIcon(m_info);
     else more_icons::moveIcon(m_info, directory);
-    notify(NotificationIcon::Success, "{} {}ed!", name, trash ? "trash" : "convert");
+    MoreIcons::notifySuccess("{} {}ed!", name, trash ? "trash" : "convert");
     MoreIcons::updateGarage();
 }
 
@@ -190,8 +179,11 @@ bool MoreInfoPopup::setup(IconInfo* info) {
         auto player = static_cast<SimplePlayer*>(itemIcon->m_player);
         more_icons::updateSimplePlayer(player, info->name, info->type);
 
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto [color1, color2, colorGlow, glow] = MoreIcons::vanillaColors(sdi && sdi->getSavedValue("2pselected", false));
+        auto dual = MoreIcons::dualSelected();
+        auto color1 = MoreIcons::vanillaColor1(dual);
+        auto color2 = MoreIcons::vanillaColor2(dual);
+        auto colorGlow = MoreIcons::vanillaColorGlow(dual);
+        auto glow = MoreIcons::vanillaGlow(dual);
         player->enableCustomGlowColor(colorGlow);
 
         auto iconButton = CCMenuItemExt::createSpriteExtra(itemIcon, [this, color1, color2, glow](CCMenuItemSpriteExtra* sender) {
@@ -242,7 +234,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
                     if (type <= IconType::Jetpack) parent = parent.parent_path();
                     auto dir = parent / MI_PATH("config") / MI_PATH_ID / MoreIcons::wfolders[miType];
                     if (auto res = file::createDirectoryAll(dir)) moveIcon(dir, false);
-                    else notify(NotificationIcon::Error, res.unwrapErr());
+                    else MoreIcons::notifyFailure(res.unwrapErr());
                 }
             );
         });
@@ -268,7 +260,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
                     if (!btn2) return;
 
                     if (auto res = MoreIcons::createTrash()) moveIcon(res.unwrap(), true);
-                    else notify(NotificationIcon::Error, res.unwrapErr());
+                    else MoreIcons::notifyFailure(res.unwrapErr());
                 }
             );
         });

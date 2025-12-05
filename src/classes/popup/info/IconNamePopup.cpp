@@ -6,7 +6,6 @@
 #ifdef GEODE_IS_WINDOWS
 #include <Geode/utils/string.hpp>
 #endif
-#include <Geode/ui/Notification.hpp>
 #include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
@@ -27,11 +26,6 @@ bool doesExist(const std::filesystem::path& parent, const std::filesystem::path&
 
 Result<> renameFile(const std::filesystem::path& parent, const std::filesystem::path& from, const std::filesystem::path& to) {
     return MoreIcons::renameFile(parent / from, parent / to);
-}
-
-template <typename... T>
-void notify(NotificationIcon icon, fmt::format_string<T...> message, T&&... args) {
-    Notification::create(fmt::format(message, std::forward<T>(args)...), icon)->show();
 }
 
 bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
@@ -58,10 +52,10 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
 
     auto confirmButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Confirm", 0.8f), [this, info, popup, unlockName](auto) {
         auto name = m_nameInput->getString();
-        if (name.empty()) return notify(NotificationIcon::Info, "Name cannot be empty.");
+        if (name.empty()) return MoreIcons::notifyInfo("Name cannot be empty.");
 
         auto& old = info->shortName;
-        if (name == old) return notify(NotificationIcon::Info, "Name is already set to {}.", name);
+        if (name == old) return MoreIcons::notifyInfo("Name is already set to {}.", name);
 
         fmt::memory_buffer message;
         fmt::format_to(std::back_inserter(message), "Are you sure you want to rename <cy>{}</c> to <cy>{}</c>?", old, name);
@@ -119,37 +113,37 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
 
             if (info->type == IconType::Special) {
                 if (auto res = renameFile(parent, wideOld + MI_PATH(".png"), wideName + MI_PATH(".png")); res.isErr()) {
-                    return notify(NotificationIcon::Error, "Failed to rename {}.png: {}", old, res.unwrapErr());
+                    return MoreIcons::notifyFailure("Failed to rename {}.png: {}", old, res.unwrapErr());
                 }
                 if (auto res = renameFile(parent, wideOld + MI_PATH(".json"), wideName + MI_PATH(".json")); res.isErr()) {
-                    return notify(NotificationIcon::Error, "Failed to rename {}.json: {}", old, res.unwrapErr());
+                    return MoreIcons::notifyFailure("Failed to rename {}.json: {}", old, res.unwrapErr());
                 }
             }
             else if (info->type <= IconType::Jetpack) {
                 if (auto res = renameFile(parent, wideOld + MI_PATH("-uhd.png"), wideName + MI_PATH("-uhd.png")); res.isErr()) {
-                    return notify(NotificationIcon::Error, "Failed to rename {}-uhd.png: {}", old, res.unwrapErr());
+                    return MoreIcons::notifyFailure("Failed to rename {}-uhd.png: {}", old, res.unwrapErr());
                 }
                 if (auto res = renameFile(parent, wideOld + MI_PATH("-hd.png"), wideName + MI_PATH("-hd.png")); res.isErr()) {
-                    return notify(NotificationIcon::Error, "Failed to rename {}-hd.png: {}", old, res.unwrapErr());
+                    return MoreIcons::notifyFailure("Failed to rename {}-hd.png: {}", old, res.unwrapErr());
                 }
                 if (auto res = renameFile(parent, wideOld + MI_PATH(".png"), wideName + MI_PATH(".png")); res.isErr()) {
-                    return notify(NotificationIcon::Error, "Failed to rename {}.png: {}", old, res.unwrapErr());
+                    return MoreIcons::notifyFailure("Failed to rename {}.png: {}", old, res.unwrapErr());
                 }
                 if (auto res = renameFile(parent, wideOld + MI_PATH("-uhd.plist"), wideName + MI_PATH("-uhd.plist")); res.isErr()) {
-                    return notify(NotificationIcon::Error, "Failed to rename {}-uhd.plist: {}", old, res.unwrapErr());
+                    return MoreIcons::notifyFailure("Failed to rename {}-uhd.plist: {}", old, res.unwrapErr());
                 }
                 if (auto res = renameFile(parent, wideOld + MI_PATH("-hd.plist"), wideName + MI_PATH("-hd.plist")); res.isErr()) {
-                    return notify(NotificationIcon::Error, "Failed to rename {}-hd.plist: {}", old, res.unwrapErr());
+                    return MoreIcons::notifyFailure("Failed to rename {}-hd.plist: {}", old, res.unwrapErr());
                 }
                 if (auto res = renameFile(parent, wideOld + MI_PATH(".plist"), wideName + MI_PATH(".plist")); res.isErr()) {
-                    return notify(NotificationIcon::Error, "Failed to rename {}.plist: {}", old, res.unwrapErr());
+                    return MoreIcons::notifyFailure("Failed to rename {}.plist: {}", old, res.unwrapErr());
                 }
             }
 
             Popup::onClose(nullptr);
             popup->close();
             more_icons::renameIcon(info, name);
-            notify(NotificationIcon::Success, "{} renamed to {}!", old, name);
+            MoreIcons::notifySuccess("{} renamed to {}!", old, name);
             MoreIcons::updateGarage();
         });
     });

@@ -1,5 +1,3 @@
-#include <Geode/binding/CCCircleWave.hpp>
-#include <Geode/binding/PlayerObject.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/GJBaseGameLayer.hpp>
 #include <MoreIconsV2.hpp>

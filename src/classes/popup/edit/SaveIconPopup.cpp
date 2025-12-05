@@ -4,16 +4,9 @@
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Get.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
-#include <Geode/loader/Mod.hpp>
-#include <Geode/ui/Notification.hpp>
 #include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
-
-template <typename... T>
-void notify(NotificationIcon icon, fmt::format_string<T...> message, T&&... args) {
-    Notification::create(fmt::format(message, std::forward<T>(args)...), icon)->show();
-}
 
 SaveIconPopup* SaveIconPopup::create(EditIconPopup* popup, IconType type, const matjson::Value& definitions, CCDictionary* frames) {
     auto ret = new SaveIconPopup();
@@ -48,12 +41,11 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Va
     m_mainLayer->addChild(m_nameInput);
 
     auto saveSprite = ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f);
-    auto saveButton = CCMenuItemExt::createSpriteExtra(saveSprite, [this, miType](auto) {
+    auto saveButton = CCMenuItemExt::createSpriteExtra(saveSprite, [this](auto) {
         auto iconName = m_nameInput->getString();
-        if (iconName.empty()) return notify(NotificationIcon::Info, "Please enter a name.");
+        if (iconName.empty()) return MoreIcons::notifyInfo("Please enter a name.");
 
-        auto parent = Mod::get()->getConfigDir() / MoreIcons::wfolders[miType];
-        auto stem = parent / MoreIcons::strPath(iconName);
+        auto stem = MoreIcons::getIconStem(iconName, m_iconType);
         auto& stemStr = stem.native();
         if (
             MoreIcons::doesExist(stemStr + MI_PATH(".png")) ||
@@ -86,7 +78,7 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Va
 
 bool SaveIconPopup::checkFrame(std::string_view suffix) {
     auto frame = m_frames->objectForKey(gd::string(suffix.data(), suffix.size()));
-    if (!frame) notify(NotificationIcon::Info, "Missing {}{}.", m_nameInput->getString(), suffix);
+    if (!frame) MoreIcons::notifyInfo("Missing {}{}.", m_nameInput->getString(), suffix);
     return frame != nullptr;
 }
 
@@ -159,13 +151,13 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
             selectedPlist = plist;
         }
         if (auto res = packer.pack(); res.isErr()) {
-            return notify(NotificationIcon::Error, "Failed to pack {} frames: {}", displayName, res.unwrapErr());
+            return MoreIcons::notifyFailure("Failed to pack {} frames: {}", displayName, res.unwrapErr());
         }
         if (auto res = packer.png(png); res.isErr()) {
-            return notify(NotificationIcon::Error, "Failed to save {} image: {}", displayName, res.unwrapErr());
+            return MoreIcons::notifyFailure("Failed to save {} image: {}", displayName, res.unwrapErr());
         }
         if (auto res = packer.plist(plist, fmt::format("icons/{}{}.png", name, suffix), "    "); res.isErr()) {
-            return notify(NotificationIcon::Error, "Failed to save {} plist: {}", displayName, res.unwrapErr());
+            return MoreIcons::notifyFailure("Failed to save {} plist: {}", displayName, res.unwrapErr());
         }
     }
 
@@ -194,7 +186,7 @@ void SaveIconPopup::addOrUpdateIcon(const std::string& name, const std::filesyst
     m_parentPopup->close();
     Popup::onClose(nullptr);
 
-    notify(NotificationIcon::Success, "{} saved!", name);
+    MoreIcons::notifySuccess("{} saved!", name);
     MoreIcons::updateGarage();
 }
 

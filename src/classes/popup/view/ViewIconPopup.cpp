@@ -3,7 +3,6 @@
 #include "../../../utils/Get.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
-#include <Geode/loader/Mod.hpp>
 #include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
@@ -29,7 +28,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
     auto miType = MoreIcons::convertType(type);
 
     setID("ViewIconPopup");
-    setTitle(fmt::format("{} Viewer", MoreIcons::uppercase[miType]));
+    setTitle(info ? info->shortName : fmt::format("{} {}", MoreIcons::uppercase[miType], id));
     m_title->setID("view-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -117,21 +116,14 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
     }
     else if (type == IconType::Special) {
         auto streak = CCSprite::create((info ? info->textures[0] : fmt::format("streak_{:02}_001.png", id)).c_str());
-        streak->setBlendFunc({
-            GL_SRC_ALPHA,
-            (uint32_t)(info && info->trailInfo.blend ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
-        });
+        auto trailInfo = info ? info->trailInfo : MoreIcons::getTrailInfo(id);
+        streak->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)(trailInfo.blend ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA) });
         streak->setPosition({ 175.0f, 50.0f });
         streak->setRotation(-90.0f);
         auto& size = streak->getContentSize();
-        streak->setScaleX(info->trailInfo.stroke / size.width);
+        streak->setScaleX(trailInfo.stroke / size.width);
         streak->setScaleY(320.0f / size.height);
-        if (info->trailInfo.tint) {
-            auto gameManager = Get::GameManager();
-            auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-            streak->setColor(gameManager->colorForIdx(
-                sdi && sdi->getSavedValue("2pselected", false) ? sdi->getSavedValue("color2", 0) : gameManager->m_playerColor2));
-        }
+        if (trailInfo.tint) streak->setColor(MoreIcons::vanillaColor2(MoreIcons::dualSelected()));
         streak->setID("streak-preview");
         m_mainLayer->addChild(streak);
     }

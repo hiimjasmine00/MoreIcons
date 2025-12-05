@@ -4,6 +4,9 @@
 - Added green flashing to the PNG/Plist buttons in the icon editor when the other file needs to be selected
 - Added pink selection to the PNG/Plist buttons in the icon editor when the file is selected
 - Changed the clear piece button to remove the extra piece instead of making it empty
+- Moved trail saving to the trail settings popup
+- Changed the icon viewer popup to show the icon name in the title
+- Fixed a bug where clicking a trail in the vanilla icon list popup would crash the game
 - Removed some logs I left in by accident
 - Refactored the API in `MoreIconsV2.hpp`, utilizing Geode's event export system
   - This will replace `MoreIcons.hpp` in v2.0.0, which will be released after Geometry Dash v2.208

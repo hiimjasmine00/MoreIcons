@@ -1,8 +1,9 @@
 #include "SpecialSettingsPopup.hpp"
+#include "../../../MoreIcons.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/Slider.hpp>
 #include <Geode/ui/TextInput.hpp>
-#include <IconInfo.hpp>
+#include <Geode/utils/file.hpp>
 #include <jasmine/convert.hpp>
 
 using namespace geode::prelude;
@@ -138,7 +139,9 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
 
     auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", 0.8f), [this, info](auto) {
         info->trailInfo = m_trailInfo;
-        onClose(nullptr);
+        auto res = file::writeToJson(MoreIcons::strPath(info->textures[0]).replace_extension(MI_PATH(".json")), info->trailInfo);
+        if (res.isErr()) MoreIcons::notifyFailure("{}: Failed to save trail info: {}", info->name, res.unwrapErr());
+        else onClose(nullptr);
     });
     saveButton->setPosition({ 200.0f, 25.0f });
     saveButton->setID("save-button");
