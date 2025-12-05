@@ -3,7 +3,8 @@
 #include "IconNamePopup.hpp"
 #include "SpecialSettingsPopup.hpp"
 #include "../../../MoreIcons.hpp"
-#include "../../../api/MoreIconsAPI.hpp"
+#include "../../../utils/Get.hpp"
+#include "../../../utils/Load.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
@@ -12,6 +13,7 @@
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Notification.hpp>
+#include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
 
@@ -40,7 +42,7 @@ Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem
     #else
     auto fullSrc = dirs::getResourcesDir() / src;
     #endif
-    GEODE_UNWRAP_INTO(auto vec, MoreIconsAPI::readBinary(fullSrc).mapErr([](const std::string& err) {
+    GEODE_UNWRAP_INTO(auto vec, Load::readBinary(fullSrc).mapErr([](const std::string& err) {
         return fmt::format("Failed to read file: {}", err);
     }));
     return file::writeBinary(dest, vec).mapErr([](const std::string& err) {
@@ -49,7 +51,7 @@ Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem
 }
 
 void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash) {
-    auto texturePath = MoreIconsAPI::strPath(m_info->textures[0]);
+    auto texturePath = MoreIcons::strPath(m_info->textures[0]);
     auto parentDir = texturePath.parent_path();
 
     if (m_info->type == IconType::Special) {
@@ -73,7 +75,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
         }
     }
     else if (m_info->type <= IconType::Jetpack) {
-        auto shortName = MoreIconsAPI::strPath(m_info->shortName);
+        auto shortName = MoreIcons::strPath(m_info->shortName);
         auto stem = parentDir / shortName;
         std::vector<std::filesystem::path> files;
 
@@ -131,8 +133,8 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
 
     auto name = m_info->shortName;
     onClose(nullptr);
-    if (trash) MoreIconsAPI::removeIcon(m_info);
-    else MoreIconsAPI::moveIcon(m_info, directory);
+    if (trash) more_icons::removeIcon(m_info);
+    else more_icons::moveIcon(m_info, directory);
     notify(NotificationIcon::Success, "{} {}ed!", name, trash ? "trash" : "convert");
     MoreIcons::updateGarage();
 }
@@ -158,7 +160,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     m_mainLayer->addChild(descBackground);
 
     auto hasPack = !info->packID.empty();
-    auto miType = MoreIconsAPI::convertType(info->type);
+    auto miType = MoreIcons::convertType(info->type);
 
     auto customLabel = CCLabelBMFont::create("Custom", "goldFont.fnt");
     customLabel->setPosition({ 150.0f, 123.0f });
@@ -167,7 +169,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     m_mainLayer->addChild(customLabel);
 
     auto descriptionArea = TextArea::create(fmt::format("This <cg>{}</c> is added by the <cl>More Icons</c> mod.",
-        MoreIconsAPI::uppercase[miType]), "bigFont.fnt", 1.0f, 600.0f, { 0.5f, 1.0f }, 42.0f, false);
+        MoreIcons::uppercase[miType]), "bigFont.fnt", 1.0f, 600.0f, { 0.5f, 1.0f }, 42.0f, false);
     descriptionArea->setPosition({ 150.0f, 91.0f });
     descriptionArea->setScale(0.4f);
     descriptionArea->setID("description-area");
@@ -182,11 +184,11 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     }
 
     if (info->type <= IconType::Jetpack) {
-        auto itemIcon = GJItemIcon::createBrowserItem(MoreIconsAPI::getGameManager()->iconTypeToUnlockType(info->type), 1);
+        auto itemIcon = GJItemIcon::createBrowserItem(Get::GameManager()->iconTypeToUnlockType(info->type), 1);
         itemIcon->setScale(hasPack ? 1.1f : 1.25f);
 
         auto player = static_cast<SimplePlayer*>(itemIcon->m_player);
-        MoreIconsAPI::updateSimplePlayer(player, info->name, info->type);
+        more_icons::updateSimplePlayer(player, info->name, info->type);
 
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto [color1, color2, colorGlow, glow] = MoreIcons::vanillaColors(sdi && sdi->getSavedValue("2pselected", false));
@@ -206,7 +208,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
         m_buttonMenu->addChild(iconButton);
     }
     else if (info->type == IconType::Special) {
-        auto square = MoreIconsAPI::customTrail(info->textures[0]);
+        auto square = MoreIcons::customTrail(info->textures[0]);
         square->setPosition({ 150.0f, hasPack ? 165.0f : 171.0f });
         square->setScale(hasPack ? 1.1f : 1.25f);
         square->setID("trail-square");
@@ -226,9 +228,9 @@ bool MoreInfoPopup::setup(IconInfo* info) {
 
     if (info->vanilla && !info->zipped) {
         operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.7f, [this, miType](auto) {
-            auto lower = MoreIconsAPI::lowercase[miType];
+            auto lower = MoreIcons::lowercase[miType];
             createQuickPopup(
-                fmt::format("Convert {}", MoreIconsAPI::uppercase[miType]).c_str(),
+                fmt::format("Convert {}", MoreIcons::uppercase[miType]).c_str(),
                 fmt::format("Are you sure you want to <cy>convert</c> this <cg>{}</c> into a <cl>More Icons</c> <cg>{}</c>?", lower, lower),
                 "No",
                 "Yes",
@@ -236,7 +238,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
                     if (!btn2) return;
 
                     auto type = m_info->type;
-                    auto parent = MoreIconsAPI::strPath(m_info->textures[0]).parent_path();
+                    auto parent = MoreIcons::strPath(m_info->textures[0]).parent_path();
                     if (type <= IconType::Jetpack) parent = parent.parent_path();
                     auto dir = parent / MI_PATH("config") / MI_PATH_ID / MoreIcons::wfolders[miType];
                     if (auto res = file::createDirectoryAll(dir)) moveIcon(dir, false);
@@ -258,8 +260,8 @@ bool MoreInfoPopup::setup(IconInfo* info) {
 
         operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [this, miType](auto) {
             createQuickPopup(
-                fmt::format("Trash {}", MoreIconsAPI::uppercase[miType]).c_str(),
-                fmt::format("Are you sure you want to <cr>trash</c> this <cg>{}</c>?", MoreIconsAPI::lowercase[miType]),
+                fmt::format("Trash {}", MoreIcons::uppercase[miType]).c_str(),
+                fmt::format("Are you sure you want to <cr>trash</c> this <cg>{}</c>?", MoreIcons::lowercase[miType]),
                 "No",
                 "Yes",
                 [this](auto, bool btn2) {

@@ -2,7 +2,6 @@
 #include "LogCell.hpp"
 #include "../../scroll/BiggerScrollLayer.hpp"
 #include "../../../MoreIcons.hpp"
-#include "../../../api/MoreIconsAPI.hpp"
 #include <Geode/ui/Scrollbar.hpp>
 
 using namespace geode::prelude;
@@ -19,7 +18,7 @@ LogLayer* LogLayer::create(IconType type) {
 
 bool LogLayer::setup(IconType type) {
     setID("LogLayer");
-    setTitle(fmt::format("{} Logs", MoreIconsAPI::uppercase[MoreIconsAPI::convertType(type)]));
+    setTitle(fmt::format("{} Logs", MoreIcons::uppercase[MoreIcons::convertType(type)]));
     m_title->setID("more-icons-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");

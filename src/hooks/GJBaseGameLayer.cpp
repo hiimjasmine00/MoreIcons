@@ -1,9 +1,8 @@
-#include "../MoreIcons.hpp"
-#include "../api/MoreIconsAPI.hpp"
 #include <Geode/binding/CCCircleWave.hpp>
 #include <Geode/binding/PlayerObject.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/GJBaseGameLayer.hpp>
+#include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
 
@@ -15,10 +14,10 @@ class $modify(MIBaseGameLayer, GJBaseGameLayer) {
             return node->getZOrder() == 100;
         })) {
             if (!m_player1 || m_player1 == object) {
-                MoreIconsAPI::updateSimplePlayer(player, MoreIconsAPI::getIconType(object), false);
+                more_icons::updateSimplePlayer(player, more_icons::getIconType(object), false);
             }
             else if (!m_player2 || m_player2 == object) {
-                MoreIconsAPI::updateSimplePlayer(player, MoreIconsAPI::getIconType(object), true);
+                more_icons::updateSimplePlayer(player, more_icons::getIconType(object), true);
             }
         }
     }
@@ -29,11 +28,11 @@ class $modify(MIBaseGameLayer, GJBaseGameLayer) {
 
         if (blend) return;
 
-        if (auto info = MoreIconsAPI::getIcon(IconType::Special, false)) {
+        if (auto info = more_icons::getIcon(IconType::Special, false)) {
             m_player1->m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)(info->trailInfo.blend ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA) });
         }
 
-        if (auto info = MoreIconsAPI::getIcon(IconType::Special, true)) {
+        if (auto info = more_icons::getIcon(IconType::Special, true)) {
             m_player2->m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)(info->trailInfo.blend ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA) });
         }
     }

@@ -1,10 +1,6 @@
-#include <array>
-#include <ccTypes.h>
-#include <filesystem>
-#include <Geode/Enums.hpp>
+#include <cocos2d.h>
 #include <Geode/GeneratedPredeclare.hpp>
-#include <Geode/Result.hpp>
-#include <map>
+#include <IconInfo.hpp>
 
 struct LogData {
     std::string name;
@@ -22,8 +18,10 @@ struct ColorInfo {
 
 #ifdef GEODE_IS_WINDOWS
 #define MI_PATH_ID GEODE_CONCAT(L, GEODE_MOD_ID)
+#define MI_PATH(x) L##x
 #else
 #define MI_PATH_ID GEODE_MOD_ID
+#define MI_PATH(x) x
 #endif
 
 namespace std::filesystem {
@@ -32,6 +30,18 @@ namespace std::filesystem {
 
 class MoreIcons {
 public:
+    static constexpr std::array prefixes = {
+        "player_", "ship_", "player_ball_", "bird_", "dart_", "robot_", "spider_",
+        "swing_", "jetpack_", "PlayerExplosion_", "streak_", "", "shipfire"
+    };
+    static constexpr std::array lowercase = {
+        "icon", "ship", "ball", "UFO", "wave", "robot", "spider",
+        "swing", "jetpack", "death effect", "trail", "", "ship fire"
+    };
+    static constexpr std::array uppercase = {
+        "Icon", "Ship", "Ball", "UFO", "Wave", "Robot", "Spider",
+        "Swing", "Jetpack", "Death Effect", "Trail", "", "Ship Fire"
+    };
     static constexpr std::array severityFrames = {
         "cc_2x2_white_image", "GJ_infoIcon_001.png", "geode.loader/info-warning.png", "geode.loader/info-alert.png"
     };
@@ -47,18 +57,34 @@ public:
     #else
     static constexpr std::array wfolders = folders;
     #endif
+
+    static std::map<IconType, std::vector<IconInfo>> icons;
+    static std::map<int, std::map<IconType, std::string>> requestedIcons;
+    static std::map<std::pair<std::string, IconType>, int> loadedIcons;
     static std::vector<LogData> logs;
     static std::map<IconType, int> severities;
     static int severity;
     static bool traditionalPacks;
+    static bool preloadIcons;
+
+    static int convertType(IconType type) {
+        return (int)type - (type >= IconType::DeathEffect ? 89 : 0);
+    }
+
+    static IconType convertType(int type) {
+        return (IconType)(type + (type > 8 ? 89 : 0));
+    }
 
     static geode::Result<std::filesystem::path> createTrash();
+    static cocos2d::CCSprite* customTrail(const std::string& png);
     static bool doesExist(const std::filesystem::path& path);
+    static cocos2d::CCSpriteFrame* getFrame(const std::string& name);
     static void loadIcons(IconType type);
     static void loadPacks();
     static void loadSettings();
     static geode::Result<> renameFile(const std::filesystem::path& from, const std::filesystem::path& to, bool overwrite = true, bool copy = false);
     static void saveTrails();
+    static std::filesystem::path strPath(const std::string& path);
     static void updateGarage(GJGarageLayer* layer = nullptr);
     static ColorInfo vanillaColors(bool dual);
     static int vanillaIcon(IconType type, bool dual);

@@ -4,13 +4,14 @@
 #include "log/LogLayer.hpp"
 #include "view/IconViewPopup.hpp"
 #include "../../MoreIcons.hpp"
-#include "../../api/MoreIconsAPI.hpp"
+#include "../../utils/Get.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Notification.hpp>
+#include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
 
@@ -75,12 +76,12 @@ bool MoreIconsPopup::setup() {
         background->setID("background");
         gamemodeMenu->addChild(background);
 
-        auto type = MoreIconsAPI::convertType(i);
+        auto type = MoreIcons::convertType(i);
         auto id = MoreIcons::vanillaIcon(type, dual);
         if (i < 9) {
             auto icon = SimplePlayer::create(1);
             icon->updatePlayerFrame(id, type);
-            MoreIconsAPI::updateSimplePlayer(icon, type, dual);
+            more_icons::updateSimplePlayer(icon, type, dual);
             icon->setColor(color1);
             icon->setSecondColor(color2);
             icon->enableCustomGlowColor(colorGlow);
@@ -92,9 +93,9 @@ bool MoreIconsPopup::setup() {
             gamemodeMenu->addChild(icon);
         }
         else if (i == 10) {
-            auto info = MoreIconsAPI::getIcon(type, dual);
+            auto info = more_icons::getIcon(type, dual);
             auto sprite = info
-                ? MoreIconsAPI::customTrail(info->textures[0])
+                ? MoreIcons::customTrail(info->textures[0])
                 : CCSprite::createWithSpriteFrameName(fmt::format("player_special_{:02}_001.png", id).c_str());
             sprite->setPosition({ 35.0f, 100.0f });
             sprite->setScale(0.9f);
@@ -111,15 +112,15 @@ bool MoreIconsPopup::setup() {
             gamemodeMenu->addChild(severityIcon);
         }
 
-        auto label = CCLabelBMFont::create(fmt::format("{}s", MoreIconsAPI::uppercase[i]).c_str(), "bigFont.fnt");
+        auto label = CCLabelBMFont::create(fmt::format("{}s", MoreIcons::uppercase[i]).c_str(), "bigFont.fnt");
         label->setPosition({ 35.0f, 76.0f });
         label->limitLabelWidth(65.0f, 0.45f, 0.0f);
         label->setColor(colors[i]);
         label->setID("info-label");
         gamemodeMenu->addChild(label);
 
-        auto vanillaCount = MoreIconsAPI::getGameManager()->countForType(type);
-        auto customCount = MoreIconsAPI::icons[type].size();
+        auto vanillaCount = Get::GameManager()->countForType(type);
+        auto customCount = MoreIcons::icons[type].size();
         auto logCount = std::ranges::count(MoreIcons::logs, type, &LogData::type);
 
         auto vanillaLabel = CCLabelBMFont::create(fmt::format("Vanilla: {}", vanillaCount).c_str(), "goldFont.fnt");

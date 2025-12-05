@@ -1,13 +1,13 @@
 #include "IconNamePopup.hpp"
 #include "MoreInfoPopup.hpp"
 #include "../../../MoreIcons.hpp"
-#include "../../../api/MoreIconsAPI.hpp"
 #include <fmt/std.h>
 #include <Geode/binding/ButtonSprite.hpp>
 #ifdef GEODE_IS_WINDOWS
 #include <Geode/utils/string.hpp>
 #endif
 #include <Geode/ui/Notification.hpp>
+#include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
 
@@ -35,7 +35,7 @@ void notify(NotificationIcon icon, fmt::format_string<T...> message, T&&... args
 }
 
 bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
-    auto unlockName = MoreIconsAPI::uppercase[MoreIconsAPI::convertType(info->type)];
+    auto unlockName = MoreIcons::uppercase[MoreIcons::convertType(info->type)];
 
     setID("IconNamePopup");
     setTitle(fmt::format("Edit {} Name", unlockName));
@@ -66,7 +66,7 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
         fmt::memory_buffer message;
         fmt::format_to(std::back_inserter(message), "Are you sure you want to rename <cy>{}</c> to <cy>{}</c>?", old, name);
 
-        auto parent = MoreIconsAPI::strPath(info->textures[0]).parent_path();
+        auto parent = MoreIcons::strPath(info->textures[0]).parent_path();
         fmt::memory_buffer files;
 
         #ifdef GEODE_IS_WINDOWS
@@ -115,7 +115,7 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
         ](auto, bool btn2) {
             if (!btn2) return;
 
-            auto parent = MoreIconsAPI::strPath(info->textures[0]).parent_path();
+            auto parent = MoreIcons::strPath(info->textures[0]).parent_path();
 
             if (info->type == IconType::Special) {
                 if (auto res = renameFile(parent, wideOld + MI_PATH(".png"), wideName + MI_PATH(".png")); res.isErr()) {
@@ -148,7 +148,7 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
 
             Popup::onClose(nullptr);
             popup->close();
-            MoreIconsAPI::renameIcon(info, name);
+            more_icons::renameIcon(info, name);
             notify(NotificationIcon::Success, "{} renamed to {}!", old, name);
             MoreIcons::updateGarage();
         });
@@ -166,10 +166,10 @@ void IconNamePopup::onClose(CCObject* sender) {
     auto name = m_nameInput->getString();
     if (name.empty() || name == m_info->shortName) return Popup::onClose(sender);
 
-    auto type = MoreIconsAPI::convertType(m_iconType);
+    auto type = MoreIcons::convertType(m_iconType);
     createQuickPopup(
-        fmt::format("Exit {} Name Editor", MoreIconsAPI::uppercase[type]).c_str(),
-        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} name editor</c>?", MoreIconsAPI::lowercase[type]),
+        fmt::format("Exit {} Name Editor", MoreIcons::uppercase[type]).c_str(),
+        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} name editor</c>?", MoreIcons::lowercase[type]),
         "No",
         "Yes",
         [this, sender](auto, bool btn2) {

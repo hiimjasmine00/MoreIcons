@@ -1,8 +1,10 @@
 #include "ViewIconPopup.hpp"
-#include "../../../api/MoreIconsAPI.hpp"
+#include "../../../MoreIcons.hpp"
+#include "../../../utils/Get.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
 
@@ -24,10 +26,10 @@ ViewIconPopup* ViewIconPopup::create(IconType type, int id, IconInfo* info) {
 }
 
 bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
-    auto miType = MoreIconsAPI::convertType(type);
+    auto miType = MoreIcons::convertType(type);
 
     setID("ViewIconPopup");
-    setTitle(fmt::format("{} Viewer", MoreIconsAPI::uppercase[miType]));
+    setTitle(fmt::format("{} Viewer", MoreIcons::uppercase[miType]));
     m_title->setID("view-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -58,15 +60,15 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         }
 
         auto player = SimplePlayer::create(1);
-        if (info) MoreIconsAPI::updateSimplePlayer(player, info->name, type);
+        if (info) more_icons::updateSimplePlayer(player, info->name, type);
         else player->updatePlayerFrame(id, type);
         player->setGlowOutline({ 255, 255, 255 });
         player->setPosition({ 175.0f, (isRobot ? 160.0f : 80.0f) - suffixes.size() * 30.0f });
         player->setID("player-icon");
         m_mainLayer->addChild(player);
 
-        auto prefix = info ? fmt::format("{}"_spr, info->name) : fmt::format("{}{:02}", MoreIconsAPI::prefixes[miType], id);
-        auto spriteFrameCache = MoreIconsAPI::getSpriteFrameCache();
+        auto prefix = info ? fmt::format("{}"_spr, info->name) : fmt::format("{}{:02}", MoreIcons::prefixes[miType], id);
+        auto spriteFrameCache = Get::SpriteFrameCache();
         for (int i = 0; i < suffixes.size(); i++) {
             auto container = CCNode::create();
             container->setPosition({ 175.0f, (isRobot ? 140.0f : 100.0f) - i * 30.0f + std::max(i - 1, 0) * 10.0f });
@@ -76,7 +78,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
 
             auto& subSuffixes = suffixes[i];
             for (int j = 0; j < subSuffixes.size(); j++) {
-                if (auto spriteFrame = MoreIconsAPI::getFrame(prefix + subSuffixes[j])) {
+                if (auto spriteFrame = MoreIcons::getFrame(prefix + subSuffixes[j])) {
                     auto sprite = CCSprite::createWithSpriteFrame(spriteFrame);
                     auto& size = sprite->getContentSize();
                     sprite->setPosition(size / 2.0f);
@@ -125,7 +127,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         streak->setScaleX(info->trailInfo.stroke / size.width);
         streak->setScaleY(320.0f / size.height);
         if (info->trailInfo.tint) {
-            auto gameManager = MoreIconsAPI::getGameManager();
+            auto gameManager = Get::GameManager();
             auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
             streak->setColor(gameManager->colorForIdx(
                 sdi && sdi->getSavedValue("2pselected", false) ? sdi->getSavedValue("color2", 0) : gameManager->m_playerColor2));

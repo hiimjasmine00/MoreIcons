@@ -1,9 +1,10 @@
 #include "ImageRenderer.hpp"
+#include "../../../utils/Get.hpp"
 
 using namespace geode::prelude;
 
 texpack::Image ImageRenderer::getImage(CCNode* node) {
-    auto director = MoreIconsAPI::getDirector();
+    auto director = Get::Director();
     auto size = node->getScaledContentSize() * director->getContentScaleFactor();
     auto floatWidth = size.width;
     auto floatHeight = size.height;

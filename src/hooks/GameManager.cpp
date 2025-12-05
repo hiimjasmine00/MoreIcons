@@ -1,8 +1,10 @@
 #include "../MoreIcons.hpp"
-#include "../api/MoreIconsAPI.hpp"
+#include "../utils/Get.hpp"
 #include <Geode/modify/GameManager.hpp>
 #include <jasmine/hook.hpp>
 #include <jasmine/setting.hpp>
+#include <MoreIconsV2.hpp>
+#include <ranges>
 
 using namespace geode::prelude;
 
@@ -20,7 +22,15 @@ class $modify(MIGameManager, GameManager) {
         if (!m_reloadTextures) return;
 
         MoreIcons::saveTrails();
-        MoreIconsAPI::reset();
+        Get::fileUtils = nullptr;
+        Get::spriteFrameCache = nullptr;
+        Get::textureCache = nullptr;
+        Get::objectManager = nullptr;
+        for (auto& icons : std::views::values(MoreIcons::icons)) {
+            icons.clear();
+        }
+        MoreIcons::requestedIcons.clear();
+        MoreIcons::loadedIcons.clear();
         MoreIcons::logs.clear();
         MoreIcons::severity = Severity::Debug;
         MoreIcons::severities[IconType::Cube] = Severity::Debug;
@@ -51,10 +61,10 @@ class $modify(MIGameManager, GameManager) {
         auto iconKey = keyForIcon(id, type);
 
         auto pngName = fmt::format("{}.png", sheetName);
-        auto textureCache = MoreIconsAPI::getTextureCache();
+        auto textureCache = Get::TextureCache();
         if (m_iconLoadCounts[iconKey] < 1) {
             texture = textureCache->addImage(pngName.c_str(), false);
-            MoreIconsAPI::getSpriteFrameCache()->addSpriteFramesWithFile(fmt::format("{}.plist", sheetName).c_str(), texture);
+            Get::SpriteFrameCache()->addSpriteFramesWithFile(fmt::format("{}.plist", sheetName).c_str(), texture);
         }
         else texture = textureCache->textureForKey(pngName.c_str());
 
@@ -65,11 +75,11 @@ class $modify(MIGameManager, GameManager) {
             m_iconRequests[requestID][type] = id;
         }
 
-        if (auto foundRequests = MoreIconsAPI::requestedIcons.find(requestID); foundRequests != MoreIconsAPI::requestedIcons.end()) {
+        if (auto foundRequests = MoreIcons::requestedIcons.find(requestID); foundRequests != MoreIcons::requestedIcons.end()) {
             auto iconType = (IconType)type;
             auto& iconRequests = foundRequests->second;
             if (auto found = iconRequests.find(iconType); found != iconRequests.end()) {
-                MoreIconsAPI::unloadIcon(found->second, iconType, requestID);
+                more_icons::unloadIcon(found->second, iconType, requestID);
             }
         }
 
@@ -78,6 +88,6 @@ class $modify(MIGameManager, GameManager) {
 
     void unloadIcons(int requestID) {
         GameManager::unloadIcons(requestID);
-        MoreIconsAPI::unloadIcons(requestID);
+        more_icons::unloadIcons(requestID);
     }
 };

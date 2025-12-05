@@ -1,7 +1,8 @@
 #include "../MoreIcons.hpp"
-#include "../api/MoreIconsAPI.hpp"
+#include "../utils/Get.hpp"
 #include <Geode/binding/GJBaseGameLayer.hpp>
 #include <Geode/modify/PlayerObject.hpp>
+#include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
 
@@ -20,9 +21,9 @@ class $modify(MIPlayerObject, PlayerObject) {
 
     void updateIcon(IconType type) {
         std::string icon;
-        if (isPlayer1()) icon = MoreIconsAPI::activeIcon(type, false);
-        else if (isPlayer2()) icon = MoreIconsAPI::activeIcon(type, true);
-        if (!icon.empty()) MoreIconsAPI::updatePlayerObject(this, icon, type);
+        if (isPlayer1()) icon = more_icons::activeIcon(type, false);
+        else if (isPlayer2()) icon = more_icons::activeIcon(type, true);
+        if (!icon.empty()) more_icons::updatePlayerObject(this, icon, type);
         else setUserObject("name"_spr, nullptr);
     }
 
@@ -44,11 +45,11 @@ class $modify(MIPlayerObject, PlayerObject) {
         }
 
         int* loadedIcon = nullptr;
-        if (!MoreIconsAPI::preloadIcons) {
-            if (auto foundRequests = MoreIconsAPI::requestedIcons.find(m_iconRequestID); foundRequests != MoreIconsAPI::requestedIcons.end()) {
+        if (!MoreIcons::preloadIcons) {
+            if (auto foundRequests = MoreIcons::requestedIcons.find(m_iconRequestID); foundRequests != MoreIcons::requestedIcons.end()) {
                 auto& iconRequests = foundRequests->second;
                 if (auto found = iconRequests.find(type); found != iconRequests.end()) {
-                    loadedIcon = &MoreIconsAPI::loadedIcons[{ found->second, type }];
+                    loadedIcon = &MoreIcons::loadedIcons[{ found->second, type }];
                 }
             }
         }
@@ -101,9 +102,9 @@ class $modify(MIPlayerObject, PlayerObject) {
 
         if (!isRobot && m_isRobot) {
             std::string iconName;
-            if (isPlayer1()) iconName = MoreIconsAPI::activeIcon(IconType::Robot, false);
-            else if (isPlayer2()) iconName = MoreIconsAPI::activeIcon(IconType::Robot, true);
-            if (!iconName.empty()) m_iconSprite->setDisplayFrame(MoreIconsAPI::getFrame(fmt::format("{}_01_001.png"_spr, iconName)));
+            if (isPlayer1()) iconName = more_icons::activeIcon(IconType::Robot, false);
+            else if (isPlayer2()) iconName = more_icons::activeIcon(IconType::Robot, true);
+            if (!iconName.empty()) m_iconSprite->setDisplayFrame(MoreIcons::getFrame(fmt::format("{}_01_001.png"_spr, iconName)));
         }
     }
 
@@ -113,23 +114,23 @@ class $modify(MIPlayerObject, PlayerObject) {
 
         if (!isSpider && m_isSpider) {
             std::string iconName;
-            if (isPlayer1()) iconName = MoreIconsAPI::activeIcon(IconType::Spider, false);
-            else if (isPlayer2()) iconName = MoreIconsAPI::activeIcon(IconType::Spider, true);
-            if (!iconName.empty()) m_iconSprite->setDisplayFrame(MoreIconsAPI::getFrame(fmt::format("{}_01_001.png"_spr, iconName)));
+            if (isPlayer1()) iconName = more_icons::activeIcon(IconType::Spider, false);
+            else if (isPlayer2()) iconName = more_icons::activeIcon(IconType::Spider, true);
+            if (!iconName.empty()) m_iconSprite->setDisplayFrame(MoreIcons::getFrame(fmt::format("{}_01_001.png"_spr, iconName)));
         }
     }
 
     void resetTrail() {
         m_regularTrail->setUserObject("name"_spr, nullptr);
         if (!MoreIcons::traditionalPacks || (Loader::get()->isModLoaded("acaruso.pride") && m_playerStreak == 2)) return;
-        m_regularTrail->setTexture(MoreIconsAPI::getTextureCache()->addImage(
+        m_regularTrail->setTexture(Get::TextureCache()->addImage(
             MoreIcons::vanillaTexturePath(fmt::format("streak_{:02}_001.png", m_playerStreak), true).c_str(), false));
         if (m_playerStreak == 6) m_regularTrail->enableRepeatMode(0.1f);
     }
 
     IconInfo* getTrailInfo() {
-        if (isPlayer1()) return MoreIconsAPI::getIcon(IconType::Special, false);
-        else if (isPlayer2()) return MoreIconsAPI::getIcon(IconType::Special, true);
+        if (isPlayer1()) return more_icons::getIcon(IconType::Special, false);
+        else if (isPlayer2()) return more_icons::getIcon(IconType::Special, true);
         else return nullptr;
     }
 

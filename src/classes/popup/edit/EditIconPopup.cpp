@@ -4,6 +4,8 @@
 #include "ImageRenderer.hpp"
 #include "SaveIconPopup.hpp"
 #include "../MoreIconsPopup.hpp"
+#include "../../../MoreIcons.hpp"
+#include "../../../utils/Get.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
@@ -51,7 +53,7 @@ CCArray* arrayWithObjects(CCArray* parent, T... indices) {
 
 bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     setID("EditIconPopup");
-    setTitle(fmt::format("{} Editor", MoreIconsAPI::uppercase[(int)type]));
+    setTitle(fmt::format("{} Editor", MoreIcons::uppercase[(int)type]));
     m_title->setID("edit-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -243,9 +245,9 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto piecePresetButton = CCMenuItemExt::createSpriteExtra(piecePresetSprite, [this](auto) {
         auto key = fmt::format("{}.png", m_suffix);
         IconPresetPopup::create(m_iconType, key, [this, key](int id, IconInfo* info) {
-            auto frame = MoreIconsAPI::getFrame(info
+            auto frame = MoreIcons::getFrame(info
                 ? fmt::format("{}{}"_spr, info->name, key)
-                : fmt::format("{}{:02}{}", MoreIconsAPI::prefixes[(int)m_iconType], id, key));
+                : fmt::format("{}{:02}{}", MoreIcons::prefixes[(int)m_iconType], id, key));
             if (frame) m_frames->setObject(frame, key);
             else m_frames->removeObjectForKey(key);
             updatePieces();
@@ -262,15 +264,15 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
             m_frames->removeObjectForKey(key);
         }
         else {
-            auto emptyFrame = MoreIconsAPI::getFrame("emptyFrame.png"_spr);
+            auto emptyFrame = MoreIcons::getFrame("emptyFrame.png"_spr);
             if (!emptyFrame) {
                 Autorelease texture = new CCTexture2D();
-                auto factor = MoreIconsAPI::getDirector()->getContentScaleFactor();
+                auto factor = Get::Director()->getContentScaleFactor();
                 int factorInt = factor;
                 std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(factorInt * factorInt * 4);
                 texture->initWithData(data.get(), kCCTexture2DPixelFormat_RGBA8888, factorInt, factorInt, { factor, factor });
                 emptyFrame = CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() });
-                MoreIconsAPI::getSpriteFrameCache()->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
+                Get::SpriteFrameCache()->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
             }
             m_frames->setObject(emptyFrame, key);
         }
@@ -358,9 +360,9 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
         IconPresetPopup::create(m_iconType, {}, [this](int id, IconInfo* info) {
             for (auto [suffix, sprite] : CCDictionaryExt<std::string_view, CCSprite*>(m_pieces)) {
                 auto key = fmt::format("{}.png", suffix);
-                auto frame = MoreIconsAPI::getFrame(info
+                auto frame = MoreIcons::getFrame(info
                     ? fmt::format("{}{}"_spr, info->name, key)
-                    : fmt::format("{}{:02}{}", MoreIconsAPI::prefixes[(int)m_iconType], id, key));
+                    : fmt::format("{}{:02}{}", MoreIcons::prefixes[(int)m_iconType], id, key));
                 if (frame) m_frames->setObject(frame, key);
                 else m_frames->removeObjectForKey(key);
             }
@@ -554,9 +556,9 @@ void EditIconPopup::transferPlayerToNode(CCNode* node, SimplePlayer* player) {
 }
 
 void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* targets) {
-    auto pieceFrame = MoreIconsAPI::getFrame(fmt::format("{}01{}.png", MoreIconsAPI::prefixes[(int)m_iconType], suffix));
+    auto pieceFrame = MoreIcons::getFrame(fmt::format("{}01{}.png", MoreIcons::prefixes[(int)m_iconType], suffix));
     if (pieceFrame) m_frames->setObject(pieceFrame, fmt::format("{}.png", suffix));
-    else pieceFrame = MoreIconsAPI::getFrame("GJ_deleteIcon_001.png");
+    else pieceFrame = MoreIcons::getFrame("GJ_deleteIcon_001.png");
     auto pieceSprite = CCSprite::createWithSpriteFrame(pieceFrame);
     auto pieceButton = CCMenuItemExt::createSpriteExtra(pieceSprite, [this, suffix, page](CCMenuItemSpriteExtra* sender) {
         m_suffix = suffix;
@@ -588,7 +590,7 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
 }
 
 void EditIconPopup::addColorButton(int& index, CCMenu* menu, const char* text, std::string id) {
-    auto color = MoreIconsAPI::getGameManager()->colorForIdx(index);
+    auto color = Get::GameManager()->colorForIdx(index);
     auto sprite = CCSprite::createWithSpriteFrameName("player_special_01_001.png");
     sprite->setScale(0.85f);
     sprite->setColor(color);
@@ -600,7 +602,7 @@ void EditIconPopup::addColorButton(int& index, CCMenu* menu, const char* text, s
     auto button = CCMenuItemExt::createSpriteExtra(sprite, [this, &index, label, sprite](auto) {
         IconColorPopup::create(index, [this, &index, label, sprite](int newIndex) {
             index = newIndex;
-            auto gameManager = MoreIconsAPI::getGameManager();
+            auto gameManager = Get::GameManager();
             auto color = gameManager->colorForIdx(newIndex);
             sprite->setColor(color);
             label->setColor(color);
@@ -618,7 +620,7 @@ void EditIconPopup::addColorButton(int& index, CCMenu* menu, const char* text, s
 void EditIconPopup::updateWithSelectedFiles() {
     if (auto textureRes = ImageRenderer::getTexture(m_selectedPNG)) {
         auto texture = std::move(textureRes).unwrap();
-        if (auto framesRes = MoreIconsAPI::createFrames(m_selectedPlist, texture, {}, m_iconType)) {
+        if (auto framesRes = Load::createFrames(m_selectedPlist, texture, {}, m_iconType)) {
             auto frames = std::move(framesRes).unwrap();
             m_frames->removeAllObjects();
             for (auto [frameName, frame] : CCDictionaryExt<gd::string, CCSpriteFrame*>(frames)) {
@@ -635,7 +637,7 @@ void EditIconPopup::updateWithSelectedFiles() {
 }
 
 void EditIconPopup::updatePieces() {
-    auto crossFrame = MoreIconsAPI::getSpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
+    auto crossFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
     for (auto [suffix, sprite] : CCDictionaryExt<std::string_view, CCSprite*>(m_pieces)) {
         auto spriteFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("{}.png", suffix)));
         sprite->setDisplayFrame(spriteFrame ? spriteFrame : crossFrame);
@@ -731,9 +733,9 @@ void EditIconPopup::onClose(CCObject* sender) {
 
     auto type = (int)m_iconType;
     createQuickPopup(
-        fmt::format("Exit {} Editor", MoreIconsAPI::uppercase[type]).c_str(),
+        fmt::format("Exit {} Editor", MoreIcons::uppercase[type]).c_str(),
         fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} editor</c>?\n<cr>All unsaved changes will be lost!</c>",
-            MoreIconsAPI::lowercase[type]),
+            MoreIcons::lowercase[type]),
         "No",
         "Yes",
         [this](auto, bool btn2) {

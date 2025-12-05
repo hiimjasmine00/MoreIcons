@@ -2,7 +2,7 @@
 #include "../../misc/LazyIcon.hpp"
 #include "../../scroll/BiggerScrollLayer.hpp"
 #include "../../../MoreIcons.hpp"
-#include "../../../api/MoreIconsAPI.hpp"
+#include "../../../utils/Get.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
 #include <Geode/ui/Scrollbar.hpp>
@@ -21,7 +21,7 @@ IconPresetPopup* IconPresetPopup::create(IconType type, std::string_view suffix,
 
 bool IconPresetPopup::setup(IconType type, std::string_view suffix, std23::move_only_function<void(int, IconInfo*)> callback) {
     setID("IconPresetPopup");
-    setTitle(fmt::format("{} Presets", MoreIconsAPI::uppercase[MoreIconsAPI::convertType(type)]));
+    setTitle(fmt::format("{} Presets", MoreIcons::uppercase[MoreIcons::convertType(type)]));
     m_title->setID("icon-preset-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -30,7 +30,7 @@ bool IconPresetPopup::setup(IconType type, std::string_view suffix, std23::move_
 
     m_callback = std::move(callback);
 
-    auto gameManager = MoreIconsAPI::getGameManager();
+    auto gameManager = Get::GameManager();
     auto scrollLayer = BiggerScrollLayer::create(400.0f, 230.0f, 5.0f, 15.0f);
     scrollLayer->m_contentLayer->setLayout(
         RowLayout::create()->setGap(roundf(7.5f / GJItemIcon::scaleForType(gameManager->iconTypeToUnlockType(type))))->setGrowCrossAxis(true));
@@ -56,7 +56,7 @@ bool IconPresetPopup::setup(IconType type, std::string_view suffix, std23::move_
         scrollLayer->m_contentLayer->addChild(iconMenu);
     }
 
-    auto& icons = MoreIconsAPI::icons[type];
+    auto& icons = MoreIcons::icons[type];
     auto customCount = icons.size();
     for (int i = 0; i < customCount; i++) {
         auto info = icons.data() + i;

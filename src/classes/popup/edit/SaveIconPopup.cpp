@@ -2,9 +2,11 @@
 #include "EditIconPopup.hpp"
 #include "ImageRenderer.hpp"
 #include "../../../MoreIcons.hpp"
+#include "../../../utils/Get.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <Geode/ui/Notification.hpp>
+#include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
 
@@ -26,7 +28,7 @@ SaveIconPopup* SaveIconPopup::create(EditIconPopup* popup, IconType type, const 
 bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Value& definitions, CCDictionary* frames) {
     auto miType = (int)type;
     setID("SaveIconPopup");
-    setTitle(fmt::format("Save {}", MoreIconsAPI::uppercase[miType]));
+    setTitle(fmt::format("Save {}", MoreIcons::uppercase[miType]));
     m_title->setID("save-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -51,7 +53,7 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Va
         if (iconName.empty()) return notify(NotificationIcon::Info, "Please enter a name.");
 
         auto parent = Mod::get()->getConfigDir() / MoreIcons::wfolders[miType];
-        auto stem = parent / MoreIconsAPI::strPath(iconName);
+        auto stem = parent / MoreIcons::strPath(iconName);
         auto& stemStr = stem.native();
         if (
             MoreIcons::doesExist(stemStr + MI_PATH(".png")) ||
@@ -106,7 +108,7 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
     auto name = m_nameInput->getString();
 
     texpack::Packer packers[3];
-    auto scaleFactor = MoreIconsAPI::getDirector()->getContentScaleFactor();
+    auto scaleFactor = Get::Director()->getContentScaleFactor();
     float scales[3] = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
     constexpr std::array suffixes = {
         std::make_tuple(MI_PATH("-uhd"), "-uhd", "UHD"),
@@ -136,7 +138,7 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
             node->addChild(sprite);
             auto boundingSize = sprite->boundingBox().size;
             node->setContentSize(boundingSize + CCSize { std::abs(offsetX * 2.0f), std::abs(offsetY * 2.0f) });
-            sprite->setPosition(node->getContentSize() * 0.5f + sprite->getPosition());
+            sprite->setPosition(node->getContentSize() / 2.0f + sprite->getPosition());
             sprite->setBlendFunc({ GL_ONE, GL_ZERO });
             packers[i].frame(joinedName, ImageRenderer::getImage(node));
             node->release();
@@ -175,15 +177,13 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
 
 void SaveIconPopup::addOrUpdateIcon(const std::string& name, const std::filesystem::path& png, const std::filesystem::path& plist) {
     auto type = m_iconType;
-    if (auto icon = MoreIconsAPI::getIcon(name, type)) MoreIconsAPI::updateIcon(icon);
+    if (auto icon = more_icons::getIcon(name, type)) more_icons::updateIcon(icon);
     else {
-        icon = MoreIconsAPI::addIcon(name, name, type,
+        icon = more_icons::addIcon(name, name, type,
             string::pathToString(png), string::pathToString(plist), {}, "More Icons", 0, {}, false, false);
-        if (MoreIconsAPI::preloadIcons) {
-            if (auto res = MoreIconsAPI::createFrames(
-                MoreIconsAPI::strPath(icon->textures[0]), MoreIconsAPI::strPath(icon->sheetName), icon->name, icon->type
-            )) {
-                MoreIconsAPI::addFrames(res.unwrap(), icon->frameNames);
+        if (MoreIcons::preloadIcons) {
+            if (auto res = Load::createFrames(MoreIcons::strPath(icon->textures[0]), MoreIcons::strPath(icon->sheetName), icon->name, icon->type)) {
+                Load::addFrames(res.unwrap(), icon->frameNames);
             }
             else {
                 log::error("{}: {}", icon->name, res.unwrapErr());
@@ -201,10 +201,10 @@ void SaveIconPopup::addOrUpdateIcon(const std::string& name, const std::filesyst
 void SaveIconPopup::onClose(CCObject* sender) {
     if (m_nameInput->getString().empty()) return Popup::onClose(sender);
 
-    auto type = MoreIconsAPI::convertType(m_iconType);
+    auto type = MoreIcons::convertType(m_iconType);
     createQuickPopup(
-        fmt::format("Exit {} Saver", MoreIconsAPI::uppercase[type]).c_str(),
-        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} saver</c>?", MoreIconsAPI::lowercase[type]),
+        fmt::format("Exit {} Saver", MoreIcons::uppercase[type]).c_str(),
+        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} saver</c>?", MoreIcons::lowercase[type]),
         "No",
         "Yes",
         [this](auto, bool btn2) {

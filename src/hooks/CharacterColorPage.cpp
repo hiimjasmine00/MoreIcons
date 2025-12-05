@@ -1,6 +1,6 @@
-#include "../api/MoreIconsAPI.hpp"
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/CharacterColorPage.hpp>
+#include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
 
@@ -16,7 +16,7 @@ class $modify(MICharacterColorPage, CharacterColorPage) {
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
         for (int i = 0; i < m_playerObjects->count(); i++) {
-            MoreIconsAPI::updateSimplePlayer(static_cast<SimplePlayer*>(m_playerObjects->objectAtIndex(i)), (IconType)i, dual);
+            more_icons::updateSimplePlayer(static_cast<SimplePlayer*>(m_playerObjects->objectAtIndex(i)), (IconType)i, dual);
         }
 
         return true;
@@ -26,7 +26,7 @@ class $modify(MICharacterColorPage, CharacterColorPage) {
         CharacterColorPage::toggleShip(sender);
 
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        MoreIconsAPI::updateSimplePlayer(static_cast<SimplePlayer*>(static_cast<CCMenuItemSprite*>(sender)->getNormalImage()),
+        more_icons::updateSimplePlayer(static_cast<SimplePlayer*>(static_cast<CCMenuItemSprite*>(sender)->getNormalImage()),
             (IconType)sender->getTag(), sdi && sdi->getSavedValue("2pselected", false));
     }
 };

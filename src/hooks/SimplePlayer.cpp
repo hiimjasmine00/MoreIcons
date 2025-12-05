@@ -1,4 +1,3 @@
-#include "../api/MoreIconsAPI.hpp"
 #include <Geode/modify/SimplePlayer.hpp>
 
 using namespace geode::prelude;

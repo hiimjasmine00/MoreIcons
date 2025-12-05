@@ -1,11 +1,16 @@
-#include "../api/MoreIconsAPI.hpp"
+#include "../utils/Get.hpp"
 #include <Geode/modify/CCDirector.hpp>
 
 using namespace geode::prelude;
 
 class $modify(MIDirector, CCDirector) {
     void purgeDirector() {
-        MoreIconsAPI::directorPurged();
+        Get::animationCache = nullptr;
+        Get::director = nullptr;
+        Get::fileUtils = nullptr;
+        Get::shaderCache = nullptr;
+        Get::spriteFrameCache = nullptr;
+        Get::textureCache = nullptr;
         CCDirector::purgeDirector();
     }
 };

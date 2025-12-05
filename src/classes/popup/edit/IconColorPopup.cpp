@@ -1,5 +1,5 @@
 #include "IconColorPopup.hpp"
-#include "../../../api/MoreIconsAPI.hpp"
+#include "../../../utils/Get.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
 
@@ -168,8 +168,8 @@ bool IconColorPopup::setup(int selected, std23::move_only_function<void(int)> ca
     selectSprite->setID("select-sprite");
     m_mainLayer->addChild(selectSprite);
 
-    auto center = MoreIconsAPI::getDirector()->getWinSize() * 0.5f;
-    auto gameManager = MoreIconsAPI::getGameManager();
+    auto center = Get::Director()->getWinSize() / 2.0f;
+    auto gameManager = Get::GameManager();
     for (int i = 0; i < 144; i++) {
         auto colorIndex = colorForIndex(i);
         if (colorIndex < 0) continue;

@@ -1,4 +1,4 @@
-#include "../api/MoreIconsAPI.hpp"
+#include "../utils/Get.hpp"
 #include <Geode/modify/CCFileUtils.hpp>
 
 using namespace geode::prelude;
@@ -8,7 +8,7 @@ class $modify(MIFileUtils, CCFileUtils) {
         auto ret = CCFileUtils::fullPathForFilename(filename, skipSuffix);
         if (ret.empty() || skipSuffix || !isAbsolutePath(filename)) return ret;
 
-        auto factor = MoreIconsAPI::getDirector()->getContentScaleFactor();
+        auto factor = Get::Director()->getContentScaleFactor();
         if (factor >= 4.0f) {
             auto uhdSuffix = addSuffix(ret, "-uhd");
             if (isFileExist(uhdSuffix)) return uhdSuffix;

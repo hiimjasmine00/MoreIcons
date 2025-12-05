@@ -1,8 +1,8 @@
 #include "../MoreIcons.hpp"
-#include "../api/MoreIconsAPI.hpp"
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/ProfilePage.hpp>
 #include <jasmine/button.hpp>
+#include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
 using namespace jasmine::button;
@@ -14,7 +14,7 @@ class $modify(MIProfilePage, ProfilePage) {
 
     static bool updatePlayer(CCNode* node, IconType type, bool dual) {
         if (auto player = typeinfo_cast<SimplePlayer*>(node)) {
-            MoreIconsAPI::updateSimplePlayer(player, type, dual);
+            more_icons::updateSimplePlayer(player, type, dual);
             return true;
         }
         for (auto child : node->getChildrenExt()) {
@@ -65,7 +65,7 @@ class $modify(MIProfilePage, ProfilePage) {
         if (!m_ownProfile) return;
 
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        MoreIconsAPI::updateSimplePlayer(static_cast<SimplePlayer*>(static_cast<CCMenuItemSprite*>(sender)->getNormalImage()),
+        more_icons::updateSimplePlayer(static_cast<SimplePlayer*>(static_cast<CCMenuItemSprite*>(sender)->getNormalImage()),
             (IconType)sender->getTag(), sdi && sdi->getSavedValue("2pselected", false));
     }
 };
