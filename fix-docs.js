@@ -18,6 +18,6 @@ for (const file of files) {
         .replace(/\/w\/cpp\/string\.h\/string/g, "/w/cpp/string/basic_string")
         .replace(/\/w\/cpp\/xstring\/string_view/g, "/w/cpp/string/basic_string_view")
         .replace(/\/w\/cpp\/__msvc_string_view\.hpp\/string_view/g, "/w/cpp/string/basic_string_view")
-        .replace(/\/w\/cpp\/string_view\.h\/string_view/g, "/w/cpp/string/basic_string_view"))
-        .replace(/\/w\/cpp\/map\/map/g, "/w/cpp/container/map");
+        .replace(/\/w\/cpp\/string_view\.h\/string_view/g, "/w/cpp/string/basic_string_view")
+        .replace(/\/w\/cpp\/map\/map/g, "/w/cpp/container/map"));
 }
