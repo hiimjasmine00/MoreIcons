@@ -219,11 +219,11 @@ void LazyIcon::createComplexIcon() {
 }
 
 void LazyIcon::updateComplexSprite(CCString* frame) {
-    for (auto spritePart : CCArrayExt<CCSprite*>(m_spriteParts)) {
+    for (auto spritePart : m_spriteParts->asExt<CCNode>()) {
         spritePart->setVisible(false);
     }
     auto normalImage = getNormalImage();
-    for (auto description : CCArrayExt<SpriteDescription*>(MoreIconsAPI::getAnimateFrameCache()->spriteFrameByName(frame->getCString()))) {
+    for (auto description : MoreIconsAPI::getAnimateFrameCache()->spriteFrameByName(frame->getCString())->asExt<SpriteDescription>()) {
         auto spritePart = static_cast<CCSpritePlus*>(m_spriteParts->objectAtIndex(description->m_tag));
         spritePart->setPosition(description->m_position);
         spritePart->setScaleX(description->m_scale.x);

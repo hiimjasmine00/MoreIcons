@@ -257,17 +257,23 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto pieceClearSprite = ButtonSprite::create("Clear", "goldFont.fnt", "GJ_button_05.png", 0.8f);
     pieceClearSprite->setScale(0.6f);
     auto pieceClearButton = CCMenuItemExt::createSpriteExtra(pieceClearSprite, [this](auto) {
-        auto emptyFrame = MoreIconsAPI::getFrame("emptyFrame.png"_spr);
-        if (!emptyFrame) {
-            Autorelease texture = new CCTexture2D();
-            auto factor = MoreIconsAPI::getDirector()->getContentScaleFactor();
-            int factorInt = factor;
-            std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(factorInt * factorInt * 4);
-            texture->initWithData(data.get(), kCCTexture2DPixelFormat_RGBA8888, factorInt, factorInt, { factor, factor });
-            emptyFrame = CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() });
-            MoreIconsAPI::getSpriteFrameCache()->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
+        auto key = fmt::format("{}.png", m_suffix);
+        if (m_suffix.ends_with("_extra_001")) {
+            m_frames->removeObjectForKey(key);
         }
-        m_frames->setObject(emptyFrame, fmt::format("{}.png", m_suffix));
+        else {
+            auto emptyFrame = MoreIconsAPI::getFrame("emptyFrame.png"_spr);
+            if (!emptyFrame) {
+                Autorelease texture = new CCTexture2D();
+                auto factor = MoreIconsAPI::getDirector()->getContentScaleFactor();
+                int factorInt = factor;
+                std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(factorInt * factorInt * 4);
+                texture->initWithData(data.get(), kCCTexture2DPixelFormat_RGBA8888, factorInt, factorInt, { factor, factor });
+                emptyFrame = CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() });
+                MoreIconsAPI::getSpriteFrameCache()->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
+            }
+            m_frames->setObject(emptyFrame, key);
+        }
         updatePieces();
     });
     pieceClearButton->setID("piece-clear-button");
@@ -521,7 +527,6 @@ void EditIconPopup::transferPlayerToNode(CCNode* node, SimplePlayer* player) {
                 }
             }
 
-            spritePart->removeFromParentAndCleanup(false);
             spritePart->m_followers->removeAllObjects();
             spritePart->m_hasFollower = false;
             spritePart->setPosition({ 0.0f, 0.0f });
@@ -684,7 +689,7 @@ void EditIconPopup::updatePieces() {
 }
 
 void EditIconPopup::goToPage(int page) {
-    for (auto sprite : CCArrayExt<CCSprite*>(static_cast<CCArray*>(m_pages->objectAtIndex(m_page)))) {
+    for (auto sprite : static_cast<CCArray*>(m_pages->objectAtIndex(m_page))->asExt<CCNode>()) {
         m_pieceMenu->removeChild(sprite, false);
     }
 
@@ -692,7 +697,7 @@ void EditIconPopup::goToPage(int page) {
     m_page = ((page % count) + count) % count;
     m_selectSprite->setVisible(m_selectSprite->getTag() == m_page);
 
-    for (auto sprite : CCArrayExt<CCSprite*>(static_cast<CCArray*>(m_pages->objectAtIndex(m_page)))) {
+    for (auto sprite : static_cast<CCArray*>(m_pages->objectAtIndex(m_page))->asExt<CCNode>()) {
         m_pieceMenu->addChild(sprite);
     }
 

@@ -152,7 +152,7 @@ CCPoint offsetForIndex(int index) {
 
 bool IconColorPopup::setup(int selected, std23::move_only_function<void(int)> callback) {
     setID("IconColorPopup");
-    setTitle("Select Color");
+    setTitle("Select Preview Color");
     m_title->setID("select-color-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
