@@ -81,10 +81,11 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     }
 
     int findIconPage(IconType type, bool dual) {
+        auto icons = more_icons::getIcons(type);
+        if (!icons) return m_iconPages[type];
+
         auto info = more_icons::getIcon(type, dual);
-        return info
-            ? (Get::GameManager()->countForType(type) + 35) / 36 + (info - MoreIcons::icons[type].data()) / 36
-            : m_iconPages[type];
+        return info ? (Get::GameManager()->countForType(type) + 35) / 36 + (info - icons->data()) / 36 : m_iconPages[type];
     }
 
     void onSelect(CCObject* sender) {
@@ -134,7 +135,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     void updatePlayerColors() {
         GJGarageLayer::updatePlayerColors();
 
-        if (m_iconSelection && m_fields->m_pageBar && MoreIcons::icons[m_iconType].size() > 0) m_iconSelection->setVisible(false);
+        if (m_iconSelection && m_fields->m_pageBar && more_icons::getIconCount(m_iconType) > 0) m_iconSelection->setVisible(false);
     }
 
     void createNavMenu(int page, IconType type) {
@@ -149,7 +150,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             addChild(f->m_navMenu, 1);
         }
 
-        auto iconCount = MoreIcons::icons[type].size();
+        auto iconCount = more_icons::getIconCount(type);
         m_navDotMenu->setPositionY(iconCount > 0 ? 35.0f : 25.0f);
         auto count = (Get::GameManager()->countForType(type) + 35) / 36;
         if (count < 2) {
@@ -201,7 +202,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
     void onArrow(CCObject* sender) {
         auto page = m_iconPages[m_iconType] + sender->getTag();
-        auto pages = (Get::GameManager()->countForType(m_iconType) + 35) / 36 + (MoreIcons::icons[m_iconType].size() + 35) / 36;
+        auto pages = (Get::GameManager()->countForType(m_iconType) + 35) / 36 + (more_icons::getIconCount(m_iconType) + 35) / 36;
         GJGarageLayer::setupPage(pages > 0 ? page < 0 ? pages + page : page >= pages ? page - pages : page : 0, m_iconType);
     }
 
@@ -209,16 +210,15 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         m_iconPages[type] = page;
         createNavMenu(page, type);
 
-        auto found = MoreIcons::icons.find(type);
-        if (found == MoreIcons::icons.end()) return;
+        auto icons = more_icons::getIcons(type);
+        if (!icons) return;
 
         auto gameManager = Get::GameManager();
         auto customPage = page - (gameManager->countForType(type) + 35) / 36;
         if (customPage < 0) return;
 
-        auto& icons = found->second;
         auto index = customPage * 36;
-        auto size = icons.size();
+        auto size = icons->size();
         if (size < index) return;
 
         m_cursor1->setOpacity(255);
@@ -235,7 +235,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto i = 1;
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto active = more_icons::activeIcon(type, sdi && sdi->getSavedValue("2pselected", false));
-        std::span infoPage(icons.data() + index, std::min<size_t>(36, size - index));
+        std::span<IconInfo> infoPage(icons->data() + index, std::min<size_t>(36, size - index));
 
         if (type <= IconType::Jetpack) {
             auto unlockType = gameManager->iconTypeToUnlockType(type);

@@ -234,7 +234,7 @@ namespace more_icons {
 
     /// Returns a pointer to a vector of all icons for a specific type.
     /// @param type The type of icon to get all icons for.
-    /// @returns A pointer to a vector of all icons for the specified type, or nullptr if the mod is not loaded.
+    /// @returns A pointer to a vector of all icons for the specified type, or nullptr if the mod is not loaded or the type is unsupported.
     MORE_ICONS_DLL std::vector<IconInfo>* getIcons(IconType type)
         MI_EXPORT((std::vector<IconInfo>*(*)(IconType))(&getIcons), (type));
 
@@ -244,6 +244,14 @@ namespace more_icons {
     /// @returns The icon info for the specified icon, or nullptr if the icon is not found.
     MORE_ICONS_DLL IconInfo* getIcon(const std::string& name, IconType type)
         MI_EXPORT((IconInfo*(*)(const std::string&, IconType))(&getIcon), (name, type));
+
+    /// Returns the number of icons for a specific type.
+    /// @param type The type of icon to get the count for.
+    /// @returns The number of icons for the specified type.
+    inline size_t getIconCount(IconType type) {
+        auto icons = getIcons(type);
+        return icons ? icons->size() : 0;
+    }
 
     /// Returns the icon info for the active icon of a specific type.
     /// @param type The type of icon to get the info for.
@@ -297,7 +305,7 @@ namespace more_icons {
     /// @param trailInfo The trail info of the icon.
     /// @param vanilla Whether or not the icon is a vanilla icon.
     /// @param zipped Whether or not the icon is zipped.
-    /// @returns A pointer to the added icon info.
+    /// @returns A pointer to the added icon info, or nullptr if the mod is not loaded or the type is unsupported.
     MORE_ICONS_DLL IconInfo* addIcon(
         const std::string& name, const std::string& shortName, IconType type, const std::string& png, const std::string& plist,
         const std::string& packID = {}, const std::string& packName = "More Icons",

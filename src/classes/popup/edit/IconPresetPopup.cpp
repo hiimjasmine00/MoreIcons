@@ -6,6 +6,7 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
 #include <Geode/ui/Scrollbar.hpp>
+#include <MoreIconsV2.hpp>
 
 using namespace geode::prelude;
 
@@ -56,19 +57,20 @@ bool IconPresetPopup::setup(IconType type, std::string_view suffix, std23::move_
         scrollLayer->m_contentLayer->addChild(iconMenu);
     }
 
-    auto& icons = MoreIcons::icons[type];
-    auto customCount = icons.size();
-    for (int i = 0; i < customCount; i++) {
-        auto info = icons.data() + i;
-        auto lazyIcon = LazyIcon::create(type, 0, info, suffix, [this, info] {
-            if (m_callback) m_callback(0, info);
-            onClose(nullptr);
-        });
-        auto iconMenu = CCMenu::createWithItem(lazyIcon);
-        iconMenu->setContentSize(lazyIcon->getContentSize());
-        iconMenu->ignoreAnchorPointForPosition(false);
-        iconMenu->setID(fmt::format("{}-menu", lazyIcon->getID()));
-        scrollLayer->m_contentLayer->addChild(iconMenu);
+    if (auto icons = more_icons::getIcons(type)) {
+        auto customCount = icons->size();
+        for (int i = 0; i < customCount; i++) {
+            auto info = icons->data() + i;
+            auto lazyIcon = LazyIcon::create(type, 0, info, suffix, [this, info] {
+                if (m_callback) m_callback(0, info);
+                onClose(nullptr);
+            });
+            auto iconMenu = CCMenu::createWithItem(lazyIcon);
+            iconMenu->setContentSize(lazyIcon->getContentSize());
+            iconMenu->ignoreAnchorPointForPosition(false);
+            iconMenu->setID(fmt::format("{}-menu", lazyIcon->getID()));
+            scrollLayer->m_contentLayer->addChild(iconMenu);
+        }
     }
 
     scrollLayer->m_contentLayer->updateLayout();

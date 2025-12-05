@@ -13,26 +13,14 @@ class $modify(MIMenuLayer, MenuLayer) {
             if (auto iconProfile = Loader::get()->getInstalledMod("capeling.icon_profile")) {
                 if (iconProfile->isEnabled()) {
                     hook->setAutoEnable(true);
-                    afterPriority(hook, iconProfile);
+                    ModifyBase<ModifyDerive<MIMenuLayer, MenuLayer>>::setHookPriorityAfterPost(hook, iconProfile);
                 }
                 else new EventListener([hook](ModStateEvent* e) {
-                    afterPriority(hook, e->getMod());
+                    ModifyBase<ModifyDerive<MIMenuLayer, MenuLayer>>::setHookPriorityAfterPost(hook, e->getMod());
                     jasmine::hook::toggle(hook, true);
                 }, ModStateFilter(iconProfile, ModEventType::Loaded));
             }
         }
-    }
-
-    static void afterPriority(Hook* hook, Mod* mod) {
-        auto address = hook->getAddress();
-        auto modHooks = mod->getHooks();
-        auto modHook = std::ranges::find_if(modHooks, [address](Hook* h) {
-            return h->getAddress() == address;
-        });
-        if (modHook == modHooks.end()) return log::error("Failed to find MenuLayer::init hook in capeling.icon_profile");
-
-        auto priority = (*modHook)->getPriority();
-        if (hook->getPriority() >= priority) hook->setPriority(priority - 1);
     }
 
     bool init() {

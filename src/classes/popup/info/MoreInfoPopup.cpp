@@ -70,10 +70,10 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
 
         std::filesystem::path uhdPng = stem.native() + MI_PATH("-uhd.png");
         if (MoreIcons::doesExist(uhdPng)) {
-            files.push_back(uhdPng);
+            files.push_back(std::move(uhdPng));
             std::filesystem::path filename = shortName.native() + MI_PATH("-uhd.plist");
             auto plist = parentDir / filename;
-            if (MoreIcons::doesExist(plist)) files.push_back(plist);
+            if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
             else if (!trash) {
                 if (auto res = copyVanillaFile(MI_PATH("icons") / filename, directory / filename, true); res.isErr()) {
                     return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());
@@ -83,10 +83,10 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
 
         std::filesystem::path hdPng = stem.native() + MI_PATH("-hd.png");
         if (MoreIcons::doesExist(hdPng)) {
-            files.push_back(hdPng);
+            files.push_back(std::move(hdPng));
             std::filesystem::path filename = shortName.native() + MI_PATH("-hd.plist");
             auto plist = parentDir / filename;
-            if (MoreIcons::doesExist(plist)) files.push_back(plist);
+            if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
             else if (!trash) {
                 if (auto res = copyVanillaFile(MI_PATH("icons") / filename, directory / filename, false); res.isErr()) {
                     return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());
@@ -96,10 +96,10 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
 
         std::filesystem::path png = stem.native() + MI_PATH(".png");
         if (MoreIcons::doesExist(png)) {
-            files.push_back(png);
+            files.push_back(std::move(png));
             std::filesystem::path filename = shortName.native() + MI_PATH(".plist");
             auto plist = parentDir / filename;
-            if (MoreIcons::doesExist(plist)) files.push_back(plist);
+            if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
             else if (!trash) {
                 if (auto res = copyVanillaFile(MI_PATH("icons") / filename, directory / filename, false); res.isErr()) {
                     return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());

@@ -120,7 +120,7 @@ bool MoreIconsPopup::setup() {
         gamemodeMenu->addChild(label);
 
         auto vanillaCount = Get::GameManager()->countForType(type);
-        auto customCount = MoreIcons::icons[type].size();
+        auto customCount = more_icons::getIconCount(type);
         auto logCount = std::ranges::count(MoreIcons::logs, type, &LogData::type);
 
         auto vanillaLabel = CCLabelBMFont::create(fmt::format("Vanilla: {}", vanillaCount).c_str(), "goldFont.fnt");

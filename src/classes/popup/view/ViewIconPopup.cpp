@@ -45,7 +45,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
 
     if (type <= IconType::Jetpack) {
         auto isRobot = type == IconType::Robot || type == IconType::Spider;
-        std::vector<std::vector<std::string>> suffixes;
+        std::vector<std::vector<std::string_view>> suffixes;
         suffixes.reserve(isRobot ? 4 : 1);
         if (isRobot) {
             suffixes.push_back({ "_01_001.png", "_01_2_001.png", "_01_glow_001.png", "_01_extra_001.png" });
@@ -77,7 +77,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
 
             auto& subSuffixes = suffixes[i];
             for (int j = 0; j < subSuffixes.size(); j++) {
-                if (auto spriteFrame = MoreIcons::getFrame(prefix + subSuffixes[j])) {
+                if (auto spriteFrame = MoreIcons::getFrame(fmt::format("{}{}", prefix, subSuffixes[j]))) {
                     auto sprite = CCSprite::createWithSpriteFrame(spriteFrame);
                     auto& size = sprite->getContentSize();
                     sprite->setPosition(size / 2.0f);

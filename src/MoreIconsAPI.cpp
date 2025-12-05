@@ -41,10 +41,11 @@ $execute {
 
     new EventListener(+[](std::vector<IconInfo*>* vec, IconType type) {
         vec->clear();
-        auto& icons = MoreIcons::icons[type];
-        auto size = icons.size();
+        auto icons = more_icons::getIcons(type);
+        if (!icons) return ListenerResult::Propagate;
+        auto size = icons->size();
         vec->reserve(size);
-        for (int i = 0; i < size; i++) vec->push_back(icons.data() + i);
+        for (int i = 0; i < size; i++) vec->push_back(icons->data() + i);
         return ListenerResult::Propagate;
     }, DispatchFilter<std::vector<IconInfo*>*, IconType>("get-icons"_spr));
 
@@ -84,14 +85,16 @@ std::map<IconType, std::vector<IconInfo>>* more_icons::getIcons() {
 }
 
 std::vector<IconInfo>* more_icons::getIcons(IconType type) {
-    return &MoreIcons::icons[type];
+    auto it = MoreIcons::icons.find(type);
+    return it != MoreIcons::icons.end() ? &it->second : nullptr;
 }
 
 IconInfo* more_icons::getIcon(const std::string& name, IconType type) {
     if (name.empty()) return nullptr;
-    auto& icons = MoreIcons::icons[type];
-    auto found = std::ranges::find(icons, name, &IconInfo::name);
-    return found < icons.end() ? std::to_address(found) : nullptr;
+    auto icons = getIcons(type);
+    if (!icons) return nullptr;
+    auto it = std::ranges::find(*icons, name, &IconInfo::name);
+    return it < icons->end() ? std::to_address(it) : nullptr;
 }
 
 CCTexture2D* more_icons::loadIcon(const std::string& name, IconType type, int requestID) {
@@ -174,12 +177,13 @@ IconInfo* more_icons::addIcon(
     const std::string& name, const std::string& shortName, IconType type, const std::string& png, const std::string& plist,
     const std::string& packID, const std::string& packName, int trailID, const TrailInfo& trailInfo, bool vanilla, bool zipped
 ) {
-    auto& icons = MoreIcons::icons[type];
-    auto it = std::ranges::find_if(icons, [&packID, &shortName, type](const IconInfo& icon) {
+    auto icons = getIcons(type);
+    if (!icons) return nullptr;
+    auto it = std::ranges::find_if(*icons, [&packID, &shortName, type](const IconInfo& icon) {
         return icon.compare(packID, shortName, type) >= 0;
     });
-    if (it != icons.end() && it->type == type && it->name == name) icons.erase(it);
-    return std::to_address(icons.emplace(it, name, png, plist, packName, packID, type, trailID, trailInfo, shortName, vanilla, zipped));
+    if (it != icons->end() && it->type == type && it->name == name) icons->erase(it);
+    return std::to_address(icons->emplace(it, name, png, plist, packName, packID, type, trailID, trailInfo, shortName, vanilla, zipped));
 }
 
 void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
@@ -219,8 +223,8 @@ void more_icons::removeIcon(IconInfo* info) {
         }
     }
 
-    auto& icons = MoreIcons::icons[type];
-    icons.erase(icons.begin() + (info - icons.data()));
+    auto icons = getIcons(type);
+    if (icons) icons->erase(icons->begin() + (info - icons->data()));
 }
 
 void more_icons::renameIcon(IconInfo* info, const std::string& name) {
@@ -274,15 +278,17 @@ void more_icons::renameIcon(IconInfo* info, const std::string& name) {
     if (activeIcon(type, false) == oldName) setIcon(newName, type, false);
     if (activeIcon(type, true) == oldName) setIcon(newName, type, true);
 
-    auto& icons = MoreIcons::icons[type];
-    auto it = std::ranges::find_if(icons, [info](const IconInfo& icon) {
+    auto icons = getIcons(type);
+    if (!icons) return;
+
+    auto it = std::ranges::find_if(*icons, [info](const IconInfo& icon) {
         return icon > *info;
     });
     if (std::to_address(it) == info) return;
 
     auto icon = std::move(*info);
-    icons.erase(icons.begin() + (info - icons.data()));
-    icons.insert(it, std::move(icon));
+    icons->erase(icons->begin() + (info - icons->data()));
+    icons->insert(it, std::move(icon));
 }
 
 void more_icons::updateIcon(IconInfo* info) {
@@ -323,7 +329,7 @@ void more_icons::updateIcon(IconInfo* info) {
             spriteFrame->m_obOriginalSizeInPixels = frame->m_obOriginalSizeInPixels;
         }
         else spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
-        info->frameNames.push_back(frameName);
+        info->frameNames.push_back(std::move(frameName));
     }
 }
 
