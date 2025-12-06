@@ -20,10 +20,12 @@ jobs:
 
         - name: macOS
           os: macos-latest
+          ccache-variant: ''
 
         - name: iOS
           os: macos-latest
           target: iOS
+          ccache-variant: ''
 
         - name: Android32
           os: ubuntu-latest
@@ -44,6 +46,7 @@ jobs:
         with:
           sdk: nightly
           build-config: ${{ matrix.config.build-config || 'Release' }}
+          ccache-variant: ${{ matrix.config.ccache-variant || 'sccache' }}
           export-pdb: true
           export-symbols: true
           combine: true
