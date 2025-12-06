@@ -80,18 +80,18 @@ Result<std::vector<uint8_t>> Load::readBinary(const std::filesystem::path& path)
 }
 
 Result<ImageResult> Load::createFrames(
-    const std::filesystem::path& png, const std::filesystem::path& plist, const std::string& name, IconType type
+    const std::filesystem::path& png, const std::filesystem::path& plist, const std::string& name, IconType type, bool premultiplyAlpha
 ) {
     GEODE_UNWRAP_INTO(auto data, readBinary(png).mapErr([](const std::string& err) {
         return fmt::format("Failed to read image: {}", err);
     }));
 
-    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(data, true).mapErr([](const std::string& err) {
+    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(data, premultiplyAlpha).mapErr([](const std::string& err) {
         return fmt::format("Failed to parse image: {}", err);
     }));
 
     Autorelease texture = new CCTexture2D();
-    GEODE_UNWRAP_INTO(auto frames, createFrames(plist, texture, name, type, !name.empty()).mapErr([](const std::string& err) {
+    GEODE_UNWRAP_INTO(auto frames, createFrames(plist, texture, name, type, !premultiplyAlpha || !name.empty()).mapErr([](const std::string& err) {
         return fmt::format("Failed to load frames: {}", err);
     }));
 

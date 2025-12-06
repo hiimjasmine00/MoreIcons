@@ -19,9 +19,8 @@ SaveIconPopup* SaveIconPopup::create(EditIconPopup* popup, IconType type, const 
 }
 
 bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Value& definitions, CCDictionary* frames) {
-    auto miType = (int)type;
     setID("SaveIconPopup");
-    setTitle(fmt::format("Save {}", MoreIcons::uppercase[miType]));
+    setTitle(fmt::format("Save {}", MoreIcons::uppercase[(int)type]));
     m_title->setID("save-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -108,8 +107,7 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
         std::make_tuple(MI_PATH(""), "", "SD")
     };
     for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(m_frames)) {
-        auto suffix = frameName.substr(0, frameName.size() - 4);
-        auto& definition = m_definitions[suffix];
+        auto& definition = m_definitions[frameName.substr(0, frameName.size() - 4)];
         auto offsetX = definition.get<float>("offset-x").unwrapOr(0.0f);
         auto offsetY = definition.get<float>("offset-y").unwrapOr(0.0f);
         auto rotationX = definition.get<float>("rotation-x").unwrapOr(0.0f);
@@ -131,6 +129,7 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
             auto boundingSize = sprite->boundingBox().size;
             node->setContentSize(boundingSize + CCSize { std::abs(offsetX * 2.0f), std::abs(offsetY * 2.0f) });
             sprite->setPosition(node->getContentSize() / 2.0f + sprite->getPosition());
+            sprite->setBlendFunc({ GL_ONE, GL_ZERO });
             packers[i].frame(joinedName, ImageRenderer::getImage(node));
             node->release();
             sprite->release();
@@ -192,7 +191,7 @@ void SaveIconPopup::addOrUpdateIcon(const std::string& name, const std::filesyst
 void SaveIconPopup::onClose(CCObject* sender) {
     if (m_nameInput->getString().empty()) return Popup::onClose(sender);
 
-    auto type = MoreIcons::convertType(m_iconType);
+    auto type = (int)m_iconType;
     createQuickPopup(
         fmt::format("Exit {} Saver", MoreIcons::uppercase[type]).c_str(),
         fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} saver</c>?", MoreIcons::lowercase[type]),

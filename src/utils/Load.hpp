@@ -57,7 +57,7 @@ public:
     static std::string getFrameName(const std::string& name, const std::string& prefix, IconType type);
     static geode::Result<std::vector<uint8_t>> readBinary(const std::filesystem::path& path);
     static geode::Result<ImageResult> createFrames(
-        const std::filesystem::path& png, const std::filesystem::path& plist, const std::string& name, IconType type
+        const std::filesystem::path& png, const std::filesystem::path& plist, const std::string& name, IconType type, bool premultiplyAlpha = true
     );
     static geode::Result<Autorelease<cocos2d::CCDictionary>> createFrames(
         const std::filesystem::path& path, cocos2d::CCTexture2D* texture, const std::string& name, IconType type, bool fixNames = true

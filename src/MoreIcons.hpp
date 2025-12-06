@@ -2,6 +2,7 @@
 #include <fmt/format.h>
 #include <Geode/GeneratedPredeclare.hpp>
 #include <IconInfo.hpp>
+#include <std23/function_ref.h>
 
 struct LogData {
     std::string name;
@@ -90,10 +91,14 @@ public:
     static cocos2d::CCSprite* customTrail(const std::string& png);
     static bool dualSelected();
     static bool doesExist(const std::filesystem::path& path);
+    static std::filesystem::path getEditorDir(IconType type);
     static cocos2d::CCSpriteFrame* getFrame(const std::string& name);
     static std::filesystem::path getIconDir(IconType type);
     static std::filesystem::path getIconStem(const std::string& name, IconType type);
     static TrailInfo getTrailInfo(int trailID);
+    static void iterate(
+        const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<bool(const std::filesystem::path&)> func
+    );
     static void loadIcons(IconType type);
     static void loadPacks();
     static void loadSettings();

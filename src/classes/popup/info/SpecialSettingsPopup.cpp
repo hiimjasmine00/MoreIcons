@@ -147,5 +147,7 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     saveButton->setID("save-button");
     m_buttonMenu->addChild(saveButton);
 
+    handleTouchPriority(this);
+
     return true;
 }

@@ -279,6 +279,8 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     okButton->setID("ok-button");
     m_buttonMenu->addChild(okButton);
 
+    handleTouchPriority(this);
+
     return true;
 }
 

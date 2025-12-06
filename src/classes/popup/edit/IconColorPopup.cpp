@@ -197,6 +197,8 @@ bool IconColorPopup::setup(int selected, std23::move_only_function<void(int)> ca
     confirmButton->setID("confirm-button");
     m_buttonMenu->addChild(confirmButton);
 
+    handleTouchPriority(this);
+
     return true;
 }
 

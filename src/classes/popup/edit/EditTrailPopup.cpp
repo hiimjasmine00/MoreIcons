@@ -58,11 +58,7 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
             if (res && res->isErr()) return MoreIcons::notifyFailure("Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
-            if (auto textureRes = ImageRenderer::getTexture(res->unwrap()); textureRes.isOk()) {
-                m_streak->setTexture(textureRes.unwrap());
-                m_hasChanged = true;
-            }
-            else if (textureRes.isErr()) return MoreIcons::notifyFailure("Failed to load image: {}", textureRes.unwrapErr());
+            updateWithPath(res->unwrap());
         });
 
         m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
@@ -77,9 +73,8 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
 
     auto presetButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
         IconPresetPopup::create(IconType::Special, {}, [this](int id, IconInfo* info) {
-            m_streak->setTexture(Get::TextureCache()->addImage(
-                info ? info->textures[0].c_str() : fmt::format("streak_{:02}_001.png", id).c_str(), false));
-            m_hasChanged = true;
+            updateWithPath(MoreIcons::strPath(info ? info->textures[0] :
+                Get::FileUtils()->fullPathForFilename(fmt::format("streak_{:02}_001.png", id).c_str(), false)));
         })->show();
     });
     presetButton->setID("preset-button");
@@ -112,6 +107,14 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
     return true;
 }
 
+void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
+    if (auto textureRes = ImageRenderer::getTexture(path); textureRes.isOk()) {
+        m_streak->setTexture(textureRes.unwrap());
+        m_hasChanged = true;
+    }
+    else if (textureRes.isErr()) MoreIcons::notifyFailure("Failed to load image: {}", textureRes.unwrapErr());
+}
+
 void EditTrailPopup::addOrUpdateIcon(const std::string& name, const std::filesystem::path& path) {
     if (auto icon = more_icons::getIcon(name, IconType::Special)) more_icons::updateIcon(icon);
     else {
@@ -135,8 +138,11 @@ void EditTrailPopup::addOrUpdateIcon(const std::string& name, const std::filesys
 
 void EditTrailPopup::saveTrail(const std::filesystem::path& path) {
     auto sprite = CCSprite::createWithTexture(m_streak->getTexture());
-    sprite->setPosition(sprite->getContentSize() / 2.0f);
-    if (auto res = texpack::toPNG(path, ImageRenderer::getImage(sprite)); res.isErr()) {
+    sprite->setAnchorPoint({ 0.0f, 0.0f });
+    sprite->setBlendFunc({ GL_ONE, GL_ZERO });
+    auto image = ImageRenderer::getImage(sprite);
+    sprite->release();
+    if (auto res = texpack::toPNG(path, image); res.isErr()) {
         return MoreIcons::notifyFailure("Failed to save image: {}", res.unwrapErr());
     }
     addOrUpdateIcon(m_nameInput->getString(), path);
