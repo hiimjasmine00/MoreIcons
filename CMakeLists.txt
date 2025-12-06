@@ -31,7 +31,7 @@ endif()
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
 CPMAddPackage("gh:zeux/pugixml@1.15")
-CPMAddPackage("gh:hiimjasmine00/texpack@0.5.0")
+CPMAddPackage("gh:hiimjasmine00/texpack@0.5.1")
 CPMAddPackage("gh:hiimjasmine00/jasmine-tools@1.1.0")
 CPMAddPackage("gh:zhihaoy/nontype_functional@1.0.2")
 if (WIN32)

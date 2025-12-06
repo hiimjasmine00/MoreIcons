@@ -136,7 +136,6 @@ void EditTrailPopup::addOrUpdateIcon(const std::string& name, const std::filesys
 void EditTrailPopup::saveTrail(const std::filesystem::path& path) {
     auto sprite = CCSprite::createWithTexture(m_streak->getTexture());
     sprite->setPosition(sprite->getContentSize() / 2.0f);
-    sprite->setBlendFunc({ GL_ONE, GL_ZERO });
     if (auto res = texpack::toPNG(path, ImageRenderer::getImage(sprite)); res.isErr()) {
         return MoreIcons::notifyFailure("Failed to save image: {}", res.unwrapErr());
     }

@@ -285,11 +285,8 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
             auto emptyFrame = MoreIcons::getFrame("emptyFrame.png"_spr);
             if (!emptyFrame) {
                 Autorelease texture = new CCTexture2D();
-                auto factor = Get::Director()->getContentScaleFactor();
-                int factorInt = factor;
-                std::unique_ptr<uint8_t[]> data = std::make_unique<uint8_t[]>(factorInt * factorInt * 4);
-                texture->initWithData(data.get(), kCCTexture2DPixelFormat_RGBA8888, factorInt, factorInt, { factor, factor });
-                emptyFrame = CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() });
+                texture->initWithData(nullptr, kCCTexture2DPixelFormat_RGBA8888, 0, 0, { 0.0f, 0.0f });
+                emptyFrame = CCSpriteFrame::createWithTexture(texture, { 0.0f, 0.0f, 0.0f, 0.0f });
                 Get::SpriteFrameCache()->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
             }
             m_frames->setObject(emptyFrame, key);

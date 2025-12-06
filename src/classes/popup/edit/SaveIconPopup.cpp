@@ -131,7 +131,6 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
             auto boundingSize = sprite->boundingBox().size;
             node->setContentSize(boundingSize + CCSize { std::abs(offsetX * 2.0f), std::abs(offsetY * 2.0f) });
             sprite->setPosition(node->getContentSize() / 2.0f + sprite->getPosition());
-            sprite->setBlendFunc({ GL_ONE, GL_ZERO });
             packers[i].frame(joinedName, ImageRenderer::getImage(node));
             node->release();
             sprite->release();

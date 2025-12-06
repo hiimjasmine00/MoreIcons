@@ -67,6 +67,14 @@ texpack::Image ImageRenderer::getImage(CCNode* node) {
         std::swap_ranges(data.begin() + y * width * 4, data.begin() + (y + 1) * width * 4, data.end() - (y + 1) * width * 4);
     }
 
+    for (size_t i = 0; i < data.size(); i += 4) {
+        if (data[i + 3] == 0) continue;
+        auto alpha = 255.0 / data[i + 3];
+        data[i] *= alpha;
+        data[i + 1] *= alpha;
+        data[i + 2] *= alpha;
+    }
+
     return { data, width, height };
 }
 

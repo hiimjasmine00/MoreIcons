@@ -7,6 +7,8 @@
 - Moved trail saving to the trail settings popup
 - Changed the icon viewer popup to show the icon name in the title
 - Fixed a bug where clicking a trail in the vanilla icon list popup would crash the game
+- Fixed a bug where saving an icon with a 0 size piece would crash the game
+- Fixed some pre-multiplied alpha issues when saving icons
 - Removed some logs I left in by accident
 - Refactored the API in `MoreIconsV2.hpp`, utilizing Geode's event export system
   - This will replace `MoreIcons.hpp` in v2.0.0, which will be released after Geometry Dash v2.208
