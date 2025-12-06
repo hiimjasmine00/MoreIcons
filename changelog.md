@@ -1,5 +1,5 @@
 # More Icons Changelog
-## v1.16.0 (2025-12-05)
+## v1.16.0 (2025-12-06)
 - Added color previews and load/save state functionality to the icon editor
 - Added green flashing to the PNG/Plist buttons in the icon editor when the other file needs to be selected
 - Added pink selection to the PNG/Plist buttons in the icon editor when the file is selected

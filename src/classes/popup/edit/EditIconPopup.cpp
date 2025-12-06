@@ -12,6 +12,7 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/Slider.hpp>
+#include <Geode/ui/BasedButtonSprite.hpp>
 #include <Geode/utils/file.hpp>
 #include <Geode/utils/string.hpp>
 #include <jasmine/convert.hpp>
@@ -174,7 +175,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_pieceMenu->updateLayout();
 
     auto colorMenu = CCMenu::create();
-    colorMenu->setPosition({ 35.0f, 110.0f });
+    colorMenu->setPosition({ 33.0f, 110.0f });
     colorMenu->setContentSize({ 30.0f, 100.0f });
     colorMenu->setLayout(ColumnLayout::create()->setGap(10.0f)->setAxisReverse(true));
     colorMenu->setID("color-menu");
@@ -185,6 +186,29 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     addColorButton(m_thirdColor, colorMenu, "G", "third-color-button");
 
     colorMenu->updateLayout();
+
+    auto saveMenu = CCMenu::create();
+    saveMenu->setPosition({ 69.0f, 110.0f });
+    saveMenu->setContentSize({ 30.0f, 100.0f });
+    saveMenu->setLayout(ColumnLayout::create()->setGap(10.0f)->setAxisReverse(true));
+    saveMenu->setID("save-menu");
+    m_mainLayer->addChild(saveMenu);
+
+    auto loadStateFrontSprite = CCSprite::createWithSpriteFrameName("geode.loader/install.png");
+    loadStateFrontSprite->setFlipY(true);
+    auto loadStateSprite = CircleButtonSprite::create(loadStateFrontSprite, CircleBaseColor::Green, CircleBaseSize::Small);
+    loadStateSprite->setScale(0.7f);
+    auto loadStateButton = CCMenuItemExt::createSpriteExtra(loadStateSprite, [](auto) {});
+    loadStateButton->setID("load-state-button");
+    saveMenu->addChild(loadStateButton);
+
+    auto saveStateSprite = CircleButtonSprite::createWithSprite("MI_saveBtn_001.png"_spr, 1.0f, CircleBaseColor::Cyan, CircleBaseSize::Small);
+    saveStateSprite->setScale(0.7f);
+    auto saveStateButton = CCMenuItemExt::createSpriteExtra(saveStateSprite, [](auto) {});
+    saveStateButton->setID("save-state-button");
+    saveMenu->addChild(saveStateButton);
+
+    saveMenu->updateLayout();
 
     m_selectSprite = CCSprite::createWithSpriteFrameName("GJ_select_001.png");
     m_selectSprite->setPosition(m_mainLayer->convertToNodeSpace(m_pieceMenu->convertToWorldSpace(m_pieceMenu->getChildByIndex(0)->getPosition())));
