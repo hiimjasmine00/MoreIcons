@@ -74,7 +74,7 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
     auto presetButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
         IconPresetPopup::create(IconType::Special, {}, [this](int id, IconInfo* info) {
             updateWithPath(MoreIcons::strPath(info ? info->textures[0] :
-                Get::FileUtils()->fullPathForFilename(fmt::format("streak_{:02}_001.png", id).c_str(), false)));
+                std::string(Get::FileUtils()->fullPathForFilename(fmt::format("streak_{:02}_001.png", id).c_str(), false))));
         })->show();
     });
     presetButton->setID("preset-button");
