@@ -68,7 +68,6 @@ bool SaveEditorPopup::setup(IconType type, const IconEditorState& state, CCDicti
     return true;
 }
 
-
 void SaveEditorPopup::saveEditor(const std::filesystem::path& directory) {
     if (!MoreIcons::doesExist(directory)) {
         if (auto res = file::createDirectoryAll(directory); res.isErr()) {

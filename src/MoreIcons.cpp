@@ -335,7 +335,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
         #endif
         name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
-        auto start = path.parent_path() / shortName;
+        auto start = path.parent_path() / wideName;
         if (factor < 2.0f) {
             if (!MoreIcons::doesExist(start.native() + MI_PATH(".plist"))) {
                 printLog(name, Severity::Warning, "Ignoring medium-quality icon on low texture quality");

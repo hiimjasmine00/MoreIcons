@@ -29,6 +29,8 @@ void BiggerContentLayer::setPosition(const CCPoint& pos) {
     auto maxY = m_sizeOffset;
     if (auto parent = getParent()) maxY += parent->getContentHeight();
 
+    if (!m_pChildren) return;
+
     for (auto child : m_pChildren->asExt<CCNode>()) {
         auto height = child->getScaledContentHeight();
         if (!child->isIgnoreAnchorPointForPosition()) height *= (1.0f - child->getAnchorPoint().y);

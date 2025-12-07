@@ -19,6 +19,12 @@ Custom icons without the hassle.
 
 ![Icon Name Popup](https://raw.githubusercontent.com/hiimjasmine00/MoreIcons/refs/heads/master/resources/icon-name-popup.png)
 
+![Select Color Popup](https://raw.githubusercontent.com/hiimjasmine00/MoreIcons/refs/heads/master/resources/select-color-popup.png)
+
+![Load Editor Popup](https://raw.githubusercontent.com/hiimjasmine00/MoreIcons/refs/heads/master/resources/load-editor-popup.png)
+
+![Save Editor Popup](https://raw.githubusercontent.com/hiimjasmine00/MoreIcons/refs/heads/master/resources/save-editor-popup.png)
+
 ## Credits
 - [DeepResonanceX](https://gdbrowser.com/u/5668656) - Ideas and funding for the mod
 - [hiimjasmine00](https://gdbrowser.com/u/7466002) - Creator of the mod
