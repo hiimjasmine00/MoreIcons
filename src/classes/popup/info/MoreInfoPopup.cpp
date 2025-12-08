@@ -48,18 +48,18 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
         if (auto res = MoreIcons::renameFile(texturePath, directory / filename, false, true); res.isErr()) {
             return MoreIcons::notifyFailure("Failed to {} {}: {}", trash ? "trash" : "move", filename, res.unwrapErr());
         }
-        auto jsonName = texturePath.filename().replace_extension(MI_PATH(".json"));
-        auto jsonPath = parentDir / jsonName;
+        filename.replace_extension(MI_PATH(".json"));
+        auto jsonPath = parentDir / filename;
         if (trash) {
             if (MoreIcons::doesExist(jsonPath)) {
-                if (auto res = MoreIcons::renameFile(jsonPath, directory / jsonName, false, true); res.isErr()) {
-                    return MoreIcons::notifyFailure("Failed to trash {}: {}", jsonName, res.unwrapErr());
+                if (auto res = MoreIcons::renameFile(jsonPath, directory / filename, false, true); res.isErr()) {
+                    return MoreIcons::notifyFailure("Failed to trash {}: {}", filename, res.unwrapErr());
                 }
             }
         }
         else {
             if (auto res = file::writeToJson(jsonPath, m_info->trailInfo); res.isErr()) {
-                return MoreIcons::notifyFailure("Failed to write trail info to {}: {}", jsonName, res.unwrapErr());
+                return MoreIcons::notifyFailure("Failed to write trail info to {}: {}", filename, res.unwrapErr());
             }
         }
     }

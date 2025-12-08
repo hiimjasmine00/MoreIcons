@@ -247,7 +247,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
                 }
             }
 
-            MoreIcons::notifySuccess("{} loaded!", string::pathToString(directory.filename()));
+            MoreIcons::notifySuccess("{} loaded!", directory.filename());
         })->show();
     });
     loadStateButton->setID("load-state-button");

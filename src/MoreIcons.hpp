@@ -101,6 +101,7 @@ public:
     static std::filesystem::path getEditorDir(IconType type);
     static std::filesystem::path getIconDir(IconType type);
     static std::filesystem::path getIconStem(const std::string& name, IconType type);
+    static std::basic_string_view<std::filesystem::path::value_type> getPathFilename(const std::filesystem::path& path);
     static std::filesystem::path::string_type getPathString(std::filesystem::path path);
     static TrailInfo getTrailInfo(int trailID);
     static void iterate(
@@ -112,7 +113,7 @@ public:
     static geode::Result<std::filesystem::path> renameFile(
         const std::filesystem::path& from, const std::filesystem::path& to, bool overwrite = true, bool copy = false
     );
-    static std::filesystem::path strPath(const std::string& path);
+    static std::filesystem::path strPath(std::string_view path);
     static void updateGarage(GJGarageLayer* layer = nullptr);
     static cocos2d::ccColor3B vanillaColor1(bool dual);
     static cocos2d::ccColor3B vanillaColor2(bool dual);

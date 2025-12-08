@@ -1,6 +1,9 @@
 #include "LoadEditorPopup.hpp"
 #include "../../../MoreIcons.hpp"
 #include <algorithm>
+#ifdef GEODE_IS_WINDOWS
+#include <cwctype>
+#endif
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/ui/Scrollbar.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
@@ -47,8 +50,21 @@ bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const 
     std::vector<std::filesystem::path> entries;
 
     MoreIcons::iterate(MoreIcons::getEditorDir(type), std::filesystem::file_type::directory, [&entries](const std::filesystem::path& path) {
-        entries.insert(std::ranges::find_if(entries, [filename = string::pathToString(path.filename())](const std::filesystem::path& p) {
-            return string::caseInsensitiveCompare(filename, string::pathToString(p.filename())) != std::strong_ordering::greater;
+        auto a = MoreIcons::getPathFilename(path);
+        entries.insert(std::ranges::find_if(entries, [a](const std::filesystem::path& path) {
+            auto b = MoreIcons::getPathFilename(path);
+            if (a == b) return false;
+            for (size_t i = 0; i < a.size() && i < b.size(); i++) {
+                #ifdef GEODE_IS_WINDOWS
+                auto charA = std::towlower(a[i]);
+                auto charB = std::towlower(b[i]);
+                #else
+                auto charA = std::tolower(a[i]);
+                auto charB = std::tolower(b[i]);
+                #endif
+                if (charA != charB) return charA < charB;
+            }
+            return a.size() <= b.size();
         }), path);
     });
 

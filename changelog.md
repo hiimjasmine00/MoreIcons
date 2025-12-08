@@ -1,6 +1,7 @@
 # More Icons Changelog
 ## v1.16.1 (2025-12-08)
 - Fixed a bug where some scroll layers would get freaky if it didn't have enough content to scroll ([#52](https://github.com/hiimjasmine00/MoreIcons/issues/52))
+- Fixed a bug where some icons from texture packs would not load properly
 - Removed Happy Textures from the mod dependencies
 - Other miscellaneous fixes and improvements
 
