@@ -12,12 +12,12 @@
 using namespace geode::prelude;
 using namespace jasmine::mod;
 
-std::string Load::getFrameName(const std::string& name, const std::string& prefix, IconType type) {
-    if (!name.ends_with("_001.png")) return name;
+std::string Load::getFrameName(std::string_view frameName, std::string_view name, IconType type) {
+    if (!frameName.ends_with("_001.png")) return std::string(frameName);
 
-    std::string suffix;
+    std::string_view suffix;
     auto isRobot = type == IconType::Robot || type == IconType::Spider;
-    std::string_view end = name;
+    auto end = frameName;
     end.remove_suffix(8);
 
     if (end.ends_with("_2")) {
@@ -60,13 +60,13 @@ std::string Load::getFrameName(const std::string& name, const std::string& prefi
         else suffix = "_001.png";
     }
 
-    return suffix.empty() ? name : prefix.empty() ? suffix : fmt::format("{}{}"_spr, prefix, suffix);
+    return suffix.empty() ? std::string(frameName) : name.empty() ? std::string(suffix) : fmt::format("{}{}"_spr, name, suffix);
 }
 
 Result<std::vector<uint8_t>> Load::readBinary(const std::filesystem::path& path) {
     #ifdef GEODE_IS_ANDROID
-    static thread_local ZipFile* apkFile = new ZipFile(getApkPath());
     if (path.native().starts_with("assets/")) {
+        static thread_local ZipFile* apkFile = new ZipFile(getApkPath());
         auto size = 0ul;
         if (auto data = apkFile->getFileData(path.c_str(), &size)) {
             std::vector<uint8_t> vec(data, data + size);
@@ -103,7 +103,7 @@ void Load::initTexture(cocos2d::CCTexture2D* texture, const uint8_t* data, uint3
 }
 
 Result<ImageResult> Load::createFrames(
-    const std::filesystem::path& png, const std::filesystem::path& plist, const std::string& name, IconType type, bool premultiplyAlpha
+    const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type, bool premultiplyAlpha
 ) {
     GEODE_UNWRAP_INTO(auto data, readBinary(png).mapErr([](const std::string& err) {
         return fmt::format("Failed to read image: {}", err);
@@ -153,7 +153,7 @@ matjson::Value parseNode(const pugi::xml_node& node) {
 }
 
 Result<Autorelease<CCDictionary>> Load::createFrames(
-    const std::filesystem::path& path, CCTexture2D* texture, const std::string& name, IconType type, bool fixNames
+    const std::filesystem::path& path, CCTexture2D* texture, std::string_view name, IconType type, bool fixNames
 ) {
     if (path.empty()) return Ok(nullptr);
 

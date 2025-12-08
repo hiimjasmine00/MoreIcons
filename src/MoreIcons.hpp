@@ -95,7 +95,7 @@ public:
 
     static cocos2d::CCTexture2D* createAndAddFrames(IconInfo* info);
     static geode::Result<std::filesystem::path> createTrash();
-    static cocos2d::CCSprite* customTrail(const std::string& png);
+    static cocos2d::CCSprite* customTrail(const char* png);
     static bool dualSelected();
     static bool doesExist(const std::filesystem::path& path);
     static std::filesystem::path getEditorDir(IconType type);

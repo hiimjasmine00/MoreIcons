@@ -227,8 +227,8 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
             updateControls("scale-x", -10.0f, 10.0f, 1.0f, true);
             updateControls("scale-y", -10.0f, 10.0f, 1.0f, true);
 
-            for (auto& definition : m_state.definitions) {
-                auto targets = static_cast<CCArray*>(m_targets->objectForKey(definition.getKey().value_or(std::string())));
+            for (auto& [key, definition] : m_state.definitions) {
+                auto targets = static_cast<CCArray*>(m_targets->objectForKey(key));
                 if (!targets) continue;
                 auto offsetX = definition.get<float>("offset-x").unwrapOr(0.0f);
                 auto offsetY = definition.get<float>("offset-y").unwrapOr(0.0f);
@@ -670,7 +670,7 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
     m_pieces->setObject(pieceSprite, key);
 }
 
-CCSprite* EditIconPopup::addColorButton(int& index, CCMenu* menu, const char* text, std::string id) {
+CCSprite* EditIconPopup::addColorButton(int& index, CCMenu* menu, const char* text, std::string_view id) {
     auto sprite = CCSprite::createWithSpriteFrameName("player_special_01_001.png");
     sprite->setScale(0.85f);
     sprite->setCascadeColorEnabled(true);
@@ -685,7 +685,7 @@ CCSprite* EditIconPopup::addColorButton(int& index, CCMenu* menu, const char* te
             updateColors();
         })->show();
     });
-    button->setID(std::move(id));
+    button->setID(std::string(id));
     menu->addChild(button);
     return sprite;
 }

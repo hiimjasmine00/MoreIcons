@@ -89,13 +89,13 @@ Result<std::filesystem::path> MoreIcons::renameFile(
     const std::filesystem::path& from, const std::filesystem::path& to, bool overwrite, bool copy
 ) {
     std::error_code code;
-    if (!MoreIcons::doesExist(from)) return Ok(std::filesystem::path());
-    if (overwrite && MoreIcons::doesExist(to)) {
+    if (!doesExist(from)) return Ok(std::filesystem::path());
+    if (overwrite && doesExist(to)) {
         if (!std::filesystem::remove(to, code)) return Err("Failed to remove {}: {}", to.filename(), code.message());
     }
     auto dest = to;
     if (copy) {
-        for (int i = 1; MoreIcons::doesExist(dest); i++) {
+        for (int i = 1; doesExist(dest); i++) {
             dest.replace_filename(dest.stem().native() + MI_PATH(" (") +
                 GEODE_WINDOWS(string::utf8ToWide)(fmt::to_string(i)) + MI_PATH(")") + dest.extension().native());
         }
@@ -248,7 +248,7 @@ void MoreIcons::loadPacks() {
             else boolIterate(pack.resourcesPath, std::filesystem::file_type::regular, [&pack, zipped](const std::filesystem::path& path) {
                 if (!path.native().ends_with(MI_PATH(".png"))) return false;
 
-                auto filename = MoreIcons::getPathString(path.filename());
+                auto filename = getPathString(path.filename());
                 if (!filename.starts_with(MI_PATH("streak_")) || !filename.ends_with(MI_PATH("_001.png"))) return false;
 
                 packs.emplace_back(std::move(pack.name), std::move(pack.id), path.parent_path(), true, zipped);
@@ -516,7 +516,7 @@ void MoreIcons::loadIcons(IconType type) {
             iterate(path, std::filesystem::file_type::regular, [type, &pack, prefix](const std::filesystem::path& path) {
                 if (!path.native().ends_with(MI_PATH(".png"))) return false;
 
-                auto filename = MoreIcons::getPathString(path.filename());
+                auto filename = getPathString(path.filename());
                 if (!filename.starts_with(prefix)) return false;
 
                 if (type <= IconType::Jetpack) {
@@ -690,11 +690,11 @@ CCTexture2D* MoreIcons::createAndAddFrames(IconInfo* info) {
     return nullptr;
 }
 
-CCSprite* MoreIcons::customTrail(const std::string& png) {
+CCSprite* MoreIcons::customTrail(const char* png) {
     auto square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
     square->setColor({ 150, 150, 150 });
 
-    auto streak = CCSprite::create(png.c_str());
+    auto streak = CCSprite::create(png);
     limitNodeHeight(streak, 27.0f, 999.0f, 0.001f);
     streak->setRotation(-90.0f);
     streak->setPosition(square->getContentSize() / 2.0f);

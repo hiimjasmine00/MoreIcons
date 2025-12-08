@@ -40,7 +40,9 @@ bool LogLayer::setup(IconType type) {
 
     int i = 0;
     for (auto& log : MoreIcons::logs) {
-        if (log.type == type) scrollLayer->m_contentLayer->addChild(LogCell::create(log.name, log.message, log.severity, i++));
+        if (log.type == type) {
+            scrollLayer->m_contentLayer->addChild(LogCell::create(log.name.c_str(), log.message, log.severity, i++));
+        }
     }
 
     scrollLayer->m_contentLayer->updateLayout();

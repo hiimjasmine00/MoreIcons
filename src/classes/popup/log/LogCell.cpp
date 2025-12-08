@@ -6,7 +6,7 @@
 
 using namespace geode::prelude;
 
-LogCell* LogCell::create(const std::string& name, const std::string& message, int severity, int index) {
+LogCell* LogCell::create(const char* name, std::string_view message, int severity, int index) {
     auto ret = new LogCell();
     if (ret->init(name, message, severity, index)) {
         ret->autorelease();
@@ -16,7 +16,7 @@ LogCell* LogCell::create(const std::string& name, const std::string& message, in
     return nullptr;
 }
 
-bool LogCell::init(const std::string& name, const std::string& message, int severity, int index) {
+bool LogCell::init(const char* name, std::string_view message, int severity, int index) {
     if (!CCLayer::init()) return false;
 
     setID(fmt::format("log-cell-{}", index + 1));
@@ -37,7 +37,7 @@ bool LogCell::init(const std::string& name, const std::string& message, int seve
     infoIcon->setID("info-icon");
     addChild(infoIcon);
 
-    auto nameLabel = CCLabelBMFont::create(name.c_str(), "bigFont.fnt");
+    auto nameLabel = CCLabelBMFont::create(name, "bigFont.fnt");
     nameLabel->setPosition({ 35.0f, 15.0f });
     nameLabel->setAnchorPoint({ 0.0f, 0.5f });
     nameLabel->limitLabelWidth(300.0f, 0.4f, 0.0f);
@@ -49,7 +49,7 @@ bool LogCell::init(const std::string& name, const std::string& message, int seve
     auto viewSprite = ButtonSprite::create("View", "bigFont.fnt", "GJ_button_05.png", 0.8f);
     viewSprite->setScale(0.5f);
     auto viewButton = CCMenuItemExt::createSpriteExtra(viewSprite, [name, message = fmt::format("{}{}", severities[severity], message)](auto) {
-        FLAlertLayer::create(name.c_str(), message, "OK")->show();
+        FLAlertLayer::create(name, message, "OK")->show();
     });
     viewButton->setID("view-button");
 

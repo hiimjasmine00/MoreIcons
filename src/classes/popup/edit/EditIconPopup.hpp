@@ -37,7 +37,7 @@ protected:
     void updateControls(std::string_view id, float minimum, float maximum, float defaultValue, bool decimals);
     void transferPlayerToNode(cocos2d::CCNode* node, SimplePlayer* player);
     void addPieceButton(std::string_view suffix, int page, cocos2d::CCArray* targets);
-    cocos2d::CCSprite* addColorButton(int& index, cocos2d::CCMenu* menu, const char* text, std::string id);
+    cocos2d::CCSprite* addColorButton(int& index, cocos2d::CCMenu* menu, const char* text, std::string_view id);
     void updateColors();
     bool updateWithSelectedFiles(std::string_view suffix = {});
     void updatePieces();

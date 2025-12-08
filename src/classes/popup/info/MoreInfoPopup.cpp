@@ -202,7 +202,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
         m_buttonMenu->addChild(iconButton);
     }
     else if (info->type == IconType::Special) {
-        auto square = MoreIcons::customTrail(info->textures[0]);
+        auto square = MoreIcons::customTrail(info->textures[0].c_str());
         square->setPosition({ 150.0f, hasPack ? 165.0f : 171.0f });
         square->setScale(hasPack ? 1.1f : 1.25f);
         square->setID("trail-square");

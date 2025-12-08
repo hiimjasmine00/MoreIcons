@@ -262,7 +262,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         }
         else if (type == IconType::Special) {
             for (auto& info : infoPage) {
-                auto square = MoreIcons::customTrail(info.textures[0]);
+                auto square = MoreIcons::customTrail(info.textures[0].c_str());
                 square->setScale(0.8f);
                 auto iconButton = CCMenuItemSpriteExtra::create(square, this, menu_selector(GJGarageLayer::onSelect));
                 iconButton->setUserObject("name"_spr, CCString::create(info.name));

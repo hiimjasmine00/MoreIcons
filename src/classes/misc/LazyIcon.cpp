@@ -275,7 +275,7 @@ void LazyIcon::createIcon() {
         else if (m_type <= IconType::Jetpack) createSimpleIcon();
         else if (m_info && m_type == IconType::Special) {
             auto normalImage = getNormalImage();
-            auto square = MoreIcons::customTrail(m_info->textures[0]);
+            auto square = MoreIcons::customTrail(m_info->textures[0].c_str());
             square->setID("player-square");
             normalImage->addChild(square, 0);
         }
@@ -305,9 +305,10 @@ void LazyIcon::visit() {
     m_visited = true;
 
     ThreadPool::get().pushTask([
-        selfref = WeakRef(this), texture = m_texture, sheet = m_sheet, name = m_info ? m_info->name : std::string(), type = m_type
+        selfref = WeakRef(this), texture = MoreIcons::strPath(m_texture), sheet = MoreIcons::strPath(m_sheet),
+        name = m_info ? std::string_view(m_info->name) : std::string_view(), type = m_type
     ] {
-        auto image = Load::createFrames(MoreIcons::strPath(texture), MoreIcons::strPath(sheet), name, type);
+        auto image = Load::createFrames(texture, sheet, name, type);
         queueInMainThread([selfref = std::move(selfref), image = std::move(image)] mutable {
             if (auto self = selfref.lock()) {
                 if (image.isOk()) Load::addFrames(image.unwrap(), self->m_frames, self->m_suffix);
