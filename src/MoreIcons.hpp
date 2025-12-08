@@ -12,10 +12,10 @@ struct LogData {
 };
 
 #ifdef GEODE_IS_WINDOWS
-#define MI_PATH_ID GEODE_CONCAT(L, GEODE_MOD_ID)
+#define MI_PATH_ID L"config\\" GEODE_CONCAT(L, GEODE_MOD_ID)
 #define MI_PATH(x) L##x
 #else
-#define MI_PATH_ID GEODE_MOD_ID
+#define MI_PATH_ID "config/" GEODE_MOD_ID
 #define MI_PATH(x) x
 #endif
 

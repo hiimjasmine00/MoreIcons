@@ -122,18 +122,6 @@ void MoreIcons::iterate(
     if (code) return log::error("{}: Failed to iterate over directory: {}", path, code.message());
 }
 
-void boolIterate(const std::filesystem::path& path, std::filesystem::file_type type, auto&& func) {
-    std::error_code code;
-    std::filesystem::directory_iterator it(path, code);
-    if (code) return log::error("{}: Failed to create directory iterator: {}", path, code.message());
-    for (; it != std::filesystem::end(it); it.increment(code)) {
-        std::error_code code;
-        if (it->status(code).type() != type) continue;
-        if (func(it->path())) break;
-    }
-    if (code) return log::error("{}: Failed to iterate over directory: {}", path, code.message());
-}
-
 std::basic_string_view<std::filesystem::path::value_type> MoreIcons::getPathFilename(const std::filesystem::path& path) {
     std::basic_string_view filename = path.native();
     filename.remove_prefix(filename.find_last_of(std::filesystem::path::preferred_separator) + 1);
@@ -246,26 +234,41 @@ void MoreIcons::loadPacks() {
     migrateFolderIcons(Mod::get()->getConfigDir().make_preferred());
 
     for (auto& pack : texture_loader::getAppliedPacks()) {
-        pack.resourcesPath.make_preferred();
+        auto& name = pack.name;
+        auto& id = pack.id;
+        auto& resourcesPath = pack.resourcesPath;
+
+        resourcesPath.make_preferred();
 
         std::basic_string_view str = pack.path.native();
         auto zipped = str.ends_with(MI_PATH(".apk")) || str.ends_with(MI_PATH(".zip"));
         if (traditionalPacks) {
-            if (doesExist(pack.resourcesPath / MI_PATH("icons"))) {
-                packs.emplace_back(pack.name, pack.id, pack.resourcesPath, true, zipped);
+            if (doesExist(resourcesPath / MI_PATH("icons"))) {
+                packs.emplace_back(name, id, resourcesPath, true, zipped);
             }
-            else boolIterate(pack.resourcesPath, std::filesystem::file_type::regular, [&pack, zipped](const std::filesystem::path& path) {
-                auto filename = MoreIcons::getPathFilename(path);
-                if (!filename.starts_with(MI_PATH("streak_")) || !filename.ends_with(MI_PATH("_001.png"))) return false;
+            else {
+                std::error_code code;
+                std::filesystem::directory_iterator it(resourcesPath, code);
+                if (code) log::error("{}: Failed to create directory iterator: {}", resourcesPath, code.message());
+                else {
+                    for (; it != std::filesystem::end(it); it.increment(code)) {
+                        std::error_code code;
+                        if (it->status(code).type() != std::filesystem::file_type::regular) continue;
 
-                packs.emplace_back(pack.name, pack.id, pack.resourcesPath, true, zipped);
-                return true;
-            });
+                        auto filename = MoreIcons::getPathFilename(it->path());
+                        if (filename.starts_with(MI_PATH("streak_")) && !filename.ends_with(MI_PATH("_001.png"))) {
+                            packs.emplace_back(name, id, resourcesPath, true, zipped);
+                            break;
+                        }
+                    }
+                }
+                if (code) log::error("{}: Failed to iterate over directory: {}", resourcesPath, code.message());
+            }
         }
 
-        auto configPath = pack.resourcesPath / MI_PATH("config") / MI_PATH_ID;
+        auto configPath = resourcesPath / MI_PATH_ID;
         if (doesExist(configPath)) {
-            packs.emplace_back(pack.name, pack.id, pack.resourcesPath, false, zipped);
+            packs.emplace_back(name, id, resourcesPath, false, zipped);
             migrateFolderIcons(configPath);
         }
     }
@@ -509,7 +512,7 @@ void MoreIcons::loadIcons(IconType type) {
         auto& pack = *it;
 
         if (!pack.vanilla) {
-            auto path = pack.path / MI_PATH("config") / MI_PATH_ID / folder;
+            auto path = pack.path / MI_PATH_ID / folder;
             if (!doesExist(path)) {
                 if (it == packs.begin()) {
                     if (auto res = file::createDirectoryAll(path); res.isErr()) log::error("{}: {}", path, res.unwrapErr());
