@@ -63,13 +63,13 @@ namespace more_icons {
     /// Checks if the More Icons mod is loaded.
     /// @returns Whether or not the More Icons mod is loaded.
     inline bool loaded() {
-        return geode::Loader::get()->isModLoaded({ ID.data(), ID.size() });
+        return geode::Loader::get()->isModLoaded(std::string(ID));
     }
 
     /// Returns the Mod object for the More Icons mod.
     /// @returns The Mod object for the More Icons mod, or nullptr if the mod is not loaded.
     inline geode::Mod* get() {
-        return geode::Loader::get()->getLoadedMod({ ID.data(), ID.size() });
+        return geode::Loader::get()->getLoadedMod(std::string(ID));
     }
 
     /// Returns the save key for the given icon type.
@@ -283,7 +283,7 @@ namespace more_icons {
     inline std::string getIconName(cocos2d::CCNode* node) {
         if (!node) return {};
         auto userObject = static_cast<cocos2d::CCString*>(node->getUserObject("name"_mi));
-        return userObject ? GEODE_ANDROID(std::string)(userObject->m_sString) : std::string();
+        return userObject ? std::string(userObject->m_sString) : std::string();
     }
 
     /// Creates a popup with information about an icon.

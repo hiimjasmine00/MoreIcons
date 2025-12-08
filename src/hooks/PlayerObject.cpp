@@ -104,7 +104,7 @@ class $modify(MIPlayerObject, PlayerObject) {
             std::string iconName;
             if (isPlayer1()) iconName = more_icons::activeIcon(IconType::Robot, false);
             else if (isPlayer2()) iconName = more_icons::activeIcon(IconType::Robot, true);
-            if (!iconName.empty()) m_iconSprite->setDisplayFrame(MoreIcons::getFrame(fmt::format("{}_01_001.png"_spr, iconName)));
+            if (!iconName.empty()) m_iconSprite->setDisplayFrame(MoreIcons::getFrame("{}_01_001.png"_spr, iconName));
         }
     }
 
@@ -116,7 +116,7 @@ class $modify(MIPlayerObject, PlayerObject) {
             std::string iconName;
             if (isPlayer1()) iconName = more_icons::activeIcon(IconType::Spider, false);
             else if (isPlayer2()) iconName = more_icons::activeIcon(IconType::Spider, true);
-            if (!iconName.empty()) m_iconSprite->setDisplayFrame(MoreIcons::getFrame(fmt::format("{}_01_001.png"_spr, iconName)));
+            if (!iconName.empty()) m_iconSprite->setDisplayFrame(MoreIcons::getFrame("{}_01_001.png"_spr, iconName));
         }
     }
 

@@ -3,6 +3,7 @@
 #include "ImageRenderer.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Get.hpp"
+#include "../../../utils/Load.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <MoreIconsV2.hpp>
 
@@ -75,8 +76,8 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Va
     return true;
 }
 
-bool SaveIconPopup::checkFrame(std::string_view suffix) {
-    auto frame = m_frames->objectForKey(gd::string(suffix.data(), suffix.size()));
+bool SaveIconPopup::checkFrame(const std::string& suffix) {
+    auto frame = m_frames->objectForKey(suffix);
     if (!frame) MoreIcons::notifyInfo("Missing {}{}.", m_nameInput->getString(), suffix);
     return frame != nullptr;
 }
@@ -84,16 +85,16 @@ bool SaveIconPopup::checkFrame(std::string_view suffix) {
 void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
     auto type = m_iconType;
     if (type == IconType::Robot || type == IconType::Spider) {
-        if (!checkFrame("_01_001.png") || !checkFrame("_01_2_001.png") || !checkFrame("_01_glow_001.png")) return;
-        if (!checkFrame("_02_001.png") || !checkFrame("_02_2_001.png") || !checkFrame("_02_glow_001.png")) return;
-        if (!checkFrame("_03_001.png") || !checkFrame("_03_2_001.png") || !checkFrame("_03_glow_001.png")) return;
-        if (!checkFrame("_04_001.png") || !checkFrame("_04_2_001.png") || !checkFrame("_04_glow_001.png")) return;
+        if (!checkFrame("_01_001") || !checkFrame("_01_2_001") || !checkFrame("_01_glow_001")) return;
+        if (!checkFrame("_02_001") || !checkFrame("_02_2_001") || !checkFrame("_02_glow_001")) return;
+        if (!checkFrame("_03_001") || !checkFrame("_03_2_001") || !checkFrame("_03_glow_001")) return;
+        if (!checkFrame("_04_001") || !checkFrame("_04_2_001") || !checkFrame("_04_glow_001")) return;
     }
     else {
-        if (!checkFrame("_001.png")) return;
-        if (!checkFrame("_2_001.png")) return;
-        if (type == IconType::Ufo && !checkFrame("_3_001.png")) return;
-        if (!checkFrame("_glow_001.png")) return;
+        if (!checkFrame("_001")) return;
+        if (!checkFrame("_2_001")) return;
+        if (type == IconType::Ufo && !checkFrame("_3_001")) return;
+        if (!checkFrame("_glow_001")) return;
     }
 
     auto name = m_nameInput->getString();
@@ -107,14 +108,14 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
         std::make_tuple(MI_PATH(""), "", "SD")
     };
     for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(m_frames)) {
-        auto& definition = m_definitions[frameName.substr(0, frameName.size() - 4)];
+        auto& definition = m_definitions[frameName];
         auto offsetX = definition.get<float>("offset-x").unwrapOr(0.0f);
         auto offsetY = definition.get<float>("offset-y").unwrapOr(0.0f);
         auto rotationX = definition.get<float>("rotation-x").unwrapOr(0.0f);
         auto rotationY = definition.get<float>("rotation-y").unwrapOr(0.0f);
         auto scaleX = definition.get<float>("scale-x").unwrapOr(1.0f);
         auto scaleY = definition.get<float>("scale-y").unwrapOr(1.0f);
-        auto joinedName = fmt::format("{}{}", name, frameName);
+        auto joinedName = fmt::format("{}{}.png", name, frameName);
         for (int i = 0; i < 3; i++) {
             auto node = CCNode::create();
             node->setScale(scales[i]);
@@ -171,14 +172,7 @@ void SaveIconPopup::addOrUpdateIcon(const std::string& name, const std::filesyst
     else {
         icon = more_icons::addIcon(name, name, type,
             string::pathToString(png), string::pathToString(plist), {}, "More Icons", 0, {}, false, false);
-        if (MoreIcons::preloadIcons) {
-            if (auto res = Load::createFrames(MoreIcons::strPath(icon->textures[0]), MoreIcons::strPath(icon->sheetName), icon->name, icon->type)) {
-                Load::addFrames(res.unwrap(), icon->frameNames);
-            }
-            else {
-                log::error("{}: {}", icon->name, res.unwrapErr());
-            }
-        }
+        if (MoreIcons::preloadIcons) MoreIcons::createAndAddFrames(icon);
     }
 
     m_parentPopup->close();

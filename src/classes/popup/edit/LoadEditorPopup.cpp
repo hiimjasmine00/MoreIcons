@@ -41,7 +41,6 @@ bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const 
         entries.insert(std::ranges::find_if(entries, [filename = string::pathToString(path.filename())](const std::filesystem::path& p) {
             return string::caseInsensitiveCompare(filename, string::pathToString(p.filename())) != std::strong_ordering::less;
         }), path);
-        return false;
     });
 
     for (auto& path : entries) {

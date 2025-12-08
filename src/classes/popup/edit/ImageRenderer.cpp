@@ -63,21 +63,9 @@ texpack::Image ImageRenderer::getImage(CCNode* node) {
     ccGLDeleteTexture(texture);
     glDeleteFramebuffers(1, &fbo);
 
-    for (int y = 0; y < height / 2; y++) {
+    for (uint32_t y = 0; y < height / 2; y++) {
         std::swap_ranges(data.begin() + y * width * 4, data.begin() + (y + 1) * width * 4, data.end() - (y + 1) * width * 4);
     }
 
     return { data, width, height };
-}
-
-Result<Autorelease<CCTexture2D>> ImageRenderer::getTexture(const std::filesystem::path& path) {
-    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(path));
-
-    Autorelease texture = new CCTexture2D();
-    texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
-        (float)image.width,
-        (float)image.height
-    });
-
-    return Ok(std::move(texture));
 }

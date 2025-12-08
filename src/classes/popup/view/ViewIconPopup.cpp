@@ -48,14 +48,14 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         std::vector<std::vector<std::string_view>> suffixes;
         suffixes.reserve(isRobot ? 4 : 1);
         if (isRobot) {
-            suffixes.push_back({ "_01_001.png", "_01_2_001.png", "_01_glow_001.png", "_01_extra_001.png" });
-            suffixes.push_back({ "_02_001.png", "_02_2_001.png", "_02_glow_001.png" });
-            suffixes.push_back({ "_03_001.png", "_03_2_001.png", "_03_glow_001.png" });
-            suffixes.push_back({ "_04_001.png", "_04_2_001.png", "_04_glow_001.png" });
+            suffixes.push_back({ "_01_001", "_01_2_001", "_01_glow_001", "_01_extra_001" });
+            suffixes.push_back({ "_02_001", "_02_2_001", "_02_glow_001" });
+            suffixes.push_back({ "_03_001", "_03_2_001", "_03_glow_001" });
+            suffixes.push_back({ "_04_001", "_04_2_001", "_04_glow_001" });
         }
         else {
-            if (type == IconType::Ufo) suffixes.push_back({ "_001.png", "_2_001.png", "_3_001.png", "_glow_001.png", "_extra_001.png" });
-            else suffixes.push_back({ "_001.png", "_2_001.png", "_glow_001.png", "_extra_001.png" });
+            if (type == IconType::Ufo) suffixes.push_back({ "_001", "_2_001", "_3_001", "_glow_001", "_extra_001" });
+            else suffixes.push_back({ "_001", "_2_001", "_glow_001", "_extra_001" });
         }
 
         auto player = SimplePlayer::create(1);
@@ -68,16 +68,16 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
 
         auto prefix = info ? fmt::format("{}"_spr, info->name) : fmt::format("{}{:02}", MoreIcons::prefixes[miType], id);
         auto spriteFrameCache = Get::SpriteFrameCache();
-        for (int i = 0; i < suffixes.size(); i++) {
+        for (size_t i = 0; i < suffixes.size(); i++) {
             auto container = CCNode::create();
-            container->setPosition({ 175.0f, (isRobot ? 140.0f : 100.0f) - i * 30.0f + std::max(i - 1, 0) * 10.0f });
+            container->setPosition({ 175.0f, (isRobot ? 140.0f : 100.0f) - i * 30.0f + std::max(i - 1, 0uz) * 10.0f });
             container->setAnchorPoint({ 0.5f, 0.5f });
             container->setContentSize({ 350.0f, 30.0f });
             container->setID(fmt::format("frame-container-{}", i + 1));
 
             auto& subSuffixes = suffixes[i];
-            for (int j = 0; j < subSuffixes.size(); j++) {
-                if (auto spriteFrame = MoreIcons::getFrame(fmt::format("{}{}", prefix, subSuffixes[j]))) {
+            for (size_t j = 0; j < subSuffixes.size(); j++) {
+                if (auto spriteFrame = MoreIcons::getFrame("{}{}.png", prefix, subSuffixes[j])) {
                     auto sprite = CCSprite::createWithSpriteFrame(spriteFrame);
                     auto& size = sprite->getContentSize();
                     sprite->setPosition(size / 2.0f);

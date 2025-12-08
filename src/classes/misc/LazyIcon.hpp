@@ -11,7 +11,7 @@ protected:
     std::string m_texture;
     std::vector<std::string> m_frames;
     std23::move_only_function<void()> m_callback;
-    std::string m_suffix;
+    std::string_view m_suffix;
     cocos2d::CCSprite* m_loadingSprite;
     geode::Ref<cocos2d::CCArray> m_spriteParts;
     cocos2d::CCAnimation* m_animation;

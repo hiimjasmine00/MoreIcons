@@ -84,7 +84,7 @@ void SaveEditorPopup::saveEditor(const std::filesystem::path& directory) {
         auto sprite = CCSprite::createWithSpriteFrame(frame);
         sprite->setAnchorPoint({ 0.0f, 0.0f });
         sprite->setBlendFunc({ GL_ONE, GL_ZERO });
-        packer.frame(fmt::format("icon{}", frameName), ImageRenderer::getImage(sprite));
+        packer.frame(fmt::format("icon{}.png", frameName), ImageRenderer::getImage(sprite));
         sprite->release();
     }
 

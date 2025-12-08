@@ -85,27 +85,41 @@ bool MoreIcons::doesExist(const std::filesystem::path& path) {
     return exists;
 }
 
-Result<> MoreIcons::renameFile(const std::filesystem::path& from, const std::filesystem::path& to, bool overwrite, bool copy) {
+Result<std::filesystem::path> MoreIcons::renameFile(
+    const std::filesystem::path& from, const std::filesystem::path& to, bool overwrite, bool copy
+) {
     std::error_code code;
-    if (!MoreIcons::doesExist(from)) return Ok();
+    if (!MoreIcons::doesExist(from)) return Ok(std::filesystem::path());
     if (overwrite && MoreIcons::doesExist(to)) {
         if (!std::filesystem::remove(to, code)) return Err("Failed to remove {}: {}", to.filename(), code.message());
     }
+    auto dest = to;
     if (copy) {
-        auto dest = to;
         for (int i = 1; MoreIcons::doesExist(dest); i++) {
             dest.replace_filename(dest.stem().native() + MI_PATH(" (") +
                 GEODE_WINDOWS(string::utf8ToWide)(fmt::to_string(i)) + MI_PATH(")") + dest.extension().native());
         }
-        std::filesystem::rename(from, dest, code);
     }
-    else std::filesystem::rename(from, to, code);
-    return code ? Err("Failed to rename {}: {}", from.filename(), code.message()) : Result<>(Ok());
+    std::filesystem::rename(from, dest, code);
+    if (code) return Err("Failed to rename {}: {}", from.filename(), code.message());
+    return Ok(dest.filename());
 }
 
 void MoreIcons::iterate(
-    const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<bool(const std::filesystem::path&)> func
+    const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<void(const std::filesystem::path&)> func
 ) {
+    std::error_code code;
+    std::filesystem::directory_iterator it(path, code);
+    if (code) return log::error("{}: Failed to create directory iterator: {}", path, code.message());
+    for (; it != std::filesystem::end(it); it.increment(code)) {
+        std::error_code code;
+        if (it->status(code).type() != type) continue;
+        func(it->path());
+    }
+    if (code) return log::error("{}: Failed to iterate over directory: {}", path, code.message());
+}
+
+void boolIterate(const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<bool(const std::filesystem::path&)> func) {
     std::error_code code;
     std::filesystem::directory_iterator it(path, code);
     if (code) return log::error("{}: Failed to create directory iterator: {}", path, code.message());
@@ -115,6 +129,10 @@ void MoreIcons::iterate(
         if (func(it->path())) break;
     }
     if (code) return log::error("{}: Failed to iterate over directory: {}", path, code.message());
+}
+
+std::filesystem::path::string_type MoreIcons::getPathString(std::filesystem::path path) {
+    return std::move(const_cast<std::filesystem::path::string_type&>(path.native()));
 }
 
 void migrateFolderIcons(const std::filesystem::path& path) {
@@ -132,17 +150,15 @@ void migrateFolderIcons(const std::filesystem::path& path) {
         MoreIcons::iterate(folderPath, std::filesystem::file_type::directory, [
             i, &folderPath, &migratedFolders
         ](const std::filesystem::path& path) {
-            if (std::ranges::contains(migratedFolders, path)) return false;
+            if (std::ranges::contains(migratedFolders, path)) return;
             else migratedFolders.push(path);
 
             std::vector<std::filesystem::path> names;
 
             MoreIcons::iterate(path, std::filesystem::file_type::regular, [i, &names](const std::filesystem::path& path) {
-                if (path.extension() != MI_PATH(".png")) return false;
+                if (!path.native().ends_with(MI_PATH("_001.png"))) return;
 
-                auto end = path.stem().native();
-                if (!end.ends_with(MI_PATH("_001"))) return false;
-
+                auto end = MoreIcons::getPathString(path.filename());
                 end = std::move(end).substr(0, end.size() - 4);
 
                 auto isRobot = i == 5 || i == 6;
@@ -150,48 +166,43 @@ void migrateFolderIcons(const std::filesystem::path& path) {
                     if (isRobot) {
                         end = std::move(end).substr(0, end.size() - 2);
                         if (!end.ends_with(MI_PATH("_01")) && !end.ends_with(MI_PATH("_02")) &&
-                            !end.ends_with(MI_PATH("_03")) && !end.ends_with(MI_PATH("_04"))) return false;
+                            !end.ends_with(MI_PATH("_03")) && !end.ends_with(MI_PATH("_04"))) return;
                     }
                 }
                 else if (end.ends_with(MI_PATH("_extra"))) {
                     if (isRobot) {
                         end = std::move(end).substr(0, end.size() - 6);
-                        if (!end.ends_with(MI_PATH("_01"))) return false;
+                        if (!end.ends_with(MI_PATH("_01"))) return;
                     }
                 }
                 else if (end.ends_with(MI_PATH("_glow"))) {
                     if (isRobot) {
                         end = std::move(end).substr(0, end.size() - 5);
                         if (!end.ends_with(MI_PATH("_01")) && !end.ends_with(MI_PATH("_02")) &&
-                            !end.ends_with(MI_PATH("_03")) && !end.ends_with(MI_PATH("_04"))) return false;
+                            !end.ends_with(MI_PATH("_03")) && !end.ends_with(MI_PATH("_04"))) return;
                     }
                 }
                 else if (isRobot && !end.ends_with(MI_PATH("_01")) && !end.ends_with(MI_PATH("_02")) &&
-                    !end.ends_with(MI_PATH("_03")) && !end.ends_with(MI_PATH("_04"))) return false;
+                    !end.ends_with(MI_PATH("_03")) && !end.ends_with(MI_PATH("_04"))) return;
 
                 names.push_back(path.filename());
-                return false;
             });
 
-            if (names.empty()) return false;
+            if (names.empty()) return;
 
             texpack::Packer packer;
 
             for (auto& filename : names) {
                 if (auto res = packer.frame(string::pathToString(filename), path / filename); res.isErr()) {
-                    log::error("{}: Failed to load frame {}: {}", path, filename, res.unwrapErr());
-                    return false;
+                    return log::error("{}: Failed to load frame {}: {}", path, filename, res.unwrapErr());
                 }
             }
 
-            if (auto res = packer.pack(); res.isErr()) {
-                log::error("{}: Failed to pack frames: {}", path, res.unwrapErr());
-                return false;
-            }
+            if (auto res = packer.pack(); res.isErr()) return log::error("{}: Failed to pack frames: {}", path, res.unwrapErr());
 
-            auto stem = folderPath / path.filename();
+            auto stem = MoreIcons::getPathString(folderPath / path.filename());
 
-            std::filesystem::path pngPath = stem.native() + MI_PATH(".png");
+            std::filesystem::path pngPath = stem + MI_PATH(".png");
             if (auto res = MoreIcons::renameFile(pngPath, pngPath); res.isErr()) {
                 log::error("{}: Failed to rename existing image: {}", path, res.unwrapErr());
             }
@@ -199,15 +210,13 @@ void migrateFolderIcons(const std::filesystem::path& path) {
                 log::error("{}: Failed to save image: {}", path, res.unwrapErr());
             }
 
-            std::filesystem::path plistPath = stem.native() + MI_PATH(".plist");
+            std::filesystem::path plistPath = stem + MI_PATH(".plist");
             if (auto res = MoreIcons::renameFile(plistPath, plistPath); res.isErr()) {
                 log::error("{}: Failed to rename existing plist: {}", path, res.unwrapErr());
             }
             if (auto res = packer.plist(plistPath, string::pathToString(MI_PATH("icons") / pngPath.filename()), "    "); res.isErr()) {
                 log::error("{}: Failed to save plist: {}", path, res.unwrapErr());
             }
-
-            return false;
         });
     }
 
@@ -230,17 +239,17 @@ void MoreIcons::loadPacks() {
     migrateFolderIcons(Mod::get()->getConfigDir());
 
     for (auto& pack : texture_loader::getAppliedPacks()) {
-        auto extension = pack.path.extension();
-        auto zipped = extension == MI_PATH(".apk") || extension == MI_PATH(".zip");
+        auto& str = pack.path.native();
+        auto zipped = str.ends_with(MI_PATH(".apk")) || str.ends_with(MI_PATH(".zip"));
         if (traditionalPacks) {
             if (doesExist(pack.resourcesPath / MI_PATH("icons"))) {
                 packs.emplace_back(std::move(pack.name), std::move(pack.id), std::move(pack.resourcesPath), true, zipped);
             }
-            else iterate(pack.resourcesPath, std::filesystem::file_type::regular, [&pack, zipped](const std::filesystem::path& path) {
-                if (path.extension() != MI_PATH(".png")) return false;
+            else boolIterate(pack.resourcesPath, std::filesystem::file_type::regular, [&pack, zipped](const std::filesystem::path& path) {
+                if (!path.native().ends_with(MI_PATH(".png"))) return false;
 
-                auto filename = path.filename();
-                if (!filename.native().starts_with(MI_PATH("streak_")) || !filename.native().ends_with(MI_PATH("_001.png"))) return false;
+                auto filename = MoreIcons::getPathString(path.filename());
+                if (!filename.starts_with(MI_PATH("streak_")) || !filename.ends_with(MI_PATH("_001.png"))) return false;
 
                 packs.emplace_back(std::move(pack.name), std::move(pack.id), path.parent_path(), true, zipped);
                 return true;
@@ -300,34 +309,11 @@ void printLog(const std::string& name, int severity, fmt::format_string<Args...>
 
 void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
     auto factor = Get::Director()->getContentScaleFactor();
-    auto stem = path.stem();
+    auto stem = MoreIcons::getPathString(path.stem());
     std::string name;
     std::string shortName;
-    if (stem.native().ends_with(MI_PATH("-uhd"))) {
-        auto wideName = stem.native().substr(0, stem.native().size() - 4);
-        #ifdef GEODE_IS_WINDOWS
-        shortName = string::wideToUtf8(wideName);
-        #else
-        shortName = std::move(wideName);
-        #endif
-        name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
-
-        auto start = path.parent_path() / wideName;
-        if (factor < 4.0f && factor >= 2.0f) {
-            if (!MoreIcons::doesExist(start.native() + MI_PATH("-hd.plist")) && !MoreIcons::doesExist(start.native() + MI_PATH(".plist"))) {
-                printLog(name, Severity::Warning, "Ignoring high-quality icon on medium texture quality");
-            }
-            return;
-        }
-        else if (factor < 2.0f) {
-            if (!MoreIcons::doesExist(start.native() + MI_PATH(".plist"))) {
-                printLog(name, Severity::Warning, "Ignoring high-quality icon on low texture quality");
-            }
-            return;
-        }
-    }
-    else if (stem.native().ends_with(MI_PATH("-hd"))) {
-        auto wideName = stem.native().substr(0, stem.native().size() - 3);
+    if (stem.ends_with(MI_PATH("-uhd"))) {
+        auto wideName = stem.substr(0, stem.size() - 4);
         #ifdef GEODE_IS_WINDOWS
         shortName = string::wideToUtf8(wideName);
         #else
@@ -335,23 +321,46 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
         #endif
         name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
-        auto start = path.parent_path() / wideName;
+        auto start = MoreIcons::getPathString(path.parent_path() / wideName);
+        if (factor < 4.0f && factor >= 2.0f) {
+            if (!MoreIcons::doesExist(start + MI_PATH("-hd.plist")) && !MoreIcons::doesExist(start + MI_PATH(".plist"))) {
+                printLog(name, Severity::Warning, "Ignoring high-quality icon on medium texture quality");
+            }
+            return;
+        }
+        else if (factor < 2.0f) {
+            if (!MoreIcons::doesExist(start + MI_PATH(".plist"))) {
+                printLog(name, Severity::Warning, "Ignoring high-quality icon on low texture quality");
+            }
+            return;
+        }
+    }
+    else if (stem.ends_with(MI_PATH("-hd"))) {
+        auto wideName = stem.substr(0, stem.size() - 3);
+        #ifdef GEODE_IS_WINDOWS
+        shortName = string::wideToUtf8(wideName);
+        #else
+        shortName = wideName;
+        #endif
+        name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
+
+        auto start = MoreIcons::getPathString(path.parent_path() / wideName);
         if (factor < 2.0f) {
-            if (!MoreIcons::doesExist(start.native() + MI_PATH(".plist"))) {
+            if (!MoreIcons::doesExist(start + MI_PATH(".plist"))) {
                 printLog(name, Severity::Warning, "Ignoring medium-quality icon on low texture quality");
             }
             return;
         }
 
-        if (factor >= 4.0f && MoreIcons::doesExist(start.native() + MI_PATH("-uhd.plist"))) return;
+        if (factor >= 4.0f && MoreIcons::doesExist(start + MI_PATH("-uhd.plist"))) return;
     }
     else {
-        shortName = GEODE_WINDOWS(string::wideToUtf8)(stem.native());
+        shortName = GEODE_WINDOWS(string::wideToUtf8)(stem);
         name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
-        auto start = path.parent_path() / stem;
-        if (factor >= 4.0f && MoreIcons::doesExist(start.native() + MI_PATH("-uhd.plist"))) return;
-        else if (factor >= 2.0f && MoreIcons::doesExist(start.native() + MI_PATH("-hd.plist"))) return;
+        auto start = MoreIcons::getPathString(path.parent_path() / stem);
+        if (factor >= 4.0f && MoreIcons::doesExist(start + MI_PATH("-uhd.plist"))) return;
+        else if (factor >= 2.0f && MoreIcons::doesExist(start + MI_PATH("-hd.plist"))) return;
     }
 
     log::debug("Pre-loading icon {} from {}", name, pack.name);
@@ -372,27 +381,27 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
 
 void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     auto factor = Get::Director()->getContentScaleFactor();
-    auto stem = path.stem();
+    auto stem = MoreIcons::getPathString(path.stem());
     std::string name;
     std::string shortName;
-    if (stem.native().ends_with(MI_PATH("-uhd"))) {
+    if (stem.ends_with(MI_PATH("-uhd"))) {
         if (factor < 4.0f) return;
-        shortName = GEODE_WINDOWS(string::wideToUtf8)(stem.native().substr(0, stem.native().size() - 4));
+        shortName = GEODE_WINDOWS(string::wideToUtf8)(stem.substr(0, stem.size() - 4));
         name = fmt::format("{}:{}", pack.id, shortName);
     }
-    else if (stem.native().ends_with(MI_PATH("-hd"))) {
+    else if (stem.ends_with(MI_PATH("-hd"))) {
         if (factor < 2.0f) return;
-        auto wideName = stem.native().substr(0, stem.native().size() - 3);
-        auto start = path.parent_path() / wideName;
-        if (factor >= 4.0f && MoreIcons::doesExist(start.native() + MI_PATH("-uhd.png"))) return;
+        auto wideName = stem.substr(0, stem.size() - 3);
+        auto start = MoreIcons::getPathString(path.parent_path() / wideName);
+        if (factor >= 4.0f && MoreIcons::doesExist(start + MI_PATH("-uhd.png"))) return;
         shortName = GEODE_WINDOWS(string::wideToUtf8)(wideName);
         name = fmt::format("{}:{}", pack.id, shortName);
     }
     else {
-        auto start = path.parent_path() / stem.native();
-        if (factor >= 4.0f && MoreIcons::doesExist(start.native() + MI_PATH("-uhd.png"))) return;
-        else if (factor >= 2.0f && MoreIcons::doesExist(start.native() + MI_PATH("-hd.png"))) return;
-        shortName = GEODE_WINDOWS(string::wideToUtf8)(stem.native());
+        auto start = MoreIcons::getPathString(path.parent_path() / stem);
+        if (factor >= 4.0f && MoreIcons::doesExist(start + MI_PATH("-uhd.png"))) return;
+        else if (factor >= 2.0f && MoreIcons::doesExist(start + MI_PATH("-hd.png"))) return;
+        shortName = GEODE_WINDOWS(string::wideToUtf8)(stem);
         name = fmt::format("{}:{}", pack.id, shortName);
     }
 
@@ -403,7 +412,8 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
 
     auto plistPath = std::filesystem::path(path).replace_extension(MI_PATH(".plist"));
     if (!MoreIcons::doesExist(plistPath)) {
-        plistPath = vanillaTexturePath((MI_PATH("icons") / stem).native() + MI_PATH(".plist"), true);
+        plistPath = vanillaTexturePath(std::filesystem::path::string_type(MI_PATH("icons"))
+            + std::filesystem::path::preferred_separator + stem + MI_PATH(".plist"), false);
     }
     auto plistString = string::pathToString(plistPath);
     if (!Get::FileUtils()->isFileExist(plistString)) {
@@ -465,19 +475,19 @@ void MoreIcons::loadIcons(IconType type) {
     auto folder = folders[miType];
     auto name = lowercase[miType];
 
-    for (int i = 0; i < packs.size(); i++) {
-        auto& pack = packs[i];
+    for (auto it = packs.begin(); it != packs.end(); it++) {
+        auto& pack = *it;
 
         if (!pack.vanilla) {
             auto path = pack.path / MI_PATH("config") / MI_PATH_ID / folder;
             if (!doesExist(path)) {
-                if (i == 0) {
+                if (it == packs.begin()) {
                     if (auto res = file::createDirectoryAll(path); res.isErr()) log::error("{}: {}", path, res.unwrapErr());
                 }
                 continue;
             }
 
-            if (i == 0) {
+            if (it == packs.begin()) {
                 std::error_code code;
                 std::filesystem::permissions(path, std::filesystem::perms::all, code);
                 if (code) log::error("{}: Failed to change permissions: {}", path, code.message());
@@ -486,13 +496,13 @@ void MoreIcons::loadIcons(IconType type) {
             log::info("Pre-loading {}s from {}", name, path);
 
             iterate(path, std::filesystem::file_type::regular, [type, &pack](const std::filesystem::path& path) {
+                auto& str = path.native();
                 if (type <= IconType::Jetpack) {
-                    if (path.extension() == MI_PATH(".plist")) loadIcon(path, pack);
+                    if (str.ends_with(MI_PATH(".plist"))) loadIcon(path, pack);
                 }
                 else if (type == IconType::Special) {
-                    if (path.extension() == MI_PATH(".png")) loadTrail(path, pack);
+                    if (str.ends_with(MI_PATH(".png"))) loadTrail(path, pack);
                 }
-                return false;
             });
 
             log::info("Finished pre-loading {}s from {}", name, path);
@@ -504,24 +514,24 @@ void MoreIcons::loadIcons(IconType type) {
             log::info("Pre-loading {}s from {}", name, path);
 
             iterate(path, std::filesystem::file_type::regular, [type, &pack, prefix](const std::filesystem::path& path) {
-                if (path.extension() != MI_PATH(".png")) return false;
+                if (!path.native().ends_with(MI_PATH(".png"))) return false;
 
-                auto filename = path.filename();
-                if (!filename.native().starts_with(prefix)) return false;
+                auto filename = MoreIcons::getPathString(path.filename());
+                if (!filename.starts_with(prefix)) return false;
 
                 if (type <= IconType::Jetpack) {
-                    if (type != IconType::Cube || !filename.native().starts_with(MI_PATH("player_ball_"))) {
+                    if (type != IconType::Cube || !filename.starts_with(MI_PATH("player_ball_"))) {
                         if (
-                            !filename.native().ends_with(MI_PATH("00.png")) &&
-                            !filename.native().ends_with(MI_PATH("00-hd.png")) &&
-                            !filename.native().ends_with(MI_PATH("00-uhd.png"))
+                            !filename.ends_with(MI_PATH("00.png")) &&
+                            !filename.ends_with(MI_PATH("00-hd.png")) &&
+                            !filename.ends_with(MI_PATH("00-uhd.png"))
                         ) {
                             loadVanillaIcon(path, pack);
                         }
                     }
                 }
                 else if (type == IconType::Special) {
-                    if (filename.native().ends_with(MI_PATH("_001.png"))) loadVanillaTrail(path, pack);
+                    if (filename.ends_with(MI_PATH("_001.png"))) loadVanillaTrail(path, pack);
                 }
                 return false;
             });
@@ -535,6 +545,7 @@ void MoreIcons::loadIcons(IconType type) {
     if (!preloadIcons) return;
 
     auto& iconsVec = icons[type];
+    auto end = iconsVec.data() + iconsVec.size();
     auto size = iconsVec.size();
     log::info("Pre-loading {} {} textures", size, name);
 
@@ -543,8 +554,8 @@ void MoreIcons::loadIcons(IconType type) {
     std::mutex imageMutex;
 
     auto& threadPool = ThreadPool::get();
-    for (int i = 0; i < size; i++) {
-        threadPool.pushTask([info = iconsVec.data() + i, &images, &imageMutex] {
+    for (auto info = iconsVec.data(); info != end; info++) {
+        threadPool.pushTask([info, &images, &imageMutex] {
             if (auto res = Load::createFrames(strPath(info->textures[0]), strPath(info->sheetName), info->name, info->type)) {
                 std::unique_lock lock(imageMutex);
 
@@ -669,6 +680,16 @@ void MoreIcons::updateGarage(GJGarageLayer* layer) {
     if (noLayer) layer->selectTab(layer->m_iconType);
 }
 
+CCTexture2D* MoreIcons::createAndAddFrames(IconInfo* info) {
+    if (auto res = Load::createFrames(strPath(info->textures[0]), strPath(info->sheetName), info->name, info->type)) {
+        return Load::addFrames(res.unwrap(), info->frameNames);
+    }
+    else if (res.isErr()) {
+        log::error("{}: {}", info->name, res.unwrapErr());
+    }
+    return nullptr;
+}
+
 CCSprite* MoreIcons::customTrail(const std::string& png) {
     auto square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
     square->setColor({ 150, 150, 150 });
@@ -686,8 +707,8 @@ std::filesystem::path MoreIcons::getEditorDir(IconType type) {
     return Mod::get()->getConfigDir() / MI_PATH("editor") / folders[convertType(type)];
 }
 
-CCSpriteFrame* MoreIcons::getFrame(const std::string& name) {
-    auto spriteFrame = static_cast<CCSpriteFrame*>(Get::SpriteFrameCache()->m_pSpriteFrames->objectForKey(name));
+CCSpriteFrame* MoreIcons::getFrame(const char* name) {
+    auto spriteFrame = static_cast<CCSpriteFrame*>(Get::SpriteFrameCache()->spriteFrameByName(name));
     if (!spriteFrame || spriteFrame->getTag() == 105871529) spriteFrame = nullptr;
     return spriteFrame;
 }

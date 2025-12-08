@@ -64,14 +64,14 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
         }
     }
     else if (m_info->type <= IconType::Jetpack) {
-        auto shortName = MoreIcons::strPath(m_info->shortName);
-        auto stem = parentDir / shortName;
+        auto shortName = GEODE_WINDOWS(string::utf8ToWide)(m_info->shortName);
+        auto stem = MoreIcons::getPathString(parentDir / shortName);
         std::vector<std::filesystem::path> files;
 
-        std::filesystem::path uhdPng = stem.native() + MI_PATH("-uhd.png");
+        std::filesystem::path uhdPng = stem + MI_PATH("-uhd.png");
         if (MoreIcons::doesExist(uhdPng)) {
             files.push_back(std::move(uhdPng));
-            std::filesystem::path filename = shortName.native() + MI_PATH("-uhd.plist");
+            std::filesystem::path filename = shortName + MI_PATH("-uhd.plist");
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
             else if (!trash) {
@@ -81,10 +81,10 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             }
         }
 
-        std::filesystem::path hdPng = stem.native() + MI_PATH("-hd.png");
+        std::filesystem::path hdPng = stem + MI_PATH("-hd.png");
         if (MoreIcons::doesExist(hdPng)) {
             files.push_back(std::move(hdPng));
-            std::filesystem::path filename = shortName.native() + MI_PATH("-hd.plist");
+            std::filesystem::path filename = shortName + MI_PATH("-hd.plist");
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
             else if (!trash) {
@@ -94,10 +94,10 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             }
         }
 
-        std::filesystem::path png = stem.native() + MI_PATH(".png");
+        std::filesystem::path png = stem + MI_PATH(".png");
         if (MoreIcons::doesExist(png)) {
             files.push_back(std::move(png));
-            std::filesystem::path filename = shortName.native() + MI_PATH(".plist");
+            std::filesystem::path filename = shortName + MI_PATH(".plist");
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
             else if (!trash) {
@@ -107,13 +107,15 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             }
         }
 
-        for (int i = 0; i < files.size(); i++) {
-            auto& file = files[i];
+        std::vector<std::filesystem::path> filenames;
+        for (auto& file : files) {
             auto filename = file.filename();
-            if (auto res = MoreIcons::renameFile(file, directory / filename, false, true); res.isErr()) {
-                for (int j = 0; j < i; j++) {
-                    auto& file2 = files[j];
-                    (void)MoreIcons::renameFile(directory / file2.filename(), file2, false);
+            if (auto res = MoreIcons::renameFile(file, directory / filename, false, true)) {
+                filenames.push_back(std::move(res).unwrap());
+            }
+            else if (res.isErr()) {
+                for (size_t i = 0; i < filenames.size(); i++) {
+                    (void)MoreIcons::renameFile(directory / filenames[i].filename(), files[i], false);
                 }
                 return MoreIcons::notifyFailure("Failed to {} {}: {}", trash ? "trash" : "move", filename, res.unwrapErr());
             }

@@ -81,28 +81,37 @@ public:
     }
     static void notifyInfo(const std::string& message);
 
-   template <typename... Args>
+    template <typename... Args>
     static void notifySuccess(fmt::format_string<Args...> message, Args&&... args) {
         notifySuccess(fmt::format(message, std::forward<Args>(args)...));
     }
     static void notifySuccess(const std::string& message);
 
+    template <typename... Args>
+    static cocos2d::CCSpriteFrame* getFrame(fmt::format_string<Args...> name, Args&&... args) {
+        return getFrame(fmt::format(name, std::forward<Args>(args)...).c_str());
+    }
+    static cocos2d::CCSpriteFrame* getFrame(const char* name);
+
+    static cocos2d::CCTexture2D* createAndAddFrames(IconInfo* info);
     static geode::Result<std::filesystem::path> createTrash();
     static cocos2d::CCSprite* customTrail(const std::string& png);
     static bool dualSelected();
     static bool doesExist(const std::filesystem::path& path);
     static std::filesystem::path getEditorDir(IconType type);
-    static cocos2d::CCSpriteFrame* getFrame(const std::string& name);
     static std::filesystem::path getIconDir(IconType type);
     static std::filesystem::path getIconStem(const std::string& name, IconType type);
+    static std::filesystem::path::string_type getPathString(std::filesystem::path path);
     static TrailInfo getTrailInfo(int trailID);
     static void iterate(
-        const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<bool(const std::filesystem::path&)> func
+        const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<void(const std::filesystem::path&)> func
     );
     static void loadIcons(IconType type);
     static void loadPacks();
     static void loadSettings();
-    static geode::Result<> renameFile(const std::filesystem::path& from, const std::filesystem::path& to, bool overwrite = true, bool copy = false);
+    static geode::Result<std::filesystem::path> renameFile(
+        const std::filesystem::path& from, const std::filesystem::path& to, bool overwrite = true, bool copy = false
+    );
     static std::filesystem::path strPath(const std::string& path);
     static void updateGarage(GJGarageLayer* layer = nullptr);
     static cocos2d::ccColor3B vanillaColor1(bool dual);

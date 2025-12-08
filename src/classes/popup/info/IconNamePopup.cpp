@@ -25,7 +25,8 @@ bool doesExist(const std::filesystem::path& parent, const std::filesystem::path&
 }
 
 Result<> renameFile(const std::filesystem::path& parent, const std::filesystem::path& from, const std::filesystem::path& to) {
-    return MoreIcons::renameFile(parent / from, parent / to);
+    GEODE_UNWRAP(MoreIcons::renameFile(parent / from, parent / to));
+    return Ok();
 }
 
 bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {

@@ -4,6 +4,7 @@
 #include "../MoreIconsPopup.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Get.hpp"
+#include "../../../utils/Load.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <MoreIconsV2.hpp>
 
@@ -73,8 +74,8 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
 
     auto presetButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
         IconPresetPopup::create(IconType::Special, {}, [this](int id, IconInfo* info) {
-            updateWithPath(MoreIcons::strPath(info ? info->textures[0] :
-                std::string(Get::FileUtils()->fullPathForFilename(fmt::format("streak_{:02}_001.png", id).c_str(), false))));
+            updateWithPath(info ? MoreIcons::strPath(info->textures[0]) :
+                MoreIcons::strPath(Get::FileUtils()->fullPathForFilename(fmt::format("streak_{:02}_001.png", id).c_str(), false)));
         })->show();
     });
     presetButton->setID("preset-button");
@@ -84,7 +85,7 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
         auto iconName = m_nameInput->getString();
         if (iconName.empty()) return MoreIcons::notifyInfo("Please enter a name.");
 
-        std::filesystem::path path = MoreIcons::getIconStem(iconName, IconType::Special).native() + MI_PATH(".png");
+        std::filesystem::path path = MoreIcons::getPathString(MoreIcons::getIconStem(iconName, IconType::Special)) + MI_PATH(".png");
         if (MoreIcons::doesExist(path)) createQuickPopup(
             "Existing Trail",
             fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
@@ -108,7 +109,7 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
 }
 
 void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
-    if (auto textureRes = ImageRenderer::getTexture(path); textureRes.isOk()) {
+    if (auto textureRes = Load::createTexture(path); textureRes.isOk()) {
         m_streak->setTexture(textureRes.unwrap());
         m_hasChanged = true;
     }
@@ -119,14 +120,7 @@ void EditTrailPopup::addOrUpdateIcon(const std::string& name, const std::filesys
     if (auto icon = more_icons::getIcon(name, IconType::Special)) more_icons::updateIcon(icon);
     else {
         icon = more_icons::addIcon(name, name, IconType::Special, string::pathToString(path), {}, {}, "More Icons", 0, {}, false, false);
-        if (MoreIcons::preloadIcons) {
-            if (auto res = Load::createFrames(MoreIcons::strPath(icon->textures[0]), std::filesystem::path(), icon->name, icon->type)) {
-                Load::addFrames(res.unwrap(), icon->frameNames);
-            }
-            else {
-                log::error("{}: {}", icon->name, res.unwrapErr());
-            }
-        }
+        if (MoreIcons::preloadIcons) MoreIcons::createAndAddFrames(icon);
     }
 
     m_parentPopup->close();

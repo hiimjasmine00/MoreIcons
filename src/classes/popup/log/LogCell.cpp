@@ -48,9 +48,7 @@ bool LogCell::init(const std::string& name, const std::string& message, int seve
 
     auto viewSprite = ButtonSprite::create("View", "bigFont.fnt", "GJ_button_05.png", 0.8f);
     viewSprite->setScale(0.5f);
-    auto viewButton = CCMenuItemExt::createSpriteExtra(viewSprite, [
-        name, message = fmt::format("{}{}", severities[severity], message)
-    ](auto) {
+    auto viewButton = CCMenuItemExt::createSpriteExtra(viewSprite, [name, message = fmt::format("{}{}", severities[severity], message)](auto) {
         FLAlertLayer::create(name.c_str(), message, "OK")->show();
     });
     viewButton->setID("view-button");

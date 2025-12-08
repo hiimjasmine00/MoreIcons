@@ -45,9 +45,8 @@ bool IconViewPopup::setup(IconType type, bool custom) {
 
     if (custom) {
         if (auto icons = more_icons::getIcons(type)) {
-            auto count = icons->size();
-            for (int i = 0; i < count; i++) {
-                auto info = icons->data() + i;
+            auto end = icons->data() + icons->size();
+            for (auto info = icons->data(); info != end; info++) {
                 auto lazyIcon = LazyIcon::create(type, 0, info, {}, [this, info, type] {
                     ViewIconPopup::create(type, 0, info)->show();
                 });

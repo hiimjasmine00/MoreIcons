@@ -8,6 +8,7 @@
 #include "../MoreIconsPopup.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Get.hpp"
+#include "../../../utils/Load.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
@@ -46,6 +47,10 @@ CCArray* arrayWithObjects(CCArray* parent, T... indices) {
         if (auto obj = parent->objectAtIndex(index)) arr->addObject(obj);
     }
     return arr;
+}
+
+gd::string getKey(std::string_view suffix) {
+    return gd::string(suffix.data(), suffix.size());
 }
 
 bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
@@ -288,10 +293,9 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
             if (res && res->isErr()) return MoreIcons::notifyFailure("Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
-            if (auto textureRes = ImageRenderer::getTexture(res->unwrap())) {
+            if (auto textureRes = Load::createTexture(res->unwrap())) {
                 auto texture = std::move(textureRes).unwrap();
-                m_frames->setObject(CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }),
-                    fmt::format("{}.png", m_suffix));
+                m_frames->setObject(CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }), getKey(m_suffix));
                 updatePieces();
             }
             else if (textureRes.isErr()) return MoreIcons::notifyFailure("Failed to load image: {}", textureRes.unwrapErr());
@@ -310,8 +314,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto piecePresetSprite = ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png", 0.8f);
     piecePresetSprite->setScale(0.6f);
     auto piecePresetButton = CCMenuItemExt::createSpriteExtra(piecePresetSprite, [this](auto) {
-        auto key = fmt::format("{}.png", m_suffix);
-        IconPresetPopup::create(m_iconType, key, [this, key](int id, IconInfo* info) {
+        IconPresetPopup::create(m_iconType, m_suffix, [this](int id, IconInfo* info) {
             if (info) {
                 m_selectedPNG = MoreIcons::strPath(info->textures[0]);
                 m_selectedPlist = MoreIcons::strPath(info->sheetName);
@@ -322,7 +325,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
                 m_selectedPNG = MoreIcons::strPath(fileUtils->fullPathForFilename(fmt::format("{}.png", fullName).c_str(), false));
                 m_selectedPlist = MoreIcons::strPath(fileUtils->fullPathForFilename(fmt::format("{}.plist", fullName).c_str(), false));
             }
-            updateWithSelectedFiles(key);
+            updateWithSelectedFiles(m_suffix);
         })->show();
     });
     piecePresetButton->setID("piece-preset-button");
@@ -331,16 +334,14 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto pieceClearSprite = ButtonSprite::create("Clear", "goldFont.fnt", "GJ_button_05.png", 0.8f);
     pieceClearSprite->setScale(0.6f);
     auto pieceClearButton = CCMenuItemExt::createSpriteExtra(pieceClearSprite, [this](auto) {
-        auto key = fmt::format("{}.png", m_suffix);
+        auto key = getKey(m_suffix);
         if (m_suffix.ends_with("_extra_001")) {
             m_frames->removeObjectForKey(key);
         }
         else {
             auto emptyFrame = MoreIcons::getFrame("emptyFrame.png"_spr);
             if (!emptyFrame) {
-                Autorelease texture = new CCTexture2D();
-                texture->initWithData(nullptr, kCCTexture2DPixelFormat_RGBA8888, 0, 0, { 0.0f, 0.0f });
-                emptyFrame = CCSpriteFrame::createWithTexture(texture, { 0.0f, 0.0f, 0.0f, 0.0f });
+                emptyFrame = CCSpriteFrame::createWithTexture(Load::createTexture(nullptr, 0, 0), { 0.0f, 0.0f, 0.0f, 0.0f });
                 Get::SpriteFrameCache()->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
             }
             m_frames->setObject(emptyFrame, key);
@@ -460,7 +461,7 @@ void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::st
     m_settings[id] = def;
 
     auto div = max - min;
-    auto key = gd::string(id.data(), id.size());
+    auto key = getKey(id);
 
     auto slider = Slider::create(nullptr, nullptr, 0.75f);
     slider->setPosition(pos - CCPoint { 0.0f, 10.0f });
@@ -533,7 +534,7 @@ void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::st
 void EditIconPopup::updateControls(std::string_view id, float minimum, float maximum, float defaultValue, bool decimals) {
     auto& value = m_settings[id];
     value = m_state.definitions[m_suffix][id].as<float>().unwrapOr(defaultValue);
-    auto key = gd::string(id.data(), id.size());
+    auto key = getKey(id);
     if (auto slider = static_cast<Slider*>(m_sliders->objectForKey(key))) {
         slider->setValue((value - minimum) / (maximum - minimum));
     }
@@ -634,9 +635,9 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
         { "scale-y", 1.0f }
     });
 
-    auto pieceFrame = MoreIcons::getFrame(fmt::format("{}01{}.png", MoreIcons::prefixes[(int)m_iconType], suffix));
-    if (pieceFrame) m_frames->setObject(pieceFrame, fmt::format("{}.png", suffix));
-    else pieceFrame = MoreIcons::getFrame("GJ_deleteIcon_001.png");
+    auto pieceFrame = MoreIcons::getFrame("{}01{}.png", MoreIcons::prefixes[(int)m_iconType], suffix);
+    if (pieceFrame) m_frames->setObject(pieceFrame, getKey(suffix));
+    else pieceFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
     auto pieceSprite = CCSprite::createWithSpriteFrame(pieceFrame);
     auto pieceButton = CCMenuItemExt::createSpriteExtra(pieceSprite, [this, suffix, page, targets](CCMenuItemSpriteExtra* sender) {
         m_suffix = suffix;
@@ -654,7 +655,7 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
     pieceButton->setContentSize({ 30.0f, 30.0f });
     pieceSprite->setPosition({ 15.0f, 15.0f });
 
-    auto key = gd::string(suffix.data(), suffix.size());
+    auto key = getKey(suffix);
 
     if (targets) {
         m_targets->setObject(targets, key);
@@ -711,20 +712,18 @@ bool EditIconPopup::updateWithSelectedFiles(std::string_view suffix) {
     auto ret = false;
     if (auto imageRes = Load::createFrames(m_selectedPNG, m_selectedPlist, {}, m_iconType, false)) {
         auto image = std::move(imageRes).unwrap();
-        image.texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
-            (float)image.width,
-            (float)image.height
-        });
+        Load::initTexture(image.texture, image.data.data(), image.width, image.height, false);
         if (suffix.empty()) {
             m_frames->removeAllObjects();
-            for (auto [frameName, frame] : CCDictionaryExt<gd::string, CCSpriteFrame*>(image.frames)) {
+            for (auto [frameName, frame] : CCDictionaryExt<const char*, CCSpriteFrame*>(image.frames)) {
                 m_frames->setObject(frame, frameName);
             }
         }
         else {
-            m_frames->removeObjectForKey(gd::string(suffix.data(), suffix.size()));
+            m_frames->removeObjectForKey(getKey(suffix));
             for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(image.frames)) {
-                if (frameName.ends_with(suffix)) m_frames->setObject(frame, gd::string(frameName.data(), frameName.size()));
+                frameName.remove_suffix(4);
+                if (frameName.ends_with(suffix)) m_frames->setObject(frame, getKey(frameName));
             }
         }
         updatePieces();
@@ -740,7 +739,7 @@ bool EditIconPopup::updateWithSelectedFiles(std::string_view suffix) {
 void EditIconPopup::updatePieces() {
     auto crossFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
     for (auto [suffix, sprite] : CCDictionaryExt<std::string_view, CCSprite*>(m_pieces)) {
-        auto spriteFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("{}.png", suffix)));
+        auto spriteFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(getKey(suffix)));
         sprite->setDisplayFrame(spriteFrame ? spriteFrame : crossFrame);
     }
 
@@ -752,30 +751,30 @@ void EditIconPopup::updatePieces() {
             auto spritePart = static_cast<CCSprite*>(spriteParts->objectAtIndex(i));
             auto tag = spritePart->getTag();
 
-            spritePart->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_001.png", tag))));
+            spritePart->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_001", tag))));
             if (auto secondSprite = static_cast<CCSprite*>(sprite->m_secondArray->objectAtIndex(i))) {
-                secondSprite->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_2_001.png", tag))));
+                secondSprite->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_2_001", tag))));
             }
 
             if (auto glowChild = sprite->m_glowSprite->getChildByIndex<CCSprite>(i)) {
-                glowChild->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_glow_001.png", tag))));
+                glowChild->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_glow_001", tag))));
             }
 
             if (spritePart == sprite->m_headSprite) {
-                auto extraFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_extra_001.png", tag)));
+                auto extraFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_extra_001", tag)));
                 sprite->m_extraSprite->setDisplayFrame(extraFrame);
                 sprite->m_extraSprite->setVisible(extraFrame != nullptr);
             }
         }
     }
     else {
-        m_player->m_firstLayer->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_001.png")));
-        m_player->m_secondLayer->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_2_001.png")));
+        m_player->m_firstLayer->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_001")));
+        m_player->m_secondLayer->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_2_001")));
         if (type == IconType::Ufo) {
-            m_player->m_birdDome->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_3_001.png")));
+            m_player->m_birdDome->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_3_001")));
         }
-        m_player->m_outlineSprite->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_glow_001.png")));
-        auto extraFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey("_extra_001.png"));
+        m_player->m_outlineSprite->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_glow_001")));
+        auto extraFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey("_extra_001"));
         m_player->m_detailSprite->setVisible(extraFrame != nullptr);
         if (extraFrame) {
             m_player->m_detailSprite->setDisplayFrame(extraFrame);

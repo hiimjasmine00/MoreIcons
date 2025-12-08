@@ -44,8 +44,8 @@ bool IconPresetPopup::setup(IconType type, std::string_view suffix, std23::move_
     scrollbar->setID("scrollbar");
     m_mainLayer->addChild(scrollbar);
 
-    auto vanillaCount = gameManager->countForType(type);
-    for (int i = 1; i <= vanillaCount; i++) {
+    auto count = gameManager->countForType(type);
+    for (int i = 1; i <= count; i++) {
         auto lazyIcon = LazyIcon::create(type, i, nullptr, suffix, [this, i] {
             if (m_callback) m_callback(i, nullptr);
             onClose(nullptr);
@@ -58,9 +58,8 @@ bool IconPresetPopup::setup(IconType type, std::string_view suffix, std23::move_
     }
 
     if (auto icons = more_icons::getIcons(type)) {
-        auto customCount = icons->size();
-        for (int i = 0; i < customCount; i++) {
-            auto info = icons->data() + i;
+        auto end = icons->data() + icons->size();
+        for (auto info = icons->data(); info != end; info++) {
             auto lazyIcon = LazyIcon::create(type, 0, info, suffix, [this, info] {
                 if (m_callback) m_callback(0, info);
                 onClose(nullptr);

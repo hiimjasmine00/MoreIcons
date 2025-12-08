@@ -84,11 +84,11 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
 void LazyIcon::createSimpleIcon() {
     auto ufo = m_type == IconType::Ufo;
     auto iconName = m_info ? fmt::format("{}"_spr, m_name) : m_name;
-    auto primaryFrame = MoreIcons::getFrame(fmt::format("{}_001.png", iconName));
-    auto secondaryFrame = MoreIcons::getFrame(fmt::format("{}_2_001.png", iconName));
-    auto tertiaryFrame = ufo ? MoreIcons::getFrame(fmt::format("{}_3_001.png", iconName)) : nullptr;
-    auto glowFrame = MoreIcons::getFrame(fmt::format("{}_glow_001.png", iconName));
-    auto extraFrame = MoreIcons::getFrame(fmt::format("{}_extra_001.png", iconName));
+    auto primaryFrame = MoreIcons::getFrame("{}_001.png", iconName);
+    auto secondaryFrame = MoreIcons::getFrame("{}_2_001.png", iconName);
+    auto tertiaryFrame = ufo ? MoreIcons::getFrame("{}_3_001.png", iconName) : nullptr;
+    auto glowFrame = MoreIcons::getFrame("{}_glow_001.png", iconName);
+    auto extraFrame = MoreIcons::getFrame("{}_extra_001.png", iconName);
     auto normalImage = getNormalImage();
 
     if (primaryFrame) {
@@ -162,47 +162,49 @@ void LazyIcon::createComplexIcon() {
         if (!usedTexture) continue;
 
         std::string_view texture = usedTexture->valueForKey("texture")->m_sString;
-        if (texture.size() < spider + 11) continue;
+        if (spider ? texture.size() < 12 : texture.size() < 11) continue;
 
-        auto index = jasmine::convert::getInt<int>(texture.substr(spider + 9, 2)).value_or(0);
+        auto index = jasmine::convert::getInt<int>(texture.substr(spider ? 10 : 9, 2)).value_or(0);
         if (index <= 0) continue;
 
         std::string_view customID = usedTexture->valueForKey("customID")->m_sString;
         uint8_t spriteColor = customID == "back01" || customID == "back02" || customID == "back03" ? (spider ? 127 : 178) : 255;
         ccColor3B spriteColor3B = { spriteColor, spriteColor, spriteColor };
 
+        auto id = i + 1;
+
         auto partNode = new CCSpritePlus();
         partNode->init();
         partNode->autorelease();
         partNode->m_propagateScaleChanges = true;
         partNode->m_propagateFlipChanges = true;
-        partNode->setID(fmt::format("part-node-{}", i + 1));
+        partNode->setID(fmt::format("part-node-{}", id));
 
-        if (auto primaryFrame = MoreIcons::getFrame(fmt::format("{}_{:02}_001.png", iconName, index))) {
+        if (auto primaryFrame = MoreIcons::getFrame("{}_{:02}_001.png", iconName, index)) {
             auto sprite = CCSprite::createWithSpriteFrame(primaryFrame);
             sprite->setColor(spriteColor3B);
-            sprite->setID(fmt::format("primary-sprite-{}", i + 1));
+            sprite->setID(fmt::format("primary-sprite-{}", id));
             partNode->addChild(sprite, 0);
         }
 
-        if (auto secondaryFrame = MoreIcons::getFrame(fmt::format("{}_{:02}_2_001.png", iconName, index))) {
+        if (auto secondaryFrame = MoreIcons::getFrame("{}_{:02}_2_001.png", iconName, index)) {
             auto sprite = CCSprite::createWithSpriteFrame(secondaryFrame);
             sprite->setColor(spriteColor3B);
-            sprite->setID(fmt::format("secondary-sprite-{}", i + 1));
+            sprite->setID(fmt::format("secondary-sprite-{}", id));
             partNode->addChild(sprite, -1);
         }
 
-        if (auto glowFrame = MoreIcons::getFrame(fmt::format("{}_{:02}_glow_001.png", iconName, index))) {
+        if (auto glowFrame = MoreIcons::getFrame("{}_{:02}_glow_001.png", iconName, index)) {
             auto sprite = CCSprite::createWithSpriteFrame(glowFrame);
-            sprite->setID(fmt::format("glow-sprite-{}", i + 1));
+            sprite->setID(fmt::format("glow-sprite-{}", id));
             glowNode->addChild(sprite, -1);
             partNode->addFollower(sprite);
         }
 
         if (index == 1) {
-            if (auto extraFrame = MoreIcons::getFrame(fmt::format("{}_01_extra_001.png", iconName))) {
+            if (auto extraFrame = MoreIcons::getFrame("{}_01_extra_001.png", iconName)) {
                 auto sprite = CCSprite::createWithSpriteFrame(extraFrame);
-                sprite->setID(fmt::format("extra-sprite-{}", i + 1));
+                sprite->setID(fmt::format("extra-sprite-{}", id));
                 partNode->addChild(sprite, 1);
             }
         }
@@ -242,15 +244,15 @@ void LazyIcon::updateComplexSprite(CCString* frame) {
 
 void LazyIcon::update(float dt) {
     m_elapsed += dt;
-    auto interval = m_elapsed / (m_animation->m_fDelayPerUnit * m_animation->m_fTotalDelayUnits);
+    auto interval = m_elapsed / (m_animation->getDelayPerUnit() * m_animation->getTotalDelayUnits());
     if (!m_looped && interval >= 1.0f) {
         m_elapsed = 0.0f;
         return unscheduleUpdate();
     }
 
-    auto frames = m_animation->m_pFrames;
+    auto frames = m_animation->getFrames();
     updateComplexSprite(static_cast<CCString*>(static_cast<CCObject*>(static_cast<CCAnimationFrame*>(
-        frames->objectAtIndex((int)(fmodf(interval, 1.0f) * frames->count())))->m_pSpriteFrame)));
+        frames->objectAtIndex((int)(fmodf(interval, 1.0f) * frames->count())))->getSpriteFrame())));
 }
 
 void LazyIcon::createIcon() {
@@ -263,7 +265,7 @@ void LazyIcon::createIcon() {
         }
         if (!m_suffix.empty()) {
             auto normalImage = getNormalImage();
-            auto spriteFrame = MoreIcons::getFrame(fmt::format("{}{}", m_info ? fmt::format("{}"_spr, m_name) : m_name, m_suffix));
+            auto spriteFrame = MoreIcons::getFrame("{}{}.png", m_info ? fmt::format("{}"_spr, m_name) : m_name, m_suffix);
             if (!spriteFrame) spriteFrame = spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
             auto sprite = CCSprite::createWithSpriteFrame(spriteFrame);
             sprite->setID("custom-sprite");
@@ -305,39 +307,14 @@ void LazyIcon::visit() {
     ThreadPool::get().pushTask([
         selfref = WeakRef(this), texture = m_texture, sheet = m_sheet, name = m_info ? m_info->name : std::string(), type = m_type
     ] {
-        auto result = Load::createFrames(MoreIcons::strPath(texture), MoreIcons::strPath(sheet), name, type);
-        queueInMainThread([selfref = std::move(selfref), result = std::move(result)] mutable {
+        auto image = Load::createFrames(MoreIcons::strPath(texture), MoreIcons::strPath(sheet), name, type);
+        queueInMainThread([selfref = std::move(selfref), image = std::move(image)] mutable {
             if (auto self = selfref.lock()) {
-                if (result.isErr()) {
-                    self->m_error = std::move(result).unwrapErr();
+                if (image.isOk()) Load::addFrames(image.unwrap(), self->m_frames, self->m_suffix);
+                else if (image.isErr()) {
+                    self->m_error = std::move(image).unwrapErr();
                     log::error("{}: {}", self->m_name, self->m_error);
-                    return self->createIcon();
                 }
-                else if (self->m_suffix.empty()) {
-                    Load::addFrames(result.unwrap(), self->m_frames);
-                    return self->createIcon();
-                }
-
-                auto image = std::move(result).unwrap();
-                if (auto texture = image.texture.data) {
-                    texture->initWithData(image.data.data(), kCCTexture2DPixelFormat_RGBA8888, image.width, image.height, {
-                        (float)image.width,
-                        (float)image.height
-                    });
-                    texture->m_bHasPremultipliedAlpha = true;
-                    Get::TextureCache()->m_pTextures->setObject(texture, image.name);
-                }
-
-                auto& frameNames = self->m_frames;
-                frameNames.clear();
-                auto spriteFrameCache = Get::SpriteFrameCache();
-                for (auto [frameName, frame] : CCDictionaryExt<std::string, CCSpriteFrame*>(image.frames)) {
-                    if (frameName.ends_with(self->m_suffix)) {
-                        spriteFrameCache->addSpriteFrame(frame, frameName.data());
-                        frameNames.push_back(std::move(frameName));
-                    }
-                }
-
                 self->createIcon();
             }
         });
