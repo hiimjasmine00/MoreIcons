@@ -8,7 +8,6 @@ class $modify(MIDirector, CCDirector) {
         Get::animationCache = nullptr;
         Get::director = nullptr;
         Get::fileUtils = nullptr;
-        Get::shaderCache = nullptr;
         Get::spriteFrameCache = nullptr;
         Get::textureCache = nullptr;
         CCDirector::purgeDirector();

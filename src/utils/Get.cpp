@@ -11,7 +11,6 @@ CCDirector* Get::director = nullptr;
 CCFileUtils* Get::fileUtils = nullptr;
 GameManager* Get::gameManager = nullptr;
 ObjectManager* Get::objectManager = nullptr;
-CCShaderCache* Get::shaderCache = nullptr;
 CCSpriteFrameCache* Get::spriteFrameCache = nullptr;
 CCTextureCache* Get::textureCache = nullptr;
 
@@ -43,11 +42,6 @@ GameManager* Get::GameManager() {
 ObjectManager* Get::ObjectManager() {
     if (!objectManager) objectManager = ObjectManager::instance();
     return objectManager;
-}
-
-CCShaderCache* Get::ShaderCache() {
-    if (!shaderCache) shaderCache = CCShaderCache::sharedShaderCache();
-    return shaderCache;
 }
 
 CCSpriteFrameCache* Get::SpriteFrameCache() {

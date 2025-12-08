@@ -77,6 +77,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
 
             auto& subSuffixes = suffixes[i];
             for (size_t j = 0; j < subSuffixes.size(); j++) {
+                log::info("{}{}.png", prefix, subSuffixes[j]);
                 if (auto spriteFrame = MoreIcons::getFrame("{}{}.png", prefix, subSuffixes[j])) {
                     auto sprite = CCSprite::createWithSpriteFrame(spriteFrame);
                     auto& size = sprite->getContentSize();

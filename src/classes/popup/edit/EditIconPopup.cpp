@@ -82,7 +82,8 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     auto piecesBackground = CCScale9Sprite::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
     piecesBackground->setPosition({ 270.0f, 222.0f });
-    piecesBackground->setContentSize({ isRobot ? 260.0f : 330.0f, 45.0f });
+    piecesBackground->setContentSize({ isRobot ? 260.0f / 0.84375f : 330.0f / 0.84375f, 160.0f / 3.0f });
+    piecesBackground->setScale(0.84375f);
     piecesBackground->setOpacity(105);
     piecesBackground->setID("pieces-background");
     m_mainLayer->addChild(piecesBackground);
@@ -715,15 +716,16 @@ bool EditIconPopup::updateWithSelectedFiles(std::string_view suffix) {
         Load::initTexture(image.texture, image.data.data(), image.width, image.height, false);
         if (suffix.empty()) {
             m_frames->removeAllObjects();
-            for (auto [frameName, frame] : CCDictionaryExt<const char*, CCSpriteFrame*>(image.frames)) {
-                m_frames->setObject(frame, frameName);
+            for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(image.frames)) {
+                frameName.remove_suffix(4);
+                m_frames->setObject(frame, getKey(frameName));
             }
         }
         else {
             m_frames->removeObjectForKey(getKey(suffix));
             for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(image.frames)) {
                 frameName.remove_suffix(4);
-                if (frameName.ends_with(suffix)) m_frames->setObject(frame, getKey(frameName));
+                if (frameName == suffix) m_frames->setObject(frame, getKey(frameName));
             }
         }
         updatePieces();

@@ -257,7 +257,7 @@ Result<Autorelease<CCDictionary>> Load::createFrames(
     return Ok(std::move(frames));
 }
 
-CCTexture2D* Load::addFrames(const ImageResult& image, std::vector<std::string>& frameNames, std::string_view suffix) {
+CCTexture2D* Load::addFrames(const ImageResult& image, std::vector<std::string>& frameNames, std::string_view target) {
     if (auto texture = image.texture.data) {
         initTexture(texture, image.data.data(), image.width, image.height);
         Get::TextureCache()->m_pTextures->setObject(texture, image.name);
@@ -265,7 +265,7 @@ CCTexture2D* Load::addFrames(const ImageResult& image, std::vector<std::string>&
 
     frameNames.clear();
     if (auto frames = image.frames.data) {
-        if (suffix.empty()) {
+        if (target.empty()) {
             frameNames.reserve(frames->count());
             auto spriteFrameCache = Get::SpriteFrameCache();
             for (auto [frameName, frame] : CCDictionaryExt<const char*, CCSpriteFrame*>(frames)) {
@@ -277,7 +277,7 @@ CCTexture2D* Load::addFrames(const ImageResult& image, std::vector<std::string>&
             frameNames.reserve(1);
             auto spriteFrameCache = Get::SpriteFrameCache();
             for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(frames)) {
-                if (frameName.substr(0, frameName.size() - 4).ends_with(suffix)) {
+                if (frameName == target) {
                     spriteFrameCache->addSpriteFrame(frame, frameName.data());
                     frameNames.emplace_back(frameName);
                 }

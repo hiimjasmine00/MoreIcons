@@ -239,7 +239,6 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         if (type <= IconType::Jetpack) {
             auto unlockType = gameManager->iconTypeToUnlockType(type);
-            auto playerSquare = sfc->spriteFrameByName("playerSquare_001.png")->getOriginalSize();
             auto hasAnimProf = Loader::get()->isModLoaded("thesillydoggo.animatedprofiles");
             for (auto& info : infoPage) {
                 auto itemIcon = GJItemIcon::createBrowserItem(unlockType, 1);
@@ -252,8 +251,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
                 }
                 auto iconButton = CCMenuItemSpriteExtra::create(itemIcon, this, menu_selector(GJGarageLayer::onSelect));
                 iconButton->setUserObject("name"_spr, CCString::create(info.name));
-                iconButton->setContentSize(playerSquare);
-                itemIcon->setPosition(playerSquare / 2.0f);
+                iconButton->setContentSize({ 30.0f, 30.0f });
+                itemIcon->setPosition({ 15.0f, 15.0f });
                 iconButton->setTag(i++);
                 iconButton->m_iconType = type;
                 objs->addObject(iconButton);

@@ -30,10 +30,8 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
     auto normalImage = CCNode::create();
     if (!CCMenuItemSpriteExtra::init(normalImage, nullptr, nullptr, nullptr)) return false;
 
-    auto contentSize = Get::SpriteFrameCache()->spriteFrameByName("playerSquare_001.png")->getOriginalSize();
-    setPosition(contentSize / 2.0f);
-    setContentSize(contentSize);
-    normalImage->setPosition(contentSize / 2.0f);
+    setContentSize({ 30.0f, 30.0f });
+    normalImage->setPosition({ 15.0f, 15.0f });
 
     m_callback = std::move(callback);
     m_suffix = suffix;
@@ -306,12 +304,20 @@ void LazyIcon::visit() {
 
     ThreadPool::get().pushTask([
         selfref = WeakRef(this), texture = MoreIcons::strPath(m_texture), sheet = MoreIcons::strPath(m_sheet),
-        name = m_info ? std::string_view(m_info->name) : std::string_view(), type = m_type
+        name = m_info ? std::string_view(m_info->name) : std::string_view(), type = m_type,
+        prefix = m_suffix.empty() ? std::string() : m_info ? fmt::format("{}"_spr, m_name) : m_name
     ] {
         auto image = Load::createFrames(texture, sheet, name, type);
-        queueInMainThread([selfref = std::move(selfref), image = std::move(image)] mutable {
+        queueInMainThread([selfref = std::move(selfref), image = std::move(image), prefix = std::move(prefix)] mutable {
             if (auto self = selfref.lock()) {
-                if (image.isOk()) Load::addFrames(image.unwrap(), self->m_frames, self->m_suffix);
+                if (image.isOk()) {
+                    if (prefix.empty()) {
+                        Load::addFrames(image.unwrap(), self->m_frames, {});
+                    }
+                    else {
+                        Load::addFrames(image.unwrap(), self->m_frames, fmt::format("{}{}.png", prefix, self->m_suffix));
+                    }
+                }
                 else if (image.isErr()) {
                     self->m_error = std::move(image).unwrapErr();
                     log::error("{}: {}", self->m_name, self->m_error);

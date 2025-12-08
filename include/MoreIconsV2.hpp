@@ -24,11 +24,11 @@ namespace more_icons {
             char buffer[extra + N]{};
             constexpr BoyIfYouDontGet(const char (&pp)[N]) {
                 char id[] = MY_MOD_ID;
-                for (int i = 0; i < sizeof(id); i++) {
+                for (size_t i = 0; i < sizeof(id); i++) {
                     buffer[i] = id[i];
                 }
                 buffer[extra - 1] = '/';
-                for (int i = 0; i < N; i++) {
+                for (size_t i = 0; i < N; i++) {
                     buffer[extra + i] = pp[i];
                 }
             }

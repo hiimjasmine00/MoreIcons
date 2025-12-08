@@ -65,5 +65,5 @@ public:
     static geode::Result<Autorelease<cocos2d::CCDictionary>> createFrames(
         const std::filesystem::path& path, cocos2d::CCTexture2D* texture, std::string_view name, IconType type, bool fixNames = true
     );
-    static cocos2d::CCTexture2D* addFrames(const ImageResult& image, std::vector<std::string>& frameNames, std::string_view suffix = {});
+    static cocos2d::CCTexture2D* addFrames(const ImageResult& image, std::vector<std::string>& frameNames, std::string_view target = {});
 };

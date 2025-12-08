@@ -1,9 +1,9 @@
 #include "LoadEditorPopup.hpp"
 #include "../../../MoreIcons.hpp"
-#include "../../scroll/BiggerScrollLayer.hpp"
 #include <algorithm>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/ui/Scrollbar.hpp>
+#include <Geode/ui/ScrollLayer.hpp>
 #include <Geode/utils/string.hpp>
 
 using namespace geode::prelude;
@@ -29,9 +29,18 @@ bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const 
 
     m_callback = std::move(callback);
 
-    auto scrollLayer = BiggerScrollLayer::create(200.0f, 190.0f, 5.0f, 5.0f);
+    auto scrollBackground = CCLayerColor::create({ 0, 0, 0, 105 }, 200.0f, 200.0f);
+    scrollBackground->setPosition({ 110.0f, 115.0f });
+    scrollBackground->ignoreAnchorPointForPosition(false);
+    scrollBackground->setID("scroll-background");
+    m_mainLayer->addChild(scrollBackground);
+
+    auto scrollLayer = ScrollLayer::create({ 200.0f, 200.0f });
+    auto contentLayer = scrollLayer->m_contentLayer;
     scrollLayer->setPosition({ 110.0f, 115.0f });
-    scrollLayer->m_contentLayer->setLayout(ColumnLayout::create()->setAxisAlignment(AxisAlignment::End)->setAutoGrowAxis(200.0f));
+    scrollLayer->ignoreAnchorPointForPosition(false);
+    contentLayer->setLayout(ColumnLayout::create()->setAxisReverse(true)
+        ->setAxisAlignment(AxisAlignment::End)->setAutoGrowAxis(0.0f));
     scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(scrollLayer);
 
@@ -39,7 +48,7 @@ bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const 
 
     MoreIcons::iterate(MoreIcons::getEditorDir(type), std::filesystem::file_type::directory, [&entries](const std::filesystem::path& path) {
         entries.insert(std::ranges::find_if(entries, [filename = string::pathToString(path.filename())](const std::filesystem::path& p) {
-            return string::caseInsensitiveCompare(filename, string::pathToString(p.filename())) != std::strong_ordering::less;
+            return string::caseInsensitiveCompare(filename, string::pathToString(p.filename())) != std::strong_ordering::greater;
         }), path);
     });
 
@@ -50,7 +59,7 @@ bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const 
         entryMenu->setContentSize({ 200.0f, 30.0f });
         entryMenu->ignoreAnchorPointForPosition(false);
         entryMenu->setID(fmt::format("{}-menu", filename));
-        scrollLayer->m_contentLayer->addChild(entryMenu);
+        contentLayer->addChild(entryMenu);
 
         auto entryButton = CCMenuItemExt::createSpriteExtra(
             ButtonSprite::create(filename.c_str(), 174, 0, 1.0f, false, "goldFont.fnt", "GJ_button_05.png", 0.0f),
@@ -59,16 +68,27 @@ bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const 
                 onClose(nullptr);
             }
         );
-        entryButton->setPosition({ 100.0f, 15.0f });
+        entryButton->setPosition({ 100.0f, 20.0f });
         entryButton->setID(std::move(filename));
         entryMenu->addChild(entryButton);
     }
 
-    scrollLayer->m_contentLayer->updateLayout();
+    contentLayer->updateLayout();
+
+    contentLayer->setContentSize(contentLayer->getContentSize() + CCSize { 0.0f, 10.0f });
+    for (auto child : contentLayer->getChildrenExt()) {
+        child->setPosition(child->getPosition() + CCPoint { 0.0f, 5.0f });
+        child->setContentSize(child->getContentSize() + CCSize { 0.0f, 10.0f });
+    }
+
     scrollLayer->scrollToTop();
+
+    auto scrollable = contentLayer->getContentHeight() > scrollLayer->getContentHeight();
+    scrollLayer->enableScrollWheel(scrollable);
 
     auto scrollbar = Scrollbar::create(scrollLayer);
     scrollbar->setPosition({ 217.0f, 115.0f });
+    scrollbar->setTouchEnabled(scrollable);
     scrollbar->setID("scrollbar");
     m_mainLayer->addChild(scrollbar);
 
