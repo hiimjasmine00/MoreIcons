@@ -50,6 +50,7 @@ bool LogLayer::setup(IconType type) {
 
     auto scrollable = contentLayer->getContentHeight() > scrollLayer->getContentHeight();
     scrollLayer->enableScrollWheel(scrollable);
+    scrollLayer->setTouchEnabled(scrollable);
 
     auto scrollbar = Scrollbar::create(scrollLayer);
     scrollbar->setPosition({ 425.0f, 135.0f });

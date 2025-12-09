@@ -101,6 +101,7 @@ bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const 
 
     auto scrollable = contentLayer->getContentHeight() > scrollLayer->getContentHeight();
     scrollLayer->enableScrollWheel(scrollable);
+    scrollLayer->setTouchEnabled(scrollable);
 
     auto scrollbar = Scrollbar::create(scrollLayer);
     scrollbar->setPosition({ 217.0f, 115.0f });
