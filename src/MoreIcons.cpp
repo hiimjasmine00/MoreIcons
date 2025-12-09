@@ -739,7 +739,7 @@ std::filesystem::path MoreIcons::getEditorDir(IconType type) {
 }
 
 CCSpriteFrame* MoreIcons::getFrame(const char* name) {
-    auto spriteFrame = static_cast<CCSpriteFrame*>(Get::SpriteFrameCache()->spriteFrameByName(name));
+    auto spriteFrame = Get::SpriteFrameCache()->spriteFrameByName(name);
     if (!spriteFrame || spriteFrame->getTag() == 105871529) spriteFrame = nullptr;
     return spriteFrame;
 }

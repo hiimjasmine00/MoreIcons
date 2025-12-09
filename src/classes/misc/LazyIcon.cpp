@@ -305,17 +305,18 @@ void LazyIcon::visit() {
     ThreadPool::get().pushTask([
         selfref = WeakRef(this), texture = MoreIcons::strPath(m_texture), sheet = MoreIcons::strPath(m_sheet),
         name = m_info ? std::string_view(m_info->name) : std::string_view(), type = m_type,
-        prefix = m_suffix.empty() ? std::string() : m_info ? fmt::format("{}"_spr, m_name) : m_name
+        frameName = m_suffix.empty() ? std::string() :
+            m_info ? fmt::format("{}{}.png"_spr, m_name, m_suffix) : fmt::format("{}{}.png", m_name, m_suffix)
     ] {
         auto image = Load::createFrames(texture, sheet, name, type);
-        queueInMainThread([selfref = std::move(selfref), image = std::move(image), prefix = std::move(prefix)] mutable {
+        queueInMainThread([selfref = std::move(selfref), image = std::move(image), frameName = std::move(frameName)] mutable {
             if (auto self = selfref.lock()) {
                 if (image.isOk()) {
-                    if (prefix.empty()) {
-                        Load::addFrames(image.unwrap(), self->m_frames, {});
+                    if (frameName.empty()) {
+                        Load::addFrames(image.unwrap(), self->m_frames);
                     }
                     else {
-                        Load::addFrames(image.unwrap(), self->m_frames, fmt::format("{}{}.png", prefix, self->m_suffix));
+                        Load::addFrames(image.unwrap(), self->m_frames, frameName);
                     }
                 }
                 else if (image.isErr()) {

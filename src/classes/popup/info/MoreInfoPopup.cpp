@@ -31,10 +31,10 @@ Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem
     #else
     auto fullSrc = dirs::getResourcesDir() / src;
     #endif
-    GEODE_UNWRAP_INTO(auto vec, Load::readBinary(fullSrc).mapErr([](const std::string& err) {
+    GEODE_UNWRAP_INTO(auto vec, Load::readBinary(fullSrc).mapErr([](std::string err) {
         return fmt::format("Failed to read file: {}", err);
     }));
-    return file::writeBinary(dest, vec).mapErr([](const std::string& err) {
+    return file::writeBinary(dest, vec).mapErr([](std::string err) {
         return fmt::format("Failed to write file: {}", err);
     });
 }

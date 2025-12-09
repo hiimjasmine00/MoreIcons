@@ -80,11 +80,11 @@ Result<std::vector<uint8_t>> Load::readBinary(const std::filesystem::path& path)
 }
 
 Result<Autorelease<cocos2d::CCTexture2D>> Load::createTexture(const std::filesystem::path& path) {
-    GEODE_UNWRAP_INTO(auto data, readBinary(path).mapErr([](const std::string& err) {
+    GEODE_UNWRAP_INTO(auto data, readBinary(path).mapErr([](std::string err) {
         return fmt::format("Failed to read image: {}", err);
     }));
 
-    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(data).mapErr([](const std::string& err) {
+    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(data).mapErr([](std::string err) {
         return fmt::format("Failed to parse image: {}", err);
     }));
 
@@ -105,16 +105,16 @@ void Load::initTexture(cocos2d::CCTexture2D* texture, const uint8_t* data, uint3
 Result<ImageResult> Load::createFrames(
     const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type, bool premultiplyAlpha
 ) {
-    GEODE_UNWRAP_INTO(auto data, readBinary(png).mapErr([](const std::string& err) {
+    GEODE_UNWRAP_INTO(auto data, readBinary(png).mapErr([](std::string err) {
         return fmt::format("Failed to read image: {}", err);
     }));
 
-    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(data, premultiplyAlpha).mapErr([](const std::string& err) {
+    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(data, premultiplyAlpha).mapErr([](std::string err) {
         return fmt::format("Failed to parse image: {}", err);
     }));
 
     Autorelease texture = new CCTexture2D();
-    GEODE_UNWRAP_INTO(auto frames, createFrames(plist, texture, name, type, !premultiplyAlpha || !name.empty()).mapErr([](const std::string& err) {
+    GEODE_UNWRAP_INTO(auto frames, createFrames(plist, texture, name, type, !premultiplyAlpha || !name.empty()).mapErr([](std::string err) {
         return fmt::format("Failed to load frames: {}", err);
     }));
 
@@ -157,7 +157,7 @@ Result<Autorelease<CCDictionary>> Load::createFrames(
 ) {
     if (path.empty()) return Ok(nullptr);
 
-    GEODE_UNWRAP_INTO(auto data, readBinary(path).mapErr([](const std::string& err) {
+    GEODE_UNWRAP_INTO(auto data, readBinary(path).mapErr([](std::string err) {
         return fmt::format("Failed to read file: {}", err);
     }));
 
@@ -251,6 +251,11 @@ Result<Autorelease<CCDictionary>> Load::createFrames(
             }
         }
 
+        auto absX = std::abs(offset.x) * 2.0f;
+        if (originalSize.width - rect.size.width < absX) originalSize.width = rect.size.width + absX;
+        auto absY = std::abs(offset.y) * 2.0f;
+        if (originalSize.height - rect.size.height < absY) originalSize.height = rect.size.height + absY;
+
         frame->initWithTexture(texture, rect, rotated, offset, originalSize);
     }
 
@@ -265,9 +270,9 @@ CCTexture2D* Load::addFrames(const ImageResult& image, std::vector<std::string>&
 
     frameNames.clear();
     if (auto frames = image.frames.data) {
+        auto spriteFrameCache = Get::SpriteFrameCache();
         if (target.empty()) {
             frameNames.reserve(frames->count());
-            auto spriteFrameCache = Get::SpriteFrameCache();
             for (auto [frameName, frame] : CCDictionaryExt<const char*, CCSpriteFrame*>(frames)) {
                 spriteFrameCache->addSpriteFrame(frame, frameName);
                 frameNames.push_back(frameName);
@@ -275,7 +280,6 @@ CCTexture2D* Load::addFrames(const ImageResult& image, std::vector<std::string>&
         }
         else {
             frameNames.reserve(1);
-            auto spriteFrameCache = Get::SpriteFrameCache();
             for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(frames)) {
                 if (frameName == target) {
                     spriteFrameCache->addSpriteFrame(frame, frameName.data());

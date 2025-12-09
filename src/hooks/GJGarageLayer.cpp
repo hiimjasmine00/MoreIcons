@@ -235,7 +235,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto i = 1;
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto active = more_icons::activeIcon(type, sdi && sdi->getSavedValue("2pselected", false));
-        std::span<IconInfo> infoPage(icons->data() + index, std::min(36uz, size - index));
+        std::span<IconInfo> infoPage(icons->data() + index, std::min<size_t>(36, size - index));
 
         if (type <= IconType::Jetpack) {
             auto unlockType = gameManager->iconTypeToUnlockType(type);

@@ -70,14 +70,13 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         auto spriteFrameCache = Get::SpriteFrameCache();
         for (size_t i = 0; i < suffixes.size(); i++) {
             auto container = CCNode::create();
-            container->setPosition({ 175.0f, (isRobot ? 140.0f : 100.0f) - i * 30.0f + std::max(i - 1, 0uz) * 10.0f });
+            container->setPosition({ 175.0f, (isRobot ? 140.0f : 100.0f) - i * 30.0f + (i > 1 ? i - 1 : 0) * 10.0f });
             container->setAnchorPoint({ 0.5f, 0.5f });
             container->setContentSize({ 350.0f, 30.0f });
             container->setID(fmt::format("frame-container-{}", i + 1));
 
             auto& subSuffixes = suffixes[i];
             for (size_t j = 0; j < subSuffixes.size(); j++) {
-                log::info("{}{}.png", prefix, subSuffixes[j]);
                 if (auto spriteFrame = MoreIcons::getFrame("{}{}.png", prefix, subSuffixes[j])) {
                     auto sprite = CCSprite::createWithSpriteFrame(spriteFrame);
                     auto& size = sprite->getContentSize();

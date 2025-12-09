@@ -1,4 +1,8 @@
 # More Icons Changelog
+## v1.16.2 (2025-12-08)
+- Fixed a bug where some icons with weird offsets would be cut off when exported (I don't know asc095's in-game name but thanks for reporting!)
+- Fixed a bug where the icon viewer would not show the icon pieces (I LITERALLY forgot to fix this :sob:)
+
 ## v1.16.1 (2025-12-08)
 - Fixed a bug where some scroll layers would get freaky if it didn't have enough content to scroll ([#52](https://github.com/hiimjasmine00/MoreIcons/issues/52))
 - Fixed a bug where some icons from texture packs would not load properly
