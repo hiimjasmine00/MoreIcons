@@ -182,8 +182,10 @@ struct IconPack {
 };
 
 std::vector<IconPack> packs;
+float factor = 0.0f;
 
 void MoreIcons::loadPacks() {
+    factor = Get::Director()->getContentScaleFactor();
     packs.clear();
     packs.emplace_back("More Icons", std::string(), dirs::getGeodeDir(), false, false);
     migrateTrails(Mod::get()->getConfigDir().make_preferred() / MI_PATH("trail"));
@@ -314,7 +316,6 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
     stem.remove_prefix(sep);
     stem.remove_suffix(6);
 
-    auto factor = Get::Director()->getContentScaleFactor();
     std::string name;
     std::string shortName;
     TextureQuality quality;
@@ -393,7 +394,6 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     auto vanillaPath = !MoreIcons::doesExist(plistPath);
     if (vanillaPath) plistPath = vanillaTexturePath(std::filesystem::path(MI_PATH("icons")).append(stem).concat(MI_PATH(".plist")), false);
 
-    auto factor = Get::Director()->getContentScaleFactor();
     std::string name;
     std::string shortName;
     TextureQuality quality;
@@ -460,8 +460,13 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
     #endif
 
     auto jsonPath = path / MI_PATH("settings.json");
-    auto iconPath = path / MI_PATH("icon.png");
-    if (!MoreIcons::doesExist(iconPath)) iconPath.clear();
+
+    auto iconPath = MoreIcons::getPathString(path / MI_PATH("icon"));
+    if (factor >= 4.0f && MoreIcons::doesExist(iconPath + MI_PATH("-uhd.png"))) iconPath += MI_PATH("-uhd.png");
+    else if (factor >= 2.0f && MoreIcons::doesExist(iconPath + MI_PATH("-hd.png"))) iconPath += MI_PATH("-hd.png");
+    else if (MoreIcons::doesExist(iconPath + MI_PATH(".png"))) iconPath += MI_PATH(".png");
+    else iconPath.clear();
+
     more_icons::addTrail(name, shortName, path, jsonPath, iconPath, pack.id, pack.name, 0,
         file::readJson(jsonPath).unwrapOr(matjson::makeObject({
             { "blend", false },
@@ -503,7 +508,6 @@ void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
     auto hdPath = path / MI_PATH("effect-hd.plist");
     auto sdPath = path / MI_PATH("effect.plist");
 
-    auto factor = Get::Director()->getContentScaleFactor();
     TextureQuality quality;
     std::filesystem::path plistPath;
     if (factor >= 4.0f && MoreIcons::doesExist(uhdPath)) {
@@ -536,8 +540,13 @@ void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
     }
 
     auto jsonPath = path / MI_PATH("settings.json");
-    auto iconPath = path / MI_PATH("icon.png");
-    if (!MoreIcons::doesExist(iconPath)) iconPath.clear();
+
+    auto iconPath = MoreIcons::getPathString(path / MI_PATH("icon"));
+    if (factor >= 4.0f && MoreIcons::doesExist(iconPath + MI_PATH("-uhd.png"))) iconPath += MI_PATH("-uhd.png");
+    else if (factor >= 2.0f && MoreIcons::doesExist(iconPath + MI_PATH("-hd.png"))) iconPath += MI_PATH("-hd.png");
+    else if (MoreIcons::doesExist(iconPath + MI_PATH(".png"))) iconPath += MI_PATH(".png");
+    else iconPath.clear();
+
     more_icons::addDeathEffect(name, shortName, texturePath, plistPath, jsonPath, iconPath,
         quality, pack.id, pack.name, 0, file::readJson(jsonPath).unwrapOrDefault(), false, pack.zipped);
 
@@ -555,7 +564,6 @@ void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& p
     auto vanillaPath = !MoreIcons::doesExist(plistPath);
     if (vanillaPath) plistPath = vanillaTexturePath(std::filesystem::path(MI_PATH("icons")).append(stem).concat(MI_PATH(".plist")), false);
 
-    auto factor = Get::Director()->getContentScaleFactor();
     std::string name;
     std::string shortName;
     TextureQuality quality;
@@ -629,8 +637,13 @@ void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
     #endif
 
     auto jsonPath = path / MI_PATH("settings.json");
-    auto iconPath = path / MI_PATH("icon.png");
-    if (!MoreIcons::doesExist(iconPath)) iconPath.clear();
+
+    auto iconPath = MoreIcons::getPathString(path / MI_PATH("icon"));
+    if (factor >= 4.0f && MoreIcons::doesExist(iconPath + MI_PATH("-uhd.png"))) iconPath += MI_PATH("-uhd.png");
+    else if (factor >= 2.0f && MoreIcons::doesExist(iconPath + MI_PATH("-hd.png"))) iconPath += MI_PATH("-hd.png");
+    else if (MoreIcons::doesExist(iconPath + MI_PATH(".png"))) iconPath += MI_PATH(".png");
+    else iconPath.clear();
+
     more_icons::addShipFire(name, shortName, path / MI_PATH("fire_001.png"), jsonPath, iconPath,
         pack.id, pack.name, 0, file::readJson(jsonPath).unwrapOrDefault(), fireCount, false, pack.zipped);
 
