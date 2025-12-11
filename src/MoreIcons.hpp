@@ -95,7 +95,7 @@ public:
 
     static cocos2d::CCTexture2D* createAndAddFrames(IconInfo* info);
     static geode::Result<std::filesystem::path> createTrash();
-    static cocos2d::CCSprite* customTrail(IconInfo* info);
+    static cocos2d::CCSprite* customIcon(IconInfo* info);
     static bool dualSelected();
     static bool doesExist(const std::filesystem::path& path);
     static std::filesystem::path getEditorDir(IconType type);
@@ -103,7 +103,6 @@ public:
     static std::filesystem::path getIconStem(const std::string& name, IconType type);
     static std::basic_string_view<std::filesystem::path::value_type> getPathFilename(const std::filesystem::path& path);
     static std::filesystem::path::string_type getPathString(std::filesystem::path path);
-    static matjson::Value getTrailInfo(int trailID);
     static void iterate(
         const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<void(const std::filesystem::path&)> func
     );

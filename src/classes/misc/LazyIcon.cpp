@@ -41,17 +41,33 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
     m_name = info ? info->getName() : fmt::format("{}{:02}", MoreIcons::prefixes[MoreIcons::convertType(type)], id);
     setID(m_name);
 
-    if (type == IconType::Special && !info) {
+    if (type >= IconType::DeathEffect && !info) {
         m_visited = true;
-        auto playerSpecial = CCSprite::createWithSpriteFrameName(fmt::format("player_special_{:02}_001.png", id).c_str());
+        auto playerSpecial = CCSprite::createWithSpriteFrameName(
+            type == IconType::DeathEffect ? fmt::format("explosionIcon_{:02}_001.png", id).c_str() :
+            type == IconType::Special ? fmt::format("player_special_{:02}_001.png", id).c_str() :
+            type == IconType::ShipFire ? fmt::format("shipfireIcon_{:02}_001.png", id).c_str() : "cc_2x2_white_image"
+        );
         playerSpecial->setID("player-special");
         normalImage->addChild(playerSpecial);
         return true;
     }
 
     if (info) {
-        m_texture = info->getTextureString();
-        m_sheet = info->getSheetString();
+        if (type <= IconType::Jetpack) {
+            m_texture = info->getTextureString();
+            m_sheet = info->getSheetString();
+        }
+        else {
+            m_texture = info->getIconString();
+            if (m_texture.empty()) {
+                m_visited = true;
+                auto playerSpecial = MoreIcons::customIcon(m_info);
+                playerSpecial->setID("player-special");
+                normalImage->addChild(playerSpecial);
+                return true;
+            }
+        }
     }
     else {
         std::string fullName = Get::GameManager()->sheetNameForIcon(id, (int)type);
@@ -60,7 +76,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
         m_sheet = fileUtils->fullPathForFilename(fmt::format("{}.plist", fullName).c_str(), false);
     }
 
-    if (type <= IconType::Jetpack || (type == IconType::Special && info)) {
+    if (type <= IconType::Jetpack || (type >= IconType::DeathEffect && info)) {
         if (Get::TextureCache()->textureForKey(m_texture.c_str())) {
             m_visited = true;
             m_texture.clear();
@@ -262,20 +278,18 @@ void LazyIcon::createIcon() {
             m_loadingSprite = nullptr;
         }
         if (!m_suffix.empty()) {
-            auto normalImage = getNormalImage();
             auto spriteFrame = MoreIcons::getFrame("{}{}.png", m_info ? fmt::format("{}"_spr, m_name) : m_name, m_suffix);
             if (!spriteFrame) spriteFrame = spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
             auto sprite = CCSprite::createWithSpriteFrame(spriteFrame);
             sprite->setID("custom-sprite");
-            normalImage->addChild(sprite);
+            getNormalImage()->addChild(sprite);
         }
         else if (m_type == IconType::Robot || m_type == IconType::Spider) createComplexIcon();
         else if (m_type <= IconType::Jetpack) createSimpleIcon();
-        else if (m_info && m_type <= IconType::Special) {
-            auto normalImage = getNormalImage();
-            auto playerSpecial = CCSprite::create(m_info->getTextureString().c_str());
+        else if (m_info && m_type >= IconType::DeathEffect) {
+            auto playerSpecial = MoreIcons::customIcon(m_info);
             playerSpecial->setID("player-special");
-            normalImage->addChild(playerSpecial);
+            getNormalImage()->addChild(playerSpecial);
         }
     }
     else {

@@ -15,7 +15,7 @@ using namespace geode::prelude;
 
 MoreIconsPopup* MoreIconsPopup::create() {
     auto ret = new MoreIconsPopup();
-    if (ret->initAnchored(440.0f, 290.0f, "geode.loader/GE_square02.png")) {
+    if (ret->initAnchored(460.0f, 290.0f, "geode.loader/GE_square02.png")) {
         ret->autorelease();
         return ret;
     }
@@ -35,8 +35,8 @@ bool MoreIconsPopup::setup() {
     m_closeBtn->setID("close-button");
 
     auto gamemodesNode = CCNode::create();
-    gamemodesNode->setPosition({ 220.0f, 135.0f });
-    gamemodesNode->setContentSize({ 420.0f, 245.0f });
+    gamemodesNode->setPosition({ 230.0f, 135.0f });
+    gamemodesNode->setContentSize({ 440.0f, 245.0f });
     gamemodesNode->setAnchorPoint({ 0.5f, 0.5f });
     gamemodesNode->setLayout(RowLayout::create()->setGap(5.0f)->setGrowCrossAxis(true));
     gamemodesNode->setID("gamemodes-node");
@@ -60,8 +60,8 @@ bool MoreIconsPopup::setup() {
     auto color2 = MoreIcons::vanillaColor2(dual);
     auto colorGlow = MoreIcons::vanillaColorGlow(dual);
     auto glow = MoreIcons::vanillaGlow(dual);
-    for (int i = 0; i < 11; i++) {
-        if (i == 9) continue;
+    for (int i = 0; i < 13; i++) {
+        if (i == 11) continue;
 
         auto gamemodeMenu = CCMenu::create();
         gamemodeMenu->setPosition({ 0.0f, 0.0f });
@@ -92,11 +92,13 @@ bool MoreIconsPopup::setup() {
             icon->setID("player-icon");
             gamemodeMenu->addChild(icon);
         }
-        else if (i == 10) {
+        else if (i > 8) {
             auto info = more_icons::getIcon(type, dual);
-            auto sprite = info
-                ? MoreIcons::customTrail(info)
-                : CCSprite::createWithSpriteFrameName(fmt::format("player_special_{:02}_001.png", id).c_str());
+            auto sprite = info ? MoreIcons::customIcon(info) : CCSprite::createWithSpriteFrameName(
+                i == 9 ? fmt::format("explosionIcon_{:02}_001.png", id).c_str() :
+                i == 10 ? fmt::format("player_special_{:02}_001.png", id).c_str() :
+                i == 12 ? fmt::format("shipfireIcon_{:02}_001.png", id).c_str() : "cc_2x2_white_image"
+            );
             sprite->setPosition({ 35.0f, 100.0f });
             sprite->setScale(0.9f);
             sprite->setID("player-icon");
@@ -180,7 +182,7 @@ bool MoreIconsPopup::setup() {
         if (auto res = MoreIcons::createTrash()) file::openFolder(res.unwrap());
         else MoreIcons::notifyFailure(res.unwrapErr());
     });
-    trashButton->setPosition({ 435.0f, 5.0f });
+    trashButton->setPosition({ 455.0f, 5.0f });
     trashButton->setID("trash-button");
     m_buttonMenu->addChild(trashButton);
 

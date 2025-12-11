@@ -2,6 +2,7 @@
 #include "MoreIcons.hpp"
 #include "api/IconInfoImpl.hpp"
 #include "classes/misc/ThreadPool.hpp"
+#include "utils/Defaults.hpp"
 #include "utils/Get.hpp"
 #include "utils/Load.hpp"
 #include <Geode/binding/GameManager.hpp>
@@ -14,7 +15,6 @@
 #include <jasmine/setting.hpp>
 #include <MoreIcons.hpp>
 #include <std23/function_ref.h>
-#include <texpack.hpp>
 
 using namespace geode::prelude;
 
@@ -36,7 +36,9 @@ std::map<IconType, std::vector<IconInfo>> MoreIcons::icons = {
     { IconType::Spider, {} },
     { IconType::Swing, {} },
     { IconType::Jetpack, {} },
-    { IconType::Special, {} }
+    { IconType::DeathEffect, {} },
+    { IconType::Special, {} },
+    { IconType::ShipFire, {} }
 };
 std::map<int, std::map<IconType, std::string>> MoreIcons::requestedIcons;
 std::map<std::pair<std::string, IconType>, int> MoreIcons::loadedIcons;
@@ -51,7 +53,9 @@ std::map<IconType, int> MoreIcons::severities = {
     { IconType::Spider, 0 },
     { IconType::Swing, 0 },
     { IconType::Jetpack, 0 },
-    { IconType::Special, 0 }
+    { IconType::DeathEffect, 0 },
+    { IconType::Special, 0 },
+    { IconType::ShipFire, 0 }
 };
 int MoreIcons::severity = 0;
 bool MoreIcons::traditionalPacks = true;
@@ -133,90 +137,40 @@ std::filesystem::path::string_type MoreIcons::getPathString(std::filesystem::pat
     return std::move(const_cast<std::filesystem::path::string_type&>(path.native()));
 }
 
-void migrateFolderIcons(const std::filesystem::path& path) {
-    log::info("Beginning folder icon migration in {}", path);
+void migrateTrails(const std::filesystem::path& path) {
+    log::info("Beginning trail migration in {}", path);
 
     auto& saveContainer = Mod::get()->getSaveContainer();
-    if (!saveContainer.contains("migrated-folders")) saveContainer.set("migrated-folders", matjson::Value::array());
+    if (!saveContainer.contains("migrated-trails")) saveContainer.set("migrated-trails", matjson::Value::array());
 
-    auto& migratedFolders = saveContainer["migrated-folders"];
+    auto& migratedTrails = saveContainer["migrated-trails"];
 
-    for (int i = 0; i < 9; i++) {
-        auto folderPath = path / MoreIcons::folders[i];
-        if (!MoreIcons::doesExist(folderPath)) continue;
+    MoreIcons::iterate(path, std::filesystem::file_type::regular, [&migratedTrails](const std::filesystem::path& path) {
+        auto filename = MoreIcons::getPathFilename(path);
+        if (!filename.ends_with(MI_PATH(".png"))) return;
 
-        MoreIcons::iterate(folderPath, std::filesystem::file_type::directory, [
-            i, &folderPath, &migratedFolders
-        ](const std::filesystem::path& path) {
-            if (std::ranges::contains(migratedFolders, path)) return;
-            else migratedFolders.push(path);
+        if (std::ranges::contains(migratedTrails, path)) return;
+        else migratedTrails.push(path);
 
-            std::vector<std::filesystem::path> names;
+        auto parentDir = path.parent_path();
+        auto stem = filename.substr(0, filename.size() - 4);
+        auto directory = parentDir / stem;
 
-            MoreIcons::iterate(path, std::filesystem::file_type::regular, [i, &names](const std::filesystem::path& path) {
-                auto end = MoreIcons::getPathFilename(path);
-                if (!end.ends_with(MI_PATH("_001.png"))) return;
+        if (auto res = file::createDirectoryAll(directory); res.isErr()) {
+            return log::error("Failed to create trail directory {}: {}", stem, res.unwrapErr());
+        }
 
-                auto isRobot = i == 5 || i == 6;
-                if (end.ends_with(MI_PATH("_2"))) {
-                    if (isRobot) {
-                        end.remove_suffix(2);
-                        if (!end.ends_with(MI_PATH("_01")) && !end.ends_with(MI_PATH("_02")) &&
-                            !end.ends_with(MI_PATH("_03")) && !end.ends_with(MI_PATH("_04"))) return;
-                    }
-                }
-                else if (end.ends_with(MI_PATH("_extra"))) {
-                    if (isRobot) {
-                        end.remove_suffix(6);
-                        if (!end.ends_with(MI_PATH("_01"))) return;
-                    }
-                }
-                else if (end.ends_with(MI_PATH("_glow"))) {
-                    if (isRobot) {
-                        end.remove_suffix(5);
-                        if (!end.ends_with(MI_PATH("_01")) && !end.ends_with(MI_PATH("_02")) &&
-                            !end.ends_with(MI_PATH("_03")) && !end.ends_with(MI_PATH("_04"))) return;
-                    }
-                }
-                else if (isRobot && !end.ends_with(MI_PATH("_01")) && !end.ends_with(MI_PATH("_02")) &&
-                    !end.ends_with(MI_PATH("_03")) && !end.ends_with(MI_PATH("_04"))) return;
+        if (auto res = MoreIcons::renameFile(path, directory / MI_PATH("trail.png")); res.isErr()) {
+            return log::error("Failed to move {}: {}", filename, res.unwrapErr());
+        }
 
-                names.push_back(path.filename());
-            });
+        auto jsonName = std::basic_string(stem) + MI_PATH(".json");
+        if (auto res = MoreIcons::renameFile(parentDir / jsonName, directory / MI_PATH("settings.json")); res.isErr()) {
+            return log::error("Failed to move {}: {}", jsonName, res.unwrapErr());
+        }
+    });
 
-            if (names.empty()) return;
-
-            texpack::Packer packer;
-
-            for (auto& filename : names) {
-                if (auto res = packer.frame(string::pathToString(filename), path / filename); res.isErr()) {
-                    return log::error("{}: Failed to load frame {}: {}", path, filename, res.unwrapErr());
-                }
-            }
-
-            if (auto res = packer.pack(); res.isErr()) return log::error("{}: Failed to pack frames: {}", path, res.unwrapErr());
-
-            auto stem = MoreIcons::getPathString(folderPath / path.filename());
-
-            std::filesystem::path pngPath = stem + MI_PATH(".png");
-            if (auto res = MoreIcons::renameFile(pngPath, pngPath); res.isErr()) {
-                log::error("{}: Failed to rename existing image: {}", path, res.unwrapErr());
-            }
-            if (auto res = packer.png(pngPath); res.isErr()) {
-                log::error("{}: Failed to save image: {}", path, res.unwrapErr());
-            }
-
-            std::filesystem::path plistPath = stem + MI_PATH(".plist");
-            if (auto res = MoreIcons::renameFile(plistPath, plistPath); res.isErr()) {
-                log::error("{}: Failed to rename existing plist: {}", path, res.unwrapErr());
-            }
-            if (auto res = packer.plist(plistPath, string::pathToString(MI_PATH("icons") / pngPath.filename()), "    "); res.isErr()) {
-                log::error("{}: Failed to save plist: {}", path, res.unwrapErr());
-            }
-        });
-    }
-
-    log::info("Finished folder icon migration in {}", path);
+    log::info("Finished trail migration in {}", path);
 }
 
 struct IconPack {
@@ -232,7 +186,7 @@ std::vector<IconPack> packs;
 void MoreIcons::loadPacks() {
     packs.clear();
     packs.emplace_back("More Icons", std::string(), dirs::getGeodeDir(), false, false);
-    migrateFolderIcons(Mod::get()->getConfigDir().make_preferred());
+    migrateTrails(Mod::get()->getConfigDir().make_preferred() / MI_PATH("trail"));
 
     for (auto& pack : texture_loader::getAppliedPacks()) {
         auto& name = pack.name;
@@ -274,7 +228,7 @@ void MoreIcons::loadPacks() {
         auto configPath = resourcesPath / MI_PATH_ID;
         if (doesExist(configPath)) {
             packs.emplace_back(name, id, resourcesPath, false, zipped);
-            migrateFolderIcons(configPath);
+            migrateTrails(configPath / MI_PATH("trail"));
         }
     }
 }
@@ -363,6 +317,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
     auto factor = Get::Director()->getContentScaleFactor();
     std::string name;
     std::string shortName;
+    TextureQuality quality;
     if (stem.ends_with(MI_PATH("-uhd"))) {
         stem.remove_suffix(4);
         shortName = MoreIcons::strNarrow(stem);
@@ -381,6 +336,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
             }
             return;
         }
+        quality = kTextureQualityHigh;
     }
     else if (stem.ends_with(MI_PATH("-hd"))) {
         stem.remove_suffix(3);
@@ -396,6 +352,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
         }
 
         if (factor >= 4.0f && MoreIcons::doesExist(start + MI_PATH("-uhd.plist"))) return;
+        quality = kTextureQualityMedium;
     }
     else {
         shortName = MoreIcons::strNarrow(stem);
@@ -404,6 +361,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
         start += stem;
         if (factor >= 4.0f && MoreIcons::doesExist(start + MI_PATH("-uhd.plist"))) return;
         else if (factor >= 2.0f && MoreIcons::doesExist(start + MI_PATH("-hd.plist"))) return;
+        quality = kTextureQualityLow;
     }
 
     log::debug("Pre-loading icon {} from {}", name, pack.name);
@@ -419,7 +377,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
         return printLog(name, Severity::Error, "Texture file {} not found", texturePath.filename());
     }
 
-    more_icons::addIcon(name, shortName, currentType, texturePath, path, pack.id, pack.name, false, pack.zipped);
+    more_icons::addIcon(name, shortName, currentType, texturePath, path, quality, pack.id, pack.name, false, pack.zipped);
 
     log::debug("Finished pre-loading icon {} from {}", name, pack.name);
 }
@@ -438,11 +396,13 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     auto factor = Get::Director()->getContentScaleFactor();
     std::string name;
     std::string shortName;
+    TextureQuality quality;
     if (stem.ends_with(MI_PATH("-uhd"))) {
         if (factor < 4.0f) return;
         stem.remove_suffix(4);
         shortName = MoreIcons::strNarrow(stem);
         name = fmt::format("{}:{}", pack.id, shortName);
+        quality = kTextureQualityHigh;
     }
     else if (stem.ends_with(MI_PATH("-hd"))) {
         if (factor < 2.0f) return;
@@ -451,6 +411,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
         if (factor >= 4.0f && MoreIcons::doesExist(start + MI_PATH("-uhd.png"))) return;
         shortName = MoreIcons::strNarrow(stem);
         name = fmt::format("{}:{}", pack.id, shortName);
+        quality = kTextureQualityMedium;
     }
     else {
         start += stem;
@@ -458,6 +419,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
         else if (factor >= 2.0f && MoreIcons::doesExist(start + MI_PATH("-hd.png"))) return;
         shortName = MoreIcons::strNarrow(stem);
         name = fmt::format("{}:{}", pack.id, shortName);
+        quality = kTextureQualityLow;
     }
 
     log::debug("Pre-loading vanilla icon {} from {}", name, pack.name);
@@ -475,7 +437,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     #endif
     if (doesntExist) return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
 
-    more_icons::addIcon(name, shortName, currentType, path, plistPath, pack.id, pack.name, true, pack.zipped);
+    more_icons::addIcon(name, shortName, currentType, path, plistPath, quality, pack.id, pack.name, true, pack.zipped);
 
     log::debug("Finished pre-loading vanilla icon {} from {}", name, pack.name);
 }
@@ -483,6 +445,11 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
 void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
     auto shortName = MoreIcons::strNarrow(MoreIcons::getPathFilename(path));
     auto name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
+    auto texturePath = path / MI_PATH("trail.png");
+
+    if (!MoreIcons::doesExist(texturePath)) {
+        return printLog(name, Severity::Error, "Texture file {} not found", texturePath.filename());
+    }
 
     log::debug("Pre-loading trail {} from {}", name, pack.name);
 
@@ -493,8 +460,16 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
     #endif
 
     auto jsonPath = path / MI_PATH("settings.json");
-    more_icons::addTrail(name, shortName, path, jsonPath, path / MI_PATH("icon.png"), pack.id, pack.name, 0,
-        file::readJson(jsonPath).unwrapOrDefault(), false, pack.zipped);
+    auto iconPath = path / MI_PATH("icon.png");
+    if (!MoreIcons::doesExist(iconPath)) iconPath.clear();
+    more_icons::addTrail(name, shortName, path, jsonPath, iconPath, pack.id, pack.name, 0,
+        file::readJson(jsonPath).unwrapOr(matjson::makeObject({
+            { "blend", false },
+            { "tint", false },
+            { "show", false },
+            { "fade", 0.3f },
+            { "stroke", 14.0f }
+        })), false, pack.zipped);
 
     log::debug("Finished pre-loading trail {} from {}", name, pack.name);
 }
@@ -516,25 +491,175 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
     auto trailID = jasmine::convert::getInt<int>(std::string_view(shortName).substr(7, shortName.size() - 11)).value_or(0);
     if (trailID == 0) trailID = -1;
 
-    more_icons::addTrail(name, shortName, path, {}, {}, pack.id, pack.name, trailID, MoreIcons::getTrailInfo(trailID), true, pack.zipped);
+    more_icons::addTrail(name, shortName, path, {}, {}, pack.id, pack.name, trailID, Defaults::getTrailInfo(trailID), true, pack.zipped);
 
     log::debug("Finished pre-loading vanilla trail {} from {}", name, pack.name);
 }
 
 void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
-    // todo
+    auto shortName = MoreIcons::strNarrow(MoreIcons::getPathFilename(path));
+    auto name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
+    auto uhdPath = path / MI_PATH("effect-uhd.plist");
+    auto hdPath = path / MI_PATH("effect-hd.plist");
+    auto sdPath = path / MI_PATH("effect.plist");
+
+    auto factor = Get::Director()->getContentScaleFactor();
+    TextureQuality quality;
+    std::filesystem::path plistPath;
+    if (factor >= 4.0f && MoreIcons::doesExist(uhdPath)) {
+        plistPath = std::move(uhdPath);
+        quality = kTextureQualityHigh;
+    }
+    else if (factor >= 2.0f && MoreIcons::doesExist(hdPath)) {
+        plistPath = std::move(hdPath);
+        quality = kTextureQualityMedium;
+    }
+    else if (MoreIcons::doesExist(sdPath)) {
+        plistPath = std::move(sdPath);
+        quality = kTextureQualityLow;
+    }
+    else {
+        return printLog(name, Severity::Warning, "No compatible death effect plist found");
+    }
+
+    log::debug("Pre-loading death effect {} from {}", name, pack.name);
+
+    #ifdef GEODE_IS_WINDOWS
+    if (auto res = checkPath(path); res.isErr()) {
+        return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+    }
+    #endif
+
+    auto texturePath = std::filesystem::path(plistPath).replace_extension(MI_PATH(".png"));
+    if (!MoreIcons::doesExist(texturePath)) {
+        return printLog(name, Severity::Error, "Texture file {} not found", texturePath.filename());
+    }
+
+    auto jsonPath = path / MI_PATH("settings.json");
+    auto iconPath = path / MI_PATH("icon.png");
+    if (!MoreIcons::doesExist(iconPath)) iconPath.clear();
+    more_icons::addDeathEffect(name, shortName, texturePath, plistPath, jsonPath, iconPath,
+        quality, pack.id, pack.name, 0, file::readJson(jsonPath).unwrapOrDefault(), false, pack.zipped);
+
+    log::debug("Finished pre-loading death effect {} from {}", name, pack.name);
 }
 
 void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
-    // todo
+    std::basic_string_view stem = path.native();
+    auto sep = stem.find_last_of(std::filesystem::path::preferred_separator) + 1;
+    auto start = std::basic_string(stem.substr(0, sep));
+    stem.remove_prefix(sep);
+    stem.remove_suffix(4);
+
+    auto plistPath = std::filesystem::path(path).replace_extension(MI_PATH(".plist"));
+    auto vanillaPath = !MoreIcons::doesExist(plistPath);
+    if (vanillaPath) plistPath = vanillaTexturePath(std::filesystem::path(MI_PATH("icons")).append(stem).concat(MI_PATH(".plist")), false);
+
+    auto factor = Get::Director()->getContentScaleFactor();
+    std::string name;
+    std::string shortName;
+    TextureQuality quality;
+    if (stem.ends_with(MI_PATH("-uhd"))) {
+        if (factor < 4.0f) return;
+        stem.remove_suffix(4);
+        shortName = MoreIcons::strNarrow(stem);
+        name = fmt::format("{}:{}", pack.id, shortName);
+        quality = kTextureQualityHigh;
+    }
+    else if (stem.ends_with(MI_PATH("-hd"))) {
+        if (factor < 2.0f) return;
+        stem.remove_suffix(3);
+        start += stem;
+        if (factor >= 4.0f && MoreIcons::doesExist(start + MI_PATH("-uhd.png"))) return;
+        shortName = MoreIcons::strNarrow(stem);
+        name = fmt::format("{}:{}", pack.id, shortName);
+        quality = kTextureQualityMedium;
+    }
+    else {
+        start += stem;
+        if (factor >= 4.0f && MoreIcons::doesExist(start + MI_PATH("-uhd.png"))) return;
+        else if (factor >= 2.0f && MoreIcons::doesExist(start + MI_PATH("-hd.png"))) return;
+        shortName = MoreIcons::strNarrow(stem);
+        name = fmt::format("{}:{}", pack.id, shortName);
+        quality = kTextureQualityLow;
+    }
+
+    log::debug("Pre-loading vanilla death effect {} from {}", name, pack.name);
+
+    #ifdef GEODE_IS_WINDOWS
+    if (auto res = checkPath(path); res.isErr()) {
+        return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+    }
+    #endif
+
+    #ifdef GEODE_IS_ANDROID
+    auto doesntExist = vanillaPath && !Get::FileUtils()->isFileExist(plistPath.native());
+    #else
+    auto doesntExist = vanillaPath && !MoreIcons::doesExist(plistPath);
+    #endif
+    if (doesntExist) return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
+
+    auto effectID = jasmine::convert::getInt<int>(std::string_view(shortName).substr(16)).value_or(0);
+    if (effectID == 0) effectID = -1;
+    else effectID++;
+
+    more_icons::addDeathEffect(name, shortName, path, plistPath, {}, {}, quality, pack.id, pack.name,
+        effectID, {}, true, pack.zipped);
+
+    log::debug("Finished pre-loading vanilla death effect {} from {}", name, pack.name);
 }
 
 void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
-    // todo
+    auto shortName = MoreIcons::strNarrow(MoreIcons::getPathFilename(path));
+    auto name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
+
+    auto fireCount = 0;
+    MoreIcons::iterate(path, std::filesystem::file_type::regular, [&fireCount](const std::filesystem::path& path) {
+        auto filename = MoreIcons::getPathFilename(path);
+        if (filename == GEODE_WINDOWS(string::utf8ToWide)(fmt::format("fire_{:03}.png", fireCount + 1))) fireCount++;
+    });
+    if (fireCount == 0) return printLog(name, Severity::Error, "No ship fire frames found");
+
+    log::debug("Pre-loading ship fire {} from {}", name, pack.name);
+
+    #ifdef GEODE_IS_WINDOWS
+    if (auto res = checkPath(path); res.isErr()) {
+        return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+    }
+    #endif
+
+    auto jsonPath = path / MI_PATH("settings.json");
+    auto iconPath = path / MI_PATH("icon.png");
+    if (!MoreIcons::doesExist(iconPath)) iconPath.clear();
+    more_icons::addShipFire(name, shortName, path / MI_PATH("fire_001.png"), jsonPath, iconPath,
+        pack.id, pack.name, 0, file::readJson(jsonPath).unwrapOrDefault(), fireCount, false, pack.zipped);
+
+    log::debug("Finished pre-loading ship fire {} from {}", name, pack.name);
 }
 
 void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack) {
-    // todo
+    auto wideName = MoreIcons::getPathFilename(path);
+    wideName.remove_suffix(8);
+    auto shortName = MoreIcons::strNarrow(wideName);
+    auto name = fmt::format("{}:{}", pack.id, shortName);
+
+    constexpr std::array fireCounts = { 0, 9, 10, 6, 16, 5 };
+
+    log::debug("Pre-loading vanilla ship fire {} from {}", name, pack.name);
+
+    #ifdef GEODE_IS_WINDOWS
+    if (auto res = checkPath(path); res.isErr()) {
+        return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+    }
+    #endif
+
+    auto fireID = jasmine::convert::getInt<int>(std::string_view(shortName).substr(12)).value_or(0);
+    if (fireID == 0) fireID = -1;
+
+    more_icons::addShipFire(name, shortName, path, {}, {}, pack.id, pack.name,
+        fireID, {}, true, pack.zipped);
+
+    log::debug("Finished pre-loading vanilla ship fire {} from {}", name, pack.name);
 }
 
 #ifdef GEODE_IS_WINDOWS
@@ -634,7 +759,7 @@ void MoreIcons::loadIcons(IconType type) {
         }
     }
 
-    if (type == IconType::Special) packs.clear();
+    if (type == IconType::ShipFire) packs.clear();
 
     if (!preloadIcons) return;
 
@@ -669,43 +794,6 @@ void MoreIcons::loadIcons(IconType type) {
     }
 
     log::info("Finished pre-loading {} {} textures", size, name);
-}
-
-matjson::Value MoreIcons::getTrailInfo(int trailID) {
-    matjson::Value trailInfo;
-    trailInfo["blend"] = true;
-    trailInfo["tint"] = false;
-    trailInfo["show"] = false;
-    trailInfo["fade"] = 0.3f;
-    trailInfo["stroke"] = 14.0f;
-    switch (trailID) {
-        case 1:
-            trailInfo["tint"] = true;
-            trailInfo["stroke"] = 10.0f;
-            break;
-        case 3:
-            trailInfo["tint"] = true;
-            trailInfo["stroke"] = 8.5f;
-            break;
-        case 4:
-            trailInfo["tint"] = true;
-            trailInfo["fade"] = 0.4f;
-            trailInfo["stroke"] = 10.0f;
-            break;
-        case 5:
-            trailInfo["tint"] = true;
-            trailInfo["show"] = true;
-            trailInfo["fade"] = 0.6f;
-            trailInfo["stroke"] = 5.0f;
-            break;
-        case 6:
-            trailInfo["tint"] = true;
-            trailInfo["show"] = true;
-            trailInfo["fade"] = 1.0f;
-            trailInfo["stroke"] = 3.0f;
-            break;
-    }
-    return trailInfo;
 }
 
 bool MoreIcons::dualSelected() {
@@ -788,18 +876,17 @@ CCTexture2D* MoreIcons::createAndAddFrames(IconInfo* info) {
     return nullptr;
 }
 
-CCSprite* MoreIcons::customTrail(IconInfo* info) {
+CCSprite* MoreIcons::customIcon(IconInfo* info) {
     auto square = CCSprite::create(info->getIconString().c_str());
     if (square && !square->getUserObject("geode.texture-loader/fallback")) return square;
 
     square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
     square->setColor({ 150, 150, 150 });
 
-    auto streak = CCSprite::create(info->getTextureString().c_str());
-    limitNodeHeight(streak, 27.0f, 999.0f, 0.001f);
-    streak->setRotation(-90.0f);
-    streak->setPosition(square->getContentSize() / 2.0f);
-    square->addChild(streak);
+    auto question = CCLabelBMFont::create("?", "bigFont.fnt");
+    question->setScale(0.6f);
+    question->setPosition(square->getContentSize() / 2.0f);
+    square->addChild(question);
 
     return square;
 }

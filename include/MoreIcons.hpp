@@ -76,7 +76,9 @@ namespace more_icons {
             case IconType::Spider: return isDual ? "spider-dual" : "spider";
             case IconType::Swing: return isDual ? "swing-dual" : "swing";
             case IconType::Jetpack: return isDual ? "jetpack-dual" : "jetpack";
+            case IconType::DeathEffect: return isDual ? "death-dual" : "death";
             case IconType::Special: return isDual ? "trail-dual" : "trail";
+            case IconType::ShipFire: return isDual ? "fire-dual" : "fire";
             default: return "";
         }
     }
@@ -287,6 +289,7 @@ namespace more_icons {
     /// @param type The type of the icon.
     /// @param png The path to the icon's PNG file.
     /// @param plist The path to the icon's Plist file.
+    /// @param quality The texture quality of the icon.
     /// @param packID The ID of the icon pack.
     /// @param packName The name of the icon pack.
     /// @param vanilla Whether or not the icon is a vanilla icon.
@@ -294,12 +297,11 @@ namespace more_icons {
     /// @returns A pointer to the added icon info, or nullptr if the mod is not loaded or the type is unsupported.
     MI_DLL IconInfo* addIcon(
         const std::string& name, const std::string& shortName, IconType type,
-        const std::filesystem::path& png, const std::filesystem::path& plist,
+        const std::filesystem::path& png, const std::filesystem::path& plist, cocos2d::TextureQuality quality,
         const std::string& packID = {}, const std::string& packName = "More Icons",
         bool vanilla = false, bool zipped = false
     )
-        MI_EXPORT(&addIcon, (name, shortName, type, png, plist, packID, packName, vanilla, zipped));
-
+        MI_EXPORT(&addIcon, (name, shortName, type, png, plist, quality, packID, packName, vanilla, zipped));
     /// Adds a trail to the icon list.
     /// @param name The name of the trail.
     /// @param shortName The name of the trail without the pack prefix.
@@ -329,6 +331,7 @@ namespace more_icons {
     /// @param plist The path to the death effect's Plist file.
     /// @param json The path to the death effect's JSON file.
     /// @param icon The path to the death effect's icon file.
+    /// @param quality The texture quality of the death effect.
     /// @param packID The ID of the icon pack.
     /// @param packName The name of the icon pack.
     /// @param specialID The ID of the vanilla death effect this death effect originates from.
@@ -339,12 +342,12 @@ namespace more_icons {
     MI_DLL IconInfo* addDeathEffect(
         const std::string& name, const std::string& shortName,
         const std::filesystem::path& png, const std::filesystem::path& plist,
-        const std::filesystem::path& json, const std::filesystem::path& icon,
+        const std::filesystem::path& json, const std::filesystem::path& icon, cocos2d::TextureQuality quality,
         const std::string& packID = {}, const std::string& packName = "More Icons",
         int specialID = 0, const matjson::Value& specialInfo = {},
         bool vanilla = false, bool zipped = false
     )
-        MI_EXPORT(&addDeathEffect, (name, shortName, png, plist, json, icon, packID, packName, specialID, specialInfo, vanilla, zipped));
+        MI_EXPORT(&addDeathEffect, (name, shortName, png, plist, json, icon, quality, packID, packName, specialID, specialInfo, vanilla, zipped));
 
     /// Adds a ship fire to the icon list.
     /// @param name The name of the ship fire.

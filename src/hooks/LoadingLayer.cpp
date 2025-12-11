@@ -14,7 +14,7 @@ class $modify(MILoadingLayer, LoadingLayer) {
 
     void loadAssets() {
         auto f = m_fields.self();
-        if (f->m_iconLoadStep > 10) return LoadingLayer::loadAssets();
+        if (f->m_iconLoadStep > 12) return LoadingLayer::loadAssets();
 
         auto smallLabel2 = static_cast<CCLabelBMFont*>(getChildByID("geode-small-label-2"));
         switch (f->m_iconLoadStep) {
@@ -63,6 +63,14 @@ class $modify(MILoadingLayer, LoadingLayer) {
                 break;
             case 10:
                 MoreIcons::loadIcons(IconType::Special);
+                if (smallLabel2) smallLabel2->setString("More Icons: Loading Death Effects");
+                break;
+            case 11:
+                MoreIcons::loadIcons(IconType::DeathEffect);
+                if (smallLabel2) smallLabel2->setString("More Icons: Loading Ship Fires");
+                break;
+            case 12:
+                MoreIcons::loadIcons(IconType::ShipFire);
                 if (smallLabel2) smallLabel2->setString("");
                 break;
             default:

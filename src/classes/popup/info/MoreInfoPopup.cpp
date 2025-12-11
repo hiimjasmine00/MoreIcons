@@ -203,12 +203,12 @@ bool MoreInfoPopup::setup(IconInfo* info) {
         iconButton->setID("icon-button");
         m_buttonMenu->addChild(iconButton);
     }
-    else if (type == IconType::Special) {
-        auto square = MoreIcons::customTrail(info);
-        square->setPosition({ 150.0f, hasPack ? 165.0f : 171.0f });
-        square->setScale(hasPack ? 1.1f : 1.25f);
-        square->setID("custom-trail");
-        m_mainLayer->addChild(square);
+    else if (type <= IconType::Special) {
+        auto sprite = MoreIcons::customIcon(info);
+        sprite->setPosition({ 150.0f, hasPack ? 165.0f : 171.0f });
+        sprite->setScale(hasPack ? 1.1f : 1.25f);
+        sprite->setID("custom-icon");
+        m_mainLayer->addChild(sprite);
 
         if (info->getSpecialID() == 0) {
             auto settingsButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_optionsBtn_001.png", 0.7f, [info](auto) {

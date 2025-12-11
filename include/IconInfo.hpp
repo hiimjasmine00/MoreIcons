@@ -40,6 +40,7 @@ public:
     std::string getPackName() const MI_EXPORT(&IconInfo::getPackName, (this));
     std::string getPackID() const MI_EXPORT(&IconInfo::getPackID, (this));
     IconType getType() const MI_EXPORT(&IconInfo::getType, (this));
+    int getQuality() const MI_EXPORT(&IconInfo::getQuality, (this));
     int getSpecialID() const MI_EXPORT(&IconInfo::getSpecialID, (this));
     matjson::Value getSpecialInfo() const MI_EXPORT(&IconInfo::getSpecialInfo, (this));
     int getFireCount() const MI_EXPORT(&IconInfo::getFireCount, (this));
@@ -75,6 +76,7 @@ public:
     void movePackID(std::string&& packID) MI_EXPORT(&IconInfo::movePackID, (this, std::move(packID)));
 
     void setType(IconType type) MI_EXPORT(&IconInfo::setType, (this, type));
+    void setQuality(int quality) MI_EXPORT(&IconInfo::setQuality, (this, quality));
     void setSpecialID(int specialID) MI_EXPORT(&IconInfo::setSpecialID, (this, specialID));
 
     void setSpecialInfo(const matjson::Value& specialInfo) MI_EXPORT(&IconInfo::setSpecialInfo, (this, specialInfo));

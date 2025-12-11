@@ -170,7 +170,7 @@ void SaveIconPopup::addOrUpdateIcon(const std::string& name, const std::filesyst
     auto type = m_iconType;
     if (auto icon = more_icons::getIcon(name, type)) more_icons::updateIcon(icon);
     else {
-        icon = more_icons::addIcon(name, name, type, png, plist);
+        icon = more_icons::addIcon(name, name, type, png, plist, Get::Director()->getLoadedTextureQuality());
         if (MoreIcons::preloadIcons) MoreIcons::createAndAddFrames(icon);
     }
 

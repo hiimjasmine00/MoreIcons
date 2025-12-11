@@ -104,7 +104,7 @@ void more_icons::unloadIcons(int requestID) {
 IconInfo* addIcon(
     const std::string& name, const std::string& shortName, IconType type,
     const std::filesystem::path& png, const std::filesystem::path& plist,
-    const std::filesystem::path& json, const std::filesystem::path& icon,
+    const std::filesystem::path& json, const std::filesystem::path& icon, TextureQuality quality,
     const std::string& packID, const std::string& packName,
     int specialID, const matjson::Value& specialInfo, int fireCount,
     bool vanilla, bool zipped
@@ -126,6 +126,7 @@ IconInfo* addIcon(
     impl->m_json = json;
     impl->m_icon = icon;
     impl->m_type = type;
+    impl->m_quality = quality;
     impl->m_specialID = specialID;
     impl->m_specialInfo = specialInfo;
     impl->m_fireCount = fireCount;
@@ -136,11 +137,11 @@ IconInfo* addIcon(
 
 IconInfo* more_icons::addIcon(
     const std::string& name, const std::string& shortName, IconType type,
-    const std::filesystem::path& png, const std::filesystem::path& plist,
+    const std::filesystem::path& png, const std::filesystem::path& plist, TextureQuality quality,
     const std::string& packID, const std::string& packName,
     bool vanilla, bool zipped
 ) {
-    return ::addIcon(name, shortName, type, png, plist, {}, {}, packID, packName, 0, {}, 0, vanilla, zipped);
+    return ::addIcon(name, shortName, type, png, plist, {}, {}, quality, packID, packName, 0, {}, 0, vanilla, zipped);
 }
 
 IconInfo* more_icons::addTrail(
@@ -150,19 +151,19 @@ IconInfo* more_icons::addTrail(
     int specialID, const matjson::Value& specialInfo,
     bool vanilla, bool zipped
 ) {
-    return ::addIcon(name, shortName, IconType::Special, png, {}, json, icon,
+    return ::addIcon(name, shortName, IconType::Special, png, {}, json, icon, (TextureQuality)0,
         packID, packName, specialID, specialInfo, 0, vanilla, zipped);
 }
 
 IconInfo* more_icons::addDeathEffect(
     const std::string& name, const std::string& shortName,
     const std::filesystem::path& png, const std::filesystem::path& plist,
-    const std::filesystem::path& json, const std::filesystem::path& icon,
+    const std::filesystem::path& json, const std::filesystem::path& icon, TextureQuality quality,
     const std::string& packID, const std::string& packName,
     int specialID, const matjson::Value& specialInfo,
     bool vanilla, bool zipped
 ) {
-    return ::addIcon(name, shortName, IconType::DeathEffect, png, plist, json, icon,
+    return ::addIcon(name, shortName, IconType::DeathEffect, png, plist, json, icon, quality,
         packID, packName, specialID, specialInfo, 0, vanilla, zipped);
 }
 
@@ -173,14 +174,32 @@ IconInfo* more_icons::addShipFire(
     int specialID, const matjson::Value& specialInfo,
     int fireCount, bool vanilla, bool zipped
 ) {
-    return ::addIcon(name, shortName, IconType::ShipFire, png, {}, json, icon,
+    return ::addIcon(name, shortName, IconType::ShipFire, png, {}, json, icon, (TextureQuality)0,
         packID, packName, specialID, specialInfo, fireCount, vanilla, zipped);
 }
 
 void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
     auto oldPng = info->getTextureString();
-    info->moveTexture(path / info->getTexture().filename());
-    info->moveSheet(path / info->getSheet().filename());
+    auto type = info->getType();
+    if (type <= IconType::Jetpack) {
+        info->moveTexture(path / info->getTexture().filename());
+        info->moveSheet(path / info->getSheet().filename());
+    }
+    else if (type >= IconType::DeathEffect) {
+        if (auto texture = info->getTexture(); !texture.empty()) {
+            info->moveTexture(path / texture.parent_path().filename() / texture.filename());
+        }
+        if (auto sheet = info->getSheet(); !sheet.empty()) {
+            info->moveSheet(path / sheet.parent_path().filename() / sheet.filename());
+        }
+        if (auto json = info->getJSON(); !json.empty()) {
+            info->moveJSON(path / json.parent_path().filename() / json.filename());
+        }
+        if (auto icon = info->getIcon(); !icon.empty()) {
+            info->setIcon(path / icon.parent_path().filename() / icon.filename());
+        }
+    }
+
     info->setVanilla(false);
 
     auto textureCache = Get::TextureCache();
@@ -201,7 +220,7 @@ void more_icons::removeIcon(IconInfo* info) {
     }
     Get::TextureCache()->removeTextureForKey(info->getTextureString().c_str());
 
-    if (!MoreIcons::preloadIcons) {
+    if (!MoreIcons::preloadIcons && type <= IconType::Jetpack) {
         for (auto it = MoreIcons::requestedIcons.begin(); it != MoreIcons::requestedIcons.end();) {
             auto& iconRequests = it->second;
             auto iconRequest = iconRequests.find(type);
@@ -224,21 +243,37 @@ void more_icons::renameIcon(IconInfo* info, const std::string& name) {
     info->setName(newName);
     info->setShortName(name);
 
-    auto quality = MI_PATH("");
     auto oldPng = info->getTextureString();
     auto type = info->getType();
-    if (type <= IconType::Jetpack) {
-        if (oldPng.ends_with("-uhd.png")) quality = MI_PATH("-uhd");
-        else if (oldPng.ends_with("-hd.png")) quality = MI_PATH("-hd");
-    }
 
     #ifdef GEODE_IS_WINDOWS
     auto wName = string::utf8ToWide(name);
     #else
     auto& wName = name;
     #endif
-    info->moveTexture(info->getTexture().parent_path() / (wName + quality + MI_PATH(".png")));
-    info->moveSheet(info->getSheet().parent_path() / (wName + quality + MI_PATH(".plist")));
+
+    if (type <= IconType::Jetpack) {
+        constexpr std::array qualities = { MI_PATH(""), MI_PATH("-hd"), MI_PATH("-uhd") };
+
+        auto quality = qualities[(int)info->getQuality() - 1];
+
+        info->moveTexture(info->getTexture().parent_path() / (wName + quality + MI_PATH(".png")));
+        info->moveSheet(info->getSheet().parent_path() / (wName + quality + MI_PATH(".plist")));
+    }
+    else if (type >= IconType::DeathEffect) {
+        if (auto texture = info->getTexture(); !texture.empty()) {
+            info->moveTexture(texture.parent_path().parent_path() / wName / texture.filename());
+        }
+        if (auto sheet = info->getSheet(); !sheet.empty()) {
+            info->moveSheet(sheet.parent_path().parent_path() / wName / sheet.filename());
+        }
+        if (auto json = info->getJSON(); !json.empty()) {
+            info->moveJSON(json.parent_path().parent_path() / wName / json.filename());
+        }
+        if (auto icon = info->getIcon(); !icon.empty()) {
+            info->setIcon(icon.parent_path().parent_path() / wName / icon.filename());
+        }
+    }
 
     auto textureCache = Get::TextureCache();
     if (Ref texture = textureCache->textureForKey(oldPng.c_str())) {
@@ -257,14 +292,16 @@ void more_icons::renameIcon(IconInfo* info, const std::string& name) {
         info->moveFrameNames(std::move(frameNames));
     }
 
-    if (auto it = MoreIcons::loadedIcons.find({ oldName, type }); it != MoreIcons::loadedIcons.end()) {
-        MoreIcons::loadedIcons.emplace(std::make_pair(newName, type), it->second);
-        MoreIcons::loadedIcons.erase(it);
-    }
+    if (type <= IconType::Jetpack) {
+        if (auto it = MoreIcons::loadedIcons.find({ oldName, type }); it != MoreIcons::loadedIcons.end()) {
+            MoreIcons::loadedIcons.emplace(std::make_pair(newName, type), it->second);
+            MoreIcons::loadedIcons.erase(it);
+        }
 
-    for (auto& iconRequests : std::views::values(MoreIcons::requestedIcons)) {
-        if (auto found = iconRequests.find(type); found != iconRequests.end() && found->second == oldName) {
-            found->second = newName;
+        for (auto& iconRequests : std::views::values(MoreIcons::requestedIcons)) {
+            if (auto found = iconRequests.find(type); found != iconRequests.end() && found->second == oldName) {
+                found->second = newName;
+            }
         }
     }
 

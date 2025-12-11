@@ -59,6 +59,10 @@ IconType IconInfo::getType() const {
     return m_impl->m_type;
 }
 
+int IconInfo::getQuality() const {
+    return m_impl->m_quality;
+}
+
 int IconInfo::getSpecialID() const {
     return m_impl->m_specialID;
 }
@@ -157,6 +161,10 @@ void IconInfo::movePackID(std::string&& packID) {
 
 void IconInfo::setType(IconType type) {
     m_impl->m_type = type;
+}
+
+void IconInfo::setQuality(int quality) {
+    m_impl->m_quality = quality;
 }
 
 void IconInfo::setSpecialID(int specialID) {

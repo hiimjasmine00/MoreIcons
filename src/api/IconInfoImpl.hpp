@@ -14,6 +14,7 @@ public:
     std::vector<std::string> m_frameNames;
     matjson::Value m_specialInfo;
     IconType m_type;
+    int m_quality;
     int m_specialID;
     int m_fireCount;
     bool m_vanilla;
