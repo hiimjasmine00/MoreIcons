@@ -1,4 +1,5 @@
 #include "Defaults.hpp"
+#include <array>
 
 std::array<matjson::Value, 7> trails = {
     matjson::makeObject({
