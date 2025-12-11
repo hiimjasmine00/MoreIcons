@@ -157,16 +157,16 @@ void migrateTrails(const std::filesystem::path& path) {
         auto directory = parentDir / stem;
 
         if (auto res = file::createDirectoryAll(directory); res.isErr()) {
-            return log::error("Failed to create trail directory {}: {}", stem, res.unwrapErr());
+            return log::error("Failed to create trail directory {}: {}", MoreIcons::strNarrow(stem), res.unwrapErr());
         }
 
         if (auto res = MoreIcons::renameFile(path, directory / MI_PATH("trail.png")); res.isErr()) {
-            return log::error("Failed to move {}: {}", filename, res.unwrapErr());
+            return log::error("Failed to move {}: {}", MoreIcons::strNarrow(filename), res.unwrapErr());
         }
 
         auto jsonName = std::basic_string(stem) + MI_PATH(".json");
         if (auto res = MoreIcons::renameFile(parentDir / jsonName, directory / MI_PATH("settings.json")); res.isErr()) {
-            return log::error("Failed to move {}: {}", jsonName, res.unwrapErr());
+            return log::error("Failed to move {}: {}", MoreIcons::strNarrow(jsonName), res.unwrapErr());
         }
     });
 
