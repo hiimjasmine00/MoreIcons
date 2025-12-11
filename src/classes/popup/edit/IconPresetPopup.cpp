@@ -6,7 +6,7 @@
 #include <Geode/binding/GJItemIcon.hpp>
 #include <Geode/ui/Scrollbar.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
-#include <MoreIconsV2.hpp>
+#include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 

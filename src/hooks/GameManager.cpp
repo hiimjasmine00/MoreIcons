@@ -3,7 +3,7 @@
 #include <Geode/modify/GameManager.hpp>
 #include <jasmine/hook.hpp>
 #include <jasmine/setting.hpp>
-#include <MoreIconsV2.hpp>
+#include <MoreIcons.hpp>
 #include <ranges>
 
 using namespace geode::prelude;

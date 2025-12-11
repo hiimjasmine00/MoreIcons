@@ -3,7 +3,7 @@
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Get.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
-#include <MoreIconsV2.hpp>
+#include <Geode/utils/file.hpp>
 
 using namespace geode::prelude;
 

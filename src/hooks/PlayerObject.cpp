@@ -2,7 +2,7 @@
 #include "../utils/Get.hpp"
 #include <Geode/binding/GJBaseGameLayer.hpp>
 #include <Geode/modify/PlayerObject.hpp>
-#include <MoreIconsV2.hpp>
+#include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 
@@ -140,21 +140,30 @@ class $modify(MIPlayerObject, PlayerObject) {
         auto info = getTrailInfo();
         if (!info) return resetTrail();
 
-        m_streakStrokeWidth = info->trailInfo.stroke;
-        m_disableStreakTint = !info->trailInfo.tint;
-        m_alwaysShowStreak = info->trailInfo.show;
+        auto trailInfo = info->getSpecialInfo();
+        auto blend = trailInfo.get<bool>("blend").unwrapOr(false);
+        auto tint = trailInfo.get<bool>("tint").unwrapOr(false);
+        auto show = trailInfo.get<bool>("show").unwrapOr(false);
+        auto fade = trailInfo.get<float>("fade").unwrapOr(0.3f);
+        auto stroke = trailInfo.get<float>("stroke").unwrapOr(14.0f);
 
-        m_regularTrail->initWithFade(info->trailInfo.fade, 5.0f, info->trailInfo.stroke, { 255, 255, 255 }, info->textures[0].c_str());
-        if (info->trailID == 6) m_regularTrail->enableRepeatMode(0.1f);
-        if (info->trailInfo.blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
-        m_regularTrail->setUserObject("name"_spr, CCString::create(info->name));
+        m_streakStrokeWidth = stroke;
+        m_disableStreakTint = !tint;
+        m_alwaysShowStreak = show;
+
+        m_regularTrail->initWithFade(fade, 5.0f, stroke, { 255, 255, 255 }, info->getTextureString().c_str());
+        if (info->getSpecialID() == 6) m_regularTrail->enableRepeatMode(0.1f);
+        if (blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
+        m_regularTrail->setUserObject("name"_spr, CCString::create(info->getName()));
     }
 
     void updateStreakBlend(bool blend) {
         PlayerObject::updateStreakBlend(blend);
 
         if (auto info = getTrailInfo()) {
-            m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)(info->trailInfo.blend ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA) });
+            m_regularTrail->setBlendFunc({
+                GL_SRC_ALPHA, (uint32_t)(info->getSpecialInfo().get<bool>("blend").unwrapOr(false) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
+            });
         }
     }
 };

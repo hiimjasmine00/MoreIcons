@@ -1,6 +1,6 @@
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/CharacterColorPage.hpp>
-#include <MoreIconsV2.hpp>
+#include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 

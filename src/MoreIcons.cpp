@@ -1,5 +1,6 @@
 #define FMT_CPP_LIB_FILESYSTEM 0
 #include "MoreIcons.hpp"
+#include "api/IconInfoImpl.hpp"
 #include "classes/misc/ThreadPool.hpp"
 #include "utils/Get.hpp"
 #include "utils/Load.hpp"
@@ -11,7 +12,7 @@
 #include <geode.texture-loader/include/TextureLoader.hpp>
 #include <jasmine/convert.hpp>
 #include <jasmine/setting.hpp>
-#include <MoreIconsV2.hpp>
+#include <MoreIcons.hpp>
 #include <std23/function_ref.h>
 #include <texpack.hpp>
 
@@ -256,7 +257,11 @@ void MoreIcons::loadPacks() {
                         if (it->status(code).type() != std::filesystem::file_type::regular) continue;
 
                         auto filename = MoreIcons::getPathFilename(it->path());
-                        if (filename.starts_with(MI_PATH("streak_")) && !filename.ends_with(MI_PATH("_001.png"))) {
+                        if (
+                            (filename.starts_with(MI_PATH("streak_")) && filename.ends_with(MI_PATH("_001.png"))) ||
+                            (filename.starts_with(MI_PATH("PlayerExplosion_")) && filename.ends_with(MI_PATH(".png"))) ||
+                            (filename.starts_with(MI_PATH("shipfire")) && filename.ends_with(MI_PATH("_001.png")))
+                        ) {
                             packs.emplace_back(name, id, resourcesPath, true, zipped);
                             break;
                         }
@@ -282,7 +287,18 @@ std::filesystem::path MoreIcons::strPath(std::string_view path) {
     return std::filesystem::path(std::move(str));
 }
 
-std::string strNarrow(std::wstring_view wstr) {
+Result<> checkPath(const std::filesystem::path& path) {
+    auto& wstr = path.native();
+    auto count = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr.size(), nullptr, 0, nullptr, nullptr);
+    if (count == 0) return Err(formatSystemError(GetLastError()));
+
+    std::string str(count, 0);
+    auto result = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), -1, &str[0], count, nullptr, nullptr);
+    if (result == 0) return Err(formatSystemError(GetLastError()));
+    else return Ok();
+}
+
+std::string MoreIcons::strNarrow(std::wstring_view wstr) {
     auto count = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr.size(), nullptr, 0, nullptr, nullptr);
     std::string str(count, 0);
     if (count != 0) WideCharToMultiByte(CP_UTF8, 0, wstr.data(), -1, &str[0], count, nullptr, nullptr);
@@ -293,7 +309,7 @@ std::filesystem::path MoreIcons::strPath(std::string_view path) {
     return std::filesystem::path(path);
 }
 
-std::string strNarrow(std::string_view str) {
+std::string MoreIcons::strNarrow(std::string_view str) {
     return std::string(str);
 }
 #endif
@@ -349,7 +365,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
     std::string shortName;
     if (stem.ends_with(MI_PATH("-uhd"))) {
         stem.remove_suffix(4);
-        shortName = strNarrow(stem);
+        shortName = MoreIcons::strNarrow(stem);
         name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
         start += stem;
@@ -368,7 +384,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
     }
     else if (stem.ends_with(MI_PATH("-hd"))) {
         stem.remove_suffix(3);
-        shortName = strNarrow(stem);
+        shortName = MoreIcons::strNarrow(stem);
         name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
         start += stem;
@@ -382,7 +398,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
         if (factor >= 4.0f && MoreIcons::doesExist(start + MI_PATH("-uhd.plist"))) return;
     }
     else {
-        shortName = strNarrow(stem);
+        shortName = MoreIcons::strNarrow(stem);
         name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
         start += stem;
@@ -392,16 +408,18 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
 
     log::debug("Pre-loading icon {} from {}", name, pack.name);
 
-    auto pathString = string::pathToString(path);
-    if (pathString.empty() && !path.empty()) return printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
+    #ifdef GEODE_IS_WINDOWS
+    if (auto res = checkPath(path); res.isErr()) {
+        return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+    }
+    #endif
 
     auto texturePath = std::filesystem::path(path).replace_extension(MI_PATH(".png"));
     if (!MoreIcons::doesExist(texturePath)) {
         return printLog(name, Severity::Error, "Texture file {} not found", texturePath.filename());
     }
 
-    more_icons::addIcon(name, shortName, currentType, string::pathToString(texturePath),
-        pathString, pack.id, pack.name, 0, {}, false, pack.zipped);
+    more_icons::addIcon(name, shortName, currentType, texturePath, path, pack.id, pack.name, false, pack.zipped);
 
     log::debug("Finished pre-loading icon {} from {}", name, pack.name);
 }
@@ -414,9 +432,8 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     stem.remove_suffix(4);
 
     auto plistPath = std::filesystem::path(path).replace_extension(MI_PATH(".plist"));
-    if (!MoreIcons::doesExist(plistPath)) {
-        plistPath = vanillaTexturePath(std::filesystem::path(MI_PATH("icons")).append(stem).concat(MI_PATH(".plist")), false);
-    }
+    auto vanillaPath = !MoreIcons::doesExist(plistPath);
+    if (vanillaPath) plistPath = vanillaTexturePath(std::filesystem::path(MI_PATH("icons")).append(stem).concat(MI_PATH(".plist")), false);
 
     auto factor = Get::Director()->getContentScaleFactor();
     std::string name;
@@ -424,7 +441,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     if (stem.ends_with(MI_PATH("-uhd"))) {
         if (factor < 4.0f) return;
         stem.remove_suffix(4);
-        shortName = strNarrow(stem);
+        shortName = MoreIcons::strNarrow(stem);
         name = fmt::format("{}:{}", pack.id, shortName);
     }
     else if (stem.ends_with(MI_PATH("-hd"))) {
@@ -432,63 +449,92 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
         stem.remove_suffix(3);
         start += stem;
         if (factor >= 4.0f && MoreIcons::doesExist(start + MI_PATH("-uhd.png"))) return;
-        shortName = strNarrow(stem);
+        shortName = MoreIcons::strNarrow(stem);
         name = fmt::format("{}:{}", pack.id, shortName);
     }
     else {
         start += stem;
         if (factor >= 4.0f && MoreIcons::doesExist(start + MI_PATH("-uhd.png"))) return;
         else if (factor >= 2.0f && MoreIcons::doesExist(start + MI_PATH("-hd.png"))) return;
-        shortName = strNarrow(stem);
+        shortName = MoreIcons::strNarrow(stem);
         name = fmt::format("{}:{}", pack.id, shortName);
     }
 
     log::debug("Pre-loading vanilla icon {} from {}", name, pack.name);
 
-    auto pathString = string::pathToString(path);
-    if (pathString.empty() && !path.empty()) return printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
-
-    auto plistString = string::pathToString(plistPath);
-    if (!Get::FileUtils()->isFileExist(plistString)) {
-        return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistString);
+    #ifdef GEODE_IS_WINDOWS
+    if (auto res = checkPath(path); res.isErr()) {
+        return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
     }
+    #endif
 
-    more_icons::addIcon(name, shortName, currentType, pathString, plistString, pack.id, pack.name, 0, {}, true, pack.zipped);
+    #ifdef GEODE_IS_ANDROID
+    auto doesntExist = vanillaPath && !Get::FileUtils()->isFileExist(plistPath.native());
+    #else
+    auto doesntExist = vanillaPath && !MoreIcons::doesExist(plistPath);
+    #endif
+    if (doesntExist) return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
+
+    more_icons::addIcon(name, shortName, currentType, path, plistPath, pack.id, pack.name, true, pack.zipped);
 
     log::debug("Finished pre-loading vanilla icon {} from {}", name, pack.name);
 }
 
 void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
-    auto pathStem = string::pathToString(path.stem());
-    auto pathString = string::pathToString(path);
-    auto name = pack.id.empty() ? pathStem : fmt::format("{}:{}", pack.id, pathStem);
+    auto shortName = MoreIcons::strNarrow(MoreIcons::getPathFilename(path));
+    auto name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
     log::debug("Pre-loading trail {} from {}", name, pack.name);
 
-    if (pathString.empty() && !path.empty()) return printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
+    #ifdef GEODE_IS_WINDOWS
+    if (auto res = checkPath(path); res.isErr()) {
+        return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+    }
+    #endif
 
-    more_icons::addIcon(name, pathStem, IconType::Special, pathString, {}, pack.id, pack.name, 0,
-        file::readFromJson<TrailInfo>(std::filesystem::path(path).replace_extension(MI_PATH(".json"))).unwrapOrDefault(), false, pack.zipped);
+    auto jsonPath = path / MI_PATH("settings.json");
+    more_icons::addTrail(name, shortName, path, jsonPath, path / MI_PATH("icon.png"), pack.id, pack.name, 0,
+        file::readJson(jsonPath).unwrapOrDefault(), false, pack.zipped);
 
     log::debug("Finished pre-loading trail {} from {}", name, pack.name);
 }
 
 void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
-    auto pathStem = string::pathToString(path.stem());
-    auto pathString = string::pathToString(path);
-    auto name = fmt::format("{}:{}", pack.id, pathStem);
+    auto wideName = MoreIcons::getPathFilename(path);
+    wideName.remove_suffix(4);
+    auto shortName = MoreIcons::strNarrow(wideName);
+    auto name = fmt::format("{}:{}", pack.id, shortName);
 
     log::debug("Pre-loading vanilla trail {} from {}", name, pack.name);
 
-    if (pathString.empty() && !path.empty()) return printLog(name, Severity::Error, "More Icons only supports UTF-8 paths");
+    #ifdef GEODE_IS_WINDOWS
+    if (auto res = checkPath(path); res.isErr()) {
+        return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+    }
+    #endif
 
-    auto trailID = jasmine::convert::getInt<int>(std::string_view(pathStem).substr(7, pathStem.size() - 11)).value_or(0);
+    auto trailID = jasmine::convert::getInt<int>(std::string_view(shortName).substr(7, shortName.size() - 11)).value_or(0);
     if (trailID == 0) trailID = -1;
 
-    more_icons::addIcon(name, pathStem, IconType::Special, pathString, {}, pack.id, pack.name, trailID,
-        MoreIcons::getTrailInfo(trailID), true, pack.zipped);
+    more_icons::addTrail(name, shortName, path, {}, {}, pack.id, pack.name, trailID, MoreIcons::getTrailInfo(trailID), true, pack.zipped);
 
     log::debug("Finished pre-loading vanilla trail {} from {}", name, pack.name);
+}
+
+void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
+    // todo
+}
+
+void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
+    // todo
+}
+
+void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
+    // todo
+}
+
+void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack) {
+    // todo
 }
 
 #ifdef GEODE_IS_WINDOWS
@@ -500,6 +546,15 @@ static constexpr std::array wprefixes = {
 static constexpr std::array wprefixes = MoreIcons::prefixes;
 #endif
 
+Result<ImageResult> createFrames(IconInfo* info) {
+    auto impl = IconInfoImpl::getImpl(info);
+    return Load::createFrames(impl->m_texture, impl->m_sheet, impl->m_name, impl->m_type);
+}
+
+CCTexture2D* addFrames(const ImageResult& image, IconInfo* info) {
+    return Load::addFrames(image, IconInfoImpl::getImpl(info)->m_frameNames);
+}
+
 void MoreIcons::loadIcons(IconType type) {
     currentType = type;
 
@@ -508,7 +563,7 @@ void MoreIcons::loadIcons(IconType type) {
     auto folder = folders[miType];
     auto name = lowercase[miType];
 
-    for (auto it = packs.begin(); it != packs.end(); it++) {
+    for (auto it = packs.begin(); it != packs.end(); ++it) {
         auto& pack = *it;
 
         if (!pack.vanilla) {
@@ -528,15 +583,18 @@ void MoreIcons::loadIcons(IconType type) {
 
             log::info("Pre-loading {}s from {}", name, path);
 
-            iterate(path, std::filesystem::file_type::regular, [type, &pack](const std::filesystem::path& path) {
-                auto& str = path.native();
-                if (type <= IconType::Jetpack) {
-                    if (str.ends_with(MI_PATH(".plist"))) loadIcon(path, pack);
-                }
-                else if (type == IconType::Special) {
-                    if (str.ends_with(MI_PATH(".png"))) loadTrail(path, pack);
-                }
-            });
+            if (type <= IconType::Jetpack) {
+                iterate(path, std::filesystem::file_type::regular, [&pack](const std::filesystem::path& path) {
+                    if (path.native().ends_with(MI_PATH(".plist"))) loadIcon(path, pack);
+                });
+            }
+            else if (type >= IconType::DeathEffect) {
+                iterate(path, std::filesystem::file_type::directory, [type, &pack](const std::filesystem::path& path) {
+                    if (type == IconType::DeathEffect) loadDeathEffect(path, pack);
+                    else if (type == IconType::Special) loadTrail(path, pack);
+                    else if (type == IconType::ShipFire) loadShipFire(path, pack);
+                });
+            }
 
             log::info("Finished pre-loading {}s from {}", name, path);
         }
@@ -550,19 +608,24 @@ void MoreIcons::loadIcons(IconType type) {
                 auto filename = getPathFilename(path);
                 if (!filename.ends_with(MI_PATH(".png")) || !filename.starts_with(prefix)) return false;
 
+                auto stem = filename;
+                stem.remove_suffix(4);
+
                 if (type <= IconType::Jetpack) {
-                    if (type != IconType::Cube || !filename.starts_with(MI_PATH("player_ball_"))) {
-                        if (
-                            !filename.ends_with(MI_PATH("00.png")) &&
-                            !filename.ends_with(MI_PATH("00-hd.png")) &&
-                            !filename.ends_with(MI_PATH("00-uhd.png"))
-                        ) {
+                    if (type != IconType::Cube || !stem.starts_with(MI_PATH("player_ball_"))) {
+                        if (!stem.ends_with(MI_PATH("00")) && !stem.ends_with(MI_PATH("00-hd")) && !stem.ends_with(MI_PATH("00-uhd"))) {
                             loadVanillaIcon(path, pack);
                         }
                     }
                 }
+                else if (type == IconType::DeathEffect) {
+                    loadVanillaDeathEffect(path, pack);
+                }
                 else if (type == IconType::Special) {
                     if (filename.ends_with(MI_PATH("_001.png"))) loadVanillaTrail(path, pack);
+                }
+                else if (type == IconType::ShipFire) {
+                    if (filename.ends_with(MI_PATH("_001.png"))) loadVanillaShipFire(path, pack);
                 }
                 return false;
             });
@@ -587,12 +650,12 @@ void MoreIcons::loadIcons(IconType type) {
     auto& threadPool = ThreadPool::get();
     for (auto info = iconsVec.data(); info != end; info++) {
         threadPool.pushTask([info, &images, &imageMutex] {
-            if (auto res = Load::createFrames(strPath(info->textures[0]), strPath(info->sheetName), info->name, info->type)) {
+            if (auto res = createFrames(info)) {
                 std::unique_lock lock(imageMutex);
 
                 images.emplace_back(std::move(res).unwrap(), info);
             }
-            else log::error("{}: {}", info->name, res.unwrapErr());
+            else log::error("{}: {}", info->getName(), res.unwrapErr());
         });
     }
     threadPool.wait();
@@ -601,41 +664,45 @@ void MoreIcons::loadIcons(IconType type) {
 
     while (!images.empty()) {
         auto& [image, info] = images.front();
-        Load::addFrames(image, info->frameNames);
+        addFrames(image, info);
         images.erase(images.begin());
     }
 
     log::info("Finished pre-loading {} {} textures", size, name);
 }
 
-TrailInfo MoreIcons::getTrailInfo(int trailID) {
-    TrailInfo trailInfo;
-    trailInfo.blend = true;
+matjson::Value MoreIcons::getTrailInfo(int trailID) {
+    matjson::Value trailInfo;
+    trailInfo["blend"] = true;
+    trailInfo["tint"] = false;
+    trailInfo["show"] = false;
+    trailInfo["fade"] = 0.3f;
+    trailInfo["stroke"] = 14.0f;
     switch (trailID) {
         case 1:
-            trailInfo.tint = true;
-            trailInfo.stroke = 10.0f;
+            trailInfo["tint"] = true;
+            trailInfo["stroke"] = 10.0f;
             break;
         case 3:
-            trailInfo.tint = true;
-            trailInfo.stroke = 8.5f;
+            trailInfo["tint"] = true;
+            trailInfo["stroke"] = 8.5f;
             break;
         case 4:
-            trailInfo.tint = true;
-            trailInfo.fade = 0.4f;
-            trailInfo.stroke = 10.0f;
+            trailInfo["tint"] = true;
+            trailInfo["fade"] = 0.4f;
+            trailInfo["stroke"] = 10.0f;
             break;
         case 5:
-            trailInfo.tint = true;
-            trailInfo.show = true;
-            trailInfo.fade = 0.6f;
-            trailInfo.stroke = 5.0f;
+            trailInfo["tint"] = true;
+            trailInfo["show"] = true;
+            trailInfo["fade"] = 0.6f;
+            trailInfo["stroke"] = 5.0f;
             break;
         case 6:
-            trailInfo.tint = true;
-            trailInfo.show = true;
-            trailInfo.fade = 1.0f;
-            trailInfo.stroke = 3.0f;
+            trailInfo["tint"] = true;
+            trailInfo["show"] = true;
+            trailInfo["fade"] = 1.0f;
+            trailInfo["stroke"] = 3.0f;
             break;
     }
     return trailInfo;
@@ -712,20 +779,23 @@ void MoreIcons::updateGarage(GJGarageLayer* layer) {
 }
 
 CCTexture2D* MoreIcons::createAndAddFrames(IconInfo* info) {
-    if (auto res = Load::createFrames(strPath(info->textures[0]), strPath(info->sheetName), info->name, info->type)) {
-        return Load::addFrames(res.unwrap(), info->frameNames);
+    if (auto res = createFrames(info)) {
+        return addFrames(res.unwrap(), info);
     }
     else if (res.isErr()) {
-        log::error("{}: {}", info->name, res.unwrapErr());
+        log::error("{}: {}", info->getName(), res.unwrapErr());
     }
     return nullptr;
 }
 
-CCSprite* MoreIcons::customTrail(const char* png) {
-    auto square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
+CCSprite* MoreIcons::customTrail(IconInfo* info) {
+    auto square = CCSprite::create(info->getIconString().c_str());
+    if (square && !square->getUserObject("geode.texture-loader/fallback")) return square;
+
+    square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
     square->setColor({ 150, 150, 150 });
 
-    auto streak = CCSprite::create(png);
+    auto streak = CCSprite::create(info->getTextureString().c_str());
     limitNodeHeight(streak, 27.0f, 999.0f, 0.001f);
     streak->setRotation(-90.0f);
     streak->setPosition(square->getContentSize() / 2.0f);

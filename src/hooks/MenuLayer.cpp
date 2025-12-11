@@ -3,7 +3,7 @@
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/MenuLayer.hpp>
 #include <jasmine/hook.hpp>
-#include <MoreIconsV2.hpp>
+#include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 

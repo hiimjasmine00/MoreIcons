@@ -1,11 +1,14 @@
 #include <Geode/ui/Popup.hpp>
-#include <TrailInfo.hpp>
 
 class IconInfo;
 
 class SpecialSettingsPopup : public geode::Popup<IconInfo*> {
 protected:
-    TrailInfo m_trailInfo;
+    float m_fade;
+    float m_stroke;
+    bool m_blend;
+    bool m_tint;
+    bool m_show;
 
     bool setup(IconInfo*) override;
 public:

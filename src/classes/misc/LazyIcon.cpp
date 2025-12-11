@@ -38,7 +38,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
     m_type = type;
     m_id = id;
     m_info = info;
-    m_name = info ? info->name : fmt::format("{}{:02}", MoreIcons::prefixes[MoreIcons::convertType(type)], id);
+    m_name = info ? info->getName() : fmt::format("{}{:02}", MoreIcons::prefixes[MoreIcons::convertType(type)], id);
     setID(m_name);
 
     if (type == IconType::Special && !info) {
@@ -50,8 +50,8 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
     }
 
     if (info) {
-        m_texture = info->textures[0];
-        m_sheet = info->sheetName;
+        m_texture = info->getTextureString();
+        m_sheet = info->getSheetString();
     }
     else {
         std::string fullName = Get::GameManager()->sheetNameForIcon(id, (int)type);
@@ -271,11 +271,11 @@ void LazyIcon::createIcon() {
         }
         else if (m_type == IconType::Robot || m_type == IconType::Spider) createComplexIcon();
         else if (m_type <= IconType::Jetpack) createSimpleIcon();
-        else if (m_info && m_type == IconType::Special) {
+        else if (m_info && m_type <= IconType::Special) {
             auto normalImage = getNormalImage();
-            auto square = MoreIcons::customTrail(m_info->textures[0].c_str());
-            square->setID("player-square");
-            normalImage->addChild(square, 0);
+            auto playerSpecial = CCSprite::create(m_info->getTextureString().c_str());
+            playerSpecial->setID("player-special");
+            normalImage->addChild(playerSpecial);
         }
     }
     else {
@@ -304,7 +304,7 @@ void LazyIcon::visit() {
 
     ThreadPool::get().pushTask([
         selfref = WeakRef(this), texture = MoreIcons::strPath(m_texture), sheet = MoreIcons::strPath(m_sheet),
-        name = m_info ? std::string_view(m_info->name) : std::string_view(), type = m_type,
+        name = m_info ? m_info->getName() : std::string(), type = m_type,
         frameName = m_suffix.empty() ? std::string() :
             m_info ? fmt::format("{}{}.png"_spr, m_name, m_suffix) : fmt::format("{}{}.png", m_name, m_suffix)
     ] {

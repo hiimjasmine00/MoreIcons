@@ -3,7 +3,7 @@
 #include "../../../utils/Get.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
-#include <MoreIconsV2.hpp>
+#include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 
@@ -28,15 +28,15 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
     auto miType = MoreIcons::convertType(type);
 
     setID("ViewIconPopup");
-    setTitle(info ? info->shortName : fmt::format("{} {}", MoreIcons::uppercase[miType], id));
+    setTitle(info ? info->getShortName() : fmt::format("{} {}", MoreIcons::uppercase[miType], id));
     m_title->setID("view-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
     m_bgSprite->setID("background");
     m_closeBtn->setID("close-button");
 
-    if (info && !info->packID.empty()) {
-        auto subTitle = CCLabelBMFont::create(info->packName.c_str(), "goldFont.fnt");
+    if (info && info->inTexturePack()) {
+        auto subTitle = CCLabelBMFont::create(info->getPackName().c_str(), "goldFont.fnt");
         subTitle->setPosition({ 175.0f, m_size.height - 35.0f });
         subTitle->setScale(0.4f);
         subTitle->setID("view-icon-sub-title");
@@ -58,15 +58,17 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
             else suffixes.push_back({ "_001", "_2_001", "_glow_001", "_extra_001" });
         }
 
+        auto name = info ? info->getName() : std::string();
+
         auto player = SimplePlayer::create(1);
-        if (info) more_icons::updateSimplePlayer(player, info->name, type);
+        if (info) more_icons::updateSimplePlayer(player, name, type);
         else player->updatePlayerFrame(id, type);
         player->setGlowOutline({ 255, 255, 255 });
         player->setPosition({ 175.0f, (isRobot ? 160.0f : 80.0f) - suffixes.size() * 30.0f });
         player->setID("player-icon");
         m_mainLayer->addChild(player);
 
-        auto prefix = info ? fmt::format("{}"_spr, info->name) : fmt::format("{}{:02}", MoreIcons::prefixes[miType], id);
+        auto prefix = info ? fmt::format("{}"_spr, name) : fmt::format("{}{:02}", MoreIcons::prefixes[miType], id);
         auto spriteFrameCache = Get::SpriteFrameCache();
         for (size_t i = 0; i < suffixes.size(); i++) {
             auto container = CCNode::create();
@@ -115,15 +117,17 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         }
     }
     else if (type == IconType::Special) {
-        auto streak = CCSprite::create((info ? info->textures[0] : fmt::format("streak_{:02}_001.png", id)).c_str());
-        auto trailInfo = info ? info->trailInfo : MoreIcons::getTrailInfo(id);
-        streak->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)(trailInfo.blend ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA) });
+        auto streak = CCSprite::create((info ? info->getTextureString() : fmt::format("streak_{:02}_001.png", id)).c_str());
+        auto trailInfo = info ? info->getSpecialInfo() : MoreIcons::getTrailInfo(id);
+        streak->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)(trailInfo.get<bool>("blend").unwrapOr(false) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA) });
         streak->setPosition({ 175.0f, 50.0f });
         streak->setRotation(-90.0f);
         auto& size = streak->getContentSize();
-        streak->setScaleX(trailInfo.stroke / size.width);
+        streak->setScaleX(trailInfo.get<float>("stroke").unwrapOr(14.0f) / size.width);
         streak->setScaleY(320.0f / size.height);
-        if (trailInfo.tint) streak->setColor(MoreIcons::vanillaColor2(MoreIcons::dualSelected()));
+        if (trailInfo.get<bool>("tint").unwrapOr(false)) {
+            streak->setColor(MoreIcons::vanillaColor2(MoreIcons::dualSelected()));
+        }
         streak->setID("streak-preview");
         m_mainLayer->addChild(streak);
     }

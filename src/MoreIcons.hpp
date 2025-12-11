@@ -95,7 +95,7 @@ public:
 
     static cocos2d::CCTexture2D* createAndAddFrames(IconInfo* info);
     static geode::Result<std::filesystem::path> createTrash();
-    static cocos2d::CCSprite* customTrail(const char* png);
+    static cocos2d::CCSprite* customTrail(IconInfo* info);
     static bool dualSelected();
     static bool doesExist(const std::filesystem::path& path);
     static std::filesystem::path getEditorDir(IconType type);
@@ -103,7 +103,7 @@ public:
     static std::filesystem::path getIconStem(const std::string& name, IconType type);
     static std::basic_string_view<std::filesystem::path::value_type> getPathFilename(const std::filesystem::path& path);
     static std::filesystem::path::string_type getPathString(std::filesystem::path path);
-    static TrailInfo getTrailInfo(int trailID);
+    static matjson::Value getTrailInfo(int trailID);
     static void iterate(
         const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<void(const std::filesystem::path&)> func
     );
@@ -114,6 +114,11 @@ public:
         const std::filesystem::path& from, const std::filesystem::path& to, bool overwrite = true, bool copy = false
     );
     static std::filesystem::path strPath(std::string_view path);
+    #ifdef GEODE_IS_WINDOWS
+    static std::string strNarrow(std::wstring_view wstr);
+    #else
+    static std::string strNarrow(std::string_view str);
+    #endif
     static void updateGarage(GJGarageLayer* layer = nullptr);
     static cocos2d::ccColor3B vanillaColor1(bool dual);
     static cocos2d::ccColor3B vanillaColor2(bool dual);

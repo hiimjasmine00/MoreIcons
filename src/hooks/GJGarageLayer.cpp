@@ -10,7 +10,7 @@
 #include <Geode/modify/GJGarageLayer.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
 #include <jasmine/button.hpp>
-#include <MoreIconsV2.hpp>
+#include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 using namespace jasmine::button;
@@ -241,34 +241,36 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             auto unlockType = gameManager->iconTypeToUnlockType(type);
             auto hasAnimProf = Loader::get()->isModLoaded("thesillydoggo.animatedprofiles");
             for (auto& info : infoPage) {
+                auto name = info.getName();
                 auto itemIcon = GJItemIcon::createBrowserItem(unlockType, 1);
                 itemIcon->setScale(GJItemIcon::scaleForType(unlockType));
                 auto simplePlayer = static_cast<SimplePlayer*>(itemIcon->m_player);
-                more_icons::updateSimplePlayer(simplePlayer, info.name, type);
+                more_icons::updateSimplePlayer(simplePlayer, name, type);
                 if (hasAnimProf) {
                     if (auto robotSprite = simplePlayer->m_robotSprite) robotSprite->runAnimation("idle01");
                     if (auto spiderSprite = simplePlayer->m_spiderSprite) spiderSprite->runAnimation("idle01");
                 }
                 auto iconButton = CCMenuItemSpriteExtra::create(itemIcon, this, menu_selector(GJGarageLayer::onSelect));
-                iconButton->setUserObject("name"_spr, CCString::create(info.name));
+                iconButton->setUserObject("name"_spr, CCString::create(name));
                 iconButton->setContentSize({ 30.0f, 30.0f });
                 itemIcon->setPosition({ 15.0f, 15.0f });
                 iconButton->setTag(i++);
                 iconButton->m_iconType = type;
                 objs->addObject(iconButton);
-                if (info.name == active) current = iconButton;
+                if (name == active) current = iconButton;
             }
         }
         else if (type == IconType::Special) {
             for (auto& info : infoPage) {
-                auto square = MoreIcons::customTrail(info.textures[0].c_str());
+                auto name = info.getName();
+                auto square = MoreIcons::customTrail(&info);
                 square->setScale(0.8f);
                 auto iconButton = CCMenuItemSpriteExtra::create(square, this, menu_selector(GJGarageLayer::onSelect));
-                iconButton->setUserObject("name"_spr, CCString::create(info.name));
+                iconButton->setUserObject("name"_spr, CCString::create(name));
                 iconButton->setTag(i++);
                 iconButton->m_iconType = type;
                 objs->addObject(iconButton);
-                if (info.name == active) current = iconButton;
+                if (name == active) current = iconButton;
             }
         }
 

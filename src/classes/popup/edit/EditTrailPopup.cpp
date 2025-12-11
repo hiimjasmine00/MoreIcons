@@ -6,7 +6,7 @@
 #include "../../../utils/Get.hpp"
 #include "../../../utils/Load.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
-#include <MoreIconsV2.hpp>
+#include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 
@@ -74,7 +74,7 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
 
     auto presetButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
         IconPresetPopup::create(IconType::Special, {}, [this](int id, IconInfo* info) {
-            updateWithPath(info ? MoreIcons::strPath(info->textures[0]) :
+            updateWithPath(info ? info->getTexture() :
                 MoreIcons::strPath(Get::FileUtils()->fullPathForFilename(fmt::format("streak_{:02}_001.png", id).c_str(), false)));
         })->show();
     });
@@ -119,7 +119,9 @@ void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
 void EditTrailPopup::addOrUpdateIcon(const std::string& name, const std::filesystem::path& path) {
     if (auto icon = more_icons::getIcon(name, IconType::Special)) more_icons::updateIcon(icon);
     else {
-        icon = more_icons::addIcon(name, name, IconType::Special, string::pathToString(path), {}, {}, "More Icons", 0, {}, false, false);
+        auto jsonPath = std::filesystem::path(path).replace_extension(MI_PATH(".json"));
+        (void)file::writeString(jsonPath, "{}");
+        icon = more_icons::addTrail(name, name, path, jsonPath, {}, {}, "More Icons", 0, {}, false, false);
         if (MoreIcons::preloadIcons) MoreIcons::createAndAddFrames(icon);
     }
 

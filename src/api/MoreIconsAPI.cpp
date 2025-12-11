@@ -1,83 +1,17 @@
-#include "MoreIcons.hpp"
-#include "classes/popup/info/MoreInfoPopup.hpp"
-#include "utils/Get.hpp"
-#include "utils/Load.hpp"
+#include "IconInfoImpl.hpp"
+#include "../MoreIcons.hpp"
+#include "../classes/popup/info/MoreInfoPopup.hpp"
+#include "../utils/Get.hpp"
+#include "../utils/Load.hpp"
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
-#define GEODE_DEFINE_EVENT_EXPORTS
-#include <MoreIconsV2.hpp>
+#include <MoreIcons.hpp>
 #include <ranges>
 #include <texpack.hpp>
 
 using namespace geode::prelude;
-
-$execute {
-    new EventListener(+[](SimplePlayer* player, const std::string& icon, IconType type) {
-        more_icons::updateSimplePlayer(player, icon, type);
-        return ListenerResult::Propagate;
-    }, DispatchFilter<SimplePlayer*, std::string, IconType>("simple-player"_spr));
-
-    new EventListener(+[](GJRobotSprite* sprite, const std::string& icon, IconType type) {
-        more_icons::updateRobotSprite(sprite, icon, type);
-        return ListenerResult::Propagate;
-    }, DispatchFilter<GJRobotSprite*, std::string, IconType>("robot-sprite"_spr));
-
-    new EventListener(+[](PlayerObject* object, const std::string& icon, IconType type) {
-        more_icons::updatePlayerObject(object, icon, type);
-        return ListenerResult::Propagate;
-    }, DispatchFilter<PlayerObject*, std::string, IconType>("player-object"_spr));
-
-    new EventListener(+[](std::vector<IconInfo*>* vec) {
-        vec->clear();
-        for (auto& icons : std::views::values(MoreIcons::icons)) {
-            vec->reserve(icons.size());
-            auto end = icons.data() + icons.size();
-            for (auto info = icons.data(); info != end; info++) {
-                vec->push_back(info);
-            }
-        }
-        return ListenerResult::Propagate;
-    }, DispatchFilter<std::vector<IconInfo*>*>("all-icons"_spr));
-
-    new EventListener(+[](std::vector<IconInfo*>* vec, IconType type) {
-        vec->clear();
-        auto icons = more_icons::getIcons(type);
-        if (!icons) return ListenerResult::Propagate;
-        vec->reserve(icons->size());
-        auto end = icons->data() + icons->size();
-        for (auto info = icons->data(); info != end; info++) {
-            vec->push_back(info);
-        }
-        return ListenerResult::Propagate;
-    }, DispatchFilter<std::vector<IconInfo*>*, IconType>("get-icons"_spr));
-
-    new EventListener(+[](IconInfo** info, const std::string& name, IconType type) {
-        *info = more_icons::getIcon(name, type);
-        return ListenerResult::Propagate;
-    }, DispatchFilter<IconInfo**, std::string, IconType>("get-icon"_spr));
-
-    new EventListener(+[](const std::string& icon, IconType type, int requestID) {
-        more_icons::loadIcon(icon, type, requestID);
-        return ListenerResult::Propagate;
-    }, DispatchFilter<std::string, IconType, int>("load-icon"_spr));
-
-    new EventListener(+[](const std::string& icon, IconType type, int requestID) {
-        more_icons::unloadIcon(icon, type, requestID);
-        return ListenerResult::Propagate;
-    }, DispatchFilter<std::string, IconType, int>("unload-icon"_spr));
-
-    new EventListener(+[](int requestID) {
-        more_icons::unloadIcons(requestID);
-        return ListenerResult::Propagate;
-    }, DispatchFilter<int>("unload-icons"_spr));
-
-    new EventListener(+[](FLAlertLayer** layer, const std::string& name, IconType type) {
-        *layer = more_icons::createInfoPopup(name, type);
-        return ListenerResult::Propagate;
-    }, DispatchFilter<FLAlertLayer**, std::string, IconType>("info-popup"_spr));
-}
 
 FLAlertLayer* more_icons::createInfoPopup(const std::string& name, IconType type) {
     if (auto info = more_icons::getIcon(name, type)) return MoreInfoPopup::create(info);
@@ -97,7 +31,7 @@ IconInfo* more_icons::getIcon(const std::string& name, IconType type) {
     if (name.empty()) return nullptr;
     auto icons = getIcons(type);
     if (!icons) return nullptr;
-    auto it = std::ranges::find(*icons, name, &IconInfo::name);
+    auto it = std::ranges::find(*icons, name, &IconInfo::getName);
     return it != icons->end() ? std::to_address(it) : nullptr;
 }
 
@@ -105,8 +39,7 @@ CCTexture2D* more_icons::loadIcon(const std::string& name, IconType type, int re
     auto info = getIcon(name, type);
     if (!info) return nullptr;
 
-    auto& png = info->textures[0];
-    auto texture = Get::TextureCache()->textureForKey(png.c_str());
+    auto texture = Get::TextureCache()->textureForKey(info->getTextureString().c_str());
     if (MoreIcons::preloadIcons) return texture;
 
     auto& loadedIcon = MoreIcons::loadedIcons[{ name, type }];
@@ -134,12 +67,12 @@ void more_icons::unloadIcon(const std::string& name, IconType type, int requestI
     loadedIcon--;
     if (loadedIcon < 1) {
         auto spriteFrameCache = Get::SpriteFrameCache();
-        for (auto& frame : info->frameNames) {
-            spriteFrameCache->removeSpriteFrameByName(frame.c_str());
+        for (auto& frameName : info->getFrameNames()) {
+            spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
         }
-        info->frameNames.clear();
+        info->moveFrameNames({});
 
-        Get::TextureCache()->removeTextureForKey(info->textures[0].c_str());
+        Get::TextureCache()->removeTextureForKey(info->getTextureString().c_str());
     }
 
     MoreIcons::requestedIcons[requestID].erase(type);
@@ -168,42 +101,105 @@ void more_icons::unloadIcons(int requestID) {
     MoreIcons::requestedIcons.erase(requestID);
 }
 
-IconInfo* more_icons::addIcon(
-    const std::string& name, const std::string& shortName, IconType type, const std::string& png, const std::string& plist,
-    const std::string& packID, const std::string& packName, int trailID, const TrailInfo& trailInfo, bool vanilla, bool zipped
+IconInfo* addIcon(
+    const std::string& name, const std::string& shortName, IconType type,
+    const std::filesystem::path& png, const std::filesystem::path& plist,
+    const std::filesystem::path& json, const std::filesystem::path& icon,
+    const std::string& packID, const std::string& packName,
+    int specialID, const matjson::Value& specialInfo, int fireCount,
+    bool vanilla, bool zipped
 ) {
-    auto icons = getIcons(type);
+    auto icons = more_icons::getIcons(type);
     if (!icons) return nullptr;
     auto it = std::ranges::find_if(*icons, [&packID, &shortName, type](const IconInfo& icon) {
         return icon.compare(packID, shortName, type) >= 0;
     });
-    if (it != icons->end() && it->type == type && it->name == name) icons->erase(it);
-    return std::to_address(icons->emplace(it, name, png, plist, packName, packID, type, trailID, trailInfo, shortName, vanilla, zipped));
+    if (it != icons->end() && it->equals(name, type)) icons->erase(it);
+
+    auto impl = IconInfoImpl::createImpl();
+    impl->m_name = name;
+    impl->m_shortName = shortName;
+    impl->m_packID = packID;
+    impl->m_packName = packName;
+    impl->m_texture = png;
+    impl->m_sheet = plist;
+    impl->m_json = json;
+    impl->m_icon = icon;
+    impl->m_type = type;
+    impl->m_specialID = specialID;
+    impl->m_specialInfo = specialInfo;
+    impl->m_fireCount = fireCount;
+    impl->m_vanilla = vanilla;
+    impl->m_zipped = zipped;
+    return std::to_address(icons->insert(it, IconInfoImpl::fromImpl(std::move(impl))));
+}
+
+IconInfo* more_icons::addIcon(
+    const std::string& name, const std::string& shortName, IconType type,
+    const std::filesystem::path& png, const std::filesystem::path& plist,
+    const std::string& packID, const std::string& packName,
+    bool vanilla, bool zipped
+) {
+    return ::addIcon(name, shortName, type, png, plist, {}, {}, packID, packName, 0, {}, 0, vanilla, zipped);
+}
+
+IconInfo* more_icons::addTrail(
+    const std::string& name, const std::string& shortName,
+    const std::filesystem::path& png, const std::filesystem::path& json, const std::filesystem::path& icon,
+    const std::string& packID, const std::string& packName,
+    int specialID, const matjson::Value& specialInfo,
+    bool vanilla, bool zipped
+) {
+    return ::addIcon(name, shortName, IconType::Special, png, {}, json, icon,
+        packID, packName, specialID, specialInfo, 0, vanilla, zipped);
+}
+
+IconInfo* more_icons::addDeathEffect(
+    const std::string& name, const std::string& shortName,
+    const std::filesystem::path& png, const std::filesystem::path& plist,
+    const std::filesystem::path& json, const std::filesystem::path& icon,
+    const std::string& packID, const std::string& packName,
+    int specialID, const matjson::Value& specialInfo,
+    bool vanilla, bool zipped
+) {
+    return ::addIcon(name, shortName, IconType::DeathEffect, png, plist, json, icon,
+        packID, packName, specialID, specialInfo, 0, vanilla, zipped);
+}
+
+IconInfo* more_icons::addShipFire(
+    const std::string& name, const std::string& shortName,
+    const std::filesystem::path& png, const std::filesystem::path& json, const std::filesystem::path& icon,
+    const std::string& packID, const std::string& packName,
+    int specialID, const matjson::Value& specialInfo,
+    int fireCount, bool vanilla, bool zipped
+) {
+    return ::addIcon(name, shortName, IconType::ShipFire, png, {}, json, icon,
+        packID, packName, specialID, specialInfo, fireCount, vanilla, zipped);
 }
 
 void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
-    auto oldPng = info->textures[0];
-    info->textures[0] = string::pathToString(path / MoreIcons::strPath(oldPng).filename());
-    info->sheetName = string::pathToString(path / MoreIcons::strPath(info->sheetName).filename());
-    info->vanilla = false;
+    auto oldPng = info->getTextureString();
+    info->moveTexture(path / info->getTexture().filename());
+    info->moveSheet(path / info->getSheet().filename());
+    info->setVanilla(false);
 
     auto textureCache = Get::TextureCache();
     if (Ref texture = textureCache->textureForKey(oldPng.c_str())) {
         textureCache->removeTextureForKey(oldPng.c_str());
-        textureCache->m_pTextures->setObject(texture, info->textures[0]);
+        textureCache->m_pTextures->setObject(texture, info->getTextureString());
     }
 }
 
 void more_icons::removeIcon(IconInfo* info) {
-    auto& name = info->name;
-    auto type = info->type;
+    auto name = info->getName();
+    auto type = info->getType();
     MoreIcons::loadedIcons[{ name, type }] = 0;
 
     auto spriteFrameCache = Get::SpriteFrameCache();
-    for (auto& frame : info->frameNames) {
+    for (auto& frame : info->getFrameNames()) {
         spriteFrameCache->removeSpriteFrameByName(frame.c_str());
     }
-    Get::TextureCache()->removeTextureForKey(info->textures[0].c_str());
+    Get::TextureCache()->removeTextureForKey(info->getTextureString().c_str());
 
     if (!MoreIcons::preloadIcons) {
         for (auto it = MoreIcons::requestedIcons.begin(); it != MoreIcons::requestedIcons.end();) {
@@ -223,14 +219,14 @@ void more_icons::removeIcon(IconInfo* info) {
 }
 
 void more_icons::renameIcon(IconInfo* info, const std::string& name) {
-    auto oldName = info->name;
-    auto newName = info->packID.empty() ? name : fmt::format("{}:{}", info->packID, name);
-    info->name = newName;
-    info->shortName = name;
+    auto oldName = info->getName();
+    auto newName = info->inTexturePack() ? fmt::format("{}:{}", info->getPackID(), name) : name;
+    info->setName(newName);
+    info->setShortName(name);
 
     auto quality = MI_PATH("");
-    auto oldPng = info->textures[0];
-    auto type = info->type;
+    auto oldPng = info->getTextureString();
+    auto type = info->getType();
     if (type <= IconType::Jetpack) {
         if (oldPng.ends_with("-uhd.png")) quality = MI_PATH("-uhd");
         else if (oldPng.ends_with("-hd.png")) quality = MI_PATH("-hd");
@@ -241,22 +237,24 @@ void more_icons::renameIcon(IconInfo* info, const std::string& name) {
     #else
     auto& wName = name;
     #endif
-    info->textures[0] = string::pathToString(MoreIcons::strPath(oldPng).replace_filename(wName + quality + MI_PATH(".png")));
-    info->sheetName = string::pathToString(MoreIcons::strPath(info->sheetName).replace_filename(wName + quality + MI_PATH(".plist")));
+    info->moveTexture(info->getTexture().parent_path() / (wName + quality + MI_PATH(".png")));
+    info->moveSheet(info->getSheet().parent_path() / (wName + quality + MI_PATH(".plist")));
 
     auto textureCache = Get::TextureCache();
     if (Ref texture = textureCache->textureForKey(oldPng.c_str())) {
         textureCache->removeTextureForKey(oldPng.c_str());
-        textureCache->m_pTextures->setObject(texture, info->textures[0]);
+        textureCache->m_pTextures->setObject(texture, info->getTextureString());
 
         auto spriteFrameCache = Get::SpriteFrameCache();
-        for (auto& frameName : info->frameNames) {
+        auto frameNames = info->getFrameNames();
+        for (auto& frameName : frameNames) {
             if (Ref spriteFrame = MoreIcons::getFrame(frameName.c_str())) {
                 spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
                 frameName = Load::getFrameName(frameName, newName, type);
                 spriteFrameCache->addSpriteFrame(spriteFrame, frameName.c_str());
             }
         }
+        info->moveFrameNames(std::move(frameNames));
     }
 
     if (auto it = MoreIcons::loadedIcons.find({ oldName, type }); it != MoreIcons::loadedIcons.end()) {
@@ -287,28 +285,33 @@ void more_icons::renameIcon(IconInfo* info, const std::string& name) {
 }
 
 void more_icons::updateIcon(IconInfo* info) {
-    auto texture = Get::TextureCache()->textureForKey(info->textures[0].c_str());
+    auto texture = Get::TextureCache()->textureForKey(info->getTextureString().c_str());
     if (!texture) return;
 
-    auto imageRes = texpack::fromPNG(MoreIcons::strPath(info->textures[0]), true);
+    auto imageRes = texpack::fromPNG(info->getTexture(), true);
     if (!imageRes.isOk()) return;
 
     auto image = std::move(imageRes).unwrap();
 
     Load::initTexture(texture, image.data.data(), image.width, image.height);
 
-    auto framesRes = Load::createFrames(MoreIcons::strPath(info->sheetName), texture, info->name, info->type);
+    auto framesRes = Load::createFrames(info->getSheet(), texture, info->getName(), info->getType());
     if (!framesRes.isOk()) return;
 
     auto frames = std::move(framesRes).unwrap();
     if (!frames) return;
 
     auto spriteFrameCache = Get::SpriteFrameCache();
-    for (auto& frameName : info->frameNames) {
-        if (!frames->objectForKey(frameName)) spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
+    auto frameNames = info->getFrameNames();
+    for (auto it = frameNames.begin(); it != frameNames.end();) {
+        auto& frameName = *it;
+        if (frames->objectForKey(frameName)) ++it;
+        else {
+            spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
+            it = frameNames.erase(it);
+        }
     }
 
-    info->frameNames.clear();
     for (auto [frameName, frame] : CCDictionaryExt<const char*, CCSpriteFrame*>(frames)) {
         if (auto spriteFrame = MoreIcons::getFrame(frameName)) {
             spriteFrame->m_obOffset = frame->m_obOffset;
@@ -319,9 +322,13 @@ void more_icons::updateIcon(IconInfo* info) {
             spriteFrame->m_obOffsetInPixels = frame->m_obOffsetInPixels;
             spriteFrame->m_obOriginalSizeInPixels = frame->m_obOriginalSizeInPixels;
         }
-        else spriteFrameCache->addSpriteFrame(frame, frameName);
-        info->frameNames.push_back(frameName);
+        else {
+            spriteFrameCache->addSpriteFrame(frame, frameName);
+            frameNames.push_back(frameName);
+        }
     }
+
+    info->moveFrameNames(std::move(frameNames));
 }
 
 void more_icons::updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type) {

@@ -317,8 +317,8 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto piecePresetButton = CCMenuItemExt::createSpriteExtra(piecePresetSprite, [this](auto) {
         IconPresetPopup::create(m_iconType, m_suffix, [this](int id, IconInfo* info) {
             if (info) {
-                m_selectedPNG = MoreIcons::strPath(info->textures[0]);
-                m_selectedPlist = MoreIcons::strPath(info->sheetName);
+                m_selectedPNG = info->getTexture();
+                m_selectedPlist = info->getSheet();
             }
             else {
                 std::string fullName = Get::GameManager()->sheetNameForIcon(id, (int)m_iconType);
@@ -430,8 +430,8 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto presetButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png", 0.8f), [this](auto) {
         IconPresetPopup::create(m_iconType, {}, [this](int id, IconInfo* info) {
             if (info) {
-                m_selectedPNG = MoreIcons::strPath(info->textures[0]);
-                m_selectedPlist = MoreIcons::strPath(info->sheetName);
+                m_selectedPNG = info->getTexture();
+                m_selectedPlist = info->getSheet();
             }
             else {
                 std::string fullName = Get::GameManager()->sheetNameForIcon(id, (int)m_iconType);

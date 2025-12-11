@@ -9,7 +9,7 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
-#include <MoreIconsV2.hpp>
+#include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 
@@ -95,7 +95,7 @@ bool MoreIconsPopup::setup() {
         else if (i == 10) {
             auto info = more_icons::getIcon(type, dual);
             auto sprite = info
-                ? MoreIcons::customTrail(info->textures[0].c_str())
+                ? MoreIcons::customTrail(info)
                 : CCSprite::createWithSpriteFrameName(fmt::format("player_special_{:02}_001.png", id).c_str());
             sprite->setPosition({ 35.0f, 100.0f });
             sprite->setScale(0.9f);

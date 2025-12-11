@@ -11,7 +11,7 @@
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/binding/TextArea.hpp>
 #include <Geode/loader/Dirs.hpp>
-#include <MoreIconsV2.hpp>
+#include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 
@@ -40,10 +40,11 @@ Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem
 }
 
 void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash) {
-    auto texturePath = MoreIcons::strPath(m_info->textures[0]);
+    auto texturePath = m_info->getTexture();
     auto parentDir = texturePath.parent_path();
+    auto type = m_info->getType();
 
-    if (m_info->type == IconType::Special) {
+    if (type == IconType::Special) {
         auto filename = texturePath.filename();
         if (auto res = MoreIcons::renameFile(texturePath, directory / filename, false, true); res.isErr()) {
             return MoreIcons::notifyFailure("Failed to {} {}: {}", trash ? "trash" : "move", filename, res.unwrapErr());
@@ -58,13 +59,13 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             }
         }
         else {
-            if (auto res = file::writeToJson(jsonPath, m_info->trailInfo); res.isErr()) {
+            if (auto res = file::writeToJson(jsonPath, m_info->getSpecialInfo()); res.isErr()) {
                 return MoreIcons::notifyFailure("Failed to write trail info to {}: {}", filename, res.unwrapErr());
             }
         }
     }
-    else if (m_info->type <= IconType::Jetpack) {
-        auto shortName = GEODE_WINDOWS(string::utf8ToWide)(m_info->shortName);
+    else if (type <= IconType::Jetpack) {
+        auto shortName = GEODE_WINDOWS(string::utf8ToWide)(m_info->getShortName());
         auto stem = MoreIcons::getPathString(parentDir / shortName);
         std::vector<std::filesystem::path> files;
 
@@ -122,7 +123,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
         }
     }
 
-    auto name = m_info->shortName;
+    auto name = m_info->getShortName();
     onClose(nullptr);
     if (trash) more_icons::removeIcon(m_info);
     else more_icons::moveIcon(m_info, directory);
@@ -132,7 +133,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
 
 bool MoreInfoPopup::setup(IconInfo* info) {
     setID("MoreInfoPopup");
-    setTitle(info->shortName, "goldFont.fnt", 0.8f, 16.0f);
+    setTitle(info->getShortName(), "goldFont.fnt", 0.8f, 16.0f);
     m_title->setID("more-info-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -150,8 +151,9 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     descBackground->setID("description-bg");
     m_mainLayer->addChild(descBackground);
 
-    auto hasPack = !info->packID.empty();
-    auto miType = MoreIcons::convertType(info->type);
+    auto hasPack = info->inTexturePack();
+    auto type = info->getType();
+    auto miType = MoreIcons::convertType(type);
 
     auto customLabel = CCLabelBMFont::create("Custom", "goldFont.fnt");
     customLabel->setPosition({ 150.0f, 123.0f });
@@ -167,19 +169,19 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     m_mainLayer->addChild(descriptionArea);
 
     if (hasPack) {
-        auto packLabel = CCLabelBMFont::create(info->packName.c_str(), "goldFont.fnt");
+        auto packLabel = CCLabelBMFont::create(info->getPackName().c_str(), "goldFont.fnt");
         packLabel->setPosition({ 150.0f, 198.0f });
         packLabel->setScale(0.4f);
         packLabel->setID("pack-label");
         m_mainLayer->addChild(packLabel);
     }
 
-    if (info->type <= IconType::Jetpack) {
-        auto itemIcon = GJItemIcon::createBrowserItem(Get::GameManager()->iconTypeToUnlockType(info->type), 1);
+    if (type <= IconType::Jetpack) {
+        auto itemIcon = GJItemIcon::createBrowserItem(Get::GameManager()->iconTypeToUnlockType(type), 1);
         itemIcon->setScale(hasPack ? 1.1f : 1.25f);
 
         auto player = static_cast<SimplePlayer*>(itemIcon->m_player);
-        more_icons::updateSimplePlayer(player, info->name, info->type);
+        more_icons::updateSimplePlayer(player, info->getName(), type);
 
         auto dual = MoreIcons::dualSelected();
         auto color1 = MoreIcons::vanillaColor1(dual);
@@ -201,14 +203,14 @@ bool MoreInfoPopup::setup(IconInfo* info) {
         iconButton->setID("icon-button");
         m_buttonMenu->addChild(iconButton);
     }
-    else if (info->type == IconType::Special) {
-        auto square = MoreIcons::customTrail(info->textures[0].c_str());
+    else if (type == IconType::Special) {
+        auto square = MoreIcons::customTrail(info);
         square->setPosition({ 150.0f, hasPack ? 165.0f : 171.0f });
         square->setScale(hasPack ? 1.1f : 1.25f);
-        square->setID("trail-square");
+        square->setID("custom-trail");
         m_mainLayer->addChild(square);
 
-        if (info->trailID == 0) {
+        if (info->getSpecialID() == 0) {
             auto settingsButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_optionsBtn_001.png", 0.7f, [info](auto) {
                 SpecialSettingsPopup::create(info)->show();
             });
@@ -220,7 +222,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
 
     CCMenuItemSpriteExtra* operationButton = nullptr;
 
-    if (info->vanilla && !info->zipped) {
+    if (info->isVanilla() && !info->isZipped()) {
         operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.7f, [this, miType](auto) {
             auto lower = MoreIcons::lowercase[miType];
             createQuickPopup(
@@ -231,8 +233,8 @@ bool MoreInfoPopup::setup(IconInfo* info) {
                 [this, miType](auto, bool btn2) {
                     if (!btn2) return;
 
-                    auto type = m_info->type;
-                    auto parent = MoreIcons::strPath(m_info->textures[0]).parent_path();
+                    auto type = m_info->getType();
+                    auto parent = m_info->getTexture().parent_path();
                     if (type <= IconType::Jetpack) parent = parent.parent_path();
                     auto dir = parent / MI_PATH_ID / MoreIcons::folders[miType];
                     if (auto res = file::createDirectoryAll(dir)) moveIcon(dir, false);
@@ -242,7 +244,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
         });
         operationButton->setID("move-button");
     }
-    else if (!info->zipped) {
+    else if (!info->isZipped()) {
         m_title->setPosition({ 140.0f, m_size.height - 16.0f });
 
         auto editButton = CCMenuItemExt::createSpriteExtraWithFilename("MI_pencil_001.png"_spr, 0.7f, [this, info](auto) {

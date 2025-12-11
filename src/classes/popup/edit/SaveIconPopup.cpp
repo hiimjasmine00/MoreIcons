@@ -5,7 +5,7 @@
 #include "../../../utils/Get.hpp"
 #include "../../../utils/Load.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
-#include <MoreIconsV2.hpp>
+#include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 
@@ -170,8 +170,7 @@ void SaveIconPopup::addOrUpdateIcon(const std::string& name, const std::filesyst
     auto type = m_iconType;
     if (auto icon = more_icons::getIcon(name, type)) more_icons::updateIcon(icon);
     else {
-        icon = more_icons::addIcon(name, name, type,
-            string::pathToString(png), string::pathToString(plist), {}, "More Icons", 0, {}, false, false);
+        icon = more_icons::addIcon(name, name, type, png, plist);
         if (MoreIcons::preloadIcons) MoreIcons::createAndAddFrames(icon);
     }
 
