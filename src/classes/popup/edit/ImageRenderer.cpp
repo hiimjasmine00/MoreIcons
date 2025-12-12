@@ -42,8 +42,8 @@ texpack::Image ImageRenderer::getImage(CCNode* node) {
         -floatHeight / winSize.height, floatHeight / winSize.height, -1.0f, 1.0f);
     kmGLMultMatrix(&orthoMatrix);
 
-    float clearColor[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
-    glGetFloatv(GL_COLOR_CLEAR_VALUE, clearColor);
+    std::array clearColor = { 0.0f, 0.0f, 0.0f, 0.0f };
+    glGetFloatv(GL_COLOR_CLEAR_VALUE, clearColor.data());
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     glClearColor(clearColor[0], clearColor[1], clearColor[2], clearColor[3]);

@@ -1,7 +1,7 @@
 #include "Defaults.hpp"
 #include <array>
 
-std::array<matjson::Value, 7> trails = {
+std::array trails = {
     matjson::makeObject({
         { "blend", true },
         { "tint", true },
@@ -57,7 +57,7 @@ matjson::Value Defaults::getTrailInfo(int id) {
     return trails[id - 1];
 }
 
-std::array<matjson::Value, 5> shipFires = {
+std::array shipFires = {
     matjson::makeObject({
         { "blend", true },
         { "fade", 0.0636f },

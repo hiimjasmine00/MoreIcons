@@ -101,7 +101,7 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
 
     texpack::Packer packers[3];
     auto scaleFactor = Get::Director()->getContentScaleFactor();
-    float scales[3] = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
+    std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
     constexpr std::array suffixes = {
         std::make_tuple(MI_PATH("-uhd"), "-uhd", "UHD"),
         std::make_tuple(MI_PATH("-hd"), "-hd", "HD"),
