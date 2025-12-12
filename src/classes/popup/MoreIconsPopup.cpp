@@ -51,8 +51,10 @@ bool MoreIconsPopup::setup() {
         ccColor3B { 150, 50, 255 },
         ccColor3B { 255, 255, 0 },
         ccColor3B { 255, 150, 255 },
+        ccColor3B { 150, 255, 255 },
+        ccColor3B { 74, 82, 225 },
         ccColor3B { 255, 0, 0 },
-        ccColor3B { 74, 82, 225 }
+        ccColor3B { 96, 171, 239 },
     };
 
     auto dual = MoreIcons::dualSelected();

@@ -461,7 +461,7 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
     else if (MoreIcons::doesExist(iconPath + MI_PATH(".png"))) iconPath += MI_PATH(".png");
     else iconPath.clear();
 
-    more_icons::addTrail(name, shortName, path, jsonPath, iconPath, pack.id, pack.name, 0,
+    more_icons::addTrail(name, shortName, texturePath, jsonPath, iconPath, pack.id, pack.name, 0,
         file::readJson(jsonPath).unwrapOr(matjson::makeObject({
             { "blend", false },
             { "tint", false },
@@ -881,10 +881,10 @@ CCSprite* MoreIcons::customIcon(IconInfo* info) {
     square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
     square->setColor({ 150, 150, 150 });
 
-    auto question = CCLabelBMFont::create("?", "bigFont.fnt");
-    question->setScale(0.6f);
-    question->setPosition(square->getContentSize() / 2.0f);
-    square->addChild(question);
+    auto sprite = CCSprite::create(info->getTextureString().c_str());
+    limitNodeHeight(sprite, 27.0f, 999.0f, 0.001f);
+    sprite->setPosition(square->getContentSize() / 2.0f);
+    square->addChild(sprite);
 
     return square;
 }

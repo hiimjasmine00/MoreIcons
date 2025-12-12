@@ -10,7 +10,8 @@ using namespace geode::prelude;
 
 SpecialSettingsPopup* SpecialSettingsPopup::create(IconInfo* info) {
     auto ret = new SpecialSettingsPopup();
-    if (ret->initAnchored(400.0f, 150.0f, info)) {
+    auto type = info->getType();
+    if (ret->initAnchored(400.0f, type == IconType::ShipFire ? 200.0f : 150.0f, info)) {
         ret->autorelease();
         return ret;
     }
@@ -19,142 +20,40 @@ SpecialSettingsPopup* SpecialSettingsPopup::create(IconInfo* info) {
 }
 
 bool SpecialSettingsPopup::setup(IconInfo* info) {
+    auto type = info->getType();
+
     setID("SpecialSettingsPopup");
-    setTitle("Trail Settings", "goldFont.fnt", 0.7f, 15.0f);
-    m_title->setID("trail-settings-title");
+    setTitle(fmt::format("{} Settings", MoreIcons::uppercase[MoreIcons::convertType(type)]), "goldFont.fnt", 0.7f, 15.0f);
+    m_title->setID("special-settings-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
     m_bgSprite->setID("background");
     m_closeBtn->setID("close-button");
 
-    auto trailInfo = info->getSpecialInfo();
-    m_blend = trailInfo.get<bool>("blend").unwrapOr(false);
-    m_tint = trailInfo.get<bool>("tint").unwrapOr(false);
-    m_show = trailInfo.get<bool>("show").unwrapOr(false);
-    m_fade = trailInfo.get<float>("fade").unwrapOr(0.3f);
-    m_stroke = trailInfo.get<float>("stroke").unwrapOr(14.0f);
+    m_info = info->getSpecialInfo();
 
-    auto fadeTimeSlider = Slider::create(nullptr, nullptr, 0.8f);
-    fadeTimeSlider->setPosition({ 100.0f, 87.5f });
-    fadeTimeSlider->setValue(roundf(m_fade * 50.0f) / 100.0f);
-    fadeTimeSlider->setID("fade-time-slider");
-    m_mainLayer->addChild(fadeTimeSlider);
-
-    auto fadeTimeLabel = CCLabelBMFont::create("Fade Time:", "goldFont.fnt");
-    fadeTimeLabel->setPosition({ 80.0f, 110.0f });
-    fadeTimeLabel->setScale(0.7f);
-    fadeTimeLabel->setID("fade-time-label");
-    m_mainLayer->addChild(fadeTimeLabel);
-
-    auto fadeTimeInput = TextInput::create(60.0f, "Num");
-    fadeTimeInput->setPosition({ 150.0f, 110.0f });
-    fadeTimeInput->setScale(0.6f);
-    fadeTimeInput->setString(fmt::format("{:.2f}", m_fade));
-    fadeTimeInput->setFilter(".0123456789");
-    fadeTimeInput->setMaxCharCount(4);
-    fadeTimeInput->setCallback([this, fadeTimeSlider](const std::string& str) {
-        jasmine::convert::toFloat(str, m_fade);
-        m_fade = std::clamp(m_fade * 100.0f, 0.0f, 200.0f) / 100.0f;
-        fadeTimeSlider->setValue(m_fade / 2.0f);
-    });
-    fadeTimeInput->setID("fade-time-input");
-    m_mainLayer->addChild(fadeTimeInput);
-
-    CCMenuItemExt::assignCallback<SliderThumb>(fadeTimeSlider->m_touchLogic->m_thumb, [this, fadeTimeInput](SliderThumb* sender) {
-        m_fade = roundf(sender->getValue() * 200.0f) / 100.0f;
-        fadeTimeInput->setString(fmt::format("{:.2f}", m_fade));
-    });
-
-    auto strokeWidthSlider = Slider::create(nullptr, nullptr, 0.8f);
-    strokeWidthSlider->setPosition({ 300.0f, 87.5f });
-    strokeWidthSlider->setValue(roundf(m_stroke / 2.0f) / 10.0f);
-    strokeWidthSlider->m_touchLogic->m_thumb->setTag(2);
-    strokeWidthSlider->setID("stroke-width-slider");
-    m_mainLayer->addChild(strokeWidthSlider);
-
-    auto strokeWidthLabel = CCLabelBMFont::create("Stroke Width:", "goldFont.fnt");
-    strokeWidthLabel->setPosition({ 280.0f, 110.0f });
-    strokeWidthLabel->setScale(0.7f);
-    strokeWidthLabel->setID("stroke-width-label");
-    m_mainLayer->addChild(strokeWidthLabel);
-
-    auto strokeWidthInput = TextInput::create(60.0f, "Num");
-    strokeWidthInput->setPosition({ 365.0f, 110.0f });
-    strokeWidthInput->setScale(0.6f);
-    strokeWidthInput->setString(fmt::format("{:.1f}", m_stroke));
-    strokeWidthInput->setFilter(".0123456789");
-    strokeWidthInput->setMaxCharCount(4);
-    strokeWidthInput->setCallback([this, strokeWidthSlider](const std::string& str) {
-        jasmine::convert::toFloat(str, m_stroke);
-        m_stroke = roundf(std::clamp(m_stroke * 10.0f, 0.0f, 200.0f)) / 10.0f;
-        strokeWidthSlider->setValue(m_stroke / 20.0f);
-    });
-    strokeWidthInput->setID("stroke-width-input");
-    m_mainLayer->addChild(strokeWidthInput);
-
-    CCMenuItemExt::assignCallback<SliderThumb>(strokeWidthSlider->m_touchLogic->m_thumb, [this, strokeWidthInput](SliderThumb* sender) {
-        m_stroke = roundf(sender->getValue() * 200.0f) / 10.0f;
-        strokeWidthInput->setString(fmt::format("{:.1f}", m_stroke));
-    });
-
-    auto blendToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.8f, [this](auto) {
-        m_blend = !m_blend;
-    });
-    blendToggle->setPosition({ 60.0f, 60.0f });
-    blendToggle->toggle(m_blend);
-    blendToggle->setID("blend-toggle");
-    m_buttonMenu->addChild(blendToggle);
-
-    auto blendLabel = CCLabelBMFont::create("Additive\nBlending", "bigFont.fnt");
-    blendLabel->setPosition({ 80.0f, 60.0f });
-    blendLabel->setScale(0.4f);
-    blendLabel->setAnchorPoint({ 0.0f, 0.5f });
-    blendLabel->setID("blend-label");
-    m_mainLayer->addChild(blendLabel);
-
-    auto tintToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.8f, [this](auto) {
-        m_tint = !m_tint;
-    });
-    tintToggle->setPosition({ 170.0f, 60.0f });
-    tintToggle->toggle(m_tint);
-    tintToggle->setID("tint-toggle");
-    m_buttonMenu->addChild(tintToggle);
-
-    auto tintLabel = CCLabelBMFont::create("Tint\nColor", "bigFont.fnt");
-    tintLabel->setPosition({ 190.0f, 60.0f });
-    tintLabel->setScale(0.4f);
-    tintLabel->setAnchorPoint({ 0.0f, 0.5f });
-    tintLabel->setID("tint-label");
-    m_mainLayer->addChild(tintLabel);
-
-    auto showToggle = CCMenuItemExt::createTogglerWithStandardSprites(0.8f, [this](auto) {
-        m_show = !m_show;
-    });
-    showToggle->setPosition({ 280.0f, 60.0f });
-    showToggle->toggle(m_show);
-    showToggle->setID("show-toggle");
-    m_buttonMenu->addChild(showToggle);
-
-    auto showLabel = CCLabelBMFont::create("Always\nShow", "bigFont.fnt");
-    showLabel->setPosition({ 300.0f, 60.0f });
-    showLabel->setScale(0.4f);
-    showLabel->setAnchorPoint({ 0.0f, 0.5f });
-    showLabel->setID("show-label");
-    m_mainLayer->addChild(showLabel);
+    if (type == IconType::Special) {
+        addControl("fade", "Fade Time:", { 100.0f, 87.5f }, 0.0f, 2.0f, 0.3f, 2);
+        addControl("stroke", "Stroke Width:", { 300.0f, 87.5f }, 0.0f, 20.0f, 14.0f, 1);
+        addToggle("blend", "Additive\nBlending", { 60.0f, 60.0f }, false);
+        addToggle("tint", "Tint\nColor", { 170.0f, 60.0f }, false);
+        addToggle("show", "Always\nShow", { 280.0f, 60.0f }, true);
+    }
+    else if (type == IconType::ShipFire) {
+        addControl("fade", "Fade Time:", { 100.0f, 135.0f }, 0.0f, 2.0f, 0.1f, 2);
+        addControl("stroke", "Stroke Width:", { 300.0f, 135.0f }, 0.0f, 40.0f, 20.0f, 1);
+        addControl("x", "Offset X:", { 100.0f, 92.5f }, -20.0f, 20.0f, 0.0f, 1);
+        addControl("y", "Offset Y:", { 300.0f, 92.5f }, -20.0f, 20.0f, 0.0f, 1);
+        addControl("interval", "Fire Interval:", { 100.0f, 50.0f }, 0.0f, 1.0f, 0.5f, 2);
+        addToggle("blend", "Additive\nBlending", { 280.0f, 60.0f }, true);
+    }
 
     auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", 0.8f), [this, info](auto) {
-        auto trailInfo = matjson::makeObject({
-            { "blend", m_blend },
-            { "tint", m_tint },
-            { "show", m_show },
-            { "fade", m_fade },
-            { "stroke", m_stroke }
-        });
-        if (auto res = file::writeToJson(info->getJSON(), trailInfo); res.isErr()) {
-            MoreIcons::notifyFailure("Failed to save trail info: {}", res.unwrapErr());
+        if (auto res = file::writeToJson(info->getJSON(), m_info); res.isErr()) {
+            MoreIcons::notifyFailure("Failed to save info: {}", res.unwrapErr());
         }
         else {
-            info->moveSpecialInfo(std::move(trailInfo));
+            info->moveSpecialInfo(std::move(m_info));
             onClose(nullptr);
         }
     });
@@ -165,4 +64,80 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     handleTouchPriority(this);
 
     return true;
+}
+
+void SpecialSettingsPopup::addControl(
+    std::string_view id, const char* text, const CCPoint& position, float min, float max, float def, int decimals
+) {
+    auto& value = m_info[id];
+    if (!value.isNumber()) value = def;
+    auto initial = value.as<float>().unwrapOr(def);
+    auto factor = max - min;
+
+    auto slider = Slider::create(nullptr, nullptr, 0.8f);
+    slider->setPosition(position);
+    slider->setValue((initial - min) / factor);
+    slider->setID(fmt::format("{}-slider", id));
+    m_mainLayer->addChild(slider);
+
+    auto container = CCNode::create();
+    container->setPosition(position + CCPoint { 0.0f, 22.5f });
+    container->setContentSize({ 170.0f, 30.0f });
+    container->setAnchorPoint({ 0.5f, 0.5f });
+    container->setLayout(RowLayout::create()->setAutoScale(false));
+    container->setID(fmt::format("{}-container", id));
+    m_mainLayer->addChild(container);
+
+    auto label = CCLabelBMFont::create(text, "goldFont.fnt");
+    label->setScale(0.7f);
+    label->setID(fmt::format("{}-label", id));
+    container->addChild(label);
+
+    auto exponent = 1;
+    for (int i = 0; i < decimals; i++) exponent *= 10;
+
+    auto input = TextInput::create(60.0f, "Num");
+    input->setScale(0.6f);
+    input->setString(fmt::format("{:.{}f}", initial, decimals));
+    input->setFilter(min < 0.0f ? "-.0123456789" : ".0123456789");
+    input->setMaxCharCount(fmt::to_string(max).size() + decimals + (min < 0.0f ? 2 : 1));
+    input->setCallback([this, def, exponent, min, max, slider, &value](const std::string& str) {
+        auto floatValue = value.as<float>().unwrapOr(def);
+        jasmine::convert::toFloat(str, floatValue);
+        floatValue = std::clamp(roundf(floatValue * exponent) / exponent, min, max);
+        slider->setValue((floatValue - min) / (max - min));
+        value = floatValue;
+    });
+    input->setID(fmt::format("{}-input", id));
+    container->addChild(input);
+
+    container->updateLayout();
+
+    CCMenuItemExt::assignCallback<SliderThumb>(slider->m_touchLogic->m_thumb, [
+        this, def, decimals, exponent, input, min, max, &value
+    ](SliderThumb* sender) {
+        auto floatValue = (roundf(sender->getValue() * (max - min) + min) * exponent) / exponent;
+        input->setString(fmt::format("{:.{}f}", floatValue, decimals));
+        value = floatValue;
+    });
+}
+
+void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, const cocos2d::CCPoint& position, bool def) {
+    auto& value = m_info[id];
+    if (!value.isBool()) value = def;
+
+    auto toggle = CCMenuItemExt::createTogglerWithStandardSprites(0.8f, [this, def, &value](auto) {
+        value = !value.asBool().unwrapOr(def);
+    });
+    toggle->setPosition(position);
+    toggle->toggle(value.asBool().unwrapOr(def));
+    toggle->setID(fmt::format("{}-toggle", id));
+    m_buttonMenu->addChild(toggle);
+
+    auto toggleLabel = CCLabelBMFont::create(label, "bigFont.fnt");
+    toggleLabel->setPosition(position + CCPoint { 20.0f, 0.0f });
+    toggleLabel->setScale(0.4f);
+    toggleLabel->setAnchorPoint({ 0.0f, 0.5f });
+    toggleLabel->setID(fmt::format("{}-label", id));
+    m_mainLayer->addChild(toggleLabel);
 }

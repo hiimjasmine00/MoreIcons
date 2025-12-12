@@ -230,7 +230,7 @@ class $modify(MIPlayerObject, PlayerObject) {
         }
         else if (MoreIcons::traditionalPacks) {
             auto fireCount = Defaults::getShipFireCount((int)m_shipStreakType);
-            auto interval = Defaults::getShipFireInfo((int)m_shipStreakType).get<float>("interval").unwrapOr(0.05f);
+            auto interval = std::max(Defaults::getShipFireInfo((int)m_shipStreakType).get<float>("interval").unwrapOr(0.05f), FLT_EPSILON);
             m_shipStreak->setTexture(Get::TextureCache()->addImage(MoreIcons::vanillaTexturePath(
                 fmt::format("shipfire{:02}_{:03}.png", (int)m_shipStreakType, (int)(m_totalTime / interval) % fireCount + 1), true
             ).c_str(), false));

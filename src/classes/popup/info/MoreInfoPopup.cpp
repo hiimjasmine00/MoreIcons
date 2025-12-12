@@ -203,7 +203,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
         iconButton->setID("icon-button");
         m_buttonMenu->addChild(iconButton);
     }
-    else if (type <= IconType::Special) {
+    else if (type >= IconType::DeathEffect) {
         auto sprite = MoreIcons::customIcon(info);
         sprite->setPosition({ 150.0f, hasPack ? 165.0f : 171.0f });
         sprite->setScale(hasPack ? 1.1f : 1.25f);

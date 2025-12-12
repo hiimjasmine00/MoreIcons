@@ -4,13 +4,11 @@ class IconInfo;
 
 class SpecialSettingsPopup : public geode::Popup<IconInfo*> {
 protected:
-    float m_fade;
-    float m_stroke;
-    bool m_blend;
-    bool m_tint;
-    bool m_show;
+    matjson::Value m_info;
 
-    bool setup(IconInfo*) override;
+    bool setup(IconInfo* info) override;
+    void addControl(std::string_view id, const char* text, const cocos2d::CCPoint& position, float min, float max, float def, int decimals);
+    void addToggle(std::string_view id, const char* text, const cocos2d::CCPoint& position, bool def);
 public:
-    static SpecialSettingsPopup* create(IconInfo*);
+    static SpecialSettingsPopup* create(IconInfo* info);
 };
