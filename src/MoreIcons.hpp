@@ -100,9 +100,11 @@ public:
     static bool doesExist(const std::filesystem::path& path);
     static std::filesystem::path getEditorDir(IconType type);
     static std::filesystem::path getIconDir(IconType type);
+    static std::pair<std::string, std::string> getIconPaths(int id, IconType type);
     static std::filesystem::path getIconStem(const std::string& name, IconType type);
     static std::basic_string_view<std::filesystem::path::value_type> getPathFilename(const std::filesystem::path& path);
     static std::filesystem::path::string_type getPathString(std::filesystem::path path);
+    static std::string getTrailTexture(int id);
     static void iterate(
         const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<void(const std::filesystem::path&)> func
     );

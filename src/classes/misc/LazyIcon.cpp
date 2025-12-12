@@ -10,6 +10,7 @@
 #include <Geode/binding/ObjectManager.hpp>
 #include <Geode/binding/SpriteDescription.hpp>
 #include <Geode/loader/Loader.hpp>
+#include <Geode/utils/string.hpp>
 #include <jasmine/convert.hpp>
 #include <jasmine/mod.hpp>
 
@@ -70,10 +71,9 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
         }
     }
     else {
-        std::string fullName = Get::GameManager()->sheetNameForIcon(id, (int)type);
-        auto fileUtils = Get::FileUtils();
-        m_texture = fileUtils->fullPathForFilename(fmt::format("{}.png", fullName).c_str(), false);
-        m_sheet = fileUtils->fullPathForFilename(fmt::format("{}.plist", fullName).c_str(), false);
+        auto [texture, sheet] = MoreIcons::getIconPaths(id, type);
+        m_texture = std::move(texture);
+        m_sheet = std::move(sheet);
     }
 
     if (type <= IconType::Jetpack || (type >= IconType::DeathEffect && info)) {

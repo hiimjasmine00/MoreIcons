@@ -1,4 +1,5 @@
 #include "../MoreIcons.hpp"
+#include "../utils/Defaults.hpp"
 #include "../utils/Get.hpp"
 #include <Geode/binding/GJBaseGameLayer.hpp>
 #include <Geode/modify/PlayerObject.hpp>
@@ -120,50 +121,146 @@ class $modify(MIPlayerObject, PlayerObject) {
         }
     }
 
-    void resetTrail() {
-        m_regularTrail->setUserObject("name"_spr, nullptr);
-        if (!MoreIcons::traditionalPacks || (Loader::get()->isModLoaded("acaruso.pride") && m_playerStreak == 2)) return;
-        m_regularTrail->setTexture(Get::TextureCache()->addImage(
-            MoreIcons::vanillaTexturePath(fmt::format("streak_{:02}_001.png", m_playerStreak), true).c_str(), false));
-        if (m_playerStreak == 6) m_regularTrail->enableRepeatMode(0.1f);
-    }
-
-    IconInfo* getTrailInfo() {
-        if (isPlayer1()) return more_icons::getIcon(IconType::Special, false);
-        else if (isPlayer2()) return more_icons::getIcon(IconType::Special, true);
+    IconInfo* getTrailInfo(IconType type) {
+        if (isPlayer1()) return more_icons::getIcon(type, false);
+        else if (isPlayer2()) return more_icons::getIcon(type, true);
         else return nullptr;
     }
 
     void setupStreak() {
         PlayerObject::setupStreak();
 
-        auto info = getTrailInfo();
-        if (!info) return resetTrail();
+        if (auto info = getTrailInfo(IconType::Special)) {
+            auto trailInfo = info->getSpecialInfo();
+            auto blend = trailInfo.get<bool>("blend").unwrapOr(false);
+            auto tint = trailInfo.get<bool>("tint").unwrapOr(false);
+            auto show = trailInfo.get<bool>("show").unwrapOr(false);
+            auto fade = trailInfo.get<float>("fade").unwrapOr(0.3f);
+            auto stroke = trailInfo.get<float>("stroke").unwrapOr(14.0f);
 
-        auto trailInfo = info->getSpecialInfo();
-        auto blend = trailInfo.get<bool>("blend").unwrapOr(false);
-        auto tint = trailInfo.get<bool>("tint").unwrapOr(false);
-        auto show = trailInfo.get<bool>("show").unwrapOr(false);
-        auto fade = trailInfo.get<float>("fade").unwrapOr(0.3f);
-        auto stroke = trailInfo.get<float>("stroke").unwrapOr(14.0f);
+            m_streakStrokeWidth = stroke;
+            m_disableStreakTint = !tint;
+            m_alwaysShowStreak = show;
 
-        m_streakStrokeWidth = stroke;
-        m_disableStreakTint = !tint;
-        m_alwaysShowStreak = show;
+            m_regularTrail->updateFade(fade);
+            m_regularTrail->setStroke(stroke);
+            m_regularTrail->setTexture(Get::TextureCache()->addImage(info->getTextureString().c_str(), false));
+            if (info->getSpecialID() == 6) m_regularTrail->enableRepeatMode(0.1f);
+            if (blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)(blend ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA) });
+            m_regularTrail->setUserObject("name"_spr, CCString::create(info->getName()));
+        }
+        else {
+            m_regularTrail->setUserObject("name"_spr, nullptr);
+            if (MoreIcons::traditionalPacks && (!Loader::get()->isModLoaded("acaruso.pride") || m_playerStreak != 2)) {
+                m_regularTrail->setTexture(Get::TextureCache()->addImage(MoreIcons::vanillaTexturePath(
+                    fmt::format("streak_{:02}_001.png", m_playerStreak), true
+                ).c_str(), false));
+                if (m_playerStreak == 6) m_regularTrail->enableRepeatMode(0.1f);
+            }
+        }
 
-        m_regularTrail->initWithFade(fade, 5.0f, stroke, { 255, 255, 255 }, info->getTextureString().c_str());
-        if (info->getSpecialID() == 6) m_regularTrail->enableRepeatMode(0.1f);
-        if (blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
-        m_regularTrail->setUserObject("name"_spr, CCString::create(info->getName()));
+        if (auto info = getTrailInfo(IconType::ShipFire)) {
+            auto fireInfo = info->getSpecialInfo();
+            auto fade = fireInfo.get<float>("fade").unwrapOr(0.1f);
+            auto stroke = fireInfo.get<float>("stroke").unwrapOr(20.0f);
+            auto texture = Get::TextureCache()->addImage(info->getTextureString().c_str(), false);
+            if (m_shipStreak) {
+                m_shipStreak->updateFade(fade);
+                m_shipStreak->setStroke(stroke);
+                m_shipStreak->setTexture(texture);
+            }
+            else {
+                m_shipStreak = CCMotionStreak::create(fade, 1.0f, stroke, { 255, 255, 255 }, texture);
+                m_shipStreak->setM_fMaxSeg(50.0f);
+                m_shipStreak->setDontOpacityFade(true);
+                m_parentLayer->addChild(m_shipStreak, -3);
+            }
+            m_shipStreak->setBlendFunc({
+                GL_SRC_ALPHA, (uint32_t)(fireInfo.get<bool>("blend").unwrapOr(true) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
+            });
+            m_shipStreak->setUserObject("name"_spr, CCString::create(info->getName()));
+        }
+        else if (m_shipStreak) {
+            m_shipStreak->setUserObject("name"_spr, nullptr);
+            if (MoreIcons::traditionalPacks) {
+                m_shipStreak->setTexture(Get::TextureCache()->addImage(MoreIcons::vanillaTexturePath(
+                    fmt::format("shipfire{:02}_001.png", (int)m_shipStreakType), true
+                ).c_str(), false));
+            }
+        }
     }
 
     void updateStreakBlend(bool blend) {
         PlayerObject::updateStreakBlend(blend);
 
-        if (auto info = getTrailInfo()) {
+        if (auto info = getTrailInfo(IconType::Special)) {
             m_regularTrail->setBlendFunc({
                 GL_SRC_ALPHA, (uint32_t)(info->getSpecialInfo().get<bool>("blend").unwrapOr(false) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
             });
         }
+    }
+
+    void setPosition(const CCPoint& position) {
+        PlayerObject::setPosition(position);
+
+        if (m_isPlatformer || !m_isShip || !m_shipStreak) return;
+
+        auto info = getTrailInfo(IconType::ShipFire);
+        if (!info) return;
+
+        auto fireInfo = info->getSpecialInfo();
+        m_shipStreak->setPosition(
+            m_shipStreak->getParent()->convertToNodeSpace(m_mainLayer->convertToWorldSpace(m_vehicleSprite->getPosition() + CCPoint {
+                fireInfo.get<float>("x").unwrapOr(-8.0f) * reverseMod(), fireInfo.get<float>("y").unwrapOr(-3.0f)
+            }))
+        );
+    }
+
+    void update(float dt) {
+        PlayerObject::update(dt);
+
+        if (!m_shipStreak) return;
+
+        if (auto info = getTrailInfo(IconType::ShipFire)) {
+            auto texture = info->getTextureString();
+            auto fireCount = info->getFireCount();
+            auto interval = info->getSpecialInfo().get<float>("interval").unwrapOr(0.05f);
+            texture.replace(texture.size() - 7, 7, fmt::format("{:03}.png", (int)(m_totalTime / interval) % fireCount + 1));
+            m_shipStreak->setTexture(Get::TextureCache()->addImage(texture.c_str(), false));
+        }
+        else if (MoreIcons::traditionalPacks) {
+            auto fireCount = Defaults::getShipFireCount((int)m_shipStreakType);
+            auto interval = Defaults::getShipFireInfo((int)m_shipStreakType).get<float>("interval").unwrapOr(0.05f);
+            m_shipStreak->setTexture(Get::TextureCache()->addImage(MoreIcons::vanillaTexturePath(
+                fmt::format("shipfire{:02}_{:03}.png", (int)m_shipStreakType, (int)(m_totalTime / interval) % fireCount + 1), true
+            ).c_str(), false));
+        }
+    }
+
+    void updateFireSettings() {
+        if (!m_shipStreak) return;
+
+        auto info = getTrailInfo(IconType::ShipFire);
+        if (!info) return;
+
+        auto factor = m_vehicleSize == 1.0f ? 1.0f : 0.5f;
+        if (m_playerSpeed == 0.7f) factor *= 1.3f;
+        else if (m_playerSpeed == 0.9f) factor *= 1.2f;
+        else if (m_playerSpeed == 1.1f) factor *= 1.1f;
+        else if (m_playerSpeed == 1.3f) factor *= 1.05f;
+
+        auto fireInfo = info->getSpecialInfo();
+        m_shipStreak->updateFade(fireInfo.get<float>("fade").unwrapOr(0.1f) * factor);
+        m_shipStreak->setStroke(fireInfo.get<float>("stroke").unwrapOr(20.0f) * factor);
+    }
+
+    void togglePlayerScale(bool enable, bool noEffects) {
+        PlayerObject::togglePlayerScale(enable, noEffects);
+        updateFireSettings();
+    }
+
+    void updateTimeMod(float speed, bool noEffects) {
+        PlayerObject::updateTimeMod(speed, noEffects);
+        updateFireSettings();
     }
 };

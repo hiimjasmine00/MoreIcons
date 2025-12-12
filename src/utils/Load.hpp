@@ -56,6 +56,7 @@ class Load {
 public:
     static std::string getFrameName(std::string_view frameName, std::string_view name, IconType type);
     static geode::Result<std::vector<uint8_t>> readBinary(const std::filesystem::path& path);
+    static bool doesExist(const std::filesystem::path& path);
     static geode::Result<Autorelease<cocos2d::CCTexture2D>> createTexture(const std::filesystem::path& path);
     static Autorelease<cocos2d::CCTexture2D> createTexture(const uint8_t* data, uint32_t width, uint32_t height);
     static void initTexture(cocos2d::CCTexture2D* texture, const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha = true);

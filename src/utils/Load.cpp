@@ -1,9 +1,6 @@
 #include <pugixml.hpp>
 #include "Load.hpp"
 #include "Get.hpp"
-#ifdef GEODE_IS_ANDROID
-#include <Geode/cocos/platform/android/jni/Java_org_cocos2dx_lib_Cocos2dxHelper.h>
-#endif
 #include <Geode/utils/cocos.hpp>
 #include <Geode/utils/file.hpp>
 #include <jasmine/mod.hpp>
@@ -63,12 +60,18 @@ std::string Load::getFrameName(std::string_view frameName, std::string_view name
     return suffix.empty() ? std::string(frameName) : name.empty() ? std::string(suffix) : fmt::format("{}{}"_spr, name, suffix);
 }
 
+#ifdef GEODE_IS_ANDROID
+const char* getApkPath();
+
+static thread_local ZipFile* apkFile = new ZipFile(getApkPath());
+#endif
+
 Result<std::vector<uint8_t>> Load::readBinary(const std::filesystem::path& path) {
     #ifdef GEODE_IS_ANDROID
-    if (path.native().starts_with("assets/")) {
-        static thread_local ZipFile* apkFile = new ZipFile(getApkPath());
+    auto& str = path.native();
+    if (str.starts_with("assets/")) {
         auto size = 0ul;
-        if (auto data = apkFile->getFileData(path.c_str(), &size)) {
+        if (auto data = apkFile->getFileData(str.c_str(), &size)) {
             std::vector<uint8_t> vec(data, data + size);
             delete[] data;
             return Ok(vec);
@@ -77,6 +80,15 @@ Result<std::vector<uint8_t>> Load::readBinary(const std::filesystem::path& path)
     }
     #endif
     return file::readBinary(path);
+}
+
+bool Load::doesExist(const std::filesystem::path& path) {
+    #ifdef GEODE_IS_ANDROID
+    auto& str = path.native();
+    if (str.starts_with("assets/")) return apkFile->fileExists(str);
+    #endif
+    std::error_code code;
+    return std::filesystem::exists(path, code);
 }
 
 Result<Autorelease<cocos2d::CCTexture2D>> Load::createTexture(const std::filesystem::path& path) {

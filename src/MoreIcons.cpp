@@ -265,6 +265,10 @@ std::filesystem::path MoreIcons::strPath(std::string_view path) {
     return std::filesystem::path(path);
 }
 
+Result<> checkPath(const std::filesystem::path& path) {
+    return Ok();
+}
+
 std::string MoreIcons::strNarrow(std::string_view str) {
     return std::string(str);
 }
@@ -367,11 +371,9 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
 
     log::debug("Pre-loading icon {} from {}", name, pack.name);
 
-    #ifdef GEODE_IS_WINDOWS
     if (auto res = checkPath(path); res.isErr()) {
         return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
     }
-    #endif
 
     auto texturePath = std::filesystem::path(path).replace_extension(MI_PATH(".png"));
     if (!MoreIcons::doesExist(texturePath)) {
@@ -424,17 +426,11 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
 
     log::debug("Pre-loading vanilla icon {} from {}", name, pack.name);
 
-    #ifdef GEODE_IS_WINDOWS
     if (auto res = checkPath(path); res.isErr()) {
         return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
     }
-    #endif
 
-    #ifdef GEODE_IS_ANDROID
-    auto doesntExist = vanillaPath && !Get::FileUtils()->isFileExist(plistPath.native());
-    #else
-    auto doesntExist = vanillaPath && !MoreIcons::doesExist(plistPath);
-    #endif
+    auto doesntExist = vanillaPath && !Load::doesExist(plistPath);
     if (doesntExist) return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
 
     more_icons::addIcon(name, shortName, currentType, path, plistPath, quality, pack.id, pack.name, true, pack.zipped);
@@ -453,11 +449,9 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     log::debug("Pre-loading trail {} from {}", name, pack.name);
 
-    #ifdef GEODE_IS_WINDOWS
     if (auto res = checkPath(path); res.isErr()) {
         return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
     }
-    #endif
 
     auto jsonPath = path / MI_PATH("settings.json");
 
@@ -487,11 +481,9 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     log::debug("Pre-loading vanilla trail {} from {}", name, pack.name);
 
-    #ifdef GEODE_IS_WINDOWS
     if (auto res = checkPath(path); res.isErr()) {
         return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
     }
-    #endif
 
     auto trailID = jasmine::convert::getInt<int>(std::string_view(shortName).substr(7, shortName.size() - 11)).value_or(0);
     if (trailID == 0) trailID = -1;
@@ -528,11 +520,9 @@ void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
 
     log::debug("Pre-loading death effect {} from {}", name, pack.name);
 
-    #ifdef GEODE_IS_WINDOWS
     if (auto res = checkPath(path); res.isErr()) {
         return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
     }
-    #endif
 
     auto texturePath = std::filesystem::path(plistPath).replace_extension(MI_PATH(".png"));
     if (!MoreIcons::doesExist(texturePath)) {
@@ -594,17 +584,11 @@ void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& p
 
     log::debug("Pre-loading vanilla death effect {} from {}", name, pack.name);
 
-    #ifdef GEODE_IS_WINDOWS
     if (auto res = checkPath(path); res.isErr()) {
         return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
     }
-    #endif
 
-    #ifdef GEODE_IS_ANDROID
-    auto doesntExist = vanillaPath && !Get::FileUtils()->isFileExist(plistPath.native());
-    #else
-    auto doesntExist = vanillaPath && !MoreIcons::doesExist(plistPath);
-    #endif
+    auto doesntExist = vanillaPath && !Load::doesExist(plistPath);
     if (doesntExist) return printLog(name, Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
 
     auto effectID = jasmine::convert::getInt<int>(std::string_view(shortName).substr(16)).value_or(0);
@@ -630,11 +614,9 @@ void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
 
     log::debug("Pre-loading ship fire {} from {}", name, pack.name);
 
-    #ifdef GEODE_IS_WINDOWS
     if (auto res = checkPath(path); res.isErr()) {
         return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
     }
-    #endif
 
     auto jsonPath = path / MI_PATH("settings.json");
 
@@ -645,7 +627,14 @@ void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
     else iconPath.clear();
 
     more_icons::addShipFire(name, shortName, path / MI_PATH("fire_001.png"), jsonPath, iconPath,
-        pack.id, pack.name, 0, file::readJson(jsonPath).unwrapOrDefault(), fireCount, false, pack.zipped);
+        pack.id, pack.name, 0, file::readJson(jsonPath).unwrapOr(matjson::makeObject({
+            { "blend", true },
+            { "fade", 0.1f },
+            { "stroke", 20.0f },
+            { "interval", 0.05f },
+            { "x", -8.0f },
+            { "y", -3.0f }
+        })), fireCount, false, pack.zipped);
 
     log::debug("Finished pre-loading ship fire {} from {}", name, pack.name);
 }
@@ -656,21 +645,17 @@ void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack
     auto shortName = MoreIcons::strNarrow(wideName);
     auto name = fmt::format("{}:{}", pack.id, shortName);
 
-    constexpr std::array fireCounts = { 0, 9, 10, 6, 16, 5 };
-
     log::debug("Pre-loading vanilla ship fire {} from {}", name, pack.name);
 
-    #ifdef GEODE_IS_WINDOWS
     if (auto res = checkPath(path); res.isErr()) {
         return printLog(name, Severity::Error, "Failed to convert path: {}", res.unwrapErr());
     }
-    #endif
 
     auto fireID = jasmine::convert::getInt<int>(std::string_view(shortName).substr(12)).value_or(0);
     if (fireID == 0) fireID = -1;
 
-    more_icons::addShipFire(name, shortName, path, {}, {}, pack.id, pack.name,
-        fireID, {}, true, pack.zipped);
+    more_icons::addShipFire(name, shortName, path, {}, {}, pack.id, pack.name, fireID,
+        Defaults::getShipFireInfo(fireID), Defaults::getShipFireCount(fireID), true, pack.zipped);
 
     log::debug("Finished pre-loading vanilla ship fire {} from {}", name, pack.name);
 }
@@ -922,6 +907,19 @@ std::filesystem::path MoreIcons::getIconStem(const std::string& name, IconType t
     return getIconDir(type) / strPath(name);
 }
 
+std::pair<std::string, std::string> MoreIcons::getIconPaths(int id, IconType type) {
+    auto fileUtils = Get::FileUtils();
+    std::string sheetName = Get::GameManager()->sheetNameForIcon(id, (int)type);
+    return std::make_pair(
+        std::string(fileUtils->fullPathForFilename(fmt::format("{}.png", sheetName).c_str(), false)),
+        std::string(fileUtils->fullPathForFilename(fmt::format("{}.plist", sheetName).c_str(), false))
+    );
+}
+
+std::string MoreIcons::getTrailTexture(int id) {
+    return Get::FileUtils()->fullPathForFilename(fmt::format("streak_{:02}_001.png", id).c_str(), false);
+}
+
 void MoreIcons::notifyFailure(const std::string& message) {
     Notification::create(message, NotificationIcon::Error)->show();
 }
@@ -933,4 +931,3 @@ void MoreIcons::notifyInfo(const std::string& message) {
 void MoreIcons::notifySuccess(const std::string& message) {
     Notification::create(message, NotificationIcon::Success)->show();
 }
-

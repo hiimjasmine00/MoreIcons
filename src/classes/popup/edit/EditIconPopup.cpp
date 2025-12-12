@@ -321,10 +321,9 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
                 m_selectedPlist = info->getSheet();
             }
             else {
-                std::string fullName = Get::GameManager()->sheetNameForIcon(id, (int)m_iconType);
-                auto fileUtils = Get::FileUtils();
-                m_selectedPNG = MoreIcons::strPath(fileUtils->fullPathForFilename(fmt::format("{}.png", fullName).c_str(), false));
-                m_selectedPlist = MoreIcons::strPath(fileUtils->fullPathForFilename(fmt::format("{}.plist", fullName).c_str(), false));
+                auto [texture, sheet] = MoreIcons::getIconPaths(id, m_iconType);
+                m_selectedPNG = MoreIcons::strPath(texture);
+                m_selectedPlist = MoreIcons::strPath(sheet);
             }
             updateWithSelectedFiles(m_suffix);
         })->show();
@@ -434,10 +433,9 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
                 m_selectedPlist = info->getSheet();
             }
             else {
-                std::string fullName = Get::GameManager()->sheetNameForIcon(id, (int)m_iconType);
-                auto fileUtils = Get::FileUtils();
-                m_selectedPNG = MoreIcons::strPath(fileUtils->fullPathForFilename(fmt::format("{}.png", fullName).c_str(), false));
-                m_selectedPlist = MoreIcons::strPath(fileUtils->fullPathForFilename(fmt::format("{}.plist", fullName).c_str(), false));
+                auto [texture, sheet] = MoreIcons::getIconPaths(id, m_iconType);
+                m_selectedPNG = MoreIcons::strPath(texture);
+                m_selectedPlist = MoreIcons::strPath(sheet);
             }
             updateWithSelectedFiles();
         })->show();
