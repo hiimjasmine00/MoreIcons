@@ -5,6 +5,9 @@
 #include "utils/Defaults.hpp"
 #include "utils/Get.hpp"
 #include "utils/Load.hpp"
+#ifdef GEODE_IS_WINDOWS
+#include <fmt/xchar.h>
+#endif
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
@@ -104,7 +107,7 @@ Result<std::filesystem::path> MoreIcons::renameFile(
             auto filename = std::basic_string(MoreIcons::getPathFilename(dest));
             auto dot = filename.find_last_of(MI_PATH('.'));
             if (dot == -1) dot = filename.size();
-            filename.insert(dot, GEODE_WINDOWS(string::utf8ToWide)(fmt::format(" ({})", i)));
+            filename.insert(dot, fmt::format(MI_PATH(" ({})"), i));
             dest.replace_filename(filename);
         }
     }
@@ -608,7 +611,7 @@ void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
     auto fireCount = 0;
     MoreIcons::iterate(path, std::filesystem::file_type::regular, [&fireCount](const std::filesystem::path& path) {
         auto filename = MoreIcons::getPathFilename(path);
-        if (filename == GEODE_WINDOWS(string::utf8ToWide)(fmt::format("fire_{:03}.png", fireCount + 1))) fireCount++;
+        if (filename == fmt::format(MI_PATH("fire_{:03}.png"), fireCount + 1)) fireCount++;
     });
     if (fireCount == 0) return printLog(name, Severity::Error, "No ship fire frames found");
 
