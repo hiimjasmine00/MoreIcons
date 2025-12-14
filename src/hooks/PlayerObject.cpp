@@ -1,8 +1,12 @@
 #include "../MoreIcons.hpp"
 #include "../utils/Defaults.hpp"
 #include "../utils/Get.hpp"
+#include <Geode/binding/CCCircleWave.hpp>
+#include <Geode/binding/ExplodeItemNode.hpp>
+#include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJBaseGameLayer.hpp>
 #include <Geode/modify/PlayerObject.hpp>
+#include <jasmine/random.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
@@ -121,7 +125,7 @@ class $modify(MIPlayerObject, PlayerObject) {
         }
     }
 
-    IconInfo* getTrailInfo(IconType type) {
+    IconInfo* getIconInfo(IconType type) {
         if (isPlayer1()) return more_icons::getIcon(type, false);
         else if (isPlayer2()) return more_icons::getIcon(type, true);
         else return nullptr;
@@ -130,7 +134,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void setupStreak() {
         PlayerObject::setupStreak();
 
-        if (auto info = getTrailInfo(IconType::Special)) {
+        if (auto info = getIconInfo(IconType::Special)) {
             auto trailInfo = info->getSpecialInfo();
             auto blend = trailInfo.get<bool>("blend").unwrapOr(false);
             auto tint = trailInfo.get<bool>("tint").unwrapOr(false);
@@ -159,7 +163,7 @@ class $modify(MIPlayerObject, PlayerObject) {
             }
         }
 
-        if (auto info = getTrailInfo(IconType::ShipFire)) {
+        if (auto info = getIconInfo(IconType::ShipFire)) {
             auto fireInfo = info->getSpecialInfo();
             auto fade = fireInfo.get<float>("fade").unwrapOr(0.1f);
             auto stroke = fireInfo.get<float>("stroke").unwrapOr(20.0f);
@@ -193,7 +197,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updateStreakBlend(bool blend) {
         PlayerObject::updateStreakBlend(blend);
 
-        if (auto info = getTrailInfo(IconType::Special)) {
+        if (auto info = getIconInfo(IconType::Special)) {
             m_regularTrail->setBlendFunc({
                 GL_SRC_ALPHA, (uint32_t)(info->getSpecialInfo().get<bool>("blend").unwrapOr(false) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
             });
@@ -205,7 +209,7 @@ class $modify(MIPlayerObject, PlayerObject) {
 
         if (m_isPlatformer || !m_isShip || !m_shipStreak) return;
 
-        auto info = getTrailInfo(IconType::ShipFire);
+        auto info = getIconInfo(IconType::ShipFire);
         if (!info) return;
 
         auto fireInfo = info->getSpecialInfo();
@@ -221,7 +225,7 @@ class $modify(MIPlayerObject, PlayerObject) {
 
         if (!m_shipStreak) return;
 
-        if (auto info = getTrailInfo(IconType::ShipFire)) {
+        if (auto info = getIconInfo(IconType::ShipFire)) {
             auto texture = info->getTextureString();
             auto fireCount = info->getFireCount();
             auto interval = info->getSpecialInfo().get<float>("interval").unwrapOr(0.05f);
@@ -240,7 +244,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updateFireSettings() {
         if (!m_shipStreak) return;
 
-        auto info = getTrailInfo(IconType::ShipFire);
+        auto info = getIconInfo(IconType::ShipFire);
         if (!info) return;
 
         auto factor = m_vehicleSize == 1.0f ? 1.0f : 0.5f;
@@ -262,5 +266,127 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updateTimeMod(float speed, bool noEffects) {
         PlayerObject::updateTimeMod(speed, noEffects);
         updateFireSettings();
+    }
+
+    void playDeathEffect() {
+        auto info = getIconInfo(IconType::DeathEffect);
+        if (!info) return PlayerObject::playDeathEffect();
+
+        auto deathInfo = info->getSpecialInfo();
+        auto& position = getPosition();
+        auto vehicleSize = m_vehicleSize;
+        if (vehicleSize >= 1.0f) vehicleSize *= 0.9f;
+
+        auto fadeOut = CCFadeTo::create(0.05f, 0);
+        fadeOut->setTag(4);
+        runAction(fadeOut);
+
+        auto scale = deathInfo.get<float>("scale").unwrapOr(1.0f);
+        auto scaleVar = deathInfo.get<float>("scale-variance").unwrapOr(0.0f);
+        auto rotation = deathInfo.get<float>("rotation").unwrapOr(0.0f);
+        auto rotationVar = deathInfo.get<float>("rotation-variance").unwrapOr(0.0f);
+
+        auto frameNames = info->getFrameNames();
+        auto effect = CCSprite::createWithSpriteFrameName(frameNames[0].c_str());
+        effect->setPosition(position);
+        auto effectScale = ((float)jasmine::random::get(-scaleVar, scaleVar) + scale) * vehicleSize;
+        effect->setScale(effectScale);
+        effect->setRotation((float)jasmine::random::get(-rotationVar, rotationVar) + rotation);
+
+        auto frames = CCArray::create();
+        auto spriteFrameCache = Get::SpriteFrameCache();
+        for (auto it = frameNames.begin() + 1; it != frameNames.end(); ++it) {
+            frames->addObject(spriteFrameCache->spriteFrameByName(it->c_str()));
+        }
+
+        auto frameDelay = deathInfo.get<float>("frame-delay").unwrapOr(0.05f);
+        auto frameDelayVariance = deathInfo.get<float>("frame-delay-variance").unwrapOr(0.0f);
+
+        auto delay = (float)jasmine::random::get(-frameDelayVariance, frameDelayVariance) + frameDelay;
+
+        effect->runAction(CCSequence::createWithTwoActions(
+            CCAnimate::create(CCAnimation::createWithSpriteFrames(frames, delay)),
+            CCCallFunc::create(effect, callfunc_selector(CCNode::removeMeAndCleanup))
+        ));
+
+        if (deathInfo.get<bool>("fade").unwrapOr(true)) {
+            effect->runAction(CCSequence::createWithTwoActions(
+                CCDelayTime::create(deathInfo.get<float>("fade-delay-multiplier").unwrapOr(6.0f) * delay),
+                CCFadeOut::create(deathInfo.get<float>("fade-time-multiplier").unwrapOr(6.0f) * delay)
+            ));
+        }
+
+        m_gameLayer->m_objectLayer->addChild(effect, 10000);
+
+        auto particles = CCParticleSystemQuad::create("explodeEffect.plist", false);
+        particles->setPositionType(kCCPositionTypeGrouped);
+        particles->setAutoRemoveOnFinish(true);
+        particles->setPosition(position);
+        particles->setStartColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+        particles->setEndColor({ 1.0f, 1.0f, 1.0f, 1.0f });
+        particles->setStartColorVar({ 0.0f, 0.0f, 0.0f, 1.0f });
+        particles->setEndColorVar({ 0.0f, 0.0f, 0.0f, 1.0f });
+        particles->setScale(vehicleSize);
+        particles->resetSystem();
+        m_parentLayer->addChild(particles, 99);
+
+        auto circleUseScale = deathInfo.get<bool>("circle-use-scale").unwrapOr(false);
+        auto circleUseDelay = deathInfo.get<bool>("circle-use-delay").unwrapOr(false);
+        auto circleFactor = circleUseScale ? effectScale : vehicleSize;
+        auto circleStartRadius = deathInfo.get<float>("circle-start-radius").unwrapOr(10.0f) * circleFactor;
+        auto circleEndRadius = deathInfo.get<float>("circle-end-radius").unwrapOr(110.0f) * circleFactor;
+        auto circleDuration = deathInfo.get<float>("circle-duration").unwrapOr(0.6f);
+        if (circleUseDelay) circleDuration *= delay;
+
+        auto circle = CCCircleWave::create(circleStartRadius, circleEndRadius, circleDuration, false);
+        circle->m_color.r = 255;
+        circle->m_color.g = 255;
+        circle->m_color.b = 255;
+        circle->setPosition(position);
+        circle->m_opacityMod = 1.0f;
+        m_parentLayer->addChild(circle, 1000);
+
+        auto outlineUseScale = deathInfo.get<bool>("outline-use-scale").unwrapOr(false);
+        auto outlineUseDelay = deathInfo.get<bool>("outline-use-delay").unwrapOr(false);
+        auto outlineFactor = outlineUseScale ? effectScale : vehicleSize;
+        auto outlineStartRadius = deathInfo.get<float>("outline-start-radius").unwrapOr(10.0f) * outlineFactor;
+        auto outlineEndRadius = deathInfo.get<float>("outline-end-radius").unwrapOr(115.0f) * outlineFactor;
+        auto outlineDuration = deathInfo.get<float>("outline-duration").unwrapOr(0.4f);
+        if (outlineUseDelay) outlineDuration *= delay;
+
+        auto outline = CCCircleWave::create(outlineStartRadius, outlineEndRadius, outlineDuration, false);
+        outline->m_color.r = 255;
+        outline->m_color.g = 255;
+        outline->m_color.b = 255;
+        outline->setPosition(position);
+        outline->m_circleMode = CircleMode::Outline;
+        outline->m_lineWidth = 10;
+        m_parentLayer->addChild(outline, 99);
+
+        if (Get::GameManager()->getGameVariable(GameVar::PlayerExplode)) return;
+
+        int size = vehicleSize * 40.0f;
+        auto renderTexture = CCRenderTexture::create(size, size);
+        auto savedPosition = getPosition();
+        setPosition({ vehicleSize * 20.0f, vehicleSize * 20.0f });
+        renderTexture->beginWithClear(0.0f, 0.0f, 0.0f, 0.0f);
+        m_dashSpritesContainer->visit();
+        visit();
+        renderTexture->end();
+        setPosition(savedPosition);
+
+        auto explodeNode = ExplodeItemNode::create(renderTexture);
+        explodeNode->setPosition(position);
+        auto playerColor4F = to4F(to4B(m_playerColor1));
+        float xVelocity = getCurrentXVelocity() * 0.72;
+        int countX = jasmine::random::get(2.0, 4.0);
+        int countY = jasmine::random::get(2.0, 4.0);
+        auto randomValue = jasmine::random::get();
+        explodeNode->createSprites(
+            randomValue > 0.95 ? 1 : countX, randomValue > 0.9 ? 1 : countY, xVelocity,
+            xVelocity * 0.5f, 6.0f, 3.0f, 1.4f, 0.0f, playerColor4F, playerColor4F, false
+        );
+        if (auto parent = getParent()) parent->addChild(explodeNode, 101);
+        else m_parentLayer->addChild(explodeNode, 101);
     }
 };

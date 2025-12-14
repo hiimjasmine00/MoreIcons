@@ -596,7 +596,7 @@ void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& p
     else effectID++;
 
     more_icons::addDeathEffect(name, shortName, path, plistPath, {}, {}, quality, pack.id, pack.name,
-        effectID, {}, true, pack.zipped);
+        effectID, Defaults::getDeathEffectInfo(effectID), true, pack.zipped);
 
     log::debug("Finished pre-loading vanilla death effect {} from {}", name, pack.name);
 }
@@ -881,10 +881,18 @@ CCSprite* MoreIcons::customIcon(IconInfo* info) {
     square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
     square->setColor({ 150, 150, 150 });
 
-    auto sprite = CCSprite::create(info->getTextureString().c_str());
-    limitNodeHeight(sprite, 27.0f, 999.0f, 0.001f);
-    sprite->setPosition(square->getContentSize() / 2.0f);
-    square->addChild(sprite);
+    if (info->getType() == IconType::DeathEffect) {
+        auto question = CCLabelBMFont::create("?", "bigFont.fnt");
+        question->setScale(0.6f);
+        question->setPosition(square->getContentSize() / 2.0f);
+        square->addChild(question);
+    }
+    else {
+        auto sprite = CCSprite::create(info->getTextureString().c_str());
+        limitNodeHeight(sprite, 27.0f, 999.0f, 0.001f);
+        sprite->setPosition(square->getContentSize() / 2.0f);
+        square->addChild(sprite);
+    }
 
     return square;
 }
