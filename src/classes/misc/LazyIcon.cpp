@@ -60,14 +60,11 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
             m_sheet = info->getSheetString();
         }
         else {
-            m_texture = info->getIconString();
-            if (m_texture.empty()) {
-                m_visited = true;
-                auto playerSpecial = MoreIcons::customIcon(m_info);
-                playerSpecial->setID("player-special");
-                normalImage->addChild(playerSpecial);
-                return true;
-            }
+            m_visited = true;
+            auto playerSpecial = MoreIcons::customIcon(m_info);
+            playerSpecial->setID("player-special");
+            normalImage->addChild(playerSpecial);
+            return true;
         }
     }
     else {

@@ -179,7 +179,7 @@ IconInfo* more_icons::addShipFire(
 }
 
 void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
-    auto oldPng = info->getTextureString();
+    auto oldPngs = info->getAllTextures();
     auto type = info->getType();
     if (type <= IconType::Jetpack) {
         info->moveTexture(path / info->getTexture().filename());
@@ -203,9 +203,13 @@ void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
     info->setVanilla(false);
 
     auto textureCache = Get::TextureCache();
-    if (Ref texture = textureCache->textureForKey(oldPng.c_str())) {
-        textureCache->removeTextureForKey(oldPng.c_str());
-        textureCache->m_pTextures->setObject(texture, info->getTextureString());
+    auto newPngs = info->getAllTextures();
+    for (size_t i = 0; i < newPngs.size(); i++) {
+        auto& oldPng = oldPngs[i];
+        if (Ref texture = textureCache->textureForKey(oldPng.c_str())) {
+            textureCache->removeTextureForKey(oldPng.c_str());
+            textureCache->m_pTextures->setObject(texture, newPngs[i]);
+        }
     }
 }
 
@@ -218,7 +222,9 @@ void more_icons::removeIcon(IconInfo* info) {
     for (auto& frame : info->getFrameNames()) {
         spriteFrameCache->removeSpriteFrameByName(frame.c_str());
     }
-    Get::TextureCache()->removeTextureForKey(info->getTextureString().c_str());
+    for (auto& textureString : info->getAllTextures()) {
+        Get::TextureCache()->removeTextureForKey(textureString.c_str());
+    }
 
     if (!MoreIcons::preloadIcons && type <= IconType::Jetpack) {
         for (auto it = MoreIcons::requestedIcons.begin(); it != MoreIcons::requestedIcons.end();) {
@@ -243,7 +249,7 @@ void more_icons::renameIcon(IconInfo* info, const std::string& name) {
     info->setName(newName);
     info->setShortName(name);
 
-    auto oldPng = info->getTextureString();
+    auto oldPngs = info->getAllTextures();
     auto type = info->getType();
 
     #ifdef GEODE_IS_WINDOWS
@@ -276,12 +282,18 @@ void more_icons::renameIcon(IconInfo* info, const std::string& name) {
     }
 
     auto textureCache = Get::TextureCache();
-    if (Ref texture = textureCache->textureForKey(oldPng.c_str())) {
-        textureCache->removeTextureForKey(oldPng.c_str());
-        textureCache->m_pTextures->setObject(texture, info->getTextureString());
+    auto newPngs = info->getAllTextures();
+    for (size_t i = 0; i < newPngs.size(); i++) {
+        auto& oldPng = oldPngs[i];
+        if (Ref texture = textureCache->textureForKey(oldPng.c_str())) {
+            textureCache->removeTextureForKey(oldPng.c_str());
+            textureCache->m_pTextures->setObject(texture, newPngs[i]);
+        }
+    }
 
+    auto frameNames = info->getFrameNames();
+    if (!frameNames.empty()) {
         auto spriteFrameCache = Get::SpriteFrameCache();
-        auto frameNames = info->getFrameNames();
         for (auto& frameName : frameNames) {
             if (Ref spriteFrame = MoreIcons::getFrame(frameName.c_str())) {
                 spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
@@ -322,15 +334,23 @@ void more_icons::renameIcon(IconInfo* info, const std::string& name) {
 }
 
 void more_icons::updateIcon(IconInfo* info) {
-    auto texture = Get::TextureCache()->textureForKey(info->getTextureString().c_str());
+    CCTexture2D* texture = nullptr;
+    for (auto& textureString : info->getAllTextures()) {
+        texture = Get::TextureCache()->textureForKey(textureString.c_str());
+        if (!texture) continue;
+
+        auto binaryRes = file::readBinary(info->getTexture());
+        if (!binaryRes.isOk()) continue;
+
+        auto imageRes = texpack::fromPNG(binaryRes.unwrap(), true);
+        if (!imageRes.isOk()) continue;
+
+        auto image = std::move(imageRes).unwrap();
+
+        Load::initTexture(texture, image.data.data(), image.width, image.height);
+    }
+
     if (!texture) return;
-
-    auto imageRes = texpack::fromPNG(info->getTexture(), true);
-    if (!imageRes.isOk()) return;
-
-    auto image = std::move(imageRes).unwrap();
-
-    Load::initTexture(texture, image.data.data(), image.width, image.height);
 
     auto framesRes = Load::createFrames(info->getSheet(), texture, info->getName(), info->getType());
     if (!framesRes.isOk()) return;

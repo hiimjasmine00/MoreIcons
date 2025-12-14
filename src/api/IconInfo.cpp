@@ -1,4 +1,5 @@
 #include "IconInfoImpl.hpp"
+#include <fmt/format.h>
 #include <Geode/utils/string.hpp>
 
 using namespace geode::prelude;
@@ -17,6 +18,19 @@ std::filesystem::path IconInfo::getTexture() const {
 
 std::string IconInfo::getTextureString() const {
     return string::pathToString(m_impl->m_texture);
+}
+
+std::vector<std::string> IconInfo::getAllTextures() const {
+    std::vector<std::string> textures;
+    if (m_impl->m_type == IconType::ShipFire) {
+        auto texture = getTextureString();
+        for (int i = 1; i <= m_impl->m_fireCount; i++) {
+            texture.replace(texture.size() - 7, 3, fmt::format("{:03}", i));
+            textures.push_back(texture);
+        }
+    }
+    else textures.push_back(getTextureString());
+    return textures;
 }
 
 std::filesystem::path IconInfo::getSheet() const {

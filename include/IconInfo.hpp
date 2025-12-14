@@ -30,6 +30,7 @@ public:
     std::string getShortName() const MI_EXPORT(&IconInfo::getShortName, (this));
     std::filesystem::path getTexture() const MI_EXPORT(&IconInfo::getTexture, (this));
     std::string getTextureString() const MI_EXPORT(&IconInfo::getTextureString, (this));
+    std::vector<std::string> getAllTextures() const MI_EXPORT(&IconInfo::getAllTextures, (this));
     std::filesystem::path getSheet() const MI_EXPORT(&IconInfo::getSheet, (this));
     std::string getSheetString() const MI_EXPORT(&IconInfo::getSheetString, (this));
     std::filesystem::path getJSON() const MI_EXPORT(&IconInfo::getJSON, (this));

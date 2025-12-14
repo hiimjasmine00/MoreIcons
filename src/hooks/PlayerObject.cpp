@@ -229,7 +229,7 @@ class $modify(MIPlayerObject, PlayerObject) {
             auto texture = info->getTextureString();
             auto fireCount = info->getFireCount();
             auto interval = info->getSpecialInfo().get<float>("interval").unwrapOr(0.05f);
-            texture.replace(texture.size() - 7, 7, fmt::format("{:03}.png", (int)(m_totalTime / interval) % fireCount + 1));
+            texture.replace(texture.size() - 7, 3, fmt::format("{:03}", (int)(m_totalTime / interval) % fireCount + 1));
             m_shipStreak->setTexture(Get::TextureCache()->addImage(texture.c_str(), false));
         }
         else if (MoreIcons::traditionalPacks) {
