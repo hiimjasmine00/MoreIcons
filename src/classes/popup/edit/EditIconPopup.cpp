@@ -17,7 +17,6 @@
 #include <Geode/binding/Slider.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
 #include <Geode/utils/file.hpp>
-#include <Geode/utils/string.hpp>
 #include <jasmine/convert.hpp>
 #include <jasmine/mod.hpp>
 
@@ -212,11 +211,11 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     loadStateSprite->setScale(0.7f);
     auto loadStateButton = CCMenuItemExt::createSpriteExtra(loadStateSprite, [this](auto) {
         LoadEditorPopup::create(m_iconType, [this](const std::filesystem::path& directory) {
-            m_selectedPNG = directory / MI_PATH("icon.png");
-            m_selectedPlist = directory / MI_PATH("icon.plist");
+            m_selectedPNG = directory / L("icon.png");
+            m_selectedPlist = directory / L("icon.plist");
             if (!updateWithSelectedFiles()) return;
 
-            auto stateRes = file::readFromJson<IconEditorState>(directory / MI_PATH("state.json"));
+            auto stateRes = file::readFromJson<IconEditorState>(directory / L("state.json"));
             if (stateRes.isErr()) return MoreIcons::notifyFailure("Failed to load state: {}", stateRes.unwrapErr());
 
             m_state = std::move(stateRes).unwrap();

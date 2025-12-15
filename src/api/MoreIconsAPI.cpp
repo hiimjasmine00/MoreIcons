@@ -252,32 +252,28 @@ void more_icons::renameIcon(IconInfo* info, const std::string& name) {
     auto oldPngs = info->getAllTextures();
     auto type = info->getType();
 
-    #ifdef GEODE_IS_WINDOWS
-    auto wName = string::utf8ToWide(name);
-    #else
-    auto& wName = name;
-    #endif
-
     if (type <= IconType::Jetpack) {
-        constexpr std::array qualities = { MI_PATH(""), MI_PATH("-hd"), MI_PATH("-uhd") };
+        constexpr std::array qualities = { L(""), L("-hd"), L("-uhd") };
 
+        auto wideName = MoreIcons::strWide(name);
         auto quality = qualities[(int)info->getQuality() - 1];
 
-        info->moveTexture(info->getTexture().parent_path() / (wName + quality + MI_PATH(".png")));
-        info->moveSheet(info->getSheet().parent_path() / (wName + quality + MI_PATH(".plist")));
+        info->moveTexture(info->getTexture().parent_path() / fmt::format(L("{}{}.png"), wideName, quality));
+        info->moveSheet(info->getSheet().parent_path() / fmt::format(L("{}{}.plist"), wideName, quality));
     }
     else if (type >= IconType::DeathEffect) {
+        std::filesystem::path directory = MoreIcons::strWide(name);
         if (auto texture = info->getTexture(); !texture.empty()) {
-            info->moveTexture(texture.parent_path().parent_path() / wName / texture.filename());
+            info->moveTexture(texture.parent_path().parent_path() / directory / texture.filename());
         }
         if (auto sheet = info->getSheet(); !sheet.empty()) {
-            info->moveSheet(sheet.parent_path().parent_path() / wName / sheet.filename());
+            info->moveSheet(sheet.parent_path().parent_path() / directory / sheet.filename());
         }
         if (auto json = info->getJSON(); !json.empty()) {
-            info->moveJSON(json.parent_path().parent_path() / wName / json.filename());
+            info->moveJSON(json.parent_path().parent_path() / directory / json.filename());
         }
         if (auto icon = info->getIcon(); !icon.empty()) {
-            info->setIcon(icon.parent_path().parent_path() / wName / icon.filename());
+            info->setIcon(icon.parent_path().parent_path() / directory / icon.filename());
         }
     }
 

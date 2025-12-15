@@ -1,5 +1,8 @@
 #include <cocos2d.h>
 #include <fmt/format.h>
+#ifdef GEODE_IS_WINDOWS
+#include <fmt/xchar.h>
+#endif
 #include <Geode/GeneratedPredeclare.hpp>
 #include <IconInfo.hpp>
 #include <std23/function_ref.h>
@@ -12,11 +15,11 @@ struct LogData {
 };
 
 #ifdef GEODE_IS_WINDOWS
-#define MI_PATH_ID L"config\\" GEODE_CONCAT(L, GEODE_MOD_ID)
-#define MI_PATH(x) L##x
+#define WIDE_CONFIG L"config\\" GEODE_CONCAT(L, GEODE_MOD_ID)
+#define L(x) L##x
 #else
-#define MI_PATH_ID "config/" GEODE_MOD_ID
-#define MI_PATH(x) x
+#define WIDE_CONFIG "config/" GEODE_MOD_ID
+#define L(x) x
 #endif
 
 namespace std::filesystem {
@@ -40,17 +43,10 @@ public:
     static constexpr std::array severityFrames = {
         "cc_2x2_white_image", "GJ_infoIcon_001.png", "geode.loader/info-warning.png", "geode.loader/info-alert.png"
     };
-    #ifdef GEODE_IS_WINDOWS
     static constexpr std::array folders = {
-        L"icon", L"ship", L"ball", L"ufo", L"wave", L"robot", L"spider",
-        L"swing", L"jetpack", L"death", L"trail", L"", L"fire"
+        L("icon"), L("ship"), L("ball"), L("ufo"), L("wave"), L("robot"), L("spider"),
+        L("swing"), L("jetpack"), L("death"), L("trail"), L(""), L("fire")
     };
-    #else
-    static constexpr std::array folders = {
-        "icon", "ship", "ball", "ufo", "wave", "robot", "spider",
-        "swing", "jetpack", "death", "trail", "", "fire"
-    };
-    #endif
 
     static std::map<IconType, std::vector<IconInfo>> icons;
     static std::map<int, std::map<IconType, std::string>> requestedIcons;
@@ -101,8 +97,8 @@ public:
     static std::filesystem::path getEditorDir(IconType type);
     static std::filesystem::path getIconDir(IconType type);
     static std::pair<std::string, std::string> getIconPaths(int id, IconType type);
-    static std::filesystem::path getIconStem(const std::string& name, IconType type);
-    static std::basic_string_view<std::filesystem::path::value_type> getPathFilename(const std::filesystem::path& path);
+    static std::filesystem::path::string_type getIconStem(const std::string& name, IconType type);
+    static std::basic_string_view<std::filesystem::path::value_type> getPathFilename(const std::filesystem::path& path, size_t removeCount = 0);
     static std::filesystem::path::string_type getPathString(std::filesystem::path path);
     static std::string getTrailTexture(int id);
     static void iterate(
@@ -115,11 +111,8 @@ public:
         const std::filesystem::path& from, const std::filesystem::path& to, bool overwrite = true, bool copy = false
     );
     static std::filesystem::path strPath(std::string_view path);
-    #ifdef GEODE_IS_WINDOWS
-    static std::string strNarrow(std::wstring_view wstr);
-    #else
-    static std::string strNarrow(std::string_view str);
-    #endif
+    static std::string strNarrow(std::basic_string_view<std::filesystem::path::value_type> str);
+    static std::filesystem::path::string_type strWide(std::string_view str);
     static void updateGarage(GJGarageLayer* layer = nullptr);
     static cocos2d::ccColor3B vanillaColor1(bool dual);
     static cocos2d::ccColor3B vanillaColor2(bool dual);

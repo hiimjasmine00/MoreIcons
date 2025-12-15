@@ -1,11 +1,7 @@
 #include "IconNamePopup.hpp"
 #include "MoreInfoPopup.hpp"
 #include "../../../MoreIcons.hpp"
-#include <fmt/std.h>
 #include <Geode/binding/ButtonSprite.hpp>
-#ifdef GEODE_IS_WINDOWS
-#include <Geode/utils/string.hpp>
-#endif
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
@@ -20,15 +16,22 @@ IconNamePopup* IconNamePopup::create(MoreInfoPopup* popup, IconInfo* info) {
     return nullptr;
 }
 
-using path_view = std::basic_string_view<std::filesystem::path::value_type>;
-
-void pushFile(fmt::memory_buffer& buffer, const std::filesystem::path& parent, path_view file1, path_view file2) {
+void pushFile(
+    fmt::memory_buffer& buffer,
+    const std::filesystem::path& parent,
+    const std::filesystem::path::string_type& file1,
+    const std::filesystem::path::string_type& file2
+) {
     if (MoreIcons::doesExist(parent / file1) && MoreIcons::doesExist(parent / file2)) {
         fmt::format_to(std::back_inserter(buffer), "\n<cg>{}</c>", MoreIcons::strNarrow(file1));
     }
 }
 
-void renameFile(const std::filesystem::path& parent, path_view from, path_view to) {
+void renameFile(
+    const std::filesystem::path& parent,
+    const std::filesystem::path::string_type& from,
+    const std::filesystem::path::string_type& to
+) {
     if (auto res = MoreIcons::renameFile(parent / from, parent / to); res.isErr()) {
         MoreIcons::notifyFailure("Failed to rename {}: {}", MoreIcons::strNarrow(from), res.unwrapErr());
     }
@@ -69,19 +72,19 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
         auto parent = info->getTexture().parent_path();
         fmt::memory_buffer files;
 
-        auto wideOld = GEODE_WINDOWS(string::utf8ToWide)(old);
-        auto wideName = GEODE_WINDOWS(string::utf8ToWide)(name);
+        auto wideOld = MoreIcons::strWide(old);
+        auto wideName = MoreIcons::strWide(name);
         auto type = info->getType();
         if (type >= IconType::DeathEffect) {
             pushFile(files, parent, wideOld, wideName);
         }
         else if (type <= IconType::Jetpack) {
-            pushFile(files, parent, wideOld + MI_PATH("-uhd.png"), wideName + MI_PATH("-uhd.png"));
-            pushFile(files, parent, wideOld + MI_PATH("-hd.png"), wideName + MI_PATH("-hd.png"));
-            pushFile(files, parent, wideOld + MI_PATH(".png"), wideName + MI_PATH(".png"));
-            pushFile(files, parent, wideOld + MI_PATH("-uhd.plist"), wideName + MI_PATH("-uhd.plist"));
-            pushFile(files, parent, wideOld + MI_PATH("-hd.plist"), wideName + MI_PATH("-hd.plist"));
-            pushFile(files, parent, wideOld + MI_PATH(".plist"), wideName + MI_PATH(".plist"));
+            pushFile(files, parent, fmt::format(L("{}-uhd.png"), wideOld), fmt::format(L("{}-uhd.png"), wideName));
+            pushFile(files, parent, fmt::format(L("{}-hd.png"), wideOld), fmt::format(L("{}-hd.png"), wideName));
+            pushFile(files, parent, fmt::format(L("{}.png"), wideOld), fmt::format(L("{}.png"), wideName));
+            pushFile(files, parent, fmt::format(L("{}-uhd.plist"), wideOld), fmt::format(L("{}-uhd.plist"), wideName));
+            pushFile(files, parent, fmt::format(L("{}-hd.plist"), wideOld), fmt::format(L("{}-hd.plist"), wideName));
+            pushFile(files, parent, fmt::format(L("{}.plist"), wideOld), fmt::format(L("{}.plist"), wideName));
         }
 
         if (files.size() > 0) {
@@ -101,12 +104,12 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
                 renameFile(parent, wideOld, wideName);
             }
             else if (type <= IconType::Jetpack) {
-                renameFile(parent, wideOld + MI_PATH("-uhd.png"), wideName + MI_PATH("-uhd.png"));
-                renameFile(parent, wideOld + MI_PATH("-hd.png"), wideName + MI_PATH("-hd.png"));
-                renameFile(parent, wideOld + MI_PATH(".png"), wideName + MI_PATH(".png"));
-                renameFile(parent, wideOld + MI_PATH("-uhd.plist"), wideName + MI_PATH("-uhd.plist"));
-                renameFile(parent, wideOld + MI_PATH("-hd.plist"), wideName + MI_PATH("-hd.plist"));
-                renameFile(parent, wideOld + MI_PATH(".plist"), wideName + MI_PATH(".plist"));
+                renameFile(parent, fmt::format(L("{}-uhd.png"), wideOld), fmt::format(L("{}-uhd.png"), wideName));
+                renameFile(parent, fmt::format(L("{}-hd.png"), wideOld), fmt::format(L("{}-hd.png"), wideName));
+                renameFile(parent, fmt::format(L("{}.png"), wideOld), fmt::format(L("{}.png"), wideName));
+                renameFile(parent, fmt::format(L("{}-uhd.plist"), wideOld), fmt::format(L("{}-uhd.plist"), wideName));
+                renameFile(parent, fmt::format(L("{}-hd.plist"), wideOld), fmt::format(L("{}-hd.plist"), wideName));
+                renameFile(parent, fmt::format(L("{}.plist"), wideOld), fmt::format(L("{}.plist"), wideName));
             }
 
             Popup::onClose(nullptr);

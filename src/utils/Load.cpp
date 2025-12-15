@@ -10,7 +10,9 @@ using namespace geode::prelude;
 using namespace jasmine::mod;
 
 std::string Load::getFrameName(std::string_view frameName, std::string_view name, IconType type) {
-    if (type == IconType::DeathEffect) return fmt::format("{}{}"_spr, name, frameName.substr(frameName.size() - 8));
+    if (type == IconType::DeathEffect) {
+        return fmt::format("{}{}"_spr, name, frameName.size() > 7 ? frameName.substr(frameName.size() - 8) : frameName);
+    }
 
     if (!frameName.ends_with("_001.png")) return std::string(frameName);
 

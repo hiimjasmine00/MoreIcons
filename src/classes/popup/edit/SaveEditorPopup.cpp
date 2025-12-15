@@ -75,7 +75,7 @@ void SaveEditorPopup::saveEditor(const std::filesystem::path& directory) {
         }
     }
 
-    if (auto res = file::writeToJson(directory / MI_PATH("state.json"), m_state); res.isErr()) {
+    if (auto res = file::writeToJson(directory / L("state.json"), m_state); res.isErr()) {
         return MoreIcons::notifyFailure("Failed to save state: {}", res.unwrapErr());
     }
 
@@ -91,10 +91,10 @@ void SaveEditorPopup::saveEditor(const std::filesystem::path& directory) {
     if (auto res = packer.pack(); res.isErr()) {
         return MoreIcons::notifyFailure("Failed to pack frames: {}", res.unwrapErr());
     }
-    if (auto res = packer.png(directory / MI_PATH("icon.png")); res.isErr()) {
+    if (auto res = packer.png(directory / L("icon.png")); res.isErr()) {
         return MoreIcons::notifyFailure("Failed to save image: {}", res.unwrapErr());
     }
-    if (auto res = packer.plist(directory / MI_PATH("icon.plist"), "icon.png", "    "); res.isErr()) {
+    if (auto res = packer.plist(directory / L("icon.plist"), "icon.png", "    "); res.isErr()) {
         return MoreIcons::notifyFailure("Failed to save plist: {}", res.unwrapErr());
     }
 

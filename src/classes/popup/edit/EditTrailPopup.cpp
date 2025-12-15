@@ -84,7 +84,7 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
         auto iconName = m_nameInput->getString();
         if (iconName.empty()) return MoreIcons::notifyInfo("Please enter a name.");
 
-        std::filesystem::path path = MoreIcons::getPathString(MoreIcons::getIconStem(iconName, IconType::Special)) + MI_PATH(".png");
+        std::filesystem::path path = fmt::format(L("{}.png"), MoreIcons::getIconStem(iconName, IconType::Special));
         if (MoreIcons::doesExist(path)) createQuickPopup(
             "Existing Trail",
             fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
@@ -118,7 +118,7 @@ void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
 void EditTrailPopup::addOrUpdateIcon(const std::string& name, const std::filesystem::path& path) {
     if (auto icon = more_icons::getIcon(name, IconType::Special)) more_icons::updateIcon(icon);
     else {
-        auto jsonPath = std::filesystem::path(path).replace_extension(MI_PATH(".json"));
+        auto jsonPath = std::filesystem::path(path).replace_extension(L(".json"));
         (void)file::writeString(jsonPath, "{}");
         icon = more_icons::addTrail(name, name, path, jsonPath, {}, {}, "More Icons", 0, {}, false, false);
         if (MoreIcons::preloadIcons) MoreIcons::createAndAddFrames(icon);

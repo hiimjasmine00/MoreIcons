@@ -10,7 +10,6 @@
 #include <Geode/binding/ObjectManager.hpp>
 #include <Geode/binding/SpriteDescription.hpp>
 #include <Geode/loader/Loader.hpp>
-#include <Geode/utils/string.hpp>
 #include <jasmine/convert.hpp>
 #include <jasmine/mod.hpp>
 

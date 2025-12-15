@@ -46,14 +46,13 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Va
         if (iconName.empty()) return MoreIcons::notifyInfo("Please enter a name.");
 
         auto stem = MoreIcons::getIconStem(iconName, m_iconType);
-        auto& stemStr = stem.native();
         if (
-            MoreIcons::doesExist(stemStr + MI_PATH(".png")) ||
-            MoreIcons::doesExist(stemStr + MI_PATH("-hd.png")) ||
-            MoreIcons::doesExist(stemStr + MI_PATH("-uhd.png")) ||
-            MoreIcons::doesExist(stemStr + MI_PATH(".plist")) ||
-            MoreIcons::doesExist(stemStr + MI_PATH("-hd.plist")) ||
-            MoreIcons::doesExist(stemStr + MI_PATH("-uhd.plist"))
+            MoreIcons::doesExist(fmt::format(L("{}.png"), stem)) ||
+            MoreIcons::doesExist(fmt::format(L("{}-hd.png"), stem)) ||
+            MoreIcons::doesExist(fmt::format(L("{}-uhd.png"), stem)) ||
+            MoreIcons::doesExist(fmt::format(L("{}.plist"), stem)) ||
+            MoreIcons::doesExist(fmt::format(L("{}-hd.plist"), stem)) ||
+            MoreIcons::doesExist(fmt::format(L("{}-uhd.plist"), stem))
         ) {
             createQuickPopup(
                 "Existing Icon",
@@ -82,7 +81,7 @@ bool SaveIconPopup::checkFrame(const std::string& suffix) {
     return frame != nullptr;
 }
 
-void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
+void SaveIconPopup::saveIcon(const std::filesystem::path::string_type& stem) {
     auto type = m_iconType;
     if (type == IconType::Robot || type == IconType::Spider) {
         if (!checkFrame("_01_001") || !checkFrame("_01_2_001") || !checkFrame("_01_glow_001")) return;
@@ -103,9 +102,9 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
     auto scaleFactor = Get::Director()->getContentScaleFactor();
     std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
     constexpr std::array suffixes = {
-        std::make_tuple(MI_PATH("-uhd"), "-uhd", "UHD"),
-        std::make_tuple(MI_PATH("-hd"), "-hd", "HD"),
-        std::make_tuple(MI_PATH(""), "", "SD")
+        std::make_tuple(L("-uhd"), "-uhd", "UHD"),
+        std::make_tuple(L("-hd"), "-hd", "HD"),
+        std::make_tuple(L(""), "", "SD")
     };
     for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(m_frames)) {
         auto& definition = m_definitions[frameName];
@@ -142,9 +141,8 @@ void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
     for (int i = 0; i < 3; i++) {
         auto& packer = packers[i];
         auto [wsuffix, suffix, displayName] = suffixes[i];
-        auto start = stem.native() + wsuffix;
-        std::filesystem::path png = start + MI_PATH(".png");
-        std::filesystem::path plist = start + MI_PATH(".plist");
+        std::filesystem::path png = fmt::format(L("{}{}.png"), stem, wsuffix);
+        std::filesystem::path plist = fmt::format(L("{}{}.plist"), stem, wsuffix);
         if (scales[i] == 1.0f) {
             selectedPNG = png;
             selectedPlist = plist;

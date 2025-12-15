@@ -1,4 +1,3 @@
-#define FMT_CPP_LIB_FILESYSTEM 0
 #include "MoreInfoPopup.hpp"
 #include "IconNamePopup.hpp"
 #include "SpecialSettingsPopup.hpp"
@@ -49,7 +48,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
         if (auto res = MoreIcons::renameFile(texturePath, directory / filename, false, true); res.isErr()) {
             return MoreIcons::notifyFailure("Failed to {} {}: {}", trash ? "trash" : "move", filename, res.unwrapErr());
         }
-        filename.replace_extension(MI_PATH(".json"));
+        filename.replace_extension(L(".json"));
         auto jsonPath = parentDir / filename;
         if (trash) {
             if (MoreIcons::doesExist(jsonPath)) {
@@ -65,44 +64,44 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
         }
     }
     else if (type <= IconType::Jetpack) {
-        auto shortName = GEODE_WINDOWS(string::utf8ToWide)(m_info->getShortName());
+        auto shortName = MoreIcons::strWide(m_info->getShortName());
         auto stem = MoreIcons::getPathString(parentDir / shortName);
         std::vector<std::filesystem::path> files;
 
-        std::filesystem::path uhdPng = stem + MI_PATH("-uhd.png");
+        std::filesystem::path uhdPng = fmt::format(L("{}-uhd.png"), stem);
         if (MoreIcons::doesExist(uhdPng)) {
             files.push_back(std::move(uhdPng));
-            std::filesystem::path filename = shortName + MI_PATH("-uhd.plist");
+            std::filesystem::path filename = fmt::format(L("{}-uhd.plist"), shortName);
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
             else if (!trash) {
-                if (auto res = copyVanillaFile(MI_PATH("icons") / filename, directory / filename, true); res.isErr()) {
+                if (auto res = copyVanillaFile(L("icons") / filename, directory / filename, true); res.isErr()) {
                     return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());
                 }
             }
         }
 
-        std::filesystem::path hdPng = stem + MI_PATH("-hd.png");
+        std::filesystem::path hdPng = fmt::format(L("{}-hd.png"), stem);
         if (MoreIcons::doesExist(hdPng)) {
             files.push_back(std::move(hdPng));
-            std::filesystem::path filename = shortName + MI_PATH("-hd.plist");
+            std::filesystem::path filename = fmt::format(L("{}-hd.plist"), shortName);
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
             else if (!trash) {
-                if (auto res = copyVanillaFile(MI_PATH("icons") / filename, directory / filename, false); res.isErr()) {
+                if (auto res = copyVanillaFile(L("icons") / filename, directory / filename, false); res.isErr()) {
                     return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());
                 }
             }
         }
 
-        std::filesystem::path png = stem + MI_PATH(".png");
+        std::filesystem::path png = fmt::format(L("{}.png"), stem);
         if (MoreIcons::doesExist(png)) {
             files.push_back(std::move(png));
-            std::filesystem::path filename = shortName + MI_PATH(".plist");
+            std::filesystem::path filename = fmt::format(L("{}.plist"), shortName);
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
             else if (!trash) {
-                if (auto res = copyVanillaFile(MI_PATH("icons") / filename, directory / filename, false); res.isErr()) {
+                if (auto res = copyVanillaFile(L("icons") / filename, directory / filename, false); res.isErr()) {
                     return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());
                 }
             }
@@ -236,7 +235,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
                     auto type = m_info->getType();
                     auto parent = m_info->getTexture().parent_path();
                     if (type <= IconType::Jetpack) parent = parent.parent_path();
-                    auto dir = parent / MI_PATH_ID / MoreIcons::folders[miType];
+                    auto dir = parent / WIDE_CONFIG / MoreIcons::folders[miType];
                     if (auto res = file::createDirectoryAll(dir)) moveIcon(dir, false);
                     else MoreIcons::notifyFailure(res.unwrapErr());
                 }

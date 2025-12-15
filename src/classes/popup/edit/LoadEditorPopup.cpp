@@ -1,13 +1,9 @@
 #include "LoadEditorPopup.hpp"
 #include "../../../MoreIcons.hpp"
 #include <algorithm>
-#ifdef GEODE_IS_WINDOWS
-#include <cwctype>
-#endif
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/ui/Scrollbar.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
-#include <Geode/utils/string.hpp>
 
 using namespace geode::prelude;
 
@@ -56,11 +52,11 @@ bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const 
             if (a == b) return false;
             for (size_t i = 0; i < a.size() && i < b.size(); i++) {
                 #ifdef GEODE_IS_WINDOWS
-                auto charA = std::towlower(a[i]);
-                auto charB = std::towlower(b[i]);
+                auto charA = towlower(a[i]);
+                auto charB = towlower(b[i]);
                 #else
-                auto charA = std::tolower(a[i]);
-                auto charB = std::tolower(b[i]);
+                auto charA = tolower(a[i]);
+                auto charB = tolower(b[i]);
                 #endif
                 if (charA != charB) return charA < charB;
             }
@@ -69,7 +65,7 @@ bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const 
     });
 
     for (auto& path : entries) {
-        auto filename = string::pathToString(path.filename());
+        auto filename = MoreIcons::strNarrow(MoreIcons::getPathFilename(path));
 
         auto entryMenu = CCMenu::create();
         entryMenu->setContentSize({ 200.0f, 30.0f });
