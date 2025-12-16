@@ -24,10 +24,14 @@ class $modify(MIPlayerObject, PlayerObject) {
         return m_gameLayer && (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this);
     }
 
+    std::string activeIcon(IconType type) {
+        if (isPlayer1()) return more_icons::activeIcon(type, false);
+        else if (isPlayer2()) return more_icons::activeIcon(type, true);
+        else return std::string();
+    }
+
     void updateIcon(IconType type) {
-        std::string icon;
-        if (isPlayer1()) icon = more_icons::activeIcon(type, false);
-        else if (isPlayer2()) icon = more_icons::activeIcon(type, true);
+        auto icon = activeIcon(type);
         if (!icon.empty()) more_icons::updatePlayerObject(this, icon, type);
         else setUserObject("name"_spr, nullptr);
     }
@@ -106,9 +110,7 @@ class $modify(MIPlayerObject, PlayerObject) {
         PlayerObject::toggleRobotMode(enable, noEffects);
 
         if (!isRobot && m_isRobot) {
-            std::string iconName;
-            if (isPlayer1()) iconName = more_icons::activeIcon(IconType::Robot, false);
-            else if (isPlayer2()) iconName = more_icons::activeIcon(IconType::Robot, true);
+            auto iconName = activeIcon(IconType::Robot);
             if (!iconName.empty()) m_iconSprite->setDisplayFrame(MoreIcons::getFrame("{}_01_001.png"_spr, iconName));
         }
     }
@@ -118,17 +120,13 @@ class $modify(MIPlayerObject, PlayerObject) {
         PlayerObject::toggleSpiderMode(enable, noEffects);
 
         if (!isSpider && m_isSpider) {
-            std::string iconName;
-            if (isPlayer1()) iconName = more_icons::activeIcon(IconType::Spider, false);
-            else if (isPlayer2()) iconName = more_icons::activeIcon(IconType::Spider, true);
+            auto iconName = activeIcon(IconType::Spider);
             if (!iconName.empty()) m_iconSprite->setDisplayFrame(MoreIcons::getFrame("{}_01_001.png"_spr, iconName));
         }
     }
 
     IconInfo* getIconInfo(IconType type) {
-        if (isPlayer1()) return more_icons::getIcon(type, false);
-        else if (isPlayer2()) return more_icons::getIcon(type, true);
-        else return nullptr;
+        return more_icons::getIcon(activeIcon(type), type);
     }
 
     void setupStreak() {
