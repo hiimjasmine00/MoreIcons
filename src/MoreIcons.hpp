@@ -24,14 +24,15 @@ struct LogData {
 
 namespace std::filesystem {
     std::string format_as(const path& p);
+
+    inline path operator/(path&& lhs, const path& rhs) {
+        lhs /= rhs;
+        return std::move(lhs);
+    }
 }
 
 class MoreIcons {
 public:
-    static constexpr std::array prefixes = {
-        "player_", "ship_", "player_ball_", "bird_", "dart_", "robot_", "spider_",
-        "swing_", "jetpack_", "PlayerExplosion_", "streak_", "", "shipfire"
-    };
     static constexpr std::array lowercase = {
         "icon", "ship", "ball", "UFO", "wave", "robot", "spider",
         "swing", "jetpack", "death effect", "trail", "", "ship fire"
@@ -96,6 +97,7 @@ public:
     static bool doesExist(const std::filesystem::path& path);
     static std::filesystem::path getEditorDir(IconType type);
     static std::filesystem::path getIconDir(IconType type);
+    static std::string getIconName(int id, IconType type);
     static std::pair<std::string, std::string> getIconPaths(int id, IconType type);
     static std::filesystem::path::string_type getIconStem(const std::string& name, IconType type);
     static std::basic_string_view<std::filesystem::path::value_type> getPathFilename(const std::filesystem::path& path, size_t removeCount = 0);

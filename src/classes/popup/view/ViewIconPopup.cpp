@@ -69,7 +69,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         player->setID("player-icon");
         m_mainLayer->addChild(player);
 
-        auto prefix = info ? fmt::format("{}"_spr, name) : fmt::format("{}{:02}", MoreIcons::prefixes[miType], id);
+        auto prefix = info ? fmt::format("{}"_spr, name) : MoreIcons::getIconName(id, type);
         auto spriteFrameCache = Get::SpriteFrameCache();
         for (size_t i = 0; i < suffixes.size(); i++) {
             auto container = CCNode::create();

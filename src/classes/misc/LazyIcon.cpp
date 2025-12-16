@@ -38,7 +38,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
     m_type = type;
     m_id = id;
     m_info = info;
-    m_name = info ? info->getName() : fmt::format("{}{:02}", MoreIcons::prefixes[MoreIcons::convertType(type)], id);
+    m_name = info ? fmt::format("{}"_spr, info->getName()) : MoreIcons::getIconName(id, type);
     setID(m_name);
 
     if (type >= IconType::DeathEffect && !info) {
@@ -93,12 +93,11 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
 
 void LazyIcon::createSimpleIcon() {
     auto ufo = m_type == IconType::Ufo;
-    auto iconName = m_info ? fmt::format("{}"_spr, m_name) : m_name;
-    auto primaryFrame = MoreIcons::getFrame("{}_001.png", iconName);
-    auto secondaryFrame = MoreIcons::getFrame("{}_2_001.png", iconName);
-    auto tertiaryFrame = ufo ? MoreIcons::getFrame("{}_3_001.png", iconName) : nullptr;
-    auto glowFrame = MoreIcons::getFrame("{}_glow_001.png", iconName);
-    auto extraFrame = MoreIcons::getFrame("{}_extra_001.png", iconName);
+    auto primaryFrame = MoreIcons::getFrame("{}_001.png", m_name);
+    auto secondaryFrame = MoreIcons::getFrame("{}_2_001.png", m_name);
+    auto tertiaryFrame = ufo ? MoreIcons::getFrame("{}_3_001.png", m_name) : nullptr;
+    auto glowFrame = MoreIcons::getFrame("{}_glow_001.png", m_name);
+    auto extraFrame = MoreIcons::getFrame("{}_extra_001.png", m_name);
     auto normalImage = getNormalImage();
 
     if (primaryFrame) {
@@ -158,7 +157,6 @@ void LazyIcon::createComplexIcon() {
         definition->valueForKey("animDesc")->getCString())->objectForKey("usedTextures"));
     if (!usedTextures) return;
 
-    auto iconName = m_info ? fmt::format("{}"_spr, m_name) : m_name;
     auto normalImage = getNormalImage();
 
     auto glowNode = CCNode::create();
@@ -190,21 +188,21 @@ void LazyIcon::createComplexIcon() {
         partNode->m_propagateFlipChanges = true;
         partNode->setID(fmt::format("part-node-{}", id));
 
-        if (auto primaryFrame = MoreIcons::getFrame("{}_{:02}_001.png", iconName, index)) {
+        if (auto primaryFrame = MoreIcons::getFrame("{}_{:02}_001.png", m_name, index)) {
             auto sprite = CCSprite::createWithSpriteFrame(primaryFrame);
             sprite->setColor(spriteColor3B);
             sprite->setID(fmt::format("primary-sprite-{}", id));
             partNode->addChild(sprite, 0);
         }
 
-        if (auto secondaryFrame = MoreIcons::getFrame("{}_{:02}_2_001.png", iconName, index)) {
+        if (auto secondaryFrame = MoreIcons::getFrame("{}_{:02}_2_001.png", m_name, index)) {
             auto sprite = CCSprite::createWithSpriteFrame(secondaryFrame);
             sprite->setColor(spriteColor3B);
             sprite->setID(fmt::format("secondary-sprite-{}", id));
             partNode->addChild(sprite, -1);
         }
 
-        if (auto glowFrame = MoreIcons::getFrame("{}_{:02}_glow_001.png", iconName, index)) {
+        if (auto glowFrame = MoreIcons::getFrame("{}_{:02}_glow_001.png", m_name, index)) {
             auto sprite = CCSprite::createWithSpriteFrame(glowFrame);
             sprite->setID(fmt::format("glow-sprite-{}", id));
             glowNode->addChild(sprite, -1);
@@ -212,7 +210,7 @@ void LazyIcon::createComplexIcon() {
         }
 
         if (index == 1) {
-            if (auto extraFrame = MoreIcons::getFrame("{}_01_extra_001.png", iconName)) {
+            if (auto extraFrame = MoreIcons::getFrame("{}_01_extra_001.png", m_name)) {
                 auto sprite = CCSprite::createWithSpriteFrame(extraFrame);
                 sprite->setID(fmt::format("extra-sprite-{}", id));
                 partNode->addChild(sprite, 1);
@@ -274,7 +272,7 @@ void LazyIcon::createIcon() {
             m_loadingSprite = nullptr;
         }
         if (!m_suffix.empty()) {
-            auto spriteFrame = MoreIcons::getFrame("{}{}.png", m_info ? fmt::format("{}"_spr, m_name) : m_name, m_suffix);
+            auto spriteFrame = MoreIcons::getFrame("{}{}.png", m_name, m_suffix);
             if (!spriteFrame) spriteFrame = spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
             auto sprite = CCSprite::createWithSpriteFrame(spriteFrame);
             sprite->setID("custom-sprite");
@@ -315,19 +313,13 @@ void LazyIcon::visit() {
     ThreadPool::get().pushTask([
         selfref = WeakRef(this), texture = MoreIcons::strPath(m_texture), sheet = MoreIcons::strPath(m_sheet),
         name = m_info ? m_info->getName() : std::string(), type = m_type,
-        frameName = m_suffix.empty() ? std::string() :
-            m_info ? fmt::format("{}{}.png"_spr, m_name, m_suffix) : fmt::format("{}{}.png", m_name, m_suffix)
+        frameName = m_suffix.empty() ? std::string() : fmt::format("{}{}.png", m_name, m_suffix)
     ] {
         auto image = Load::createFrames(texture, sheet, name, type);
         queueInMainThread([selfref = std::move(selfref), image = std::move(image), frameName = std::move(frameName)] mutable {
             if (auto self = selfref.lock()) {
                 if (image.isOk()) {
-                    if (frameName.empty()) {
-                        Load::addFrames(image.unwrap(), self->m_frames);
-                    }
-                    else {
-                        Load::addFrames(image.unwrap(), self->m_frames, frameName);
-                    }
+                    Load::addFrames(image.unwrap(), self->m_frames, frameName);
                 }
                 else if (image.isErr()) {
                     self->m_error = std::move(image).unwrapErr();

@@ -188,7 +188,7 @@ void MoreIcons::loadPacks() {
     factor = Get::Director()->getContentScaleFactor();
     packs.clear();
     packs.emplace_back("More Icons", std::string(), dirs::getGeodeDir(), false, false);
-    migrateTrails(Mod::get()->getConfigDir().make_preferred() / L("trail"));
+    migrateTrails(std::move(Mod::get()->getConfigDir().make_preferred()) / L("trail"));
 
     for (auto& pack : texture_loader::getAppliedPacks()) {
         auto& name = pack.name;
@@ -230,7 +230,7 @@ void MoreIcons::loadPacks() {
         auto configPath = resourcesPath / WIDE_CONFIG;
         if (doesExist(configPath)) {
             packs.emplace_back(name, id, resourcesPath, false, zipped);
-            migrateTrails(configPath / L("trail"));
+            migrateTrails(std::move(configPath) / L("trail"));
         }
     }
 }
@@ -283,7 +283,7 @@ std::filesystem::path vanillaTexturePath(const std::filesystem::path& path, bool
     if (!skipSuffix && Get::Director()->getContentScaleFactor() >= 4.0f) {
         if (auto highGraphicsMobile = Loader::get()->getLoadedMod("weebify.high-graphics-android")) {
             auto configDir = highGraphicsMobile->getConfigDir(false) / GEODE_GD_VERSION_STRING;
-            if (MoreIcons::doesExist(configDir)) return configDir / path;
+            if (MoreIcons::doesExist(configDir)) return std::move(configDir) / path;
         }
         return path;
     }
@@ -457,11 +457,11 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 
     auto jsonPath = path / L("settings.json");
 
-    auto iconPath = MoreIcons::getPathString(path / L("icon"));
-    auto iconPng = fmt::format(L("{}.png"), iconPath);
-    auto iconHdPng = factor >= 2.0f ? fmt::format(L("{}-hd.png"), iconPath) : std::filesystem::path::string_type();
-    auto iconUhdPng = factor >= 4.0f ? fmt::format(L("{}-uhd.png"), iconPath) : std::filesystem::path::string_type();
+    auto iconPng = path / L("icon.png");
+    auto iconHdPng = factor >= 2.0f ? path / L("icon-hd.png") : std::filesystem::path();
+    auto iconUhdPng = factor >= 4.0f ? path / L("icon-uhd.png") : std::filesystem::path();
 
+    std::filesystem::path iconPath;
     if (factor >= 4.0f && MoreIcons::doesExist(iconUhdPng)) iconPath = std::move(iconUhdPng);
     else if (factor >= 2.0f && MoreIcons::doesExist(iconHdPng)) iconPath = std::move(iconHdPng);
     else if (MoreIcons::doesExist(iconPng)) iconPath = std::move(iconPng);
@@ -529,11 +529,11 @@ void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
 
     auto jsonPath = path / L("settings.json");
 
-    auto iconPath = MoreIcons::getPathString(path / L("icon"));
-    auto iconPng = fmt::format(L("{}.png"), iconPath);
-    auto iconHdPng = factor >= 2.0f ? fmt::format(L("{}-hd.png"), iconPath) : std::filesystem::path::string_type();
-    auto iconUhdPng = factor >= 4.0f ? fmt::format(L("{}-uhd.png"), iconPath) : std::filesystem::path::string_type();
+    auto iconPng = path / L("icon.png");
+    auto iconHdPng = factor >= 2.0f ? path / L("icon-hd.png") : std::filesystem::path();
+    auto iconUhdPng = factor >= 4.0f ? path / L("icon-uhd.png") : std::filesystem::path();
 
+    std::filesystem::path iconPath;
     if (factor >= 4.0f && MoreIcons::doesExist(iconUhdPng)) iconPath = std::move(iconUhdPng);
     else if (factor >= 2.0f && MoreIcons::doesExist(iconHdPng)) iconPath = std::move(iconHdPng);
     else if (MoreIcons::doesExist(iconPng)) iconPath = std::move(iconPng);
@@ -620,11 +620,11 @@ void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
 
     auto jsonPath = path / L("settings.json");
 
-    auto iconPath = MoreIcons::getPathString(path / L("icon"));
-    auto iconPng = fmt::format(L("{}.png"), iconPath);
-    auto iconHdPng = factor >= 2.0f ? fmt::format(L("{}-hd.png"), iconPath) : std::filesystem::path::string_type();
-    auto iconUhdPng = factor >= 4.0f ? fmt::format(L("{}-uhd.png"), iconPath) : std::filesystem::path::string_type();
+    auto iconPng = path / L("icon.png");
+    auto iconHdPng = factor >= 2.0f ? path / L("icon-hd.png") : std::filesystem::path();
+    auto iconUhdPng = factor >= 4.0f ? path / L("icon-uhd.png") : std::filesystem::path();
 
+    std::filesystem::path iconPath;
     if (factor >= 4.0f && MoreIcons::doesExist(iconUhdPng)) iconPath = std::move(iconUhdPng);
     else if (factor >= 2.0f && MoreIcons::doesExist(iconHdPng)) iconPath = std::move(iconHdPng);
     else if (MoreIcons::doesExist(iconPng)) iconPath = std::move(iconPng);
@@ -657,15 +657,6 @@ void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack
     log::debug("Finished pre-loading vanilla ship fire {} from {}", name, pack.name);
 }
 
-#ifdef GEODE_IS_WINDOWS
-static constexpr std::array wprefixes = {
-    L"player_", L"ship_", L"player_ball_", L"bird_", L"dart_", L"robot_", L"spider_",
-    L"swing_", L"jetpack_", L"PlayerExplosion_", L"streak_", L"", L"shipfire"
-};
-#else
-static constexpr std::array wprefixes = MoreIcons::prefixes;
-#endif
-
 Result<ImageResult> createFrames(IconInfo* info) {
     auto impl = IconInfoImpl::getImpl(info);
     return Load::createFrames(impl->m_texture, impl->m_sheet, impl->m_name, impl->m_type);
@@ -678,8 +669,13 @@ CCTexture2D* addFrames(const ImageResult& image, IconInfo* info) {
 void MoreIcons::loadIcons(IconType type) {
     currentType = type;
 
+    static constexpr std::array prefixes = {
+        L("player_"), L("ship_"), L("player_ball_"), L("bird_"), L("dart_"), L("robot_"), L("spider_"),
+        L("swing_"), L("jetpack_"), L("PlayerExplosion_"), L("streak_"), L(""), L("shipfire")
+    };
+
     auto miType = convertType(type);
-    auto prefix = wprefixes[miType];
+    auto prefix = prefixes[miType];
     auto folder = folders[miType];
     auto name = lowercase[miType];
 
@@ -910,6 +906,15 @@ std::filesystem::path MoreIcons::getIconDir(IconType type) {
 
 std::filesystem::path::string_type MoreIcons::getIconStem(const std::string& name, IconType type) {
     return getPathString(getIconDir(type) / strPath(name));
+}
+
+std::string MoreIcons::getIconName(int id, IconType type) {
+    static constexpr std::array prefixes = {
+        "player_", "ship_", "player_ball_", "bird_", "dart_", "robot_", "spider_",
+        "swing_", "jetpack_", "PlayerExplosion_", "streak_", "", "shipfire"
+    };
+
+    return fmt::format("{}{:02}", prefixes[convertType(type)], id);
 }
 
 std::pair<std::string, std::string> MoreIcons::getIconPaths(int id, IconType type) {

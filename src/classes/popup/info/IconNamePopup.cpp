@@ -17,28 +17,22 @@ IconNamePopup* IconNamePopup::create(MoreInfoPopup* popup, IconInfo* info) {
 }
 
 void pushFile(
-    fmt::memory_buffer& buffer,
-    const std::filesystem::path& parent,
-    const std::filesystem::path::string_type& file1,
-    const std::filesystem::path::string_type& file2
+    fmt::memory_buffer& buffer, const std::filesystem::path& parent, const std::filesystem::path& file1, const std::filesystem::path& file2
 ) {
     if (MoreIcons::doesExist(parent / file1) && MoreIcons::doesExist(parent / file2)) {
-        fmt::format_to(std::back_inserter(buffer), "\n<cg>{}</c>", MoreIcons::strNarrow(file1));
+        fmt::format_to(std::back_inserter(buffer), "\n<cg>{}</c>", file1);
     }
 }
 
-void renameFile(
-    const std::filesystem::path& parent,
-    const std::filesystem::path::string_type& from,
-    const std::filesystem::path::string_type& to
-) {
+void renameFile(const std::filesystem::path& parent, const std::filesystem::path& from, const std::filesystem::path& to) {
     if (auto res = MoreIcons::renameFile(parent / from, parent / to); res.isErr()) {
-        MoreIcons::notifyFailure("Failed to rename {}: {}", MoreIcons::strNarrow(from), res.unwrapErr());
+        MoreIcons::notifyFailure("Failed to rename {}: {}", from, res.unwrapErr());
     }
 }
 
 bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
-    auto unlockName = MoreIcons::uppercase[MoreIcons::convertType(info->getType())];
+    m_iconType = info->getType();
+    auto unlockName = MoreIcons::uppercase[MoreIcons::convertType(m_iconType)];
 
     setID("IconNamePopup");
     setTitle(fmt::format("Edit {} Name", unlockName));
@@ -48,7 +42,6 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
     m_bgSprite->setID("background");
     m_closeBtn->setID("close-button");
 
-    m_iconType = info->getType();
     m_info = info;
 
     m_nameInput = TextInput::create(300.0f, "Name");

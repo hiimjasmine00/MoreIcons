@@ -633,8 +633,10 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
         { "scale-y", 1.0f }
     });
 
-    auto pieceFrame = MoreIcons::getFrame("{}01{}.png", MoreIcons::prefixes[(int)m_iconType], suffix);
-    if (pieceFrame) m_frames->setObject(pieceFrame, getKey(suffix));
+    auto key = getKey(suffix);
+
+    auto pieceFrame = MoreIcons::getFrame("{}{}.png", MoreIcons::getIconName(1, m_iconType), suffix);
+    if (pieceFrame) m_frames->setObject(pieceFrame, key);
     else pieceFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
     auto pieceSprite = CCSprite::createWithSpriteFrame(pieceFrame);
     auto pieceButton = CCMenuItemExt::createSpriteExtra(pieceSprite, [this, suffix, page, targets](CCMenuItemSpriteExtra* sender) {
@@ -652,8 +654,6 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
     });
     pieceButton->setContentSize({ 30.0f, 30.0f });
     pieceSprite->setPosition({ 15.0f, 15.0f });
-
-    auto key = getKey(suffix);
 
     if (targets) {
         m_targets->setObject(targets, key);

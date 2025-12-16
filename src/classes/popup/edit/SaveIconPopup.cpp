@@ -98,7 +98,7 @@ void SaveIconPopup::saveIcon(const std::filesystem::path::string_type& stem) {
 
     auto name = m_nameInput->getString();
 
-    texpack::Packer packers[3];
+    std::array<texpack::Packer, 3> packers = {};
     auto scaleFactor = Get::Director()->getContentScaleFactor();
     std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
     constexpr std::array suffixes = {

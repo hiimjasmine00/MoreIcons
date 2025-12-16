@@ -235,7 +235,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
                     auto type = m_info->getType();
                     auto parent = m_info->getTexture().parent_path();
                     if (type <= IconType::Jetpack) parent = parent.parent_path();
-                    auto dir = parent / WIDE_CONFIG / MoreIcons::folders[miType];
+                    auto dir = std::move(parent) / WIDE_CONFIG / MoreIcons::folders[miType];
                     if (auto res = file::createDirectoryAll(dir)) moveIcon(dir, false);
                     else MoreIcons::notifyFailure(res.unwrapErr());
                 }
