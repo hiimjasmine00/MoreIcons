@@ -2,8 +2,8 @@
 
 class Defaults {
 public:
-    static matjson::Value getTrailInfo(int id);
-    static matjson::Value getDeathEffectInfo(int id);
-    static matjson::Value getShipFireInfo(int id);
+    static const matjson::Value& getTrailInfo(int id);
+    static const matjson::Value& getDeathEffectInfo(int id);
+    static const matjson::Value& getShipFireInfo(int id);
     static int getShipFireCount(int id);
 };

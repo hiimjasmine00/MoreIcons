@@ -18,8 +18,7 @@ include = [
 [include]
 patterns-full = [
     "^IconInfo",
-    "^more_icons",
-    "^TrailInfo"
+    "^more_icons"
 ]
 
 [ignore]

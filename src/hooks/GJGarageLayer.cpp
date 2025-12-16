@@ -272,7 +272,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             auto unlockType = gameManager->iconTypeToUnlockType(type);
             auto hasAnimProf = Loader::get()->isModLoaded("thesillydoggo.animatedprofiles");
             for (size_t i = 0; i < infoPage.size(); i++) {
-                auto name = infoPage[i]->getName();
+                auto& name = infoPage[i]->getName();
                 auto itemIcon = GJItemIcon::createBrowserItem(unlockType, 1);
                 itemIcon->setScale(GJItemIcon::scaleForType(unlockType));
                 auto simplePlayer = static_cast<SimplePlayer*>(itemIcon->m_player);
@@ -295,7 +295,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             for (size_t i = 0; i < infoPage.size(); i++) {
                 auto info = infoPage[i];
                 auto infoType = info->getType();
-                auto name = info->getName();
+                auto& name = info->getName();
                 auto sprite = MoreIcons::customIcon(info);
                 sprite->setScale(0.8f);
                 auto iconButton = CCMenuItemSpriteExtra::create(sprite, this, menu_selector(GJGarageLayer::onSelect));

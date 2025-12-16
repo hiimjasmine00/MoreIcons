@@ -69,6 +69,7 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
         auto wideName = MoreIcons::strWide(name);
         auto type = info->getType();
         if (type >= IconType::DeathEffect) {
+            parent = parent.parent_path();
             pushFile(files, parent, wideOld, wideName);
         }
         else if (type <= IconType::Jetpack) {
@@ -86,14 +87,13 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
         }
 
         createQuickPopup(fmt::format("Rename {}", unlockName).c_str(), fmt::to_string(message), "No", "Yes", [
-            this, info, old = std::move(old), name = std::move(name), wideOld = std::move(wideOld), wideName = std::move(wideName), popup
+            this, info, parent = std::move(parent), old = std::move(old), name = std::move(name),
+            wideOld = std::move(wideOld), wideName = std::move(wideName), popup
         ](auto, bool btn2) {
             if (!btn2) return;
 
             auto type = info->getType();
-            auto parent = info->getTexture().parent_path();
             if (type >= IconType::DeathEffect) {
-                parent = parent.parent_path();
                 renameFile(parent, wideOld, wideName);
             }
             else if (type <= IconType::Jetpack) {

@@ -59,17 +59,15 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
             else suffixes.push_back({ "_001", "_2_001", "_glow_001", "_extra_001" });
         }
 
-        auto name = info ? info->getName() : std::string();
-
         auto player = SimplePlayer::create(1);
-        if (info) more_icons::updateSimplePlayer(player, name, type);
+        if (info) more_icons::updateSimplePlayer(player, info->getName(), type);
         else player->updatePlayerFrame(id, type);
         player->setGlowOutline({ 255, 255, 255 });
         player->setPosition({ 175.0f, (isRobot ? 160.0f : 80.0f) - suffixes.size() * 30.0f });
         player->setID("player-icon");
         m_mainLayer->addChild(player);
 
-        auto prefix = info ? fmt::format("{}"_spr, name) : MoreIcons::getIconName(id, type);
+        auto prefix = info ? fmt::format("{}"_spr, info->getName()) : MoreIcons::getIconName(id, type);
         auto spriteFrameCache = Get::SpriteFrameCache();
         for (size_t i = 0; i < suffixes.size(); i++) {
             auto container = CCNode::create();
@@ -119,8 +117,8 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
     }
     else if (type == IconType::Special) {
         auto streak = CCSprite::create((info ? info->getTextureString() : MoreIcons::getTrailTexture(id)).c_str());
-        auto trailInfo = info ? info->getSpecialInfo() : Defaults::getTrailInfo(id);
-        streak->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)(trailInfo.get<bool>("blend").unwrapOr(false) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA) });
+        auto& trailInfo = info ? info->getSpecialInfo() : Defaults::getTrailInfo(id);
+        streak->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)(trailInfo.get<bool>("blend").unwrapOr(true) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA) });
         streak->setPosition({ 175.0f, 50.0f });
         streak->setRotation(-90.0f);
         auto& size = streak->getContentSize();

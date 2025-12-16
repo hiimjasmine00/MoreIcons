@@ -28,13 +28,13 @@ class $modify(MIBaseGameLayer, GJBaseGameLayer) {
 
         if (auto info = more_icons::getIcon(IconType::Special, false)) {
             m_player1->m_regularTrail->setBlendFunc({
-                GL_SRC_ALPHA, (uint32_t)(info->getSpecialInfo().get<bool>("blend").unwrapOr(false) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
+                GL_SRC_ALPHA, (uint32_t)(info->getSpecialInfo().get<bool>("blend").unwrapOr(true) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
             });
         }
 
         if (auto info = more_icons::getIcon(IconType::Special, true)) {
             m_player2->m_regularTrail->setBlendFunc({
-                GL_SRC_ALPHA, (uint32_t)(info->getSpecialInfo().get<bool>("blend").unwrapOr(false) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
+                GL_SRC_ALPHA, (uint32_t)(info->getSpecialInfo().get<bool>("blend").unwrapOr(true) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
             });
         }
     }

@@ -1,5 +1,4 @@
 #include "MoreIcons.hpp"
-#include "api/IconInfoImpl.hpp"
 #include "classes/misc/ThreadPool.hpp"
 #include "utils/Defaults.hpp"
 #include "utils/Get.hpp"
@@ -658,12 +657,11 @@ void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack
 }
 
 Result<ImageResult> createFrames(IconInfo* info) {
-    auto impl = IconInfoImpl::getImpl(info);
-    return Load::createFrames(impl->m_texture, impl->m_sheet, impl->m_name, impl->m_type);
+    return Load::createFrames(info->getTexture(), info->getSheet(), info->getName(), info->getType());
 }
 
 CCTexture2D* addFrames(const ImageResult& image, IconInfo* info) {
-    return Load::addFrames(image, IconInfoImpl::getImpl(info)->m_frameNames);
+    return Load::addFrames(image, const_cast<std::vector<std::string>&>(info->getFrameNames()));
 }
 
 void MoreIcons::loadIcons(IconType type) {

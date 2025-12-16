@@ -1,7 +1,7 @@
 #define GEODE_DEFINE_EVENT_EXPORTS
 #include <IconInfo.hpp>
 
-class IconInfo::Impl {
+class IconInfoImpl {
 public:
     std::string m_name;
     std::string m_shortName;
@@ -19,11 +19,4 @@ public:
     int m_fireCount;
     bool m_vanilla;
     bool m_zipped;
-};
-
-class IconInfoImpl {
-public:
-    static std::shared_ptr<IconInfo::Impl> createImpl();
-    static IconInfo fromImpl(std::shared_ptr<IconInfo::Impl> impl);
-    static IconInfo::Impl* getImpl(IconInfo* icon);
 };

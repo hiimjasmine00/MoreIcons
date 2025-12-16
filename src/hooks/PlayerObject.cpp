@@ -133,8 +133,8 @@ class $modify(MIPlayerObject, PlayerObject) {
         PlayerObject::setupStreak();
 
         if (auto info = getIconInfo(IconType::Special)) {
-            auto trailInfo = info->getSpecialInfo();
-            auto blend = trailInfo.get<bool>("blend").unwrapOr(false);
+            auto& trailInfo = info->getSpecialInfo();
+            auto blend = trailInfo.get<bool>("blend").unwrapOr(true);
             auto tint = trailInfo.get<bool>("tint").unwrapOr(false);
             auto show = trailInfo.get<bool>("show").unwrapOr(false);
             auto fade = trailInfo.get<float>("fade").unwrapOr(0.3f);
@@ -162,7 +162,7 @@ class $modify(MIPlayerObject, PlayerObject) {
         }
 
         if (auto info = getIconInfo(IconType::ShipFire)) {
-            auto fireInfo = info->getSpecialInfo();
+            auto& fireInfo = info->getSpecialInfo();
             auto fade = fireInfo.get<float>("fade").unwrapOr(0.1f);
             auto stroke = fireInfo.get<float>("stroke").unwrapOr(20.0f);
             auto texture = Get::TextureCache()->addImage(info->getTextureString().c_str(), false);
@@ -197,7 +197,7 @@ class $modify(MIPlayerObject, PlayerObject) {
 
         if (auto info = getIconInfo(IconType::Special)) {
             m_regularTrail->setBlendFunc({
-                GL_SRC_ALPHA, (uint32_t)(info->getSpecialInfo().get<bool>("blend").unwrapOr(false) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
+                GL_SRC_ALPHA, (uint32_t)(info->getSpecialInfo().get<bool>("blend").unwrapOr(true) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
             });
         }
     }
@@ -210,7 +210,7 @@ class $modify(MIPlayerObject, PlayerObject) {
         auto info = getIconInfo(IconType::ShipFire);
         if (!info) return;
 
-        auto fireInfo = info->getSpecialInfo();
+        auto& fireInfo = info->getSpecialInfo();
         m_shipStreak->setPosition(
             m_shipStreak->getParent()->convertToNodeSpace(m_mainLayer->convertToWorldSpace(m_vehicleSprite->getPosition() + CCPoint {
                 fireInfo.get<float>("x").unwrapOr(-8.0f) * reverseMod(), fireInfo.get<float>("y").unwrapOr(-3.0f)
@@ -251,7 +251,7 @@ class $modify(MIPlayerObject, PlayerObject) {
         else if (m_playerSpeed == 1.1f) factor *= 1.1f;
         else if (m_playerSpeed == 1.3f) factor *= 1.05f;
 
-        auto fireInfo = info->getSpecialInfo();
+        auto& fireInfo = info->getSpecialInfo();
         m_shipStreak->updateFade(fireInfo.get<float>("fade").unwrapOr(0.1f) * factor);
         m_shipStreak->setStroke(fireInfo.get<float>("stroke").unwrapOr(20.0f) * factor);
     }
@@ -270,7 +270,7 @@ class $modify(MIPlayerObject, PlayerObject) {
         auto info = getIconInfo(IconType::DeathEffect);
         if (!info) return PlayerObject::playDeathEffect();
 
-        auto deathInfo = info->getSpecialInfo();
+        auto& deathInfo = info->getSpecialInfo();
         auto& position = getPosition();
         auto vehicleSize = m_vehicleSize;
         if (vehicleSize >= 1.0f) vehicleSize *= 0.9f;
@@ -283,9 +283,11 @@ class $modify(MIPlayerObject, PlayerObject) {
         auto scaleVar = deathInfo.get<float>("scale-variance").unwrapOr(0.0f);
         auto rotation = deathInfo.get<float>("rotation").unwrapOr(0.0f);
         auto rotationVar = deathInfo.get<float>("rotation-variance").unwrapOr(0.0f);
+        auto blend = deathInfo.get<bool>("blend").unwrapOr(false);
 
-        auto frameNames = info->getFrameNames();
+        auto& frameNames = info->getFrameNames();
         auto effect = CCSprite::createWithSpriteFrameName(frameNames[0].c_str());
+        if (blend) effect->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
         effect->setPosition(position);
         auto effectScale = ((float)jasmine::random::get(-scaleVar, scaleVar) + scale) * vehicleSize;
         effect->setScale(effectScale);

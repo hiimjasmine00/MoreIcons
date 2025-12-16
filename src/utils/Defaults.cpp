@@ -53,15 +53,17 @@ std::array trails = {
     })
 };
 
-matjson::Value Defaults::getTrailInfo(int id) {
+matjson::Value defaultTrail = matjson::makeObject({
+    { "blend", true },
+    { "tint", false },
+    { "show", false },
+    { "fade", 0.3f },
+    { "stroke", 14.0f }
+});
+
+const matjson::Value& Defaults::getTrailInfo(int id) {
     auto index = id - 1;
-    return index >= 0 && index < trails.size() ? trails[index] : matjson::makeObject({
-        { "blend", false },
-        { "tint", false },
-        { "show", false },
-        { "fade", 0.3f },
-        { "stroke", 14.0f }
-    });
+    return index >= 0 && index < trails.size() ? trails[index] : defaultTrail;
 }
 
 std::array deathEffects = {
@@ -485,30 +487,32 @@ std::array deathEffects = {
     })
 };
 
-matjson::Value Defaults::getDeathEffectInfo(int id) {
+matjson::Value defaultDeathEffect = matjson::makeObject({
+    { "blend", false },
+    { "scale", 1.0f },
+    { "scale-variance", 0.0f },
+    { "rotation", 0.0f },
+    { "rotation-variance", 0.0f },
+    { "frame-delay", 0.05f },
+    { "frame-delay-variance", 0.0f },
+    { "fade", true },
+    { "fade-delay-multiplier", 6.0f },
+    { "fade-time-multiplier", 6.0f },
+    { "circle-start-radius", 10.0f },
+    { "circle-end-radius", 110.0f },
+    { "circle-duration", 0.6f },
+    { "circle-use-scale", false },
+    { "circle-use-delay", false },
+    { "outline-start-radius", 10.0f },
+    { "outline-end-radius", 115.0f },
+    { "outline-duration", 0.4f },
+    { "outline-use-scale", false },
+    { "outline-use-delay", false }
+});
+
+const matjson::Value& Defaults::getDeathEffectInfo(int id) {
     auto index = id - 2;
-    return index >= 0 && index < deathEffects.size() ? deathEffects[index] : matjson::makeObject({
-        { "blend", false },
-        { "scale", 1.0f },
-        { "scale-variance", 0.0f },
-        { "rotation", 0.0f },
-        { "rotation-variance", 0.0f },
-        { "frame-delay", 0.05f },
-        { "frame-delay-variance", 0.0f },
-        { "fade", true },
-        { "fade-delay-multiplier", 6.0f },
-        { "fade-time-multiplier", 6.0f },
-        { "circle-start-radius", 10.0f },
-        { "circle-end-radius", 110.0f },
-        { "circle-duration", 0.6f },
-        { "circle-use-scale", false },
-        { "circle-use-delay", false },
-        { "outline-start-radius", 10.0f },
-        { "outline-end-radius", 115.0f },
-        { "outline-duration", 0.4f },
-        { "outline-use-scale", false },
-        { "outline-use-delay", false }
-    });
+    return index >= 0 && index < deathEffects.size() ? deathEffects[index] : defaultDeathEffect;
 }
 
 std::array shipFires = {
@@ -554,16 +558,18 @@ std::array shipFires = {
     })
 };
 
-matjson::Value Defaults::getShipFireInfo(int id) {
+matjson::Value defaultShipFire = matjson::makeObject({
+    { "blend", true },
+    { "fade", 0.1f },
+    { "stroke", 20.0f },
+    { "interval", 0.05f },
+    { "x", -8.0f },
+    { "y", -3.0f }
+});
+
+const matjson::Value& Defaults::getShipFireInfo(int id) {
     auto index = id - 2;
-    return index >= 0 && index < shipFires.size() ? shipFires[index] : matjson::makeObject({
-        { "blend", true },
-        { "fade", 0.1f },
-        { "stroke", 20.0f },
-        { "interval", 0.05f },
-        { "x", -8.0f },
-        { "y", -3.0f }
-    });
+    return index >= 0 && index < shipFires.size() ? shipFires[index] : defaultShipFire;
 }
 
 int Defaults::getShipFireCount(int id) {

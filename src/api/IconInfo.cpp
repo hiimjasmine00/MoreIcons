@@ -4,15 +4,15 @@
 
 using namespace geode::prelude;
 
-std::string IconInfo::getName() const {
+const std::string& IconInfo::getName() const {
     return m_impl->m_name;
 }
 
-std::string IconInfo::getShortName() const {
+const std::string& IconInfo::getShortName() const {
     return m_impl->m_shortName;
 }
 
-std::filesystem::path IconInfo::getTexture() const {
+const std::filesystem::path& IconInfo::getTexture() const {
     return m_impl->m_texture;
 }
 
@@ -33,7 +33,7 @@ std::vector<std::string> IconInfo::getAllTextures() const {
     return textures;
 }
 
-std::filesystem::path IconInfo::getSheet() const {
+const std::filesystem::path& IconInfo::getSheet() const {
     return m_impl->m_sheet;
 }
 
@@ -41,7 +41,7 @@ std::string IconInfo::getSheetString() const {
     return string::pathToString(m_impl->m_sheet);
 }
 
-std::filesystem::path IconInfo::getJSON() const {
+const std::filesystem::path& IconInfo::getJSON() const {
     return m_impl->m_json;
 }
 
@@ -49,7 +49,7 @@ std::string IconInfo::getJSONString() const {
     return string::pathToString(m_impl->m_json);
 }
 
-std::filesystem::path IconInfo::getIcon() const {
+const std::filesystem::path& IconInfo::getIcon() const {
     return m_impl->m_icon;
 }
 
@@ -57,15 +57,15 @@ std::string IconInfo::getIconString() const {
     return string::pathToString(m_impl->m_icon);
 }
 
-std::vector<std::string> IconInfo::getFrameNames() const {
+const std::vector<std::string>& IconInfo::getFrameNames() const {
     return m_impl->m_frameNames;
 }
 
-std::string IconInfo::getPackName() const {
+const std::string& IconInfo::getPackName() const {
     return m_impl->m_packName;
 }
 
-std::string IconInfo::getPackID() const {
+const std::string& IconInfo::getPackID() const {
     return m_impl->m_packID;
 }
 
@@ -81,7 +81,7 @@ int IconInfo::getSpecialID() const {
     return m_impl->m_specialID;
 }
 
-matjson::Value IconInfo::getSpecialInfo() const {
+const matjson::Value& IconInfo::getSpecialInfo() const {
     return m_impl->m_specialInfo;
 }
 
@@ -249,16 +249,4 @@ int IconInfo::compare(const std::string& packID2, const std::string& shortName2,
     }
 
     return a.size() < b.size() ? -1 : a.size() > b.size() ? 1 : 0;
-}
-
-std::shared_ptr<IconInfo::Impl> IconInfoImpl::createImpl() {
-    return std::make_shared<IconInfo::Impl>();
-}
-
-IconInfo IconInfoImpl::fromImpl(std::shared_ptr<IconInfo::Impl> impl) {
-    return IconInfo(std::move(impl));
-}
-
-IconInfo::Impl* IconInfoImpl::getImpl(IconInfo* icon) {
-    return icon->m_impl.get();
 }

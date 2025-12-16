@@ -15,35 +15,43 @@
 #endif
 #define MY_MOD_ID "hiimjustin000.more_icons"
 
+class IconInfoImpl;
+
 /// A class that contains information about a custom icon.
 class MORE_ICONS_DLL IconInfo {
 private:
-    class Impl;
-    std::shared_ptr<Impl> m_impl;
+    std::shared_ptr<IconInfoImpl> m_impl;
 
-    friend class std::vector<IconInfo>;
     friend class IconInfoImpl;
+    friend IconInfo* addIcon(
+        const std::string& name, const std::string& shortName, IconType type,
+        const std::filesystem::path& png, const std::filesystem::path& plist,
+        const std::filesystem::path& json, const std::filesystem::path& icon, int quality,
+        const std::string& packID, const std::string& packName,
+        int specialID, const matjson::Value& specialInfo, int fireCount,
+        bool vanilla, bool zipped
+    );
 
-    IconInfo(std::shared_ptr<Impl> impl) : m_impl(impl) {}
+    IconInfo(std::shared_ptr<IconInfoImpl> impl) : m_impl(impl) {}
 public:
-    std::string getName() const MI_EXPORT(&IconInfo::getName, (this));
-    std::string getShortName() const MI_EXPORT(&IconInfo::getShortName, (this));
-    std::filesystem::path getTexture() const MI_EXPORT(&IconInfo::getTexture, (this));
+    const std::string& getName() const MI_EXPORT(&IconInfo::getName, (this));
+    const std::string& getShortName() const MI_EXPORT(&IconInfo::getShortName, (this));
+    const std::filesystem::path& getTexture() const MI_EXPORT(&IconInfo::getTexture, (this));
     std::string getTextureString() const MI_EXPORT(&IconInfo::getTextureString, (this));
     std::vector<std::string> getAllTextures() const MI_EXPORT(&IconInfo::getAllTextures, (this));
-    std::filesystem::path getSheet() const MI_EXPORT(&IconInfo::getSheet, (this));
+    const std::filesystem::path& getSheet() const MI_EXPORT(&IconInfo::getSheet, (this));
     std::string getSheetString() const MI_EXPORT(&IconInfo::getSheetString, (this));
-    std::filesystem::path getJSON() const MI_EXPORT(&IconInfo::getJSON, (this));
+    const std::filesystem::path& getJSON() const MI_EXPORT(&IconInfo::getJSON, (this));
     std::string getJSONString() const MI_EXPORT(&IconInfo::getJSONString, (this));
-    std::filesystem::path getIcon() const MI_EXPORT(&IconInfo::getIcon, (this));
+    const std::filesystem::path& getIcon() const MI_EXPORT(&IconInfo::getIcon, (this));
     std::string getIconString() const MI_EXPORT(&IconInfo::getIconString, (this));
-    std::vector<std::string> getFrameNames() const MI_EXPORT(&IconInfo::getFrameNames, (this));
-    std::string getPackName() const MI_EXPORT(&IconInfo::getPackName, (this));
-    std::string getPackID() const MI_EXPORT(&IconInfo::getPackID, (this));
+    const std::vector<std::string>& getFrameNames() const MI_EXPORT(&IconInfo::getFrameNames, (this));
+    const std::string& getPackName() const MI_EXPORT(&IconInfo::getPackName, (this));
+    const std::string& getPackID() const MI_EXPORT(&IconInfo::getPackID, (this));
     IconType getType() const MI_EXPORT(&IconInfo::getType, (this));
     int getQuality() const MI_EXPORT(&IconInfo::getQuality, (this));
     int getSpecialID() const MI_EXPORT(&IconInfo::getSpecialID, (this));
-    matjson::Value getSpecialInfo() const MI_EXPORT(&IconInfo::getSpecialInfo, (this));
+    const matjson::Value& getSpecialInfo() const MI_EXPORT(&IconInfo::getSpecialInfo, (this));
     int getFireCount() const MI_EXPORT(&IconInfo::getFireCount, (this));
     bool inTexturePack() const MI_EXPORT(&IconInfo::inTexturePack, (this));
     bool isVanilla() const MI_EXPORT(&IconInfo::isVanilla, (this));

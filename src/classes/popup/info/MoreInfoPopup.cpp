@@ -39,7 +39,7 @@ Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem
 }
 
 void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash) {
-    auto texturePath = m_info->getTexture();
+    auto& texturePath = m_info->getTexture();
     auto parentDir = texturePath.parent_path();
     auto type = m_info->getType();
 
