@@ -7,6 +7,7 @@
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#define GEODE_DEFINE_EVENT_EXPORTS
 #include <MoreIcons.hpp>
 #include <ranges>
 #include <texpack.hpp>
@@ -18,8 +19,8 @@ FLAlertLayer* more_icons::createInfoPopup(const std::string& name, IconType type
     else return nullptr;
 }
 
-std::map<IconType, std::vector<IconInfo>>* more_icons::getIcons() {
-    return &MoreIcons::icons;
+std::map<IconType, std::vector<IconInfo>>& more_icons::getAllIcons() {
+    return MoreIcons::icons;
 }
 
 std::vector<IconInfo>* more_icons::getIcons(IconType type) {
@@ -70,7 +71,7 @@ void more_icons::unloadIcon(const std::string& name, IconType type, int requestI
         for (auto& frameName : info->getFrameNames()) {
             spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
         }
-        info->moveFrameNames({});
+        info->setFrameNames({});
 
         Get::TextureCache()->removeTextureForKey(info->getTextureString().c_str());
     }
@@ -182,18 +183,18 @@ void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
     auto oldPngs = info->getAllTextures();
     auto type = info->getType();
     if (type <= IconType::Jetpack) {
-        info->moveTexture(path / info->getTexture().filename());
-        info->moveSheet(path / info->getSheet().filename());
+        info->setTexture(path / info->getTexture().filename());
+        info->setSheet(path / info->getSheet().filename());
     }
     else if (type >= IconType::DeathEffect) {
         if (auto& texture = info->getTexture(); !texture.empty()) {
-            info->moveTexture(path / texture.parent_path().filename() / texture.filename());
+            info->setTexture(path / texture.parent_path().filename() / texture.filename());
         }
         if (auto& sheet = info->getSheet(); !sheet.empty()) {
-            info->moveSheet(path / sheet.parent_path().filename() / sheet.filename());
+            info->setSheet(path / sheet.parent_path().filename() / sheet.filename());
         }
         if (auto& json = info->getJSON(); !json.empty()) {
-            info->moveJSON(path / json.parent_path().filename() / json.filename());
+            info->setJSON(path / json.parent_path().filename() / json.filename());
         }
         if (auto& icon = info->getIcon(); !icon.empty()) {
             info->setIcon(path / icon.parent_path().filename() / icon.filename());
@@ -258,19 +259,19 @@ void more_icons::renameIcon(IconInfo* info, const std::string& name) {
         auto wideName = MoreIcons::strWide(name);
         auto quality = qualities[(int)info->getQuality() - 1];
 
-        info->moveTexture(info->getTexture().parent_path() / fmt::format(L("{}{}.png"), wideName, quality));
-        info->moveSheet(info->getSheet().parent_path() / fmt::format(L("{}{}.plist"), wideName, quality));
+        info->setTexture(info->getTexture().parent_path() / fmt::format(L("{}{}.png"), wideName, quality));
+        info->setSheet(info->getSheet().parent_path() / fmt::format(L("{}{}.plist"), wideName, quality));
     }
     else if (type >= IconType::DeathEffect) {
         std::filesystem::path directory = MoreIcons::strWide(name);
         if (auto& texture = info->getTexture(); !texture.empty()) {
-            info->moveTexture(texture.parent_path().parent_path() / directory / texture.filename());
+            info->setTexture(texture.parent_path().parent_path() / directory / texture.filename());
         }
         if (auto& sheet = info->getSheet(); !sheet.empty()) {
-            info->moveSheet(sheet.parent_path().parent_path() / directory / sheet.filename());
+            info->setSheet(sheet.parent_path().parent_path() / directory / sheet.filename());
         }
         if (auto& json = info->getJSON(); !json.empty()) {
-            info->moveJSON(json.parent_path().parent_path() / directory / json.filename());
+            info->setJSON(json.parent_path().parent_path() / directory / json.filename());
         }
         if (auto& icon = info->getIcon(); !icon.empty()) {
             info->setIcon(icon.parent_path().parent_path() / directory / icon.filename());
@@ -414,23 +415,33 @@ void more_icons::updateSimplePlayer(SimplePlayer* player, const std::string& ico
 
     loadIcon(icon, type, player->m_iconRequestID);
 
-    player->m_firstLayer->setDisplayFrame(MoreIcons::getFrame("{}_001.png"_spr, icon));
-    player->m_firstLayer->setScale(type == IconType::Ball ? 0.9f : 1.0f);
-    player->m_firstLayer->setPosition({ 0.0f, type == IconType::Ufo ? -7.0f : 0.0f });
-    player->m_secondLayer->setDisplayFrame(MoreIcons::getFrame("{}_2_001.png"_spr, icon));
-    auto firstCenter = player->m_firstLayer->getContentSize() / 2.0f;
-    player->m_secondLayer->setPosition(firstCenter);
-    player->m_outlineSprite->setDisplayFrame(MoreIcons::getFrame("{}_glow_001.png"_spr, icon));
-    player->m_outlineSprite->setPosition(firstCenter);
+    auto firstLayer = player->m_firstLayer;
+    firstLayer->setDisplayFrame(MoreIcons::getFrame("{}_001.png"_spr, icon));
+    firstLayer->setScale(type == IconType::Ball ? 0.9f : 1.0f);
+    firstLayer->setPosition({ 0.0f, type == IconType::Ufo ? -7.0f : 0.0f });
+
+    auto firstCenter = firstLayer->getContentSize() / 2.0f;
+
+    auto secondLayer = player->m_secondLayer;
+    secondLayer->setDisplayFrame(MoreIcons::getFrame("{}_2_001.png"_spr, icon));
+    secondLayer->setPosition(firstCenter);
+
+    auto outlineSprite = player->m_outlineSprite;
+    outlineSprite->setDisplayFrame(MoreIcons::getFrame("{}_glow_001.png"_spr, icon));
+    outlineSprite->setPosition(firstCenter);
+
     if (type == IconType::Ufo) {
-        player->m_birdDome->setDisplayFrame(MoreIcons::getFrame("{}_3_001.png"_spr, icon));
-        player->m_birdDome->setPosition(firstCenter);
+        auto birdDome = player->m_birdDome;
+        birdDome->setDisplayFrame(MoreIcons::getFrame("{}_3_001.png"_spr, icon));
+        birdDome->setPosition(firstCenter);
     }
+
     auto extraFrame = MoreIcons::getFrame("{}_extra_001.png"_spr, icon);
-    player->m_detailSprite->setVisible(extraFrame != nullptr);
+    auto detailSprite = player->m_detailSprite;
+    detailSprite->setVisible(extraFrame != nullptr);
     if (extraFrame) {
-        player->m_detailSprite->setDisplayFrame(extraFrame);
-        player->m_detailSprite->setPosition(firstCenter);
+        detailSprite->setDisplayFrame(extraFrame);
+        detailSprite->setPosition(firstCenter);
     }
 }
 
@@ -443,44 +454,51 @@ void more_icons::updateRobotSprite(GJRobotSprite* sprite, const std::string& ico
     sprite->setUserObject("name"_spr, CCString::create(icon));
 
     auto texture = loadIcon(icon, type, sprite->m_iconRequestID);
-
     sprite->setBatchNode(nullptr);
     sprite->setTexture(texture);
-    sprite->m_paSprite->setBatchNode(nullptr);
-    sprite->m_paSprite->setTexture(texture);
 
-    auto spriteParts = sprite->m_paSprite->m_spriteParts;
+    auto paSprite = sprite->m_paSprite;
+    paSprite->setBatchNode(nullptr);
+    paSprite->setTexture(texture);
+
+    auto spriteParts = paSprite->m_spriteParts;
+    auto secondArray = sprite->m_secondArray;
+    auto glowArray = sprite->m_glowSprite->getChildren();
+    auto headSprite = sprite->m_headSprite;
+    auto extraSprite = sprite->m_extraSprite;
+
     for (int i = 0; i < spriteParts->count(); i++) {
         auto spritePart = static_cast<CCSprite*>(spriteParts->objectAtIndex(i));
         auto tag = spritePart->getTag();
 
         spritePart->setBatchNode(nullptr);
         spritePart->setDisplayFrame(MoreIcons::getFrame("{}_{:02}_001.png"_spr, icon, tag));
-        if (auto secondSprite = static_cast<CCSprite*>(sprite->m_secondArray->objectAtIndex(i))) {
+        if (auto secondSprite = static_cast<CCSprite*>(secondArray->objectAtIndex(i))) {
             secondSprite->setBatchNode(nullptr);
             secondSprite->setDisplayFrame(MoreIcons::getFrame("{}_{:02}_2_001.png"_spr, icon, tag));
             secondSprite->setPosition(spritePart->getContentSize() / 2.0f);
         }
 
-        if (auto glowChild = sprite->m_glowSprite->getChildByIndex<CCSprite>(i)) {
+        if (auto glowChild = static_cast<CCSprite*>(glowArray->objectAtIndex(i))) {
             glowChild->setBatchNode(nullptr);
             glowChild->setDisplayFrame(MoreIcons::getFrame("{}_{:02}_glow_001.png"_spr, icon, tag));
         }
 
-        if (spritePart == sprite->m_headSprite) {
+        if (spritePart == headSprite) {
             auto extraFrame = MoreIcons::getFrame("{}_{:02}_extra_001.png"_spr, icon, tag);
             if (extraFrame) {
-                if (sprite->m_extraSprite) {
-                    sprite->m_extraSprite->setBatchNode(nullptr);
-                    sprite->m_extraSprite->setDisplayFrame(extraFrame);
+                if (extraSprite) {
+                    extraSprite->setBatchNode(nullptr);
+                    extraSprite->setDisplayFrame(extraFrame);
                 }
                 else {
-                    sprite->m_extraSprite = CCSprite::createWithSpriteFrame(extraFrame);
-                    spritePart->addChild(sprite->m_extraSprite, 2);
+                    extraSprite = CCSprite::createWithSpriteFrame(extraFrame);
+                    sprite->m_extraSprite = extraSprite;
+                    spritePart->addChild(extraSprite, 2);
                 }
-                sprite->m_extraSprite->setPosition(spritePart->getContentSize() / 2.0f);
+                extraSprite->setPosition(spritePart->getContentSize() / 2.0f);
             }
-            sprite->m_extraSprite->setVisible(extraFrame != nullptr);
+            extraSprite->setVisible(extraFrame != nullptr);
         }
     }
 }
@@ -494,8 +512,9 @@ void more_icons::updatePlayerObject(PlayerObject* object, const std::string& ico
         if (Ref robotSprite = object->m_robotSprite) {
             robotSprite->removeFromParentAndCleanup(false);
             updateRobotSprite(robotSprite, icon, type);
-            object->m_robotBatchNode->setTexture(robotSprite->getTexture());
-            object->m_robotBatchNode->addChild(robotSprite);
+            auto batchNode = object->m_robotBatchNode;
+            batchNode->setTexture(robotSprite->getTexture());
+            batchNode->addChild(robotSprite);
         }
         return;
     }
@@ -503,8 +522,9 @@ void more_icons::updatePlayerObject(PlayerObject* object, const std::string& ico
         if (Ref spiderSprite = object->m_spiderSprite) {
             spiderSprite->removeFromParentAndCleanup(false);
             updateRobotSprite(spiderSprite, icon, type);
-            object->m_spiderBatchNode->setTexture(spiderSprite->getTexture());
-            object->m_spiderBatchNode->addChild(spiderSprite);
+            auto batchNode = object->m_spiderBatchNode;
+            batchNode->setTexture(spiderSprite->getTexture());
+            batchNode->addChild(spiderSprite);
         }
         return;
     }

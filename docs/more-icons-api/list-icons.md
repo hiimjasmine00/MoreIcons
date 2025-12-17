@@ -9,12 +9,10 @@ order: 3
 #include <hiimjustin000.more_icons/include/MoreIconsV2.hpp>
 
 // List all loaded icons
-std::map<std::string, std::vector<IconInfo>>* icons = more_icons::getIcons();
-if (icons) {
-    for (std::pair<const std::string, std::vector<IconInfo>>& [key, iconList] : *icons) {
-        for (IconInfo& icon : iconList) {
-            // Do something with the icon
-        }
+std::map<std::string, std::vector<IconInfo>>& icons = more_icons::getAllIcons();
+for (std::pair<const std::string, std::vector<IconInfo>>& [key, iconList] : icons) {
+    for (IconInfo& icon : iconList) {
+        // Do something with the icon
     }
 }
 

@@ -101,75 +101,39 @@ bool IconInfo::isZipped() const {
     return m_impl->m_zipped;
 }
 
-void IconInfo::setName(const std::string& name) {
-    m_impl->m_name = name;
-}
-
-void IconInfo::moveName(std::string&& name) {
+void IconInfo::setName(std::string name) {
     m_impl->m_name = std::move(name);
 }
 
-void IconInfo::setShortName(const std::string& shortName) {
-    m_impl->m_shortName = shortName;
-}
-
-void IconInfo::moveShortName(std::string&& shortName) {
+void IconInfo::setShortName(std::string shortName) {
     m_impl->m_shortName = std::move(shortName);
 }
 
-void IconInfo::setTexture(const std::filesystem::path& texture) {
-    m_impl->m_texture = texture;
-}
-
-void IconInfo::moveTexture(std::filesystem::path&& texture) {
+void IconInfo::setTexture(std::filesystem::path texture) {
     m_impl->m_texture = std::move(texture);
 }
 
-void IconInfo::setSheet(const std::filesystem::path& sheet) {
-    m_impl->m_sheet = sheet;
-}
-
-void IconInfo::moveSheet(std::filesystem::path&& sheet) {
+void IconInfo::setSheet(std::filesystem::path sheet) {
     m_impl->m_sheet = std::move(sheet);
 }
 
-void IconInfo::setJSON(const std::filesystem::path& json) {
-    m_impl->m_json = json;
-}
-
-void IconInfo::moveJSON(std::filesystem::path&& json) {
+void IconInfo::setJSON(std::filesystem::path json) {
     m_impl->m_json = std::move(json);
 }
 
-void IconInfo::setIcon(const std::filesystem::path& icon) {
-    m_impl->m_icon = icon;
-}
-
-void IconInfo::moveIcon(std::filesystem::path&& icon) {
+    void IconInfo::setIcon(std::filesystem::path icon) {
     m_impl->m_icon = std::move(icon);
 }
 
-void IconInfo::setFrameNames(const std::vector<std::string>& frameNames) {
-    m_impl->m_frameNames = frameNames;
-}
-
-void IconInfo::moveFrameNames(std::vector<std::string>&& frameNames) {
+void IconInfo::setFrameNames(std::vector<std::string> frameNames) {
     m_impl->m_frameNames = std::move(frameNames);
 }
 
-void IconInfo::setPackName(const std::string& packName) {
-    m_impl->m_packName = packName;
-}
-
-void IconInfo::movePackName(std::string&& packName) {
+void IconInfo::setPackName(std::string packName) {
     m_impl->m_packName = std::move(packName);
 }
 
-void IconInfo::setPackID(const std::string& packID) {
-    m_impl->m_packID = packID;
-}
-
-void IconInfo::movePackID(std::string&& packID) {
+void IconInfo::setPackID(std::string packID) {
     m_impl->m_packID = std::move(packID);
 }
 
@@ -185,11 +149,7 @@ void IconInfo::setSpecialID(int specialID) {
     m_impl->m_specialID = specialID;
 }
 
-void IconInfo::setSpecialInfo(const matjson::Value& specialInfo) {
-    m_impl->m_specialInfo = specialInfo;
-}
-
-void IconInfo::moveSpecialInfo(matjson::Value&& specialInfo) {
+void IconInfo::setSpecialInfo(matjson::Value specialInfo) {
     m_impl->m_specialInfo = std::move(specialInfo);
 }
 

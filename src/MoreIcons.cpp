@@ -1,3 +1,4 @@
+#define FMT_CPP_LIB_FILESYSTEM 0
 #include "MoreIcons.hpp"
 #include "classes/misc/ThreadPool.hpp"
 #include "utils/Defaults.hpp"
@@ -667,7 +668,7 @@ CCTexture2D* addFrames(const ImageResult& image, IconInfo* info) {
 void MoreIcons::loadIcons(IconType type) {
     currentType = type;
 
-    static constexpr std::array prefixes = {
+    constexpr std::array prefixes = {
         L("player_"), L("ship_"), L("player_ball_"), L("bird_"), L("dart_"), L("robot_"), L("spider_"),
         L("swing_"), L("jetpack_"), L("PlayerExplosion_"), L("streak_"), L(""), L("shipfire")
     };
@@ -907,7 +908,7 @@ std::filesystem::path::string_type MoreIcons::getIconStem(const std::string& nam
 }
 
 std::string MoreIcons::getIconName(int id, IconType type) {
-    static constexpr std::array prefixes = {
+    constexpr std::array prefixes = {
         "player_", "ship_", "player_ball_", "bird_", "dart_", "robot_", "spider_",
         "swing_", "jetpack_", "PlayerExplosion_", "streak_", "", "shipfire"
     };

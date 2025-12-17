@@ -1,3 +1,4 @@
+#define FMT_CPP_LIB_FILESYSTEM 0
 #include "EditIconPopup.hpp"
 #include "IconColorPopup.hpp"
 #include "IconPresetPopup.hpp"
@@ -737,8 +738,8 @@ bool EditIconPopup::updateWithSelectedFiles(std::string_view suffix) {
 
 void EditIconPopup::updatePieces() {
     auto crossFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
-    for (auto [suffix, sprite] : CCDictionaryExt<std::string_view, CCSprite*>(m_pieces)) {
-        auto spriteFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(getKey(suffix)));
+    for (auto [suffix, sprite] : CCDictionaryExt<gd::string, CCSprite*>(m_pieces)) {
+        auto spriteFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(suffix));
         sprite->setDisplayFrame(spriteFrame ? spriteFrame : crossFrame);
     }
 
@@ -746,38 +747,39 @@ void EditIconPopup::updatePieces() {
     if (type == IconType::Robot || type == IconType::Spider) {
         auto sprite = type == IconType::Spider ? m_player->m_spiderSprite : m_player->m_robotSprite;
         auto spriteParts = sprite->m_paSprite->m_spriteParts;
+        auto secondArray = sprite->m_secondArray;
+        auto glowArray = sprite->m_glowSprite->getChildren();
+        auto headSprite = sprite->m_headSprite;
+        auto extraSprite = sprite->m_extraSprite;
         for (int i = 0; i < spriteParts->count(); i++) {
             auto spritePart = static_cast<CCSprite*>(spriteParts->objectAtIndex(i));
             auto tag = spritePart->getTag();
 
             spritePart->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_001", tag))));
-            if (auto secondSprite = static_cast<CCSprite*>(sprite->m_secondArray->objectAtIndex(i))) {
+            if (auto secondSprite = static_cast<CCSprite*>(secondArray->objectAtIndex(i))) {
                 secondSprite->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_2_001", tag))));
             }
 
-            if (auto glowChild = sprite->m_glowSprite->getChildByIndex<CCSprite>(i)) {
+            if (auto glowChild = static_cast<CCSprite*>(glowArray->objectAtIndex(i))) {
                 glowChild->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_glow_001", tag))));
             }
 
-            if (spritePart == sprite->m_headSprite) {
+            if (spritePart == headSprite) {
                 auto extraFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_extra_001", tag)));
-                sprite->m_extraSprite->setDisplayFrame(extraFrame);
-                sprite->m_extraSprite->setVisible(extraFrame != nullptr);
+                if (extraFrame) extraSprite->setDisplayFrame(extraFrame);
+                extraSprite->setVisible(extraFrame != nullptr);
             }
         }
     }
     else {
         m_player->m_firstLayer->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_001")));
         m_player->m_secondLayer->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_2_001")));
-        if (type == IconType::Ufo) {
-            m_player->m_birdDome->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_3_001")));
-        }
+        if (type == IconType::Ufo) m_player->m_birdDome->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_3_001")));
         m_player->m_outlineSprite->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_glow_001")));
         auto extraFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey("_extra_001"));
-        m_player->m_detailSprite->setVisible(extraFrame != nullptr);
-        if (extraFrame) {
-            m_player->m_detailSprite->setDisplayFrame(extraFrame);
-        }
+        auto detailSprite = m_player->m_detailSprite;
+        detailSprite->setVisible(extraFrame != nullptr);
+        if (extraFrame) detailSprite->setDisplayFrame(extraFrame);
     }
 
     m_hasChanged = true;

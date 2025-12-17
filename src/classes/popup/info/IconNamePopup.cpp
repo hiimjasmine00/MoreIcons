@@ -1,3 +1,4 @@
+#define FMT_CPP_LIB_FILESYSTEM 0
 #include "IconNamePopup.hpp"
 #include "MoreInfoPopup.hpp"
 #include "../../../MoreIcons.hpp"

@@ -53,7 +53,7 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
             MoreIcons::notifyFailure("Failed to save info: {}", res.unwrapErr());
         }
         else {
-            info->moveSpecialInfo(std::move(m_info));
+            info->setSpecialInfo(std::move(m_info));
             onClose(nullptr);
         }
     });
