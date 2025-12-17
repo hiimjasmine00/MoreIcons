@@ -14,7 +14,7 @@
 
 using namespace geode::prelude;
 
-FLAlertLayer* more_icons::createInfoPopup(const std::string& name, IconType type) {
+FLAlertLayer* more_icons::createInfoPopup(std::string_view name, IconType type) {
     if (auto info = more_icons::getIcon(name, type)) return MoreInfoPopup::create(info);
     else return nullptr;
 }
@@ -28,7 +28,7 @@ std::vector<IconInfo>* more_icons::getIcons(IconType type) {
     return it != MoreIcons::icons.end() ? &it->second : nullptr;
 }
 
-IconInfo* more_icons::getIcon(const std::string& name, IconType type) {
+IconInfo* more_icons::getIcon(std::string_view name, IconType type) {
     if (name.empty()) return nullptr;
     auto icons = getIcons(type);
     if (!icons) return nullptr;
@@ -36,14 +36,14 @@ IconInfo* more_icons::getIcon(const std::string& name, IconType type) {
     return it != icons->end() ? std::to_address(it) : nullptr;
 }
 
-CCTexture2D* more_icons::loadIcon(const std::string& name, IconType type, int requestID) {
+CCTexture2D* more_icons::loadIcon(std::string_view name, IconType type, int requestID) {
     auto info = getIcon(name, type);
     if (!info) return nullptr;
 
     auto texture = Get::TextureCache()->textureForKey(info->getTextureString().c_str());
     if (MoreIcons::preloadIcons) return texture;
 
-    auto& loadedIcon = MoreIcons::loadedIcons[{ name, type }];
+    auto& loadedIcon = MoreIcons::loadedIcons[{ info->getName(), type }];
 
     if (loadedIcon < 1) texture = MoreIcons::createAndAddFrames(info);
 
@@ -57,13 +57,13 @@ CCTexture2D* more_icons::loadIcon(const std::string& name, IconType type, int re
     return texture;
 }
 
-void more_icons::unloadIcon(const std::string& name, IconType type, int requestID) {
+void more_icons::unloadIcon(std::string_view name, IconType type, int requestID) {
     if (MoreIcons::preloadIcons || name.empty()) return;
 
     auto info = getIcon(name, type);
     if (!info) return;
 
-    auto& loadedIcon = MoreIcons::loadedIcons[{ name, type }];
+    auto& loadedIcon = MoreIcons::loadedIcons[{ info->getName(), type }];
 
     loadedIcon--;
     if (loadedIcon < 1) {
@@ -103,12 +103,9 @@ void more_icons::unloadIcons(int requestID) {
 }
 
 IconInfo* addIcon(
-    const std::string& name, const std::string& shortName, IconType type,
-    const std::filesystem::path& png, const std::filesystem::path& plist,
-    const std::filesystem::path& json, const std::filesystem::path& icon, int quality,
-    const std::string& packID, const std::string& packName,
-    int specialID, const matjson::Value& specialInfo, int fireCount,
-    bool vanilla, bool zipped
+    std::string name, std::string shortName, IconType type, std::filesystem::path png, std::filesystem::path plist,
+    std::filesystem::path json, std::filesystem::path icon, int quality, std::string packID, std::string packName,
+    int specialID, matjson::Value specialInfo, int fireCount, bool vanilla, bool zipped
 ) {
     auto icons = more_icons::getIcons(type);
     if (!icons) return nullptr;
@@ -118,18 +115,18 @@ IconInfo* addIcon(
     if (it != icons->end() && it->equals(name, type)) icons->erase(it);
 
     auto impl = std::make_shared<IconInfoImpl>();
-    impl->m_name = name;
-    impl->m_shortName = shortName;
-    impl->m_packID = packID;
-    impl->m_packName = packName;
-    impl->m_texture = png;
-    impl->m_sheet = plist;
-    impl->m_json = json;
-    impl->m_icon = icon;
+    impl->m_name = std::move(name);
+    impl->m_shortName = std::move(shortName);
+    impl->m_packID = std::move(packID);
+    impl->m_packName = std::move(packName);
+    impl->m_texture = std::move(png);
+    impl->m_sheet = std::move(plist);
+    impl->m_json = std::move(json);
+    impl->m_icon = std::move(icon);
     impl->m_type = type;
     impl->m_quality = quality;
     impl->m_specialID = specialID;
-    impl->m_specialInfo = specialInfo;
+    impl->m_specialInfo = std::move(specialInfo);
     impl->m_fireCount = fireCount;
     impl->m_vanilla = vanilla;
     impl->m_zipped = zipped;
@@ -137,46 +134,50 @@ IconInfo* addIcon(
 }
 
 IconInfo* more_icons::addIcon(
-    const std::string& name, const std::string& shortName, IconType type,
-    const std::filesystem::path& png, const std::filesystem::path& plist, TextureQuality quality,
-    const std::string& packID, const std::string& packName,
-    bool vanilla, bool zipped
+    std::string name, std::string shortName, IconType type, std::filesystem::path png, std::filesystem::path plist,
+    TextureQuality quality, std::string packID, std::string packName, bool vanilla, bool zipped
 ) {
-    return ::addIcon(name, shortName, type, png, plist, {}, {}, quality, packID, packName, 0, {}, 0, vanilla, zipped);
+    return ::addIcon(
+        std::move(name), std::move(shortName), type, std::move(png), std::move(plist), {}, {},
+        quality, std::move(packID), std::move(packName), 0, {}, 0, vanilla, zipped
+    );
 }
 
 IconInfo* more_icons::addTrail(
-    const std::string& name, const std::string& shortName,
-    const std::filesystem::path& png, const std::filesystem::path& json, const std::filesystem::path& icon,
-    const std::string& packID, const std::string& packName,
-    int specialID, const matjson::Value& specialInfo,
-    bool vanilla, bool zipped
+    std::string name, std::string shortName, std::filesystem::path png, std::filesystem::path json, std::filesystem::path icon,
+    std::string packID, std::string packName, int specialID, matjson::Value specialInfo, bool vanilla, bool zipped
 ) {
-    return ::addIcon(name, shortName, IconType::Special, png, {}, json, icon, 0,
-        packID, packName, specialID, specialInfo, 0, vanilla, zipped);
+    return ::addIcon(
+        std::move(name), std::move(shortName), IconType::Special, std::move(png), {}, std::move(json), std::move(icon),
+        0, std::move(packID), std::move(packName), specialID, std::move(specialInfo), 0, vanilla, zipped
+    );
 }
 
 IconInfo* more_icons::addDeathEffect(
-    const std::string& name, const std::string& shortName,
-    const std::filesystem::path& png, const std::filesystem::path& plist,
-    const std::filesystem::path& json, const std::filesystem::path& icon, TextureQuality quality,
-    const std::string& packID, const std::string& packName,
-    int specialID, const matjson::Value& specialInfo,
+    std::string name, std::string shortName,
+    std::filesystem::path png, std::filesystem::path plist,
+    std::filesystem::path json, std::filesystem::path icon, TextureQuality quality,
+    std::string packID, std::string packName,
+    int specialID, matjson::Value specialInfo,
     bool vanilla, bool zipped
 ) {
-    return ::addIcon(name, shortName, IconType::DeathEffect, png, plist, json, icon, quality,
-        packID, packName, specialID, specialInfo, 0, vanilla, zipped);
+    return ::addIcon(
+        std::move(name), std::move(shortName), IconType::DeathEffect, std::move(png), std::move(plist), std::move(json), std::move(icon),
+        quality, std::move(packID), std::move(packName), specialID, std::move(specialInfo), 0, vanilla, zipped
+    );
 }
 
 IconInfo* more_icons::addShipFire(
-    const std::string& name, const std::string& shortName,
-    const std::filesystem::path& png, const std::filesystem::path& json, const std::filesystem::path& icon,
-    const std::string& packID, const std::string& packName,
-    int specialID, const matjson::Value& specialInfo,
+    std::string name, std::string shortName,
+    std::filesystem::path png, std::filesystem::path json, std::filesystem::path icon,
+    std::string packID, std::string packName,
+    int specialID, matjson::Value specialInfo,
     int fireCount, bool vanilla, bool zipped
 ) {
-    return ::addIcon(name, shortName, IconType::ShipFire, png, {}, json, icon, 0,
-        packID, packName, specialID, specialInfo, fireCount, vanilla, zipped);
+    return ::addIcon(
+        std::move(name), std::move(shortName), IconType::ShipFire, std::move(png), {}, std::move(json), std::move(icon),
+        0, std::move(packID), std::move(packName), specialID, std::move(specialInfo), fireCount, vanilla, zipped
+    );
 }
 
 void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
@@ -244,26 +245,26 @@ void more_icons::removeIcon(IconInfo* info) {
     if (icons) icons->erase(icons->begin() + (info - icons->data()));
 }
 
-void more_icons::renameIcon(IconInfo* info, const std::string& name) {
+void more_icons::renameIcon(IconInfo* info, std::string name) {
     auto oldName = info->getName();
-    auto newName = info->inTexturePack() ? fmt::format("{}:{}", info->getPackID(), name) : name;
-    info->setName(newName);
-    info->setShortName(name);
+    info->setName(info->inTexturePack() ? fmt::format("{}:{}", info->getPackID(), name) : name);
+    info->setShortName(std::move(name));
 
     auto oldPngs = info->getAllTextures();
+    auto wideName = MoreIcons::strWide(info->getShortName());
+    auto& newName = info->getName();
     auto type = info->getType();
 
     if (type <= IconType::Jetpack) {
         constexpr std::array qualities = { L(""), L("-hd"), L("-uhd") };
 
-        auto wideName = MoreIcons::strWide(name);
         auto quality = qualities[(int)info->getQuality() - 1];
 
         info->setTexture(info->getTexture().parent_path() / fmt::format(L("{}{}.png"), wideName, quality));
         info->setSheet(info->getSheet().parent_path() / fmt::format(L("{}{}.plist"), wideName, quality));
     }
     else if (type >= IconType::DeathEffect) {
-        std::filesystem::path directory = MoreIcons::strWide(name);
+        std::filesystem::path directory = std::move(wideName);
         if (auto& texture = info->getTexture(); !texture.empty()) {
             info->setTexture(texture.parent_path().parent_path() / directory / texture.filename());
         }
@@ -382,10 +383,10 @@ void more_icons::updateIcon(IconInfo* info) {
     }
 }
 
-void more_icons::updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type) {
+void more_icons::updateSimplePlayer(SimplePlayer* player, std::string_view icon, IconType type) {
     if (!player || icon.empty() || !hasIcon(icon, type)) return;
 
-    player->setUserObject("name"_spr, CCString::create(icon));
+    MoreIcons::setName(player, icon);
 
     player->m_firstLayer->setVisible(type != IconType::Robot && type != IconType::Spider);
     player->m_secondLayer->setVisible(type != IconType::Robot && type != IconType::Spider);
@@ -445,13 +446,10 @@ void more_icons::updateSimplePlayer(SimplePlayer* player, const std::string& ico
     }
 }
 
-void more_icons::updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type) {
-    if (!sprite) return;
+void more_icons::updateRobotSprite(GJRobotSprite* sprite, std::string_view icon, IconType type) {
+    if (!sprite || icon.empty() || !hasIcon(icon, type)) return;
 
-    auto info = getIcon(icon, type);
-    if (!info) return;
-
-    sprite->setUserObject("name"_spr, CCString::create(icon));
+    MoreIcons::setName(sprite, icon);
 
     auto texture = loadIcon(icon, type, sprite->m_iconRequestID);
     sprite->setBatchNode(nullptr);
@@ -503,10 +501,10 @@ void more_icons::updateRobotSprite(GJRobotSprite* sprite, const std::string& ico
     }
 }
 
-void more_icons::updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type) {
+void more_icons::updatePlayerObject(PlayerObject* object, std::string_view icon, IconType type) {
     if (!object || icon.empty() || !hasIcon(icon, type)) return;
 
-    object->setUserObject("name"_spr, CCString::create(icon));
+    MoreIcons::setName(object, icon);
 
     if (type == IconType::Robot) {
         if (Ref robotSprite = object->m_robotSprite) {

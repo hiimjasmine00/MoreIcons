@@ -39,12 +39,9 @@ private:
 
     friend class IconInfoImpl;
     friend IconInfo* addIcon(
-        const std::string& name, const std::string& shortName, IconType type,
-        const std::filesystem::path& png, const std::filesystem::path& plist,
-        const std::filesystem::path& json, const std::filesystem::path& icon, int quality,
-        const std::string& packID, const std::string& packName,
-        int specialID, const matjson::Value& specialInfo, int fireCount,
-        bool vanilla, bool zipped
+        std::string name, std::string shortName, IconType type, std::filesystem::path png, std::filesystem::path plist,
+        std::filesystem::path json, std::filesystem::path icon, int quality, std::string packID, std::string packName,
+        int specialID, matjson::Value specialInfo, int fireCount, bool vanilla, bool zipped
     );
 
     IconInfo(std::shared_ptr<IconInfoImpl> impl) : m_impl(impl) {}
@@ -93,12 +90,12 @@ public:
         return equals(other);
     }
     bool equals(const IconInfo& other) const;
-    bool equals(const std::string& name, IconType type) const;
+    bool equals(std::string_view name, IconType type) const;
     std::strong_ordering operator<=>(const IconInfo& other) const {
         return compare(other) <=> 0;
     }
     int compare(const IconInfo& other) const;
-    int compare(const std::string& packID2, const std::string& shortName2, IconType type2) const;
+    int compare(std::string_view packID2, std::string_view shortName2, IconType type2) const;
 };
 
 #undef MI_EXPORT

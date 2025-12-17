@@ -3,6 +3,7 @@
 #include "ImageRenderer.hpp"
 #include "../MoreIconsPopup.hpp"
 #include "../../../MoreIcons.hpp"
+#include "../../../utils/Defaults.hpp"
 #include "../../../utils/Get.hpp"
 #include "../../../utils/Load.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
@@ -84,17 +85,17 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
         auto iconName = m_nameInput->getString();
         if (iconName.empty()) return MoreIcons::notifyInfo("Please enter a name.");
 
-        std::filesystem::path path = fmt::format(L("{}.png"), MoreIcons::getIconStem(iconName, IconType::Special));
+        auto path = MoreIcons::getIconStem(fmt::format("{}.png", iconName), IconType::Special);
         if (MoreIcons::doesExist(path)) createQuickPopup(
             "Existing Trail",
             fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
             "No",
             "Yes",
             [this, path = std::move(path)](auto, bool btn2) {
-                if (btn2) saveTrail(path);
+                if (btn2) saveTrail(std::move(path));
             }
         );
-        else saveTrail(path);
+        else saveTrail(std::move(path));
     });
     saveButton->setID("save-button");
     bottomMenu->addChild(saveButton);
@@ -115,23 +116,7 @@ void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
     else if (textureRes.isErr()) MoreIcons::notifyFailure("Failed to load image: {}", textureRes.unwrapErr());
 }
 
-void EditTrailPopup::addOrUpdateIcon(const std::string& name, const std::filesystem::path& path) {
-    if (auto icon = more_icons::getIcon(name, IconType::Special)) more_icons::updateIcon(icon);
-    else {
-        auto jsonPath = std::filesystem::path(path).replace_extension(L(".json"));
-        (void)file::writeString(jsonPath, "{}");
-        icon = more_icons::addTrail(name, name, path, jsonPath, {}, {}, "More Icons", 0, {}, false, false);
-        if (MoreIcons::preloadIcons) MoreIcons::createAndAddFrames(icon);
-    }
-
-    m_parentPopup->close();
-    Popup::onClose(nullptr);
-
-    MoreIcons::notifySuccess("{} saved!", name);
-    MoreIcons::updateGarage();
-}
-
-void EditTrailPopup::saveTrail(const std::filesystem::path& path) {
+void EditTrailPopup::saveTrail(std::filesystem::path path) {
     auto sprite = CCSprite::createWithTexture(m_streak->getTexture());
     sprite->setAnchorPoint({ 0.0f, 0.0f });
     sprite->setBlendFunc({ GL_ONE, GL_ZERO });
@@ -140,7 +125,27 @@ void EditTrailPopup::saveTrail(const std::filesystem::path& path) {
     if (auto res = texpack::toPNG(path, image); res.isErr()) {
         return MoreIcons::notifyFailure("Failed to save image: {}", res.unwrapErr());
     }
-    addOrUpdateIcon(m_nameInput->getString(), path);
+
+    auto name = m_nameInput->getString();
+
+    if (auto icon = more_icons::getIcon(name, IconType::Special)) {
+        more_icons::updateIcon(icon);
+    }
+    else {
+        auto jsonPath = std::filesystem::path(path).replace_extension(L(".json"));
+        (void)file::writeString(jsonPath, "{}");
+        icon = more_icons::addTrail(
+            name, name, std::move(path), std::move(jsonPath), {},
+            {}, "More Icons", 0, Defaults::getTrailInfo(0), false, false
+        );
+        if (MoreIcons::preloadIcons) MoreIcons::createAndAddFrames(icon);
+    }
+
+    m_parentPopup->close();
+    Popup::onClose(nullptr);
+
+    MoreIcons::notifySuccess("{} saved!", name);
+    MoreIcons::updateGarage();
 }
 
 void EditTrailPopup::onClose(CCObject* sender) {

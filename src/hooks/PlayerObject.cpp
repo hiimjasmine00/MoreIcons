@@ -33,7 +33,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updateIcon(IconType type) {
         auto icon = activeIcon(type);
         if (!icon.empty()) more_icons::updatePlayerObject(this, icon, type);
-        else setUserObject("name"_spr, nullptr);
+        else MoreIcons::setName(this, {});
     }
 
     bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool playLayer) {
@@ -50,7 +50,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updateIcon(int frame, IconType type, void(PlayerObject::*func)(int)) {
         if (frame == 0 || (!isPlayer1() && !isPlayer2())) {
             (this->*func)(frame);
-            return setUserObject("name"_spr, nullptr);
+            return MoreIcons::setName(this, {});
         }
 
         int* loadedIcon = nullptr;
@@ -149,10 +149,10 @@ class $modify(MIPlayerObject, PlayerObject) {
             m_regularTrail->setTexture(Get::TextureCache()->addImage(info->getTextureString().c_str(), false));
             if (info->getSpecialID() == 6) m_regularTrail->enableRepeatMode(0.1f);
             if (blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)(blend ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA) });
-            m_regularTrail->setUserObject("name"_spr, CCString::create(info->getName()));
+            MoreIcons::setName(m_regularTrail, info->getName());
         }
         else {
-            m_regularTrail->setUserObject("name"_spr, nullptr);
+            MoreIcons::setName(m_regularTrail, {});
             if (MoreIcons::traditionalPacks && (!Loader::get()->isModLoaded("acaruso.pride") || m_playerStreak != 2)) {
                 m_regularTrail->setTexture(Get::TextureCache()->addImage(MoreIcons::vanillaTexturePath(
                     fmt::format("streak_{:02}_001.png", m_playerStreak), true
@@ -180,10 +180,10 @@ class $modify(MIPlayerObject, PlayerObject) {
             m_shipStreak->setBlendFunc({
                 GL_SRC_ALPHA, (uint32_t)(fireInfo.get<bool>("blend").unwrapOr(true) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
             });
-            m_shipStreak->setUserObject("name"_spr, CCString::create(info->getName()));
+            MoreIcons::setName(m_shipStreak, info->getName());
         }
         else if (m_shipStreak) {
-            m_shipStreak->setUserObject("name"_spr, nullptr);
+            MoreIcons::setName(m_shipStreak, {});
             if (MoreIcons::traditionalPacks) {
                 m_shipStreak->setTexture(Get::TextureCache()->addImage(MoreIcons::vanillaTexturePath(
                     fmt::format("shipfire{:02}_001.png", (int)m_shipStreakType), true

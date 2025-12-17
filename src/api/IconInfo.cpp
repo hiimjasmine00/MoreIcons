@@ -169,7 +169,7 @@ bool IconInfo::equals(const IconInfo& other) const {
     return equals(other.m_impl->m_name, other.m_impl->m_type);
 }
 
-bool IconInfo::equals(const std::string& name, IconType type) const {
+bool IconInfo::equals(std::string_view name, IconType type) const {
     return m_impl->m_name == name && m_impl->m_type == type;
 }
 
@@ -177,7 +177,7 @@ int IconInfo::compare(const IconInfo& other) const {
     return compare(other.m_impl->m_packID, other.m_impl->m_shortName, other.m_impl->m_type);
 }
 
-int IconInfo::compare(const std::string& packID2, const std::string& shortName2, IconType type2) const {
+int IconInfo::compare(std::string_view packID2, std::string_view shortName2, IconType type2) const {
     auto comparison = m_impl->m_type <=> type2;
     if (comparison != 0) return comparison < 0 ? -1 : 1;
 

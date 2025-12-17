@@ -114,24 +114,28 @@ namespace more_icons {
     /// @param type The type of icon to set.
     /// @param dual Whether or not to set the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
     /// @returns The name of the previous icon for the specified type, or an empty string if the icon was not set.
-    inline std::string setIcon(const std::string& icon, IconType type, bool dual = false) {
+    inline std::string setIcon(std::string icon, IconType type, bool dual = false) {
         auto mod = get();
         if (!mod) return {};
         auto savedType = saveKey(type, dual);
-        return !savedType.empty() ? mod->setSavedValue(savedType, icon) : std::string();
+        if (savedType.empty()) return {};
+        auto& saveContainer = mod->getSaveContainer();
+        auto previous = saveContainer.get<std::string>(savedType).unwrapOrDefault();
+        saveContainer[savedType] = std::move(icon);
+        return previous;
     }
 
     /// Loads a custom icon into the texture cache.
     /// @param name The name of the icon to load.
     /// @param type The type of icon to load.
     /// @param requestID The request ID of the icon to load.
-    MI_DLL cocos2d::CCTexture2D* loadIcon(const std::string& name, IconType type, int requestID) MI_EXP(&loadIcon, (name, type, requestID));
+    MI_DLL cocos2d::CCTexture2D* loadIcon(std::string_view name, IconType type, int requestID) MI_EXP(&loadIcon, (name, type, requestID));
 
     /// Unloads a custom icon from the texture cache.
     /// @param name The name of the icon to unload.
     /// @param type The type of icon to unload.
     /// @param requestID The request ID of the icon to unload.
-    MI_DLL void unloadIcon(const std::string& name, IconType type, int requestID) MI_EXP(&unloadIcon, (name, type, requestID));
+    MI_DLL void unloadIcon(std::string_view name, IconType type, int requestID) MI_EXP(&unloadIcon, (name, type, requestID));
 
     /// Unloads all custom icons associated with a request ID.
     /// @param requestID The request ID of the icons to unload.
@@ -141,7 +145,7 @@ namespace more_icons {
     /// @param player The SimplePlayer object to change the icon of.
     /// @param icon The name of the icon to change to.
     /// @param type The type of icon to change to.
-    MI_DLL void updateSimplePlayer(SimplePlayer* player, const std::string& icon, IconType type) MI_EXP(&updateSimplePlayer, (player, icon, type));
+    MI_DLL void updateSimplePlayer(SimplePlayer* player, std::string_view icon, IconType type) MI_EXP(&updateSimplePlayer, (player, icon, type));
 
     /// Changes the icon of a SimplePlayer object to a custom icon.
     /// @param player The SimplePlayer object to change the icon of.
@@ -155,7 +159,7 @@ namespace more_icons {
     /// @param sprite The GJRobotSprite object to change the icon of.
     /// @param icon The name of the icon to change to.
     /// @param type The type of icon to change to.
-    MI_DLL void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon, IconType type) MI_EXP(&updateRobotSprite, (sprite, icon, type));
+    MI_DLL void updateRobotSprite(GJRobotSprite* sprite, std::string_view icon, IconType type) MI_EXP(&updateRobotSprite, (sprite, icon, type));
 
     /// Changes the icon of a GJRobotSprite object to a custom icon.
     /// @param sprite The GJRobotSprite object to change the icon of.
@@ -175,7 +179,7 @@ namespace more_icons {
     /// Changes the icon of a GJRobotSprite object to a custom icon.
     /// @param sprite The GJRobotSprite object to change the icon of.
     /// @param icon The name of the icon to change to.
-    inline void updateRobotSprite(GJRobotSprite* sprite, const std::string& icon) {
+    inline void updateRobotSprite(GJRobotSprite* sprite, std::string_view icon) {
         if (sprite && !icon.empty()) updateRobotSprite(sprite, icon, sprite->m_iconType);
     }
 
@@ -202,7 +206,7 @@ namespace more_icons {
     /// @param object The PlayerObject object to change the icon of.
     /// @param icon The name of the icon to change to.
     /// @param type The type of icon to change to.
-    MI_DLL void updatePlayerObject(PlayerObject* object, const std::string& icon, IconType type) MI_EXP(&updatePlayerObject, (object, icon, type));
+    MI_DLL void updatePlayerObject(PlayerObject* object, std::string_view icon, IconType type) MI_EXP(&updatePlayerObject, (object, icon, type));
 
     /// Changes the icon of a PlayerObject object to a custom icon.
     /// @param object The PlayerObject object to change the icon of.
@@ -222,7 +226,7 @@ namespace more_icons {
     /// Changes the icon of a PlayerObject object to a custom icon.
     /// @param object The PlayerObject object to change the icon of.
     /// @param icon The name of the icon to change to.
-    inline void updatePlayerObject(PlayerObject* object, const std::string& icon) {
+    inline void updatePlayerObject(PlayerObject* object, std::string_view icon) {
         if (object && !icon.empty()) updatePlayerObject(object, icon, getIconType(object));
     }
 
@@ -239,7 +243,7 @@ namespace more_icons {
     /// @param name The name of the icon to get the info for.
     /// @param type The type of icon to get the info for.
     /// @returns The icon info for the specified icon, or nullptr if the icon is not found.
-    MI_DLL IconInfo* getIcon(const std::string& name, IconType type) MI_EXP(&getIcon, (name, type));
+    MI_DLL IconInfo* getIcon(std::string_view name, IconType type) MI_EXP(&getIcon, (name, type));
 
     /// Returns the number of icons for a specific type.
     /// @param type The type of icon to get the count for.
@@ -261,7 +265,7 @@ namespace more_icons {
     /// @param name The name of the icon to check for.
     /// @param type The type of icon to check for.
     /// @returns Whether or not the specified icon exists.
-    inline bool hasIcon(const std::string& name, IconType type) {
+    inline bool hasIcon(std::string_view name, IconType type) {
         return getIcon(name, type) != nullptr;
     }
 
@@ -286,7 +290,7 @@ namespace more_icons {
     /// @param name The name of the icon.
     /// @param type The type of the icon.
     /// @returns A pointer to the created popup, or nullptr if the popup could not be created.
-    MI_DLL FLAlertLayer* createInfoPopup(const std::string& name, IconType type) MI_EXP(&createInfoPopup, (name, type));
+    MI_DLL FLAlertLayer* createInfoPopup(std::string_view name, IconType type) MI_EXP(&createInfoPopup, (name, type));
 
     /// Adds an icon to the icon list.
     /// @param name The name of the icon.
@@ -301,11 +305,13 @@ namespace more_icons {
     /// @param zipped Whether or not the icon is in a zipped pack.
     /// @returns A pointer to the added icon info, or nullptr if the mod is not loaded or the type is unsupported.
     MI_DLL IconInfo* addIcon(
-        const std::string& name, const std::string& shortName, IconType type,
-        const std::filesystem::path& png, const std::filesystem::path& plist, cocos2d::TextureQuality quality,
-        const std::string& packID = {}, const std::string& packName = "More Icons",
+        std::string name, std::string shortName, IconType type, std::filesystem::path png, std::filesystem::path plist,
+        cocos2d::TextureQuality quality, std::string packID = {}, std::string packName = "More Icons",
         bool vanilla = false, bool zipped = false
-    ) MI_EXP(&addIcon, (name, shortName, type, png, plist, quality, packID, packName, vanilla, zipped));
+    ) MI_EXP(&addIcon, (
+        std::move(name), std::move(shortName), type, std::move(png), std::move(plist),
+        quality, std::move(packID), std::move(packName), vanilla, zipped
+    ));
 
     /// Adds a trail to the icon list.
     /// @param name The name of the trail.
@@ -321,12 +327,13 @@ namespace more_icons {
     /// @param zipped Whether or not the trail is in a zipped pack.
     /// @returns A pointer to the added icon info, or nullptr if the mod is not loaded.
     MI_DLL IconInfo* addTrail(
-        const std::string& name, const std::string& shortName,
-        const std::filesystem::path& png, const std::filesystem::path& json, const std::filesystem::path& icon,
-        const std::string& packID = {}, const std::string& packName = "More Icons",
-        int specialID = 0, const matjson::Value& specialInfo = {},
+        std::string name, std::string shortName, std::filesystem::path png, std::filesystem::path json, std::filesystem::path icon,
+        std::string packID = {}, std::string packName = "More Icons", int specialID = 0, matjson::Value specialInfo = {},
         bool vanilla = false, bool zipped = false
-    ) MI_EXP(&addTrail, (name, shortName, png, json, icon, packID, packName, specialID, specialInfo, vanilla, zipped));
+    ) MI_EXP(&addTrail, (
+        std::move(name), std::move(shortName), std::move(png), std::move(json), std::move(icon),
+        std::move(packID), std::move(packName), specialID, std::move(specialInfo), vanilla, zipped
+    ));
 
     /// Adds a death effect to the icon list.
     /// @param name The name of the death effect.
@@ -344,13 +351,14 @@ namespace more_icons {
     /// @param zipped Whether or not the death effect is in a zipped pack.
     /// @returns A pointer to the added icon info, or nullptr if the mod is not loaded.
     MI_DLL IconInfo* addDeathEffect(
-        const std::string& name, const std::string& shortName,
-        const std::filesystem::path& png, const std::filesystem::path& plist,
-        const std::filesystem::path& json, const std::filesystem::path& icon, cocos2d::TextureQuality quality,
-        const std::string& packID = {}, const std::string& packName = "More Icons",
-        int specialID = 0, const matjson::Value& specialInfo = {},
+        std::string name, std::string shortName, std::filesystem::path png, std::filesystem::path plist,
+        std::filesystem::path json, std::filesystem::path icon, cocos2d::TextureQuality quality,
+        std::string packID = {}, std::string packName = "More Icons", int specialID = 0, matjson::Value specialInfo = {},
         bool vanilla = false, bool zipped = false
-    ) MI_EXP(&addDeathEffect, (name, shortName, png, plist, json, icon, quality, packID, packName, specialID, specialInfo, vanilla, zipped));
+    ) MI_EXP(&addDeathEffect, (
+        std::move(name), std::move(shortName), std::move(png), std::move(plist), std::move(json), std::move(icon),
+        quality, std::move(packID), std::move(packName), specialID, std::move(specialInfo), vanilla, zipped
+    ));
 
     /// Adds a ship fire to the icon list.
     /// @param name The name of the ship fire.
@@ -367,12 +375,15 @@ namespace more_icons {
     /// @param zipped Whether or not the ship fire is in a zipped pack.
     /// @returns A pointer to the added icon info, or nullptr if the mod is not loaded.
     MI_DLL IconInfo* addShipFire(
-        const std::string& name, const std::string& shortName,
-        const std::filesystem::path& png, const std::filesystem::path& json, const std::filesystem::path& icon,
-        const std::string& packID = {}, const std::string& packName = "More Icons",
-        int specialID = 0, const matjson::Value& specialInfo = {},
+        std::string name, std::string shortName,
+        std::filesystem::path png, std::filesystem::path json, std::filesystem::path icon,
+        std::string packID = {}, std::string packName = "More Icons",
+        int specialID = 0, matjson::Value specialInfo = {},
         int fireCount = 0, bool vanilla = false, bool zipped = false
-    ) MI_EXP(&addShipFire, (name, shortName, png, json, icon, packID, packName, specialID, specialInfo, fireCount, vanilla, zipped));
+    ) MI_EXP(&addShipFire, (
+        std::move(name), std::move(shortName), std::move(png), std::move(json), std::move(icon),
+        std::move(packID), std::move(packName), specialID, std::move(specialInfo), fireCount, vanilla, zipped
+    ));
 
     /// Moves an icon to a different directory.
     /// @param info The icon info of the icon to move.
@@ -386,7 +397,7 @@ namespace more_icons {
     /// Renames an icon.
     /// @param info The icon info of the icon to rename.
     /// @param name The new name of the icon.
-    MI_DLL void renameIcon(IconInfo* info, const std::string& name) MI_EXP(&renameIcon, (info, name));
+    MI_DLL void renameIcon(IconInfo* info, std::string name) MI_EXP(&renameIcon, (info, name));
 
     /// Updates an icon's image and sheet data.
     /// @param info The icon info of the icon to update.

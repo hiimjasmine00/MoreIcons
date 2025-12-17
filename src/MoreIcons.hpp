@@ -99,7 +99,7 @@ public:
     static std::filesystem::path getIconDir(IconType type);
     static std::string getIconName(int id, IconType type);
     static std::pair<std::string, std::string> getIconPaths(int id, IconType type);
-    static std::filesystem::path::string_type getIconStem(const std::string& name, IconType type);
+    static std::filesystem::path getIconStem(std::string_view name, IconType type);
     static std::basic_string_view<std::filesystem::path::value_type> getPathFilename(const std::filesystem::path& path, size_t removeCount = 0);
     static std::filesystem::path::string_type getPathString(std::filesystem::path path);
     static std::string getTrailTexture(int id);
@@ -112,6 +112,7 @@ public:
     static geode::Result<std::filesystem::path> renameFile(
         const std::filesystem::path& from, const std::filesystem::path& to, bool overwrite = true, bool copy = false
     );
+    static void setName(cocos2d::CCNode* node, std::string_view name);
     static std::filesystem::path strPath(std::string_view path);
     static std::string strNarrow(std::basic_string_view<std::filesystem::path::value_type> str);
     static std::filesystem::path::string_type strWide(std::string_view str);
@@ -121,5 +122,5 @@ public:
     static cocos2d::ccColor3B vanillaColorGlow(bool dual);
     static bool vanillaGlow(bool dual);
     static int vanillaIcon(IconType type, bool dual);
-    static std::string vanillaTexturePath(const std::string& path, bool skipSuffix);
+    static std::string vanillaTexturePath(std::string_view path, bool skipSuffix);
 };

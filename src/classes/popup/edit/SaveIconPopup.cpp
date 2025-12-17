@@ -45,14 +45,14 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Va
         auto iconName = m_nameInput->getString();
         if (iconName.empty()) return MoreIcons::notifyInfo("Please enter a name.");
 
-        auto stem = MoreIcons::getIconStem(iconName, m_iconType);
+        auto stem = MoreIcons::getPathString(MoreIcons::getIconStem(iconName, m_iconType));
         if (
-            MoreIcons::doesExist(fmt::format(L("{}.png"), stem)) ||
-            MoreIcons::doesExist(fmt::format(L("{}-hd.png"), stem)) ||
-            MoreIcons::doesExist(fmt::format(L("{}-uhd.png"), stem)) ||
-            MoreIcons::doesExist(fmt::format(L("{}.plist"), stem)) ||
+            MoreIcons::doesExist(fmt::format(L("{}-uhd.plist"), stem)) ||
             MoreIcons::doesExist(fmt::format(L("{}-hd.plist"), stem)) ||
-            MoreIcons::doesExist(fmt::format(L("{}-uhd.plist"), stem))
+            MoreIcons::doesExist(fmt::format(L("{}.plist"), stem)) ||
+            MoreIcons::doesExist(fmt::format(L("{}-uhd.png"), stem)) ||
+            MoreIcons::doesExist(fmt::format(L("{}-hd.png"), stem)) ||
+            MoreIcons::doesExist(fmt::format(L("{}.png"), stem))
         ) {
             createQuickPopup(
                 "Existing Icon",
@@ -81,7 +81,7 @@ bool SaveIconPopup::checkFrame(const std::string& suffix) {
     return frame != nullptr;
 }
 
-void SaveIconPopup::saveIcon(const std::filesystem::path::string_type& stem) {
+void SaveIconPopup::saveIcon(std::basic_string_view<std::filesystem::path::value_type> stem) {
     auto type = m_iconType;
     if (type == IconType::Robot || type == IconType::Spider) {
         if (!checkFrame("_01_001") || !checkFrame("_01_2_001") || !checkFrame("_01_glow_001")) return;
@@ -143,10 +143,6 @@ void SaveIconPopup::saveIcon(const std::filesystem::path::string_type& stem) {
         auto [wsuffix, suffix, displayName] = suffixes[i];
         std::filesystem::path png = fmt::format(L("{}{}.png"), stem, wsuffix);
         std::filesystem::path plist = fmt::format(L("{}{}.plist"), stem, wsuffix);
-        if (scales[i] == 1.0f) {
-            selectedPNG = png;
-            selectedPlist = plist;
-        }
         if (auto res = packer.pack(); res.isErr()) {
             return MoreIcons::notifyFailure("Failed to pack {} frames: {}", displayName, res.unwrapErr());
         }
@@ -156,19 +152,17 @@ void SaveIconPopup::saveIcon(const std::filesystem::path::string_type& stem) {
         if (auto res = packer.plist(plist, fmt::format("icons/{}{}.png", name, suffix), "    "); res.isErr()) {
             return MoreIcons::notifyFailure("Failed to save {} plist: {}", displayName, res.unwrapErr());
         }
+        if (scales[i] == 1.0f) {
+            selectedPNG = std::move(png);
+            selectedPlist = std::move(plist);
+        }
     }
 
-    addOrUpdateIcon(name, selectedPNG, selectedPlist);
-
-    m_parentPopup->close();
-    Popup::onClose(nullptr);
-}
-
-void SaveIconPopup::addOrUpdateIcon(const std::string& name, const std::filesystem::path& png, const std::filesystem::path& plist) {
-    auto type = m_iconType;
-    if (auto icon = more_icons::getIcon(name, type)) more_icons::updateIcon(icon);
+    if (auto icon = more_icons::getIcon(name, type)) {
+        more_icons::updateIcon(icon);
+    }
     else {
-        icon = more_icons::addIcon(name, name, type, png, plist, Get::Director()->getLoadedTextureQuality());
+        icon = more_icons::addIcon(name, name, type, std::move(selectedPNG), std::move(selectedPlist), Get::Director()->getLoadedTextureQuality());
         if (MoreIcons::preloadIcons) MoreIcons::createAndAddFrames(icon);
     }
 
