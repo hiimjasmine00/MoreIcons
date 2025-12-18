@@ -20,7 +20,9 @@
     },
     "resources": {
         "sprites": [
-            "resources/*.png"
+            "resources/icons/*.png",
+            "resources/previews/*.png",
+            "resources/sprites/*.png"
         ]
     },
     "api": {

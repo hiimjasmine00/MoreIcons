@@ -31,9 +31,10 @@ class $modify(MIPlayLayer, PlayLayer) {
 
         if (MoreIcons::traditionalPacks) {
             auto gameManager = Get::GameManager();
-            auto effectID = gameManager->m_loadedDeathEffect;
-            if (effectID > 1) {
-                auto texturePath = fmt::format("PlayerExplosion_{:02}.png", effectID - 1);
+            auto effectID = gameManager->m_loadedDeathEffect - 1;
+            if (effectID > 0) {
+                auto factor = Get::Director()->getContentScaleFactor();
+                auto texturePath = fmt::format("PlayerExplosion_{:02}{}.png", effectID, factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : "");
                 auto fullPath = Get::FileUtils()->fullPathForFilename(texturePath.c_str(), false);
                 auto vanillaPath = MoreIcons::vanillaTexturePath(texturePath, false);
                 if (MoreIcons::strPath(fullPath) != MoreIcons::strPath(vanillaPath)) {

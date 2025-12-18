@@ -10,7 +10,6 @@
 #include <Geode/binding/GJItemIcon.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/binding/TextArea.hpp>
-#include <Geode/loader/Dirs.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
@@ -26,12 +25,7 @@ MoreInfoPopup* MoreInfoPopup::create(IconInfo* info) {
 }
 
 Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem::path& dest, bool uhd) {
-    #ifdef GEODE_IS_MOBILE
-    auto fullSrc = (uhd ? dirs::getModConfigDir() / "weebify.high-graphics-android" / GEODE_GD_VERSION_STRING : dirs::getResourcesDir()) / src;
-    #else
-    auto fullSrc = dirs::getResourcesDir() / src;
-    #endif
-    GEODE_UNWRAP_INTO(auto vec, Load::readBinary(fullSrc).mapErr([](std::string err) {
+    GEODE_UNWRAP_INTO(auto vec, Load::readBinary(src).mapErr([](std::string err) {
         return fmt::format("Failed to read file: {}", err);
     }));
     return file::writeBinary(dest, vec).mapErr([](std::string err) {
@@ -40,33 +34,128 @@ Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem
 }
 
 void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash) {
-    auto& texturePath = m_info->getTexture();
-    auto parentDir = texturePath.parent_path();
     auto type = m_info->getType();
 
-    if (type == IconType::Special) {
-        auto filename = texturePath.filename();
-        if (auto res = MoreIcons::renameFile(texturePath, directory / filename, false, true); res.isErr()) {
-            return MoreIcons::notifyFailure("Failed to {} {}: {}", trash ? "trash" : "move", filename, res.unwrapErr());
-        }
-        filename.replace_extension(L(".json"));
-        auto jsonPath = parentDir / filename;
+    if (type >= IconType::DeathEffect) {
         if (trash) {
-            if (MoreIcons::doesExist(jsonPath)) {
-                if (auto res = MoreIcons::renameFile(jsonPath, directory / filename, false, true); res.isErr()) {
-                    return MoreIcons::notifyFailure("Failed to trash {}: {}", filename, res.unwrapErr());
-                }
+            auto parentDir = m_info->getTexture().parent_path();
+            auto filename = parentDir.filename();
+            if (auto res = MoreIcons::renameFile(parentDir, directory / filename, false, true); res.isErr()) {
+                return MoreIcons::notifyFailure("Failed to trash {}: {}", filename, res.unwrapErr());
             }
         }
         else {
-            if (auto res = file::writeToJson(jsonPath, m_info->getSpecialInfo()); res.isErr()) {
-                return MoreIcons::notifyFailure("Failed to write trail info to {}: {}", filename, res.unwrapErr());
+            auto shortName = MoreIcons::strWide(m_info->getShortName());
+            auto iconDir = directory / shortName;
+            if (auto res = file::createDirectoryAll(iconDir); res.isErr()) {
+                return MoreIcons::notifyFailure("Failed to create directory: {}", res.unwrapErr());
+            }
+
+            auto& texture = m_info->getTexture();
+            auto mod = Mod::get();
+            std::filesystem::path::string_type iconStem;
+            if (type == IconType::ShipFire) {
+                if (auto res = MoreIcons::renameFile(texture, iconDir / L("fire_001.png"), false, true); res.isErr()) {
+                    return MoreIcons::notifyFailure("Failed to move {}: {}", texture.filename(), res.unwrapErr());
+                }
+
+                iconStem = MoreIcons::getPathString(mod->getResourcesDir() / fmt::format(L("shipfireIcon_{:02}_001"), m_info->getSpecialID()));
+            }
+            else if (type == IconType::Special) {
+                if (auto res = MoreIcons::renameFile(texture, iconDir / L("trail.png"), false, true); res.isErr()) {
+                    return MoreIcons::notifyFailure("Failed to move {}: {}", texture.filename(), res.unwrapErr());
+                }
+
+                iconStem = MoreIcons::getPathString(mod->getResourcesDir() / fmt::format(L("player_special_{:02}_001"), m_info->getSpecialID()));
+            }
+            else if (type == IconType::DeathEffect) {
+                auto parentDir = texture.parent_path();
+                auto stem = MoreIcons::getPathString(parentDir / shortName);
+                auto resources = MoreIcons::getResourcesDir(false);
+                std::vector<std::filesystem::path> files;
+
+                std::filesystem::path uhdPng = fmt::format(L("{}-uhd.png"), stem);
+                if (MoreIcons::doesExist(uhdPng)) {
+                    files.push_back(std::move(uhdPng));
+                    std::filesystem::path filename = fmt::format(L("{}-uhd.plist"), shortName);
+                    auto plist = parentDir / filename;
+                    if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
+                    else {
+                        #ifdef GEODE_IS_DESKTOP
+                        if (auto res = copyVanillaFile(resources / filename, directory / filename, true); res.isErr()) {
+                            return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());
+                        }
+                        #else
+                        if (auto res = copyVanillaFile(MoreIcons::getResourcesDir(true) / filename, directory / filename, true); res.isErr()) {
+                            files.pop_back();
+                        }
+                        #endif
+                    }
+                }
+
+                std::filesystem::path hdPng = fmt::format(L("{}-hd.png"), stem);
+                if (MoreIcons::doesExist(hdPng)) {
+                    files.push_back(std::move(hdPng));
+                    std::filesystem::path filename = fmt::format(L("{}-hd.plist"), shortName);
+                    auto plist = parentDir / filename;
+                    if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
+                    else if (auto res = copyVanillaFile(resources / filename, directory / filename, false); res.isErr()) {
+                        return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());
+                    }
+                }
+
+                std::filesystem::path png = fmt::format(L("{}.png"), stem);
+                if (MoreIcons::doesExist(png)) {
+                    files.push_back(std::move(png));
+                    std::filesystem::path filename = fmt::format(L("{}.plist"), shortName);
+                    auto plist = parentDir / filename;
+                    if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
+                    else if (auto res = copyVanillaFile(resources / filename, directory / filename, false); res.isErr()) {
+                        return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());
+                    }
+                }
+
+                if (files.empty()) return MoreIcons::notifyInfo("No files found to move.");
+
+                std::vector<std::filesystem::path> filenames;
+                for (auto& file : files) {
+                    auto filename = file.filename();
+                    if (auto res = MoreIcons::renameFile(file, directory / filename, false, true)) {
+                        filenames.push_back(std::move(res).unwrap());
+                    }
+                    else if (res.isErr()) {
+                        for (size_t i = 0; i < filenames.size(); i++) {
+                            (void)MoreIcons::renameFile(directory / filenames[i].filename(), files[i], false);
+                        }
+                        return MoreIcons::notifyFailure("Failed to move {}: {}", filename, res.unwrapErr());
+                    }
+                }
+
+                iconStem = MoreIcons::getPathString(mod->getResourcesDir() / fmt::format(L("explosionIcon_{:02}_001"), m_info->getSpecialID()));
+            }
+
+            constexpr std::array suffixes = { L(".png"), L("-hd.png"), L("-uhd.png") };
+
+            for (auto suffix : suffixes) {
+                std::filesystem::path iconPath = fmt::format(L("{}{}"), iconStem, suffix);
+                if (MoreIcons::doesExist(iconPath)) {
+                    auto readRes = file::readBinary(iconPath);
+                    if (readRes.isErr()) {
+                        return MoreIcons::notifyFailure("Failed to read {}: {}", iconPath.filename(), readRes.unwrapErr());
+                    }
+
+                    if (auto writeRes = file::writeBinary(iconDir / fmt::format(L("icon{}"), suffix), readRes.unwrap()); writeRes.isErr()) {
+                        return MoreIcons::notifyFailure("Failed to write {}: {}", iconPath.filename(), writeRes.unwrapErr());
+                    }
+                }
             }
         }
     }
     else if (type <= IconType::Jetpack) {
         auto shortName = MoreIcons::strWide(m_info->getShortName());
+        auto parentDir = m_info->getTexture().parent_path();
         auto stem = MoreIcons::getPathString(parentDir / shortName);
+        auto resources = MoreIcons::getResourcesDir(false);
         std::vector<std::filesystem::path> files;
 
         std::filesystem::path uhdPng = fmt::format(L("{}-uhd.png"), stem);
@@ -76,9 +165,15 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
             else if (!trash) {
-                if (auto res = copyVanillaFile(L("icons") / filename, directory / filename, true); res.isErr()) {
+                #ifdef GEODE_IS_DESKTOP
+                if (auto res = copyVanillaFile(resources / L("icons") / filename, directory / filename, true); res.isErr()) {
                     return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());
                 }
+                #else
+                if (auto res = copyVanillaFile(MoreIcons::getResourcesDir(true) / L("icons") / filename, directory / filename, true); res.isErr()) {
+                    files.pop_back();
+                }
+                #endif
             }
         }
 
@@ -89,7 +184,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
             else if (!trash) {
-                if (auto res = copyVanillaFile(L("icons") / filename, directory / filename, false); res.isErr()) {
+                if (auto res = copyVanillaFile(resources / L("icons") / filename, directory / filename, false); res.isErr()) {
                     return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());
                 }
             }
@@ -102,10 +197,14 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             auto plist = parentDir / filename;
             if (MoreIcons::doesExist(plist)) files.push_back(std::move(plist));
             else if (!trash) {
-                if (auto res = copyVanillaFile(L("icons") / filename, directory / filename, false); res.isErr()) {
+                if (auto res = copyVanillaFile(resources / L("icons") / filename, directory / filename, false); res.isErr()) {
                     return MoreIcons::notifyFailure("Failed to copy {}: {}", filename, res.unwrapErr());
                 }
             }
+        }
+
+        if (files.empty()) {
+            return MoreIcons::notifyInfo("No files found to {}.", trash ? "trash" : "move");
         }
 
         std::vector<std::filesystem::path> filenames;

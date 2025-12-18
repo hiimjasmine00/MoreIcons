@@ -100,7 +100,7 @@ Result<std::filesystem::path> MoreIcons::renameFile(
     auto dest = to;
     if (copy) {
         for (int i = 1; doesExist(dest); i++) {
-            auto filename = getPathString(dest.filename());
+            auto filename = getPathString(to.filename());
             auto dot = filename.find_last_of(L('.'));
             if (dot == -1) dot = filename.size();
             filename.insert(dot, fmt::format(L(" ({})"), i));
@@ -278,17 +278,15 @@ std::filesystem::path MoreIcons::strPath(std::string_view path) {
     return std::filesystem::path(strWide(path));
 }
 
-std::filesystem::path vanillaTexturePath(const std::filesystem::path& path, bool skipSuffix) {
+std::filesystem::path MoreIcons::getResourcesDir(bool uhd) {
     #ifdef GEODE_IS_MOBILE
-    if (!skipSuffix && Get::Director()->getContentScaleFactor() >= 4.0f) {
-        if (auto highGraphicsMobile = Loader::get()->getLoadedMod("weebify.high-graphics-android")) {
-            auto configDir = highGraphicsMobile->getConfigDir(false) / GEODE_GD_VERSION_STRING;
-            if (MoreIcons::doesExist(configDir)) return std::move(configDir) / path;
-        }
-        return path;
-    }
+    if (uhd) return dirs::getModConfigDir() / "weebify.high-graphics-android" / GEODE_GD_VERSION_STRING;
     #endif
-    return dirs::getResourcesDir() / path;
+    return dirs::getResourcesDir();
+}
+
+std::filesystem::path vanillaTexturePath(const std::filesystem::path& path, bool skipSuffix) {
+    return MoreIcons::getResourcesDir(!skipSuffix && Get::Director()->getContentScaleFactor() >= 4.0f) / path;
 }
 
 std::string MoreIcons::vanillaTexturePath(std::string_view path, bool skipSuffix) {
@@ -305,13 +303,11 @@ Result<std::filesystem::path> MoreIcons::createTrash() {
 
 IconType currentType = IconType::Cube;
 
-template <typename... Args>
-void printLog(std::string name, int severity, fmt::format_string<Args...> message, Args&&... args) {
-    std::string logMessage = fmt::format(message, std::forward<Args>(args)...);
-    log::logImpl(Severity::cast(severity), Mod::get(), "{}: {}", name, logMessage);
+void printLog(std::string name, int severity, std::string message) {
+    log::logImpl(Severity::cast(severity), Mod::get(), "{}: {}", name, message);
     MoreIcons::logs.emplace(std::ranges::find_if(MoreIcons::logs, [&name, severity](const LogData& log) {
         return log.severity == severity ? log.name > name : log.severity < severity;
-    }), std::move(name), std::move(logMessage), currentType, severity);
+    }), std::move(name), std::move(message), currentType, severity);
     auto& currentSeverity = MoreIcons::severities[currentType];
     if (currentSeverity < severity) currentSeverity = severity;
     if (MoreIcons::severity < severity) MoreIcons::severity = severity;
@@ -376,12 +372,12 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
     log::debug("Pre-loading icon {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto texturePath = std::filesystem::path(path).replace_extension(L(".png"));
     if (!MoreIcons::doesExist(texturePath)) {
-        return printLog(std::move(name), Severity::Error, "Texture file {} not found", texturePath.filename());
+        return printLog(std::move(name), Severity::Error, fmt::format("Texture file {} not found", texturePath.filename()));
     }
 
     auto icon = more_icons::addIcon(
@@ -431,11 +427,11 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     log::debug("Pre-loading vanilla icon {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto doesntExist = vanillaPath && !Load::doesExist(plistPath);
-    if (doesntExist) return printLog(std::move(name), Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
+    if (doesntExist) return printLog(std::move(name), Severity::Error, fmt::format("Plist file not found (Last attempt: {})", plistPath));
 
     auto icon = more_icons::addIcon(
         std::move(name), std::move(shortName), currentType, path, std::move(plistPath), quality, pack.id, pack.name, true, pack.zipped
@@ -450,13 +446,13 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
     auto texturePath = path / L("trail.png");
 
     if (!MoreIcons::doesExist(texturePath)) {
-        return printLog(std::move(name), Severity::Error, "Texture file {} not found", texturePath.filename());
+        return printLog(std::move(name), Severity::Error, fmt::format("Texture file {} not found", texturePath.filename()));
     }
 
     log::debug("Pre-loading trail {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto jsonPath = path / L("settings.json");
@@ -487,7 +483,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
     log::debug("Pre-loading vanilla trail {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto trailID = jasmine::convert::getInt<int>(std::string_view(shortName).substr(7, shortName.size() - 11)).value_or(0);
@@ -528,12 +524,12 @@ void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
     log::debug("Pre-loading death effect {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto texturePath = std::filesystem::path(plistPath).replace_extension(L(".png"));
     if (!MoreIcons::doesExist(texturePath)) {
-        return printLog(std::move(name), Severity::Error, "Texture file {} not found", texturePath.filename());
+        return printLog(std::move(name), Severity::Error, fmt::format("Texture file {} not found", texturePath.filename()));
     }
 
     auto jsonPath = path / L("settings.json");
@@ -597,11 +593,11 @@ void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& p
     log::debug("Pre-loading vanilla death effect {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto doesntExist = vanillaPath && !Load::doesExist(plistPath);
-    if (doesntExist) return printLog(std::move(name), Severity::Error, "Plist file not found (Last attempt: {})", plistPath);
+    if (doesntExist) return printLog(std::move(name), Severity::Error, fmt::format("Plist file not found (Last attempt: {})", plistPath));
 
     auto effectID = jasmine::convert::getInt<int>(std::string_view(shortName).substr(16)).value_or(0);
     if (effectID == 0) effectID = -1;
@@ -629,7 +625,7 @@ void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
     log::debug("Pre-loading ship fire {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto jsonPath = path / L("settings.json");
@@ -665,7 +661,7 @@ void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack
     log::debug("Pre-loading vanilla ship fire {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, "Failed to convert path: {}", res.unwrapErr());
+        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto icon = more_icons::addShipFire(
