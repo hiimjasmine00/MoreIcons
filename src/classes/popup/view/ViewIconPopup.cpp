@@ -46,17 +46,27 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
 
     if (type <= IconType::Jetpack) {
         auto isRobot = type == IconType::Robot || type == IconType::Spider;
-        std::vector<std::vector<std::string_view>> suffixes;
-        suffixes.reserve(isRobot ? 4 : 1);
+        std::initializer_list<std::initializer_list<std::string_view>> suffixes;
         if (isRobot) {
-            suffixes.push_back({ "_01_001", "_01_2_001", "_01_glow_001", "_01_extra_001" });
-            suffixes.push_back({ "_02_001", "_02_2_001", "_02_glow_001" });
-            suffixes.push_back({ "_03_001", "_03_2_001", "_03_glow_001" });
-            suffixes.push_back({ "_04_001", "_04_2_001", "_04_glow_001" });
+            static std::initializer_list<std::initializer_list<std::string_view>> robotSuffixes = {
+                { "_01_001", "_01_2_001", "_01_glow_001", "_01_extra_001" },
+                { "_02_001", "_02_2_001", "_02_glow_001" },
+                { "_03_001", "_03_2_001", "_03_glow_001" },
+                { "_04_001", "_04_2_001", "_04_glow_001" }
+            };
+            suffixes = robotSuffixes;
+        }
+        else if (type == IconType::Ufo) {
+            static std::initializer_list<std::initializer_list<std::string_view>> ufoSuffixes = {
+                { "_001", "_2_001", "_3_001", "_glow_001", "_extra_001" }
+            };
+            suffixes = ufoSuffixes;
         }
         else {
-            if (type == IconType::Ufo) suffixes.push_back({ "_001", "_2_001", "_3_001", "_glow_001", "_extra_001" });
-            else suffixes.push_back({ "_001", "_2_001", "_glow_001", "_extra_001" });
+            static std::initializer_list<std::initializer_list<std::string_view>> cubeSuffixes = {
+                { "_001", "_2_001", "_glow_001", "_extra_001" }
+            };
+            suffixes = cubeSuffixes;
         }
 
         auto player = SimplePlayer::create(1);
@@ -69,23 +79,25 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
 
         auto prefix = info ? fmt::format("{}"_spr, info->getName()) : MoreIcons::getIconName(id, type);
         auto spriteFrameCache = Get::SpriteFrameCache();
-        for (size_t i = 0; i < suffixes.size(); i++) {
+        for (auto it = suffixes.begin(); it != suffixes.end(); it++) {
+            auto& subSuffixes = *it;
+            auto i = it - suffixes.begin();
+
             auto container = CCNode::create();
-            container->setPosition({ 175.0f, (isRobot ? 140.0f : 100.0f) - i * 30.0f + (i > 1 ? i - 1 : 0) * 10.0f });
+            container->setPosition({ 175.0f, (isRobot ? 140.0f : 100.0f) - i * 30.0f + std::max<ptrdiff_t>(i - 1, 0) * 10.0f });
             container->setAnchorPoint({ 0.5f, 0.5f });
             container->setContentSize({ 350.0f, 30.0f });
-            container->setID(fmt::format("frame-container-{}", i + 1));
+            container->setID(isRobot ? fmt::format("frame-container{}", (*subSuffixes.begin()).substr(0, 3)) : "frame-container_01");
 
-            auto& subSuffixes = suffixes[i];
-            for (size_t j = 0; j < subSuffixes.size(); j++) {
-                if (auto spriteFrame = MoreIcons::getFrame("{}{}.png", prefix, subSuffixes[j])) {
+            for (auto& suffix : subSuffixes) {
+                if (auto spriteFrame = MoreIcons::getFrame("{}{}.png", prefix, suffix)) {
                     auto sprite = CCSprite::createWithSpriteFrame(spriteFrame);
                     auto& size = sprite->getContentSize();
                     sprite->setPosition(size / 2.0f);
                     auto node = CCNode::create();
                     node->setContentSize(size);
                     node->setAnchorPoint({ 0.5f, 0.5f });
-                    node->setID(fmt::format("frame-node-{}", j + 1));
+                    node->setID(fmt::format("frame-node{}", isRobot ? suffix.substr(3) : suffix));
                     node->addChild(sprite);
                     container->addChild(node);
                 }

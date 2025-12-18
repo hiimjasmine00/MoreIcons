@@ -229,8 +229,22 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto customPage = page - (gameManager->countForType(type) + 35) / 36;
         if (customPage < 0) return;
 
+        std::vector<IconInfo*> infoView;
+        auto end = icons->data() + icons->size();
+        for (auto info = icons->data(); info != end; info++) {
+            infoView.push_back(info);
+        }
+        if (type == IconType::Special) {
+            if (auto shipFires = more_icons::getIcons(IconType::ShipFire)) {
+                auto shipFireEnd = shipFires->data() + shipFires->size();
+                for (auto info = shipFires->data(); info != shipFireEnd; info++) {
+                    infoView.push_back(info);
+                }
+            }
+        }
+
         auto index = customPage * 36;
-        auto size = icons->size();
+        auto size = infoView.size();
         if (size < index) return;
 
         m_cursor1->setOpacity(255);
@@ -253,20 +267,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto active2 = type == IconType::Special
             ? more_icons::activeIcon(IconType::ShipFire, sdi && sdi->getSavedValue("2pselected", true)) : std::string();
 
-        std::vector<IconInfo*> infoView;//(icons->data() + index, icons->data() + index + std::min<size_t>(36, size - index));
-        for (size_t i = 0; i < size; i++) {
-            infoView.push_back(icons->data() + i);
-        }
-        if (type == IconType::Special) {
-            if (auto shipFires = more_icons::getIcons(IconType::ShipFire)) {
-                for (size_t i = 0; i < shipFires->size(); i++) {
-                    infoView.push_back(shipFires->data() + i);
-                }
-            }
-        }
-
-        auto infoSize = infoView.size();
-        std::span<IconInfo*> infoPage(infoView.data() + index, std::min<size_t>(36, infoSize - index));
+        std::span<IconInfo*> infoPage(infoView.data() + index, std::min<size_t>(36, size - index));
 
         if (type <= IconType::Jetpack) {
             auto unlockType = gameManager->iconTypeToUnlockType(type);

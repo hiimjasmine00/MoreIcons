@@ -399,7 +399,7 @@ void more_icons::updateIcon(IconInfo* info) {
         }
         else {
             spriteFrameCache->addSpriteFrame(frame, frameName);
-            frameNames.push_back(frameName);
+            frameNames.emplace_back(frameName);
         }
     }
 }

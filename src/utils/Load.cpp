@@ -291,7 +291,7 @@ CCTexture2D* Load::addFrames(const ImageResult& image, std::vector<std::string>&
             frameNames.reserve(frames->count());
             for (auto [frameName, frame] : CCDictionaryExt<const char*, CCSpriteFrame*>(frames)) {
                 spriteFrameCache->addSpriteFrame(frame, frameName);
-                frameNames.push_back(frameName);
+                frameNames.emplace_back(frameName);
             }
         }
         else {
