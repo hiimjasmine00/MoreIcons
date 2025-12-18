@@ -90,6 +90,7 @@ public:
     }
     static cocos2d::CCSpriteFrame* getFrame(const char* name);
 
+    static void blendStreak(cocos2d::CCMotionStreak* streak, IconInfo* info);
     static cocos2d::CCTexture2D* createAndAddFrames(IconInfo* info);
     static geode::Result<std::filesystem::path> createTrash();
     static cocos2d::CCSprite* customIcon(IconInfo* info);

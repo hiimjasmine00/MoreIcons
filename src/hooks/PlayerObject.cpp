@@ -134,7 +134,6 @@ class $modify(MIPlayerObject, PlayerObject) {
 
         if (auto info = getIconInfo(IconType::Special)) {
             auto& trailInfo = info->getSpecialInfo();
-            auto blend = trailInfo.get<bool>("blend").unwrapOr(true);
             auto tint = trailInfo.get<bool>("tint").unwrapOr(false);
             auto show = trailInfo.get<bool>("show").unwrapOr(false);
             auto fade = trailInfo.get<float>("fade").unwrapOr(0.3f);
@@ -148,7 +147,7 @@ class $modify(MIPlayerObject, PlayerObject) {
             m_regularTrail->setStroke(stroke);
             m_regularTrail->setTexture(Get::TextureCache()->addImage(info->getTextureString().c_str(), false));
             if (info->getSpecialID() == 6) m_regularTrail->enableRepeatMode(0.1f);
-            if (blend) m_regularTrail->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)(blend ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA) });
+            MoreIcons::blendStreak(m_regularTrail, info);
             MoreIcons::setName(m_regularTrail, info->getName());
         }
         else {
@@ -177,9 +176,7 @@ class $modify(MIPlayerObject, PlayerObject) {
                 m_shipStreak->setDontOpacityFade(true);
                 m_parentLayer->addChild(m_shipStreak, -3);
             }
-            m_shipStreak->setBlendFunc({
-                GL_SRC_ALPHA, (uint32_t)(fireInfo.get<bool>("blend").unwrapOr(true) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
-            });
+            MoreIcons::blendStreak(m_shipStreak, info);
             MoreIcons::setName(m_shipStreak, info->getName());
         }
         else if (m_shipStreak) {
@@ -195,11 +192,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updateStreakBlend(bool blend) {
         PlayerObject::updateStreakBlend(blend);
 
-        if (auto info = getIconInfo(IconType::Special)) {
-            m_regularTrail->setBlendFunc({
-                GL_SRC_ALPHA, (uint32_t)(info->getSpecialInfo().get<bool>("blend").unwrapOr(true) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
-            });
-        }
+        if (auto info = getIconInfo(IconType::Special)) MoreIcons::blendStreak(m_regularTrail, info);
     }
 
     void setPosition(const CCPoint& position) {

@@ -871,6 +871,11 @@ void MoreIcons::updateGarage(GJGarageLayer* layer) {
     if (noLayer) layer->selectTab(layer->m_iconType);
 }
 
+void MoreIcons::blendStreak(CCMotionStreak* streak, IconInfo* info) {
+    if (info->getSpecialInfo().get<bool>("blend").unwrapOr(true)) streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
+    else streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA });
+}
+
 CCTexture2D* MoreIcons::createAndAddFrames(IconInfo* info) {
     if (auto res = createFrames(info)) {
         return addFrames(res.unwrap(), info);

@@ -118,7 +118,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
     else if (type == IconType::Special) {
         auto streak = CCSprite::create((info ? info->getTextureString() : MoreIcons::getTrailTexture(id)).c_str());
         auto& trailInfo = info ? info->getSpecialInfo() : Defaults::getTrailInfo(id);
-        streak->setBlendFunc({ GL_SRC_ALPHA, (uint32_t)(trailInfo.get<bool>("blend").unwrapOr(true) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA) });
+        if (trailInfo.get<bool>("blend").unwrapOr(true)) streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
         streak->setPosition({ 175.0f, 50.0f });
         streak->setRotation(-90.0f);
         auto& size = streak->getContentSize();

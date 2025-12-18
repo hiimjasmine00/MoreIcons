@@ -1,3 +1,4 @@
+#include "../MoreIcons.hpp"
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/GJBaseGameLayer.hpp>
 #include <MoreIcons.hpp>
@@ -26,17 +27,8 @@ class $modify(MIBaseGameLayer, GJBaseGameLayer) {
 
         if (blend) return;
 
-        if (auto info = more_icons::getIcon(IconType::Special, false)) {
-            m_player1->m_regularTrail->setBlendFunc({
-                GL_SRC_ALPHA, (uint32_t)(info->getSpecialInfo().get<bool>("blend").unwrapOr(true) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
-            });
-        }
-
-        if (auto info = more_icons::getIcon(IconType::Special, true)) {
-            m_player2->m_regularTrail->setBlendFunc({
-                GL_SRC_ALPHA, (uint32_t)(info->getSpecialInfo().get<bool>("blend").unwrapOr(true) ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA)
-            });
-        }
+        if (auto info = more_icons::getIcon(IconType::Special, false)) MoreIcons::blendStreak(m_player1->m_regularTrail, info);
+        if (auto info = more_icons::getIcon(IconType::Special, true)) MoreIcons::blendStreak(m_player2->m_regularTrail, info);
     }
     #endif
 };
