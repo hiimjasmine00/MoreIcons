@@ -299,7 +299,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
                 m_frames->setObject(CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }), getKey(m_suffix));
                 updatePieces();
             }
-            else if (textureRes.isErr()) return MoreIcons::notifyFailure("Failed to load image: {}", textureRes.unwrapErr());
+            else if (textureRes.isErr()) return MoreIcons::notifyFailure(textureRes.unwrapErr());
         });
 
         m_listener.setFilter(file::pick(file::PickMode::OpenFile, {

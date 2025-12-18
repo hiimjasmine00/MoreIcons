@@ -71,7 +71,7 @@ bool SaveEditorPopup::setup(IconType type, const IconEditorState& state, CCDicti
 void SaveEditorPopup::saveEditor(const std::filesystem::path& directory) {
     if (!MoreIcons::doesExist(directory)) {
         if (auto res = file::createDirectoryAll(directory); res.isErr()) {
-            return MoreIcons::notifyFailure("Failed to create directory: {}", res.unwrapErr());
+            return MoreIcons::notifyFailure(res.unwrapErr());
         }
     }
 

@@ -25,10 +25,10 @@ void pushFile(
     }
 }
 
-void renameFile(const std::filesystem::path& parent, const std::filesystem::path& from, const std::filesystem::path& to) {
-    if (auto res = MoreIcons::renameFile(parent / from, parent / to); res.isErr()) {
-        MoreIcons::notifyFailure("Failed to rename {}: {}", from, res.unwrapErr());
-    }
+bool renameFile(const std::filesystem::path& parent, const std::filesystem::path& from, const std::filesystem::path& to) {
+    auto res = MoreIcons::renameFile(parent / from, parent / to);
+    if (res.isErr()) MoreIcons::notifyFailure(res.unwrapErr());
+    return res.isOk();
 }
 
 bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
@@ -95,15 +95,15 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
 
             auto type = info->getType();
             if (type >= IconType::DeathEffect) {
-                renameFile(parent, wideOld, wideName);
+                if (!renameFile(parent, wideOld, wideName)) return;
             }
             else if (type <= IconType::Jetpack) {
-                renameFile(parent, fmt::format(L("{}-uhd.png"), wideOld), fmt::format(L("{}-uhd.png"), wideName));
-                renameFile(parent, fmt::format(L("{}-hd.png"), wideOld), fmt::format(L("{}-hd.png"), wideName));
-                renameFile(parent, fmt::format(L("{}.png"), wideOld), fmt::format(L("{}.png"), wideName));
-                renameFile(parent, fmt::format(L("{}-uhd.plist"), wideOld), fmt::format(L("{}-uhd.plist"), wideName));
-                renameFile(parent, fmt::format(L("{}-hd.plist"), wideOld), fmt::format(L("{}-hd.plist"), wideName));
-                renameFile(parent, fmt::format(L("{}.plist"), wideOld), fmt::format(L("{}.plist"), wideName));
+                if (!renameFile(parent, fmt::format(L("{}-uhd.png"), wideOld), fmt::format(L("{}-uhd.png"), wideName))) return;
+                if (!renameFile(parent, fmt::format(L("{}-hd.png"), wideOld), fmt::format(L("{}-hd.png"), wideName))) return;
+                if (!renameFile(parent, fmt::format(L("{}.png"), wideOld), fmt::format(L("{}.png"), wideName))) return;
+                if (!renameFile(parent, fmt::format(L("{}-uhd.plist"), wideOld), fmt::format(L("{}-uhd.plist"), wideName))) return;
+                if (!renameFile(parent, fmt::format(L("{}-hd.plist"), wideOld), fmt::format(L("{}-hd.plist"), wideName))) return;
+                if (!renameFile(parent, fmt::format(L("{}.plist"), wideOld), fmt::format(L("{}.plist"), wideName))) return;
             }
 
             Popup::onClose(nullptr);

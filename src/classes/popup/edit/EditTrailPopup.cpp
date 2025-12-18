@@ -113,7 +113,7 @@ void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
         m_streak->setTexture(textureRes.unwrap());
         m_hasChanged = true;
     }
-    else if (textureRes.isErr()) MoreIcons::notifyFailure("Failed to load image: {}", textureRes.unwrapErr());
+    else if (textureRes.isErr()) MoreIcons::notifyFailure(textureRes.unwrapErr());
 }
 
 void EditTrailPopup::saveTrail(std::filesystem::path path) {
