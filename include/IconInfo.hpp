@@ -89,13 +89,18 @@ public:
     bool operator==(const IconInfo& other) const {
         return equals(other);
     }
-    bool equals(const IconInfo& other) const;
-    bool equals(std::string_view name, IconType type) const;
+    bool equals(const IconInfo& other) const MI_EXPORT((bool(IconInfo::*)(const IconInfo&) const)(&IconInfo::equals), (this, other));
+    bool equals(
+        std::string_view name, IconType type
+    ) const MI_EXPORT((bool(IconInfo::*)(std::string_view, IconType) const)(&IconInfo::equals), (this, name, type));
+
     std::strong_ordering operator<=>(const IconInfo& other) const {
         return compare(other) <=> 0;
     }
-    int compare(const IconInfo& other) const;
-    int compare(std::string_view packID2, std::string_view shortName2, IconType type2) const;
+    int compare(const IconInfo& other) const MI_EXPORT((int(IconInfo::*)(const IconInfo&) const)(&IconInfo::compare), (this, other));
+    int compare(
+        std::string_view packID, std::string_view shortName, IconType type
+    ) const MI_EXPORT((int(IconInfo::*)(std::string_view, std::string_view, IconType) const)(&IconInfo::compare), (this, packID, shortName, type));
 };
 
 #undef MI_EXPORT

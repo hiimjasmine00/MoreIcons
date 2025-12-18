@@ -121,7 +121,7 @@ void IconInfo::setJSON(std::filesystem::path json) {
     m_impl->m_json = std::move(json);
 }
 
-    void IconInfo::setIcon(std::filesystem::path icon) {
+void IconInfo::setIcon(std::filesystem::path icon) {
     m_impl->m_icon = std::move(icon);
 }
 
@@ -177,19 +177,19 @@ int IconInfo::compare(const IconInfo& other) const {
     return compare(other.m_impl->m_packID, other.m_impl->m_shortName, other.m_impl->m_type);
 }
 
-int IconInfo::compare(std::string_view packID2, std::string_view shortName2, IconType type2) const {
-    auto comparison = m_impl->m_type <=> type2;
+int IconInfo::compare(std::string_view packID2, std::string_view shortName2, IconType type) const {
+    auto comparison = m_impl->m_type <=> type;
     if (comparison != 0) return comparison < 0 ? -1 : 1;
 
-    auto& packID1 = m_impl->m_packID;
-    auto& shortName1 = m_impl->m_shortName;
+    std::string_view packID1 = m_impl->m_packID;
+    std::string_view shortName1 = m_impl->m_shortName;
     auto samePack = packID1 == packID2;
     if (samePack && shortName1 == shortName2) return 0;
     if (packID1.empty() && !packID2.empty()) return -1;
     if (!packID1.empty() && packID2.empty()) return 1;
 
-    std::string_view a = samePack ? shortName1 : packID1;
-    std::string_view b = samePack ? shortName2 : packID2;
+    auto a = samePack ? shortName1 : packID1;
+    auto b = samePack ? shortName2 : packID2;
 
     for (size_t aIt = 0, bIt = 0; aIt < a.size() && bIt < b.size();) {
         if (isdigit(a[aIt]) && isdigit(b[bIt])) {

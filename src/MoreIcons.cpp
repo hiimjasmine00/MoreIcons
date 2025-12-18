@@ -43,20 +43,20 @@ std::map<int, std::map<IconType, std::string>> MoreIcons::requestedIcons;
 std::map<std::pair<std::string, IconType>, int> MoreIcons::loadedIcons;
 std::vector<LogData> MoreIcons::logs;
 std::map<IconType, int> MoreIcons::severities = {
-    { IconType::Cube, 0 },
-    { IconType::Ship, 0 },
-    { IconType::Ball, 0 },
-    { IconType::Ufo, 0 },
-    { IconType::Wave, 0 },
-    { IconType::Robot, 0 },
-    { IconType::Spider, 0 },
-    { IconType::Swing, 0 },
-    { IconType::Jetpack, 0 },
-    { IconType::DeathEffect, 0 },
-    { IconType::Special, 0 },
-    { IconType::ShipFire, 0 }
+    { IconType::Cube, Severity::Debug },
+    { IconType::Ship, Severity::Debug },
+    { IconType::Ball, Severity::Debug },
+    { IconType::Ufo, Severity::Debug },
+    { IconType::Wave, Severity::Debug },
+    { IconType::Robot, Severity::Debug },
+    { IconType::Spider, Severity::Debug },
+    { IconType::Swing, Severity::Debug },
+    { IconType::Jetpack, Severity::Debug },
+    { IconType::DeathEffect, Severity::Debug },
+    { IconType::Special, Severity::Debug },
+    { IconType::ShipFire, Severity::Debug }
 };
-int MoreIcons::severity = 0;
+int MoreIcons::severity = Severity::Debug;
 bool MoreIcons::traditionalPacks = true;
 bool MoreIcons::preloadIcons = false;
 

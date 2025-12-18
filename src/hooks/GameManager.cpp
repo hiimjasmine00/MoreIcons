@@ -25,23 +25,14 @@ class $modify(MIGameManager, GameManager) {
         Get::spriteFrameCache = nullptr;
         Get::textureCache = nullptr;
         Get::objectManager = nullptr;
-        for (auto& icons : std::views::values(MoreIcons::icons)) {
-            icons.clear();
-        }
+        std::ranges::for_each(std::views::values(MoreIcons::icons), &std::vector<IconInfo>::clear);
         MoreIcons::requestedIcons.clear();
         MoreIcons::loadedIcons.clear();
         MoreIcons::logs.clear();
         MoreIcons::severity = Severity::Debug;
-        MoreIcons::severities[IconType::Cube] = Severity::Debug;
-        MoreIcons::severities[IconType::Ship] = Severity::Debug;
-        MoreIcons::severities[IconType::Ball] = Severity::Debug;
-        MoreIcons::severities[IconType::Ufo] = Severity::Debug;
-        MoreIcons::severities[IconType::Wave] = Severity::Debug;
-        MoreIcons::severities[IconType::Robot] = Severity::Debug;
-        MoreIcons::severities[IconType::Spider] = Severity::Debug;
-        MoreIcons::severities[IconType::Swing] = Severity::Debug;
-        MoreIcons::severities[IconType::Jetpack] = Severity::Debug;
-        MoreIcons::severities[IconType::Special] = Severity::Debug;
+        for (auto& severity : std::views::values(MoreIcons::severities)) {
+            severity = Severity::Debug;
+        }
         MoreIcons::loadSettings();
         jasmine::hook::toggle(sheetHook, MoreIcons::traditionalPacks);
     }
