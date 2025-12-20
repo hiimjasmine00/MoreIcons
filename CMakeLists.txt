@@ -14,12 +14,6 @@ project(MoreIcons VERSION 2.0.0)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
-find_program(GEODE_CCACHE NAMES sccache ccache)
-if (GEODE_CCACHE)
-    set(CMAKE_C_COMPILER_LAUNCHER "${GEODE_CCACHE}")
-    set(CMAKE_CXX_COMPILER_LAUNCHER "${GEODE_CCACHE}")
-endif()
-
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
