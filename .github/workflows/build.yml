@@ -44,6 +44,7 @@ jobs:
         with:
           sdk: nightly
           build-config: ${{ matrix.config.build-config || 'Release' }}
+          build-args: --verbose
           export-pdb: true
           export-symbols: true
           combine: true
