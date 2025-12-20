@@ -14,6 +14,12 @@ project(MoreIcons VERSION 2.0.0)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
 
+find_program(GEODE_CCACHE NAMES sccache ccache)
+if (GEODE_CCACHE)
+    set(CMAKE_C_COMPILER_LAUNCHER "${GEODE_CCACHE}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${GEODE_CCACHE}")
+endif()
+
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
@@ -26,12 +32,6 @@ if (NOT DEFINED ENV{GEODE_SDK})
     message(FATAL_ERROR "Unable to find Geode SDK! Please define GEODE_SDK environment variable to point to Geode")
 else()
     message(STATUS "Found Geode: $ENV{GEODE_SDK}")
-endif()
-
-find_program(GEODE_CCACHE NAMES sccache ccache)
-if (GEODE_CCACHE)
-    set(CMAKE_C_COMPILER_LAUNCHER "${GEODE_CCACHE}")
-    set(CMAKE_CXX_COMPILER_LAUNCHER "${GEODE_CCACHE}")
 endif()
 
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
