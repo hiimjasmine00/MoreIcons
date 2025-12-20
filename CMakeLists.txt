@@ -28,6 +28,12 @@ else()
     message(STATUS "Found Geode: $ENV{GEODE_SDK}")
 endif()
 
+find_program(GEODE_CCACHE NAMES sccache ccache)
+if (GEODE_CCACHE)
+    set(CMAKE_C_COMPILER_LAUNCHER "${GEODE_CCACHE}")
+    set(CMAKE_CXX_COMPILER_LAUNCHER "${GEODE_CCACHE}")
+endif()
+
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
 CPMAddPackage("gh:zeux/pugixml@1.15")
