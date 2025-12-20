@@ -88,14 +88,8 @@ void SaveEditorPopup::saveEditor(const std::filesystem::path& directory) {
         sprite->release();
     }
 
-    if (auto res = packer.pack(); res.isErr()) {
-        return MoreIcons::notifyFailure("Failed to pack frames: {}", res.unwrapErr());
-    }
-    if (auto res = packer.png(directory / L("icon.png")); res.isErr()) {
-        return MoreIcons::notifyFailure("Failed to save image: {}", res.unwrapErr());
-    }
-    if (auto res = packer.plist(directory / L("icon.plist"), "icon.png", "    "); res.isErr()) {
-        return MoreIcons::notifyFailure("Failed to save plist: {}", res.unwrapErr());
+    if (auto res = ImageRenderer::save(packer, directory / L("icon.png"), directory / L("icon.plist"), "icon.png"); res.isErr()) {
+        return MoreIcons::notifyFailure(res.unwrapErr());
     }
 
     m_callback();

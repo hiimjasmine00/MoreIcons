@@ -91,7 +91,7 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
             fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
             "No",
             "Yes",
-            [this, path = std::move(path)](auto, bool btn2) {
+            [this, path = std::move(path)](auto, bool btn2) mutable {
                 if (btn2) saveTrail(std::move(path));
             }
         );
@@ -116,13 +116,17 @@ void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
     else if (textureRes.isErr()) MoreIcons::notifyFailure(textureRes.unwrapErr());
 }
 
-void EditTrailPopup::saveTrail(std::filesystem::path path) {
+void EditTrailPopup::saveTrail(std::filesystem::path&& path) {
     auto sprite = CCSprite::createWithTexture(m_streak->getTexture());
     sprite->setAnchorPoint({ 0.0f, 0.0f });
     sprite->setBlendFunc({ GL_ONE, GL_ZERO });
     auto image = ImageRenderer::getImage(sprite);
     sprite->release();
-    if (auto res = texpack::toPNG(path, image); res.isErr()) {
+    auto imageRes = texpack::toPNG(image);
+    if (imageRes.isErr()) {
+        return MoreIcons::notifyFailure("Failed to encode image: {}", imageRes.unwrapErr());
+    }
+    if (auto res = file::writeBinary(path, imageRes.unwrap()); res.isErr()) {
         return MoreIcons::notifyFailure("Failed to save image: {}", res.unwrapErr());
     }
 

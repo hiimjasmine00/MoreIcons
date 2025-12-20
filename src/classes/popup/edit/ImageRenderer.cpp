@@ -1,5 +1,6 @@
 #include "ImageRenderer.hpp"
 #include "../../../utils/Get.hpp"
+#include <Geode/utils/file.hpp>
 
 using namespace geode::prelude;
 
@@ -68,4 +69,21 @@ texpack::Image ImageRenderer::getImage(CCNode* node) {
     }
 
     return { data, width, height };
+}
+
+Result<> ImageRenderer::save(texpack::Packer& packer, const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name) {
+    GEODE_UNWRAP(packer.pack().mapErr([](std::string err) {
+        return fmt::format("Failed to pack image: {}", err);
+    }));
+    GEODE_UNWRAP_INTO(auto pngData, packer.png().mapErr([](std::string err) {
+        return fmt::format("Failed to encode image: {}", err);
+    }));
+    auto plistData = packer.plist(name, "    ");
+    GEODE_UNWRAP(file::writeBinary(png, pngData).mapErr([](std::string err) {
+        return fmt::format("Failed to save image: {}", err);
+    }));
+    GEODE_UNWRAP(file::writeString(plist, plistData).mapErr([](std::string err) {
+        return fmt::format("Failed to save plist: {}", err);
+    }));
+    return Ok();
 }

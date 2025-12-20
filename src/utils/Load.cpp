@@ -1,6 +1,7 @@
 #include <pugixml.hpp>
 #include "Load.hpp"
 #include "Get.hpp"
+#include <Geode/cocos/support/zip_support/unzip.h>
 #include <Geode/utils/cocos.hpp>
 #include <Geode/utils/file.hpp>
 #include <jasmine/mod.hpp>
@@ -11,15 +12,14 @@ using namespace jasmine::mod;
 
 std::string Load::getFrameName(std::string_view frameName, std::string_view name, IconType type) {
     if (type == IconType::DeathEffect) {
-        return fmt::format("{}{}"_spr, name, frameName.size() > 7 ? frameName.substr(frameName.size() - 8) : frameName);
+        return fmt::format("{}{}"_spr, name, frameName.substr(std::max<ptrdiff_t>(frameName.size() - 8, 0)));
     }
 
     if (!frameName.ends_with("_001.png")) return std::string(frameName);
 
     std::string_view suffix;
     auto isRobot = type == IconType::Robot || type == IconType::Spider;
-    auto end = frameName;
-    end.remove_suffix(8);
+    auto end = std::string_view(frameName.data(), frameName.size() - 8);
 
     if (end.ends_with("_2")) {
         if (isRobot) {
@@ -67,20 +67,66 @@ std::string Load::getFrameName(std::string_view frameName, std::string_view name
 #ifdef GEODE_IS_ANDROID
 const char* getApkPath();
 
-static thread_local ZipFile* apkFile = new ZipFile(getApkPath());
+struct ApkEntry {
+    unz_file_pos pos;
+    uint64_t size;
+};
+
+struct ApkFile {
+    void* zipFile = nullptr;
+    std::unordered_map<std::string, ApkEntry> fileList;
+};
+
+thread_local ApkFile* apkFile = [] -> ApkFile* {
+    ApkFile* apkFile = new ApkFile();
+
+    auto apkPath = getApkPath();
+    auto zipFile = unzOpen(apkPath);
+    if (!zipFile) {
+        log::error("Failed to open APK file at {}", apkPath);
+        return apkFile;
+    }
+
+    apkFile->zipFile = zipFile;
+
+    unz_file_info64 fileInfo;
+    std::string filename;
+    filename.reserve(256);
+
+    auto res = unzGoToFirstFile64(zipFile, &fileInfo, filename.data(), 256);
+    for (; res == 0; res = unzGoToNextFile64(zipFile, &fileInfo, filename.data(), 256)) {
+        if (!filename.starts_with("assets/")) continue;
+        ApkEntry entryInfo;
+        if (unzGetFilePos(zipFile, &entryInfo.pos) != 0) continue;
+        entryInfo.size = fileInfo.uncompressed_size;
+        apkFile->fileList[filename] = entryInfo;
+    }
+
+    if (res != 0) {
+        if (filename.empty()) log::error("Failed to iterate over APK file entries");
+        else log::error("APK file iteration prematurely aborted after {}", filename);
+    }
+
+    return apkFile;
+}();
 #endif
 
 Result<std::vector<uint8_t>> Load::readBinary(const std::filesystem::path& path) {
     #ifdef GEODE_IS_ANDROID
     auto& str = path.native();
     if (str.starts_with("assets/")) {
-        auto size = 0ul;
-        if (auto data = apkFile->getFileData(str.c_str(), &size)) {
-            std::vector<uint8_t> vec(data, data + size);
-            delete[] data;
-            return Ok(vec);
+        if (auto it = apkFile->fileList.find(str); it != apkFile->fileList.end()) {
+            auto& entryInfo = it->second;
+            if (unzGoToFilePos(apkFile->zipFile, &entryInfo.pos) != 0) return Err("Failed to seek to file");
+            if (unzOpenCurrentFile(apkFile->zipFile) != 0) return Err("Failed to open file");
+
+            std::vector<uint8_t> data(entryInfo.size);
+            auto readBytes = unzReadCurrentFile(apkFile->zipFile, data.data(), data.size());
+            unzCloseCurrentFile(apkFile->zipFile);
+            if (readBytes != entryInfo.size) return Err("Failed to read file");
+            return Ok(std::move(data));
         }
-        else return Err("Failed to read file from APK");
+        else return Err("File not found");
     }
     #endif
     return file::readBinary(path);
@@ -89,7 +135,7 @@ Result<std::vector<uint8_t>> Load::readBinary(const std::filesystem::path& path)
 bool Load::doesExist(const std::filesystem::path& path) {
     #ifdef GEODE_IS_ANDROID
     auto& str = path.native();
-    if (str.starts_with("assets/")) return apkFile->fileExists(str);
+    if (str.starts_with("assets/")) return apkFile->fileList.contains(str);
     #endif
     std::error_code code;
     return std::filesystem::exists(path, code);

@@ -79,9 +79,8 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
 
         auto prefix = info ? fmt::format("{}"_spr, info->getName()) : MoreIcons::getIconName(id, type);
         auto spriteFrameCache = Get::SpriteFrameCache();
-        for (auto it = suffixes.begin(); it != suffixes.end(); it++) {
-            auto& subSuffixes = *it;
-            auto i = it - suffixes.begin();
+        for (size_t i = 0; i < suffixes.size(); i++) {
+            auto& subSuffixes = *(suffixes.begin() + i);
 
             auto container = CCNode::create();
             container->setPosition({ 175.0f, (isRobot ? 140.0f : 100.0f) - i * 30.0f + std::max<ptrdiff_t>(i - 1, 0) * 10.0f });

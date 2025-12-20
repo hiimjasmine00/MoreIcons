@@ -84,9 +84,7 @@ void MoreIcons::loadSettings() {
 
 bool MoreIcons::doesExist(const std::filesystem::path& path) {
     std::error_code code;
-    auto exists = std::filesystem::exists(path, code);
-    if (code) log::error("{}: Failed to check existence: {}", path, code.message());
-    return exists;
+    return std::filesystem::exists(path, code);
 }
 
 Result<std::filesystem::path> MoreIcons::renameFile(
@@ -109,7 +107,7 @@ Result<std::filesystem::path> MoreIcons::renameFile(
     }
     std::filesystem::rename(from, dest, code);
     if (code) return Err("Failed to rename {}: {}", from.filename(), code.message());
-    return Ok(dest.filename());
+    return Ok(std::move(dest));
 }
 
 void MoreIcons::iterate(
@@ -127,13 +125,24 @@ void MoreIcons::iterate(
 }
 
 std::basic_string_view<std::filesystem::path::value_type> MoreIcons::getPathFilename(const std::filesystem::path& path, size_t removeCount) {
-    std::basic_string_view filename = path.native();
-    filename.remove_prefix(filename.find_last_of(std::filesystem::path::preferred_separator) + 1);
-    filename.remove_suffix(removeCount);
-    return filename;
+    auto& str = path.native();
+    auto sep = str.find_last_of(std::filesystem::path::preferred_separator) + 1;
+    return std::basic_string_view(str.data() + sep, str.size() - sep - removeCount);
 }
 
-std::filesystem::path::string_type MoreIcons::getPathString(std::filesystem::path path) {
+std::pair<
+    std::basic_string_view<std::filesystem::path::value_type>,
+    std::basic_string_view<std::filesystem::path::value_type>
+> splitPath(const std::filesystem::path& path, size_t removeCount) {
+    auto& str = path.native();
+    auto sep = str.find_last_of(std::filesystem::path::preferred_separator) + 1;
+    return {
+        std::basic_string_view(str.data(), sep),
+        std::basic_string_view(str.data() + sep, str.size() - sep - removeCount)
+    };
+}
+
+std::filesystem::path::string_type MoreIcons::getPathString(std::filesystem::path&& path) {
     return std::move(const_cast<std::filesystem::path::string_type&>(path.native()));
 }
 
@@ -164,9 +173,9 @@ void migrateTrails(const std::filesystem::path& path) {
             return log::error("Failed to move {}: {}", MoreIcons::strNarrow(filename), res.unwrapErr());
         }
 
-        auto jsonName = fmt::format(L("{}.json"), stem);
+        std::filesystem::path jsonName = fmt::format(L("{}.json"), stem);
         if (auto res = MoreIcons::renameFile(parentDir / jsonName, directory / L("settings.json")); res.isErr()) {
-            return log::error("Failed to move {}: {}", MoreIcons::strNarrow(jsonName), res.unwrapErr());
+            return log::error("Failed to move {}: {}", jsonName, res.unwrapErr());
         }
     });
 
@@ -197,7 +206,7 @@ void MoreIcons::loadPacks() {
 
         resourcesPath.make_preferred();
 
-        std::basic_string_view str = pack.path.native();
+        auto& str = pack.path.native();
         auto zipped = str.ends_with(L(".apk")) || str.ends_with(L(".zip"));
         if (traditionalPacks) {
             if (doesExist(resourcesPath / L("icons"))) {
@@ -238,7 +247,7 @@ void MoreIcons::loadPacks() {
 #ifdef GEODE_IS_WINDOWS
 std::wstring MoreIcons::strWide(std::string_view path) {
     auto count = MultiByteToWideChar(CP_UTF8, 0, path.data(), path.size(), nullptr, 0);
-    std::wstring str(count, 0);
+    std::wstring str(count, L'\0');
     if (count != 0) MultiByteToWideChar(CP_UTF8, 0, path.data(), path.size(), &str[0], count);
     return str;
 }
@@ -248,7 +257,7 @@ Result<> checkPath(const std::filesystem::path& path) {
     auto count = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr.size(), nullptr, 0, nullptr, nullptr);
     if (count == 0) return Err(formatSystemError(GetLastError()));
 
-    std::string str(count, 0);
+    std::string str(count, '\0');
     auto result = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), -1, &str[0], count, nullptr, nullptr);
     if (result == 0) return Err(formatSystemError(GetLastError()));
     else return Ok();
@@ -256,7 +265,7 @@ Result<> checkPath(const std::filesystem::path& path) {
 
 std::string MoreIcons::strNarrow(std::wstring_view wstr) {
     auto count = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr.size(), nullptr, 0, nullptr, nullptr);
-    std::string str(count, 0);
+    std::string str(count, '\0');
     if (count != 0) WideCharToMultiByte(CP_UTF8, 0, wstr.data(), -1, &str[0], count, nullptr, nullptr);
     return str;
 }
@@ -303,7 +312,7 @@ Result<std::filesystem::path> MoreIcons::createTrash() {
 
 IconType currentType = IconType::Cube;
 
-void printLog(std::string name, int severity, std::string message) {
+void printLog(std::string&& name, int severity, std::string&& message) {
     log::logImpl(Severity::cast(severity), Mod::get(), "{}: {}", name, message);
     MoreIcons::logs.emplace(std::ranges::find_if(MoreIcons::logs, [&name, severity](const LogData& log) {
         return log.severity == severity ? log.name > name : log.severity < severity;
@@ -314,11 +323,7 @@ void printLog(std::string name, int severity, std::string message) {
 }
 
 void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
-    std::basic_string_view stem = path.native();
-    auto sep = stem.find_last_of(std::filesystem::path::preferred_separator) + 1;
-    auto parent = stem.substr(0, sep);
-    stem.remove_prefix(sep);
-    stem.remove_suffix(6);
+    auto [parent, stem] = splitPath(path, 6);
 
     std::string name;
     std::string shortName;
@@ -388,11 +393,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
 }
 
 void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
-    std::basic_string_view stem = path.native();
-    auto sep = stem.find_last_of(std::filesystem::path::preferred_separator) + 1;
-    auto parent = stem.substr(0, sep);
-    stem.remove_prefix(sep);
-    stem.remove_suffix(4);
+    auto [parent, stem] = splitPath(path, 4);
 
     auto plistPath = std::filesystem::path(path).replace_extension(L(".plist"));
     auto vanillaPath = !MoreIcons::doesExist(plistPath);
@@ -486,7 +487,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
         return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
-    auto trailID = jasmine::convert::getInt<int>(std::string_view(shortName).substr(7, shortName.size() - 11)).value_or(0);
+    auto trailID = jasmine::convert::getInt<int>(std::string_view(shortName.data() + 7, shortName.size() - 11)).value_or(0);
     if (trailID == 0) trailID = -1;
 
     auto icon = more_icons::addTrail(
@@ -554,11 +555,7 @@ void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
 }
 
 void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
-    std::basic_string_view stem = path.native();
-    auto sep = stem.find_last_of(std::filesystem::path::preferred_separator) + 1;
-    auto parent = stem.substr(0, sep);
-    stem.remove_prefix(sep);
-    stem.remove_suffix(4);
+    auto [parent, stem] = splitPath(path, 4);
 
     auto plistPath = std::filesystem::path(path).replace_extension(L(".plist"));
     auto vanillaPath = !MoreIcons::doesExist(plistPath);
@@ -599,7 +596,7 @@ void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& p
     auto doesntExist = vanillaPath && !Load::doesExist(plistPath);
     if (doesntExist) return printLog(std::move(name), Severity::Error, fmt::format("Plist file not found (Last attempt: {})", plistPath));
 
-    auto effectID = jasmine::convert::getInt<int>(std::string_view(shortName).substr(16)).value_or(0);
+    auto effectID = jasmine::convert::getInt<int>(std::string_view(shortName.data() + 16, shortName.size() - 16)).value_or(0);
     if (effectID == 0) effectID = -1;
     else effectID++;
 
@@ -653,7 +650,7 @@ void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack
     auto shortName = MoreIcons::strNarrow(MoreIcons::getPathFilename(path, 8));
     auto name = fmt::format("{}:{}", pack.id, shortName);
 
-    auto fireID = jasmine::convert::getInt<int>(std::string_view(shortName).substr(12)).value_or(0);
+    auto fireID = jasmine::convert::getInt<int>(std::string_view(shortName.data() + 12, shortName.size() - 12)).value_or(0);
     if (fireID == 0) fireID = -1;
 
     auto fireCount = Defaults::getShipFireCount(fireID);
@@ -736,14 +733,13 @@ void MoreIcons::loadIcons(IconType type) {
 
             iterate(path, std::filesystem::file_type::regular, [type, &pack, prefix](const std::filesystem::path& path) {
                 auto filename = getPathFilename(path);
-                if (!filename.ends_with(L(".png")) || !filename.starts_with(prefix)) return false;
+                if (!filename.ends_with(L(".png")) || !filename.starts_with(prefix)) return;
 
-                auto stem = filename;
-                stem.remove_suffix(4);
+                filename.remove_suffix(4);
 
                 if (type <= IconType::Jetpack) {
-                    if (type != IconType::Cube || !stem.starts_with(L("player_ball_"))) {
-                        if (!stem.ends_with(L("00")) && !stem.ends_with(L("00-hd")) && !stem.ends_with(L("00-uhd"))) {
+                    if (type != IconType::Cube || !filename.starts_with(L("player_ball_"))) {
+                        if (!filename.ends_with(L("00")) && !filename.ends_with(L("00-hd")) && !filename.ends_with(L("00-uhd"))) {
                             loadVanillaIcon(path, pack);
                         }
                     }
@@ -752,12 +748,11 @@ void MoreIcons::loadIcons(IconType type) {
                     loadVanillaDeathEffect(path, pack);
                 }
                 else if (type == IconType::Special) {
-                    if (filename.ends_with(L("_001.png"))) loadVanillaTrail(path, pack);
+                    if (filename.ends_with(L("_001"))) loadVanillaTrail(path, pack);
                 }
                 else if (type == IconType::ShipFire) {
-                    if (filename.ends_with(L("_001.png"))) loadVanillaShipFire(path, pack);
+                    if (filename.ends_with(L("_001"))) loadVanillaShipFire(path, pack);
                 }
-                return false;
             });
 
             log::info("Finished pre-loading {}s from {}", name, path);

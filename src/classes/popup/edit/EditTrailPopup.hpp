@@ -14,7 +14,7 @@ protected:
 
     bool setup(MoreIconsPopup* popup) override;
     void updateWithPath(const std::filesystem::path& path);
-    void saveTrail(std::filesystem::path path);
+    void saveTrail(std::filesystem::path&& path);
     void onClose(cocos2d::CCObject* sender) override;
 public:
     static EditTrailPopup* create(MoreIconsPopup* popup);

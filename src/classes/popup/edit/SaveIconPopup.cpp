@@ -138,24 +138,35 @@ void SaveIconPopup::saveIcon(std::basic_string_view<std::filesystem::path::value
 
     std::filesystem::path selectedPNG;
     std::filesystem::path selectedPlist;
-    for (int i = 0; i < 3; i++) {
-        auto& packer = packers[i];
-        auto [wsuffix, suffix, displayName] = suffixes[i];
-        std::filesystem::path png = fmt::format(L("{}{}.png"), stem, wsuffix);
-        std::filesystem::path plist = fmt::format(L("{}{}.plist"), stem, wsuffix);
-        if (auto res = packer.pack(); res.isErr()) {
-            return MoreIcons::notifyFailure("Failed to pack {} frames: {}", displayName, res.unwrapErr());
-        }
-        if (auto res = packer.png(png); res.isErr()) {
-            return MoreIcons::notifyFailure("Failed to save {} image: {}", displayName, res.unwrapErr());
-        }
-        if (auto res = packer.plist(plist, fmt::format("icons/{}{}.png", name, suffix), "    "); res.isErr()) {
-            return MoreIcons::notifyFailure("Failed to save {} plist: {}", displayName, res.unwrapErr());
-        }
-        if (scales[i] == 1.0f) {
-            selectedPNG = std::move(png);
-            selectedPlist = std::move(plist);
-        }
+
+    std::filesystem::path uhdPng = fmt::format(L("{}-uhd.png"), stem);
+    std::filesystem::path uhdPlist = fmt::format(L("{}-uhd.plist"), stem);
+    if (auto res = ImageRenderer::save(packers[0], uhdPng, uhdPlist, fmt::format("icons/{}-uhd.png", name)); res.isErr()) {
+        return MoreIcons::notifyFailure("Failed to save UHD icon: {}", res.unwrapErr());
+    }
+    if (scales[0] == 1.0f) {
+        selectedPNG = std::move(uhdPng);
+        selectedPlist = std::move(uhdPlist);
+    }
+
+    std::filesystem::path hdPng = fmt::format(L("{}-hd.png"), stem);
+    std::filesystem::path hdPlist = fmt::format(L("{}-hd.plist"), stem);
+    if (auto res = ImageRenderer::save(packers[1], hdPng, hdPlist, fmt::format("icons/{}-hd.png", name)); res.isErr()) {
+        return MoreIcons::notifyFailure("Failed to save HD icon: {}", res.unwrapErr());
+    }
+    if (scales[1] == 1.0f) {
+        selectedPNG = std::move(hdPng);
+        selectedPlist = std::move(hdPlist);
+    }
+
+    std::filesystem::path sdPng = fmt::format(L("{}.png"), stem);
+    std::filesystem::path sdPlist = fmt::format(L("{}.plist"), stem);
+    if (auto res = ImageRenderer::save(packers[2], sdPng, sdPlist, fmt::format("icons/{}.png", name)); res.isErr()) {
+        return MoreIcons::notifyFailure("Failed to save SD icon: {}", res.unwrapErr());
+    }
+    if (scales[2] == 1.0f) {
+        selectedPNG = std::move(sdPng);
+        selectedPlist = std::move(sdPlist);;
     }
 
     if (auto icon = more_icons::getIcon(name, type)) {

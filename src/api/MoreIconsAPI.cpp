@@ -180,6 +180,8 @@ IconInfo* more_icons::addShipFire(
     );
 }
 
+constexpr std::array qualities = { L(""), L("-hd"), L("-uhd") };
+
 void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
     auto oldPngs = info->getAllTextures();
     auto type = info->getType();
@@ -188,37 +190,34 @@ void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
         info->setSheet(path / info->getSheet().filename());
     }
     else if (type >= IconType::DeathEffect) {
-        auto directory = path / MoreIcons::strPath(info->getShortName());
         if (info->isVanilla()) {
             if (type == IconType::DeathEffect) {
-                constexpr std::array qualities = { L(""), L("-hd"), L("-uhd") };
-
                 auto quality = qualities[info->getQuality() - 1];
-                info->setTexture(directory / fmt::format(L("effect{}.png"), quality));
-                info->setSheet(directory / fmt::format(L("effect{}.plist"), quality));
+                info->setTexture(path / fmt::format(L("effect{}.png"), quality));
+                info->setSheet(path / fmt::format(L("effect{}.plist"), quality));
             }
             else if (type == IconType::Special) {
-                info->setTexture(directory / L("trail.png"));
+                info->setTexture(path / L("trail.png"));
             }
             else if (type == IconType::ShipFire) {
-                info->setTexture(directory / L("fire_001.png"));
+                info->setTexture(path / L("fire_001.png"));
             }
-            info->setJSON(directory / L("settings.json"));
+            info->setJSON(path / L("settings.json"));
             auto factor = Get::Director()->getContentScaleFactor();
-            info->setIcon(directory / (factor >= 4.0f ? L("icon-uhd.png") : factor >= 2.0f ? L("icon-hd.png") : L("icon.png")));
+            info->setIcon(path / (factor >= 4.0f ? L("icon-uhd.png") : factor >= 2.0f ? L("icon-hd.png") : L("icon.png")));
         }
         else {
             if (auto& texture = info->getTexture(); !texture.empty()) {
-                info->setTexture(directory / texture.filename());
+                info->setTexture(path / texture.filename());
             }
             if (auto& sheet = info->getSheet(); !sheet.empty()) {
-                info->setSheet(directory / sheet.filename());
+                info->setSheet(path / sheet.filename());
             }
             if (auto& json = info->getJSON(); !json.empty()) {
-                info->setJSON(directory / json.filename());
+                info->setJSON(path / json.filename());
             }
             if (auto& icon = info->getIcon(); !icon.empty()) {
-                info->setIcon(directory / icon.filename());
+                info->setIcon(path / icon.filename());
             }
         }
     }
@@ -277,10 +276,7 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
     auto type = info->getType();
 
     if (type <= IconType::Jetpack) {
-        constexpr std::array qualities = { L(""), L("-hd"), L("-uhd") };
-
         auto quality = qualities[info->getQuality() - 1];
-
         info->setTexture(info->getTexture().parent_path() / fmt::format(L("{}{}.png"), wideName, quality));
         info->setSheet(info->getSheet().parent_path() / fmt::format(L("{}{}.plist"), wideName, quality));
     }
