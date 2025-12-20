@@ -8,8 +8,10 @@
 #include "SaveIconPopup.hpp"
 #include "../MoreIconsPopup.hpp"
 #include "../../../MoreIcons.hpp"
+#include "../../../utils/Constants.hpp"
 #include "../../../utils/Get.hpp"
 #include "../../../utils/Load.hpp"
+#include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
@@ -55,7 +57,7 @@ gd::string getKey(std::string_view suffix) {
 
 bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     setID("EditIconPopup");
-    setTitle(fmt::format("{} Editor", MoreIcons::uppercase[(int)type]));
+    setTitle(fmt::format("{} Editor", Constants::getIconLabel(type, true, false)));
     m_title->setID("edit-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -217,7 +219,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
             if (!updateWithSelectedFiles()) return;
 
             auto stateRes = file::readFromJson<IconEditorState>(directory / L("state.json"));
-            if (stateRes.isErr()) return MoreIcons::notifyFailure("Failed to load state: {}", stateRes.unwrapErr());
+            if (stateRes.isErr()) return Notify::error("Failed to load state: {}", stateRes.unwrapErr());
 
             m_state = std::move(stateRes).unwrap();
             updateColors();
@@ -247,7 +249,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
                 }
             }
 
-            MoreIcons::notifySuccess("{} loaded!", directory.filename());
+            Notify::success("{} loaded!", directory.filename());
         })->show();
     });
     loadStateButton->setID("load-state-button");
@@ -291,7 +293,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto pieceImportButton = CCMenuItemExt::createSpriteExtra(pieceImportSprite, [this](auto) {
         m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
             auto res = event->getValue();
-            if (res && res->isErr()) return MoreIcons::notifyFailure("Failed to import PNG file: {}", res->unwrapErr());
+            if (res && res->isErr()) return Notify::error("Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
             if (auto textureRes = Load::createTexture(res->unwrap())) {
@@ -299,7 +301,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
                 m_frames->setObject(CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }), getKey(m_suffix));
                 updatePieces();
             }
-            else if (textureRes.isErr()) return MoreIcons::notifyFailure(textureRes.unwrapErr());
+            else if (textureRes.isErr()) return Notify::error(textureRes.unwrapErr());
         });
 
         m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
@@ -367,7 +369,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto pngButton = CCMenuItemExt::createSpriteExtra(pngSprite, [this, pngSprite, plistSprite](auto) {
         m_listener.bind([this, pngSprite, plistSprite](Task<Result<std::filesystem::path>>::Event* event) {
             auto res = event->getValue();
-            if (res && res->isErr()) return MoreIcons::notifyFailure("Failed to import PNG file: {}", res->unwrapErr());
+            if (res && res->isErr()) return Notify::error("Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
             m_selectedPNG = res->unwrap();
@@ -398,7 +400,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto plistButton = CCMenuItemExt::createSpriteExtra(plistSprite, [this, pngSprite, plistSprite](auto) {
         m_listener.bind([this, pngSprite, plistSprite](Task<Result<std::filesystem::path>>::Event* event) {
             auto res = event->getValue();
-            if (res && res->isErr()) return MoreIcons::notifyFailure("Failed to import Plist file: {}", res->unwrapErr());
+            if (res && res->isErr()) return Notify::error("Failed to import Plist file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
             m_selectedPlist = res->unwrap();
@@ -729,7 +731,7 @@ bool EditIconPopup::updateWithSelectedFiles(std::string_view suffix) {
         updatePieces();
         ret = true;
     }
-    else if (imageRes.isErr()) MoreIcons::notifyFailure(imageRes.unwrapErr());
+    else if (imageRes.isErr()) Notify::error(imageRes.unwrapErr());
 
     m_selectedPNG.clear();
     m_selectedPlist.clear();
@@ -825,11 +827,11 @@ void EditIconPopup::updateTargets() {
 void EditIconPopup::onClose(CCObject* sender) {
     if (!m_hasChanged) return Popup::onClose(sender);
 
-    auto type = (int)m_iconType;
+    auto type = m_iconType;
     createQuickPopup(
-        fmt::format("Exit {} Editor", MoreIcons::uppercase[type]).c_str(),
+        fmt::format("Exit {} Editor", Constants::getIconLabel(type, true, false)).c_str(),
         fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} editor</c>?\n<cr>All unsaved changes will be lost!</c>",
-            MoreIcons::lowercase[type]),
+            Constants::getIconLabel(type, false, false)),
         "No",
         "Yes",
         [this](auto, bool btn2) {

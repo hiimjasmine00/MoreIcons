@@ -184,7 +184,7 @@ bool IconColorPopup::setup(int selected, std23::move_only_function<void(int)> ca
         colorButton->setPosition(m_buttonMenu->convertToNodeSpace(center + offset + CCPoint {
             (i % 18) * 24.0f - 198.0f, 89.0f - floorf(i / 18.0f) * 24.0f
         }));
-        colorButton->setID(fmt::format("color-button-{}", colorIndex));
+        colorButton->setID(fmt::to_string(colorIndex));
         m_buttonMenu->addChild(colorButton);
         if (colorIndex == selected) selectSprite->setPosition(colorButton->getPosition());
     }

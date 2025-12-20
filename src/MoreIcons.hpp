@@ -7,13 +7,6 @@
 #include <IconInfo.hpp>
 #include <std23/function_ref.h>
 
-struct LogData {
-    std::string name;
-    std::string message;
-    IconType type;
-    int severity;
-};
-
 #ifdef GEODE_IS_WINDOWS
 #define WIDE_CONFIG L"config\\" GEODE_CONCAT(L, GEODE_MOD_ID)
 #define L(x) L##x
@@ -33,56 +26,11 @@ namespace std::filesystem {
 
 class MoreIcons {
 public:
-    static constexpr std::array lowercase = {
-        "icon", "ship", "ball", "UFO", "wave", "robot", "spider",
-        "swing", "jetpack", "death effect", "trail", "", "ship fire"
-    };
-    static constexpr std::array uppercase = {
-        "Icon", "Ship", "Ball", "UFO", "Wave", "Robot", "Spider",
-        "Swing", "Jetpack", "Death Effect", "Trail", "", "Ship Fire"
-    };
-    static constexpr std::array severityFrames = {
-        "cc_2x2_white_image", "GJ_infoIcon_001.png", "geode.loader/info-warning.png", "geode.loader/info-alert.png"
-    };
-    static constexpr std::array folders = {
-        L("icon"), L("ship"), L("ball"), L("ufo"), L("wave"), L("robot"), L("spider"),
-        L("swing"), L("jetpack"), L("death"), L("trail"), L(""), L("fire")
-    };
-
     static std::map<IconType, std::vector<IconInfo>> icons;
     static std::map<int, std::map<IconType, std::string>> requestedIcons;
     static std::map<std::pair<std::string, IconType>, int> loadedIcons;
-    static std::vector<LogData> logs;
-    static std::map<IconType, int> severities;
-    static int severity;
     static bool traditionalPacks;
     static bool preloadIcons;
-
-    static int convertType(IconType type) {
-        return (int)type - (type >= IconType::DeathEffect ? 89 : 0);
-    }
-
-    static IconType convertType(int type) {
-        return (IconType)(type + (type > 8 ? 89 : 0));
-    }
-
-    template <typename... Args>
-    static void notifyFailure(fmt::format_string<Args...> message, Args&&... args) {
-        notifyFailure(fmt::format(message, std::forward<Args>(args)...));
-    }
-    static void notifyFailure(const std::string& message);
-
-    template <typename... Args>
-    static void notifyInfo(fmt::format_string<Args...> message, Args&&... args) {
-        notifyInfo(fmt::format(message, std::forward<Args>(args)...));
-    }
-    static void notifyInfo(const std::string& message);
-
-    template <typename... Args>
-    static void notifySuccess(fmt::format_string<Args...> message, Args&&... args) {
-        notifySuccess(fmt::format(message, std::forward<Args>(args)...));
-    }
-    static void notifySuccess(const std::string& message);
 
     template <typename... Args>
     static cocos2d::CCSpriteFrame* getFrame(fmt::format_string<Args...> name, Args&&... args) {

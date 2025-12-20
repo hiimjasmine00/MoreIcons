@@ -4,7 +4,7 @@ class IconInfo;
 
 class ViewIconPopup : public geode::Popup<IconType, int, IconInfo*> {
 protected:
-    bool setup(IconType, int, IconInfo*) override;
+    bool setup(IconType type, int id, IconInfo* info) override;
 public:
-    static ViewIconPopup* create(IconType, int, IconInfo*);
+    static ViewIconPopup* create(IconType type, int id, IconInfo* info);
 };

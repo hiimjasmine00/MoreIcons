@@ -6,6 +6,7 @@
 #include "../../../utils/Defaults.hpp"
 #include "../../../utils/Get.hpp"
 #include "../../../utils/Load.hpp"
+#include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <MoreIcons.hpp>
 
@@ -57,7 +58,7 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
     auto pngButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("PNG", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
         m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
             auto res = event->getValue();
-            if (res && res->isErr()) return MoreIcons::notifyFailure("Failed to import PNG file: {}", res->unwrapErr());
+            if (res && res->isErr()) return Notify::error("Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
             updateWithPath(res->unwrap());
@@ -83,7 +84,7 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
 
     auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
         auto iconName = m_nameInput->getString();
-        if (iconName.empty()) return MoreIcons::notifyInfo("Please enter a name.");
+        if (iconName.empty()) return Notify::info("Please enter a name.");
 
         auto path = MoreIcons::getIconStem(fmt::format("{}.png", iconName), IconType::Special);
         if (MoreIcons::doesExist(path)) createQuickPopup(
@@ -113,7 +114,7 @@ void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
         m_streak->setTexture(textureRes.unwrap());
         m_hasChanged = true;
     }
-    else if (textureRes.isErr()) MoreIcons::notifyFailure(textureRes.unwrapErr());
+    else if (textureRes.isErr()) Notify::error(textureRes.unwrapErr());
 }
 
 void EditTrailPopup::saveTrail(std::filesystem::path&& path) {
@@ -124,10 +125,10 @@ void EditTrailPopup::saveTrail(std::filesystem::path&& path) {
     sprite->release();
     auto imageRes = texpack::toPNG(image);
     if (imageRes.isErr()) {
-        return MoreIcons::notifyFailure("Failed to encode image: {}", imageRes.unwrapErr());
+        return Notify::error("Failed to encode image: {}", imageRes.unwrapErr());
     }
     if (auto res = file::writeBinary(path, imageRes.unwrap()); res.isErr()) {
-        return MoreIcons::notifyFailure("Failed to save image: {}", res.unwrapErr());
+        return Notify::error("Failed to save image: {}", res.unwrapErr());
     }
 
     auto name = m_nameInput->getString();
@@ -148,7 +149,7 @@ void EditTrailPopup::saveTrail(std::filesystem::path&& path) {
     m_parentPopup->close();
     Popup::onClose(nullptr);
 
-    MoreIcons::notifySuccess("{} saved!", name);
+    Notify::success("{} saved!", name);
     MoreIcons::updateGarage();
 }
 

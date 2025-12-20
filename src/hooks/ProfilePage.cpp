@@ -22,6 +22,13 @@ class $modify(MIProfilePage, ProfilePage) {
         return false;
     }
 
+    static void updatePlayer(CCNode* menu, std::string_view id, IconType type, bool dual) {
+        if (auto player = menu->getChildByID(id)) {
+            auto tag = type == IconType::Ship ? player->getTag() : -1;
+            updatePlayer(player, tag != -1 ? (IconType)tag : type, dual);
+        }
+    }
+
     void changePlayers() {
         auto playerMenu = m_mainLayer->getChildByID("player-menu");
         if (!playerMenu) return;
@@ -29,18 +36,15 @@ class $modify(MIProfilePage, ProfilePage) {
         auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         auto dual = sdi && sdi->getSavedValue("2pselected", false);
 
-        constexpr std::array players = {
-            "player-icon", "player-ship", "player-ball",
-            "player-ufo", "player-wave", "player-robot",
-            "player-spider", "player-swing", "player-jetpack"
-        };
-
-        for (int i = 0; i < players.size(); i++) {
-            if (auto player = playerMenu->getChildByID(players[i])) {
-                auto tag = i == 1 ? player->getTag() : -1;
-                updatePlayer(player, (IconType)(tag != -1 ? tag : i), dual);
-            }
-        }
+        updatePlayer(playerMenu, "player-icon", IconType::Cube, dual);
+        updatePlayer(playerMenu, "player-ship", IconType::Ship, dual);
+        updatePlayer(playerMenu, "player-ball", IconType::Ball, dual);
+        updatePlayer(playerMenu, "player-ufo", IconType::Ufo, dual);
+        updatePlayer(playerMenu, "player-wave", IconType::Wave, dual);
+        updatePlayer(playerMenu, "player-robot", IconType::Robot, dual);
+        updatePlayer(playerMenu, "player-spider", IconType::Spider, dual);
+        updatePlayer(playerMenu, "player-swing", IconType::Swing, dual);
+        updatePlayer(playerMenu, "player-jetpack", IconType::Jetpack, dual);
     }
 
     void loadPageFromUserInfo(GJUserScore* score) {

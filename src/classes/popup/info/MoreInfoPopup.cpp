@@ -3,8 +3,10 @@
 #include "IconNamePopup.hpp"
 #include "SpecialSettingsPopup.hpp"
 #include "../../../MoreIcons.hpp"
+#include "../../../utils/Constants.hpp"
 #include "../../../utils/Get.hpp"
 #include "../../../utils/Load.hpp"
+#include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
@@ -60,7 +62,7 @@ bool moveSheet(const std::filesystem::path& from, const std::filesystem::path& t
         else if (!trash) {
             #ifdef GEODE_IS_DESKTOP
             if (auto res = copyVanillaFile(resources / fromPlist.filename(), toPlist, true); res.isErr()) {
-                MoreIcons::notifyFailure(res.unwrapErr());
+                Notify::error(res.unwrapErr());
                 return false;
             }
             #else
@@ -81,7 +83,7 @@ bool moveSheet(const std::filesystem::path& from, const std::filesystem::path& t
         if (MoreIcons::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
         else if (!trash) {
             if (auto res = copyVanillaFile(resources / fromPlist.filename(), toPlist, false); res.isErr()) {
-                MoreIcons::notifyFailure(res.unwrapErr());
+                Notify::error(res.unwrapErr());
                 return false;
             }
         }
@@ -95,14 +97,14 @@ bool moveSheet(const std::filesystem::path& from, const std::filesystem::path& t
         if (MoreIcons::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
         else if (!trash) {
             if (auto res = copyVanillaFile(resources / fromPlist.filename(), toPlist, false); res.isErr()) {
-                MoreIcons::notifyFailure(res.unwrapErr());
+                Notify::error(res.unwrapErr());
                 return false;
             }
         }
     }
 
     if (files.empty()) {
-        MoreIcons::notifyInfo("No files found to {}.", trash ? "trash" : "move");
+        Notify::info("No files found to {}.", trash ? "trash" : "move");
         return false;
     }
 
@@ -115,7 +117,7 @@ bool moveSheet(const std::filesystem::path& from, const std::filesystem::path& t
             for (size_t i = 0; i < renames.size(); i++) {
                 (void)MoreIcons::renameFile(renames[i], files[i].first);
             }
-            MoreIcons::notifyFailure(res.unwrapErr());
+            Notify::error(res.unwrapErr());
             return false;
         }
     }
@@ -130,23 +132,23 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
         if (trash) {
             auto parentDir = m_info->getTexture().parent_path();
             if (auto res = MoreIcons::renameFile(parentDir, directory / parentDir.filename(), false, true); res.isErr()) {
-                return MoreIcons::notifyFailure(res.unwrapErr());
+                return Notify::error(res.unwrapErr());
             }
         }
         else {
             if (auto res = file::createDirectoryAll(directory); res.isErr()) {
-                return MoreIcons::notifyFailure(res.unwrapErr());
+                return Notify::error(res.unwrapErr());
             }
 
             auto& texture = m_info->getTexture();
             if (type == IconType::ShipFire) {
                 if (auto res = MoreIcons::renameFile(texture, directory / L("fire_001.png"), false, true); res.isErr()) {
-                    return MoreIcons::notifyFailure(res.unwrapErr());
+                    return Notify::error(res.unwrapErr());
                 }
             }
             else if (type == IconType::Special) {
                 if (auto res = MoreIcons::renameFile(texture, directory / L("trail.png"), false, true); res.isErr()) {
-                    return MoreIcons::notifyFailure(res.unwrapErr());
+                    return Notify::error(res.unwrapErr());
                 }
             }
             else if (type == IconType::DeathEffect) {
@@ -154,18 +156,18 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
             }
 
             auto iconStem = MoreIcons::getPathString(Mod::get()->getResourcesDir() / fmt::format(L("{}{:02}"),
-                MoreIcons::folders[MoreIcons::convertType(type)], m_info->getSpecialID()));
+                Constants::getFolderName(type).native(), m_info->getSpecialID()));
 
             if (auto res = copyFile(fmt::format(L("{}-uhd.png"), iconStem), directory / L("icon-uhd.png")); res.isErr()) {
-                return MoreIcons::notifyFailure(res.unwrapErr());
+                return Notify::error(res.unwrapErr());
             }
 
             if (auto res = copyFile(fmt::format(L("{}-hd.png"), iconStem), directory / L("icon-hd.png")); res.isErr()) {
-                return MoreIcons::notifyFailure(res.unwrapErr());
+                return Notify::error(res.unwrapErr());
             }
 
             if (auto res = copyFile(fmt::format(L("{}.png"), iconStem), directory / L("icon.png")); res.isErr()) {
-                return MoreIcons::notifyFailure(res.unwrapErr());
+                return Notify::error(res.unwrapErr());
             }
         }
     }
@@ -178,7 +180,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
     onClose(nullptr);
     if (trash) more_icons::removeIcon(m_info);
     else more_icons::moveIcon(m_info, directory);
-    MoreIcons::notifySuccess("{} {}ed!", name, trash ? "trash" : "convert");
+    Notify::success("{} {}ed!", name, trash ? "trash" : "convert");
     MoreIcons::updateGarage();
 }
 
@@ -204,7 +206,6 @@ bool MoreInfoPopup::setup(IconInfo* info) {
 
     auto hasPack = info->inTexturePack();
     auto type = info->getType();
-    auto miType = MoreIcons::convertType(type);
 
     auto customLabel = CCLabelBMFont::create("Custom", "goldFont.fnt");
     customLabel->setPosition({ 150.0f, 123.0f });
@@ -213,7 +214,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     m_mainLayer->addChild(customLabel);
 
     auto descriptionArea = TextArea::create(fmt::format("This <cg>{}</c> is added by the <cl>More Icons</c> mod.",
-        MoreIcons::uppercase[miType]), "bigFont.fnt", 1.0f, 600.0f, { 0.5f, 1.0f }, 42.0f, false);
+        Constants::getIconLabel(type, true, false)), "bigFont.fnt", 1.0f, 600.0f, { 0.5f, 1.0f }, 42.0f, false);
     descriptionArea->setPosition({ 150.0f, 91.0f });
     descriptionArea->setScale(0.4f);
     descriptionArea->setID("description-area");
@@ -274,29 +275,31 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     CCMenuItemSpriteExtra* operationButton = nullptr;
 
     if (info->isVanilla() && !info->isZipped()) {
-        operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.7f, [this, miType, type](auto) {
-            auto lower = MoreIcons::lowercase[miType];
+        operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.7f, [this, type](auto) {
+            auto& shortName = m_info->getShortName();
+            auto lower = Constants::getIconLabel(type, false, false);
+
             fmt::memory_buffer message;
             fmt::format_to(std::back_inserter(message),
-                "Are you sure you want to <cy>convert</c> this <cg>{}</c> into a <cl>More Icons</c> <cg>{}</c>?", lower, lower);
+                "Are you sure you want to <cy>convert</c> <cj>{}</c> into a <cl>More Icons</c> <cg>{}</c>?", shortName, lower);
 
             auto parent = m_info->getTexture().parent_path();
             if (type <= IconType::Jetpack) parent = parent.parent_path();
-            auto dir = std::move(parent) / WIDE_CONFIG / MoreIcons::folders[miType];
+            auto dir = std::move(parent) / WIDE_CONFIG / Constants::getFolderName(type);
             if (type >= IconType::DeathEffect) {
-                dir /= MoreIcons::strPath(m_info->getShortName());
+                dir /= MoreIcons::strPath(shortName);
                 if (MoreIcons::doesExist(dir)) {
                     fmt::format_to(std::back_inserter(message), "\n<cr>This will overwrite the existing custom {}!</c>", lower);
                 }
             }
 
-            createQuickPopup(fmt::format("Convert {}", MoreIcons::uppercase[miType]).c_str(), fmt::to_string(message), "No", "Yes", [
-                this, miType, type, dir = std::move(dir)
+            createQuickPopup(fmt::format("Convert {}", Constants::getIconLabel(type, true, false)).c_str(), fmt::to_string(message), "No", "Yes", [
+                this, dir = std::move(dir)
             ](auto, bool btn2) {
                 if (!btn2) return;
 
                 if (auto res = file::createDirectoryAll(dir)) moveIcon(dir, false);
-                else MoreIcons::notifyFailure(res.unwrapErr());
+                else Notify::error(res.unwrapErr());
             });
         });
         operationButton->setID("move-button");
@@ -311,17 +314,17 @@ bool MoreInfoPopup::setup(IconInfo* info) {
         editButton->setID("edit-button");
         m_buttonMenu->addChild(editButton);
 
-        operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [this, miType](auto) {
+        operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [this, type](auto) {
             createQuickPopup(
-                fmt::format("Trash {}", MoreIcons::uppercase[miType]).c_str(),
-                fmt::format("Are you sure you want to <cr>trash</c> this <cg>{}</c>?", MoreIcons::lowercase[miType]),
+                fmt::format("Trash {}", Constants::getIconLabel(type, true, false)).c_str(),
+                fmt::format("Are you sure you want to <cr>trash</c> this <cg>{}</c>?", Constants::getIconLabel(type, false, false)),
                 "No",
                 "Yes",
                 [this](auto, bool btn2) {
                     if (!btn2) return;
 
                     if (auto res = MoreIcons::createTrash()) moveIcon(res.unwrap(), true);
-                    else MoreIcons::notifyFailure(res.unwrapErr());
+                    else Notify::error(res.unwrapErr());
                 }
             );
         });

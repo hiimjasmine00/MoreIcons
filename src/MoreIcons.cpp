@@ -1,14 +1,15 @@
 #define FMT_CPP_LIB_FILESYSTEM 0
 #include "MoreIcons.hpp"
 #include "classes/misc/ThreadPool.hpp"
+#include "utils/Constants.hpp"
 #include "utils/Defaults.hpp"
 #include "utils/Get.hpp"
 #include "utils/Load.hpp"
+#include "utils/Log.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/loader/Dirs.hpp>
-#include <Geode/ui/Notification.hpp>
 #include <geode.texture-loader/include/TextureLoader.hpp>
 #include <jasmine/convert.hpp>
 #include <jasmine/setting.hpp>
@@ -41,22 +42,6 @@ std::map<IconType, std::vector<IconInfo>> MoreIcons::icons = {
 };
 std::map<int, std::map<IconType, std::string>> MoreIcons::requestedIcons;
 std::map<std::pair<std::string, IconType>, int> MoreIcons::loadedIcons;
-std::vector<LogData> MoreIcons::logs;
-std::map<IconType, int> MoreIcons::severities = {
-    { IconType::Cube, Severity::Debug },
-    { IconType::Ship, Severity::Debug },
-    { IconType::Ball, Severity::Debug },
-    { IconType::Ufo, Severity::Debug },
-    { IconType::Wave, Severity::Debug },
-    { IconType::Robot, Severity::Debug },
-    { IconType::Spider, Severity::Debug },
-    { IconType::Swing, Severity::Debug },
-    { IconType::Jetpack, Severity::Debug },
-    { IconType::DeathEffect, Severity::Debug },
-    { IconType::Special, Severity::Debug },
-    { IconType::ShipFire, Severity::Debug }
-};
-int MoreIcons::severity = Severity::Debug;
 bool MoreIcons::traditionalPacks = true;
 bool MoreIcons::preloadIcons = false;
 
@@ -147,6 +132,8 @@ std::filesystem::path::string_type MoreIcons::getPathString(std::filesystem::pat
 }
 
 void migrateTrails(const std::filesystem::path& path) {
+    if (!MoreIcons::doesExist(path)) return;
+
     log::info("Beginning trail migration in {}", path);
 
     auto& saveContainer = Mod::get()->getSaveContainer();
@@ -310,18 +297,6 @@ Result<std::filesystem::path> MoreIcons::createTrash() {
     return Ok(trashPath);
 }
 
-IconType currentType = IconType::Cube;
-
-void printLog(std::string&& name, int severity, std::string&& message) {
-    log::logImpl(Severity::cast(severity), Mod::get(), "{}: {}", name, message);
-    MoreIcons::logs.emplace(std::ranges::find_if(MoreIcons::logs, [&name, severity](const LogData& log) {
-        return log.severity == severity ? log.name > name : log.severity < severity;
-    }), std::move(name), std::move(message), currentType, severity);
-    auto& currentSeverity = MoreIcons::severities[currentType];
-    if (currentSeverity < severity) currentSeverity = severity;
-    if (MoreIcons::severity < severity) MoreIcons::severity = severity;
-}
-
 void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
     auto [parent, stem] = splitPath(path, 6);
 
@@ -338,13 +313,13 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
                 !MoreIcons::doesExist(fmt::format(L("{}{}-hd.plist"), parent, stem)) &&
                 !MoreIcons::doesExist(fmt::format(L("{}{}.plist"), parent, stem))
             ) {
-                printLog(std::move(name), Severity::Warning, "Ignoring high-quality icon on medium texture quality");
+                Log::warn(std::move(name), "Ignoring high-quality icon on medium texture quality");
             }
             return;
         }
         else if (factor < 2.0f) {
             if (!MoreIcons::doesExist(fmt::format(L("{}{}.plist"), parent, stem))) {
-                printLog(std::move(name), Severity::Warning, "Ignoring high-quality icon on low texture quality");
+                Log::warn(std::move(name), "Ignoring high-quality icon on low texture quality");
             }
             return;
         }
@@ -357,7 +332,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
 
         if (factor < 2.0f) {
             if (!MoreIcons::doesExist(fmt::format(L("{}{}.plist"), parent, stem))) {
-                printLog(std::move(name), Severity::Warning, "Ignoring medium-quality icon on low texture quality");
+                Log::warn(std::move(name), "Ignoring medium-quality icon on low texture quality");
             }
             return;
         }
@@ -377,16 +352,16 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
     log::debug("Pre-loading icon {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
+        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto texturePath = std::filesystem::path(path).replace_extension(L(".png"));
     if (!MoreIcons::doesExist(texturePath)) {
-        return printLog(std::move(name), Severity::Error, fmt::format("Texture file {} not found", texturePath.filename()));
+        return Log::error(std::move(name), fmt::format("Texture file {} not found", texturePath.filename()));
     }
 
     auto icon = more_icons::addIcon(
-        std::move(name), std::move(shortName), currentType, std::move(texturePath), path, quality, pack.id, pack.name, false, pack.zipped
+        std::move(name), std::move(shortName), Log::currentType, std::move(texturePath), path, quality, pack.id, pack.name, false, pack.zipped
     );
 
     log::debug("Finished pre-loading icon {} from {}", icon->getName(), pack.name);
@@ -428,14 +403,14 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     log::debug("Pre-loading vanilla icon {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
+        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto doesntExist = vanillaPath && !Load::doesExist(plistPath);
-    if (doesntExist) return printLog(std::move(name), Severity::Error, fmt::format("Plist file not found (Last attempt: {})", plistPath));
+    if (doesntExist) return Log::error(std::move(name), fmt::format("Plist file not found (Last attempt: {})", plistPath));
 
     auto icon = more_icons::addIcon(
-        std::move(name), std::move(shortName), currentType, path, std::move(plistPath), quality, pack.id, pack.name, true, pack.zipped
+        std::move(name), std::move(shortName), Log::currentType, path, std::move(plistPath), quality, pack.id, pack.name, true, pack.zipped
     );
 
     log::debug("Finished pre-loading vanilla icon {} from {}", icon->getName(), pack.name);
@@ -447,13 +422,13 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
     auto texturePath = path / L("trail.png");
 
     if (!MoreIcons::doesExist(texturePath)) {
-        return printLog(std::move(name), Severity::Error, fmt::format("Texture file {} not found", texturePath.filename()));
+        return Log::error(std::move(name), fmt::format("Texture file {} not found", texturePath.filename()));
     }
 
     log::debug("Pre-loading trail {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
+        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto jsonPath = path / L("settings.json");
@@ -484,7 +459,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
     log::debug("Pre-loading vanilla trail {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
+        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto trailID = jasmine::convert::getInt<int>(std::string_view(shortName.data() + 7, shortName.size() - 11)).value_or(0);
@@ -519,18 +494,18 @@ void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
         quality = kTextureQualityLow;
     }
     else {
-        return printLog(std::move(name), Severity::Warning, "No compatible death effect plist found");
+        return Log::warn(std::move(name), "No compatible death effect plist found");
     }
 
     log::debug("Pre-loading death effect {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
+        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto texturePath = std::filesystem::path(plistPath).replace_extension(L(".png"));
     if (!MoreIcons::doesExist(texturePath)) {
-        return printLog(std::move(name), Severity::Error, fmt::format("Texture file {} not found", texturePath.filename()));
+        return Log::error(std::move(name), fmt::format("Texture file {} not found", texturePath.filename()));
     }
 
     auto jsonPath = path / L("settings.json");
@@ -590,11 +565,11 @@ void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& p
     log::debug("Pre-loading vanilla death effect {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
+        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto doesntExist = vanillaPath && !Load::doesExist(plistPath);
-    if (doesntExist) return printLog(std::move(name), Severity::Error, fmt::format("Plist file not found (Last attempt: {})", plistPath));
+    if (doesntExist) return Log::error(std::move(name), fmt::format("Plist file not found (Last attempt: {})", plistPath));
 
     auto effectID = jasmine::convert::getInt<int>(std::string_view(shortName.data() + 16, shortName.size() - 16)).value_or(0);
     if (effectID == 0) effectID = -1;
@@ -617,12 +592,12 @@ void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
         auto filename = MoreIcons::getPathFilename(path);
         if (filename == fmt::format(L("fire_{:03}.png"), fireCount + 1)) fireCount++;
     });
-    if (fireCount == 0) return printLog(std::move(name), Severity::Error, "No ship fire frames found");
+    if (fireCount == 0) return Log::error(std::move(name), "No ship fire frames found");
 
     log::debug("Pre-loading ship fire {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
+        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto jsonPath = path / L("settings.json");
@@ -658,7 +633,7 @@ void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack
     log::debug("Pre-loading vanilla ship fire {} from {}", name, pack.name);
 
     if (auto res = checkPath(path); res.isErr()) {
-        return printLog(std::move(name), Severity::Error, fmt::format("Failed to convert path: {}", res.unwrapErr()));
+        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
     auto icon = more_icons::addShipFire(
@@ -678,17 +653,31 @@ CCTexture2D* addFrames(const ImageResult& image, IconInfo* info) {
 }
 
 void MoreIcons::loadIcons(IconType type) {
-    currentType = type;
+    Log::currentType = type;
 
     constexpr std::array prefixes = {
         L("player_"), L("ship_"), L("player_ball_"), L("bird_"), L("dart_"), L("robot_"), L("spider_"),
         L("swing_"), L("jetpack_"), L("PlayerExplosion_"), L("streak_"), L(""), L("shipfire")
     };
 
-    auto miType = convertType(type);
-    auto prefix = prefixes[miType];
-    auto folder = folders[miType];
-    auto name = lowercase[miType];
+    std::basic_string_view<std::filesystem::path::value_type> prefix;
+    switch (type) {
+        case IconType::Cube: prefix = L("player_"); break;
+        case IconType::Ship: prefix = L("ship_"); break;
+        case IconType::Ball: prefix = L("player_ball_"); break;
+        case IconType::Ufo: prefix = L("bird_"); break;
+        case IconType::Wave: prefix = L("dart_"); break;
+        case IconType::Robot: prefix = L("robot_"); break;
+        case IconType::Spider: prefix = L("spider_"); break;
+        case IconType::Swing: prefix = L("swing_"); break;
+        case IconType::Jetpack: prefix = L("jetpack_"); break;
+        case IconType::DeathEffect: prefix = L("PlayerExplosion_"); break;
+        case IconType::Special: prefix = L("streak_"); break;
+        case IconType::ShipFire: prefix = L("shipfire"); break;
+        default: prefix = L(""); break;
+    }
+    auto folder = Constants::getFolderName(type);
+    auto name = Constants::getIconLabel(type, false, true);
 
     for (auto it = packs.begin(); it != packs.end(); ++it) {
         auto& pack = *it;
@@ -708,7 +697,7 @@ void MoreIcons::loadIcons(IconType type) {
                 if (code) log::error("{}: Failed to change permissions: {}", path, code.message());
             }
 
-            log::info("Pre-loading {}s from {}", name, path);
+            log::info("Pre-loading {} from {}", name, path);
 
             if (type <= IconType::Jetpack) {
                 iterate(path, std::filesystem::file_type::regular, [&pack](const std::filesystem::path& path) {
@@ -723,13 +712,13 @@ void MoreIcons::loadIcons(IconType type) {
                 });
             }
 
-            log::info("Finished pre-loading {}s from {}", name, path);
+            log::info("Finished pre-loading {} from {}", name, path);
         }
         else if (traditionalPacks) {
             auto path = type == IconType::Special ? pack.path : pack.path / L("icons");
             if (!doesExist(path)) continue;
 
-            log::info("Pre-loading {}s from {}", name, path);
+            log::info("Pre-loading {} from {}", name, path);
 
             iterate(path, std::filesystem::file_type::regular, [type, &pack, prefix](const std::filesystem::path& path) {
                 auto filename = getPathFilename(path);
@@ -755,7 +744,7 @@ void MoreIcons::loadIcons(IconType type) {
                 }
             });
 
-            log::info("Finished pre-loading {}s from {}", name, path);
+            log::info("Finished pre-loading {} from {}", name, path);
         }
     }
 
@@ -905,7 +894,7 @@ CCSprite* MoreIcons::customIcon(IconInfo* info) {
 }
 
 std::filesystem::path MoreIcons::getEditorDir(IconType type) {
-    return Mod::get()->getConfigDir() / L("editor") / folders[convertType(type)];
+    return Mod::get()->getConfigDir() / L("editor") / Constants::getFolderName(type);
 }
 
 CCSpriteFrame* MoreIcons::getFrame(const char* name) {
@@ -915,7 +904,7 @@ CCSpriteFrame* MoreIcons::getFrame(const char* name) {
 }
 
 std::filesystem::path MoreIcons::getIconDir(IconType type) {
-    return Mod::get()->getConfigDir() / folders[convertType(type)];
+    return Mod::get()->getConfigDir() / Constants::getFolderName(type);
 }
 
 std::filesystem::path MoreIcons::getIconStem(std::string_view name, IconType type) {
@@ -923,12 +912,21 @@ std::filesystem::path MoreIcons::getIconStem(std::string_view name, IconType typ
 }
 
 std::string MoreIcons::getIconName(int id, IconType type) {
-    constexpr std::array prefixes = {
-        "player_", "ship_", "player_ball_", "bird_", "dart_", "robot_", "spider_",
-        "swing_", "jetpack_", "PlayerExplosion_", "streak_", "", "shipfire"
-    };
-
-    return fmt::format("{}{:02}", prefixes[convertType(type)], id);
+    switch (type) {
+        case IconType::Cube: return fmt::format("player_{:02}", id);
+        case IconType::Ship: return fmt::format("ship_{:02}", id);
+        case IconType::Ball: return fmt::format("player_ball_{:02}", id);
+        case IconType::Ufo: return fmt::format("bird_{:02}", id);
+        case IconType::Wave: return fmt::format("dart_{:02}", id);
+        case IconType::Robot: return fmt::format("robot_{:02}", id);
+        case IconType::Spider: return fmt::format("spider_{:02}", id);
+        case IconType::Swing: return fmt::format("swing_{:02}", id);
+        case IconType::Jetpack: return fmt::format("jetpack_{:02}", id);
+        case IconType::DeathEffect: return fmt::format("PlayerExplosion_{:02}", id);
+        case IconType::Special: return fmt::format("streak_{:02}", id);
+        case IconType::ShipFire: return fmt::format("shipfire{:02}", id);
+        default: return {};
+    }
 }
 
 std::pair<std::string, std::string> MoreIcons::getIconPaths(int id, IconType type) {
@@ -942,18 +940,6 @@ std::pair<std::string, std::string> MoreIcons::getIconPaths(int id, IconType typ
 
 std::string MoreIcons::getTrailTexture(int id) {
     return Get::FileUtils()->fullPathForFilename(fmt::format("streak_{:02}_001.png", id).c_str(), false);
-}
-
-void MoreIcons::notifyFailure(const std::string& message) {
-    Notification::create(message, NotificationIcon::Error)->show();
-}
-
-void MoreIcons::notifyInfo(const std::string& message) {
-    Notification::create(message, NotificationIcon::Info)->show();
-}
-
-void MoreIcons::notifySuccess(const std::string& message) {
-    Notification::create(message, NotificationIcon::Success)->show();
 }
 
 void MoreIcons::setName(CCNode* node, std::string_view name) {

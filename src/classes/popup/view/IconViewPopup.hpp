@@ -2,7 +2,7 @@
 
 class IconViewPopup : public geode::Popup<IconType, bool> {
 protected:
-    bool setup(IconType, bool) override;
+    bool setup(IconType type, bool custom) override;
 public:
-    static IconViewPopup* create(IconType, bool);
+    static IconViewPopup* create(IconType type, bool custom);
 };

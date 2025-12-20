@@ -1,7 +1,7 @@
 #include "IconViewPopup.hpp"
 #include "ViewIconPopup.hpp"
 #include "../../misc/LazyIcon.hpp"
-#include "../../../MoreIcons.hpp"
+#include "../../../utils/Constants.hpp"
 #include "../../../utils/Get.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
@@ -23,7 +23,7 @@ IconViewPopup* IconViewPopup::create(IconType type, bool custom) {
 
 bool IconViewPopup::setup(IconType type, bool custom) {
     setID("IconViewPopup");
-    setTitle(fmt::format("{} {}s", custom ? "Custom" : "Vanilla", MoreIcons::uppercase[MoreIcons::convertType(type)]));
+    setTitle(fmt::format("{} {}", custom ? "Custom" : "Vanilla", Constants::getIconLabel(type, true, true)));
     m_title->setID("icon-view-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");

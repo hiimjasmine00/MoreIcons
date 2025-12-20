@@ -138,7 +138,7 @@ void LazyIcon::createSimpleIcon() {
 
 void LazyIcon::createComplexIcon() {
     auto spider = m_type == IconType::Spider;
-    auto def = MoreIcons::uppercase[(int)m_type];
+    auto def = spider ? "Spider" : "Robot";
     auto anim = "idle";
 
     auto definition = Get::ObjectManager()->getDefinition(def);

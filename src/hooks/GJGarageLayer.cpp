@@ -1,6 +1,8 @@
 #include "../MoreIcons.hpp"
 #include "../classes/popup/MoreIconsPopup.hpp"
+#include "../utils/Constants.hpp"
 #include "../utils/Get.hpp"
+#include "../utils/Log.hpp"
 #include <Geode/binding/BoomScrollLayer.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
@@ -11,6 +13,7 @@
 #include <Geode/ui/BasedButtonSprite.hpp>
 #include <jasmine/button.hpp>
 #include <MoreIcons.hpp>
+#include <ranges>
 
 using namespace geode::prelude;
 using namespace jasmine::button;
@@ -56,8 +59,12 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         if (auto shardsMenu = getChildByID("shards-menu")) {
             auto miSprite = CircleButtonSprite::createWithSprite("MI_moreIcons_001.png"_spr, 1.0f, CircleBaseColor::Gray, CircleBaseSize::Small);
-            if (MoreIcons::severity > Severity::Debug) {
-                auto severitySprite = CCSprite::createWithSpriteFrameName(MoreIcons::severityFrames[MoreIcons::severity]);
+            if (!Log::logs.empty()) {
+                Severity severity = Severity::Debug;
+                for (auto& logs : std::views::values(Log::logs)) {
+                    if (logs[0].severity > severity) severity = logs[0].severity;
+                }
+                auto severitySprite = CCSprite::createWithSpriteFrameName(Constants::getSeverityFrame(severity));
                 severitySprite->setPosition(miSprite->getContentSize() - CCPoint { 6.0f, 6.0f });
                 severitySprite->setScale(0.6f);
                 miSprite->addChild(severitySprite, 1);
@@ -115,25 +122,34 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     void newOn2PToggle(CCObject* sender) {
         ButtonHooker::call(sender);
 
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        m_cursor1->setOpacity(
-            more_icons::hasIcon(m_iconType, sdi && sdi->getSavedValue("2pselected", false)) && m_cursor1->isVisible() ? 127 : 255);
+        auto dual = MoreIcons::dualSelected();
+        m_cursor1->setOpacity(more_icons::hasIcon(m_iconType, dual) && m_cursor1->isVisible() ? 127 : 255);
         if (m_iconType == IconType::Special) {
-            m_cursor2->setOpacity(
-                more_icons::hasIcon(IconType::ShipFire, sdi && sdi->getSavedValue("2pselected", false)) && m_cursor2->isVisible() ? 127 : 255);
+            m_cursor2->setOpacity(more_icons::hasIcon(IconType::ShipFire, dual) && m_cursor2->isVisible() ? 127 : 255);
         }
 
         selectTab(m_iconType);
     }
 
+    static void swapDual(IconType type) {
+        more_icons::setIcon(more_icons::setIcon(more_icons::activeIcon(type, true), type, false), type, true);
+    }
+
     void newSwap2PKit(CCObject* sender) {
         ButtonHooker::call(sender);
 
-        for (int i = 0; i < 13; i++) {
-            if (i == 11) continue;
-            auto type = MoreIcons::convertType(i);
-            more_icons::setIcon(more_icons::setIcon(more_icons::activeIcon(type, true), type, false), type, true);
-        }
+        swapDual(IconType::Cube);
+        swapDual(IconType::Ship);
+        swapDual(IconType::Ball);
+        swapDual(IconType::Ufo);
+        swapDual(IconType::Wave);
+        swapDual(IconType::Robot);
+        swapDual(IconType::Spider);
+        swapDual(IconType::Swing);
+        swapDual(IconType::Jetpack);
+        swapDual(IconType::DeathEffect);
+        swapDual(IconType::Special);
+        swapDual(IconType::ShipFire);
 
         more_icons::updateSimplePlayer(m_playerObject, Get::GameManager()->m_playerIconType, false);
         more_icons::updateSimplePlayer(static_cast<SimplePlayer*>(getChildByID("player2-icon")),
@@ -202,8 +218,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         GJGarageLayer::setupPage(page, type);
 
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto dual = sdi && sdi->getSavedValue("2pselected", false);
+        auto dual = MoreIcons::dualSelected();
         m_cursor1->setOpacity(more_icons::hasIcon(type, dual) && m_cursor1->isVisible() ? 127 : 255);
         if (type == IconType::Special) {
             m_cursor2->setOpacity(more_icons::hasIcon(IconType::ShipFire, dual) && m_cursor2->isVisible() ? 127 : 255);
@@ -262,10 +277,9 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto objs = CCArray::create();
         CCMenuItemSpriteExtra* current = nullptr;
         CCMenuItemSpriteExtra* current2 = nullptr;
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto active = more_icons::activeIcon(type, sdi && sdi->getSavedValue("2pselected", false));
-        auto active2 = type == IconType::Special
-            ? more_icons::activeIcon(IconType::ShipFire, sdi && sdi->getSavedValue("2pselected", true)) : std::string();
+        auto dual = MoreIcons::dualSelected();
+        auto active = more_icons::activeIcon(type, dual);
+        auto active2 = type == IconType::Special ? more_icons::activeIcon(IconType::ShipFire, dual) : std::string();
 
         std::span<IconInfo*> infoPage(infoView.data() + index, std::min<size_t>(36, size - index));
 

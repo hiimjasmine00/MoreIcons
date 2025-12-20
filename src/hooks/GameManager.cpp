@@ -1,5 +1,6 @@
 #include "../MoreIcons.hpp"
 #include "../utils/Get.hpp"
+#include "../utils/Log.hpp"
 #include <Geode/modify/GameManager.hpp>
 #include <jasmine/hook.hpp>
 #include <jasmine/setting.hpp>
@@ -28,11 +29,7 @@ class $modify(MIGameManager, GameManager) {
         std::ranges::for_each(std::views::values(MoreIcons::icons), &std::vector<IconInfo>::clear);
         MoreIcons::requestedIcons.clear();
         MoreIcons::loadedIcons.clear();
-        MoreIcons::logs.clear();
-        MoreIcons::severity = Severity::Debug;
-        for (auto& severity : std::views::values(MoreIcons::severities)) {
-            severity = Severity::Debug;
-        }
+        Log::logs.clear();
         MoreIcons::loadSettings();
         jasmine::hook::toggle(sheetHook, MoreIcons::traditionalPacks);
     }

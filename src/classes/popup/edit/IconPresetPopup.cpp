@@ -1,6 +1,6 @@
 #include "IconPresetPopup.hpp"
 #include "../../misc/LazyIcon.hpp"
-#include "../../../MoreIcons.hpp"
+#include "../../../utils/Constants.hpp"
 #include "../../../utils/Get.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
@@ -22,7 +22,7 @@ IconPresetPopup* IconPresetPopup::create(IconType type, std::string_view suffix,
 
 bool IconPresetPopup::setup(IconType type, std::string_view suffix, std23::move_only_function<void(int, IconInfo*)> callback) {
     setID("IconPresetPopup");
-    setTitle(fmt::format("{} Presets", MoreIcons::uppercase[MoreIcons::convertType(type)]));
+    setTitle(fmt::format("{} Presets", Constants::getIconLabel(type, true, false)));
     m_title->setID("icon-preset-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");

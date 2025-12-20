@@ -10,8 +10,8 @@ protected:
     IconInfo* m_info;
     IconType m_iconType;
 
-    bool setup(MoreInfoPopup*, IconInfo*) override;
-    void onClose(cocos2d::CCObject*) override;
+    bool setup(MoreInfoPopup* popup, IconInfo* info) override;
+    void onClose(cocos2d::CCObject* sender) override;
 public:
-    static IconNamePopup* create(MoreInfoPopup*, IconInfo*);
+    static IconNamePopup* create(MoreInfoPopup* popup, IconInfo* info);
 };

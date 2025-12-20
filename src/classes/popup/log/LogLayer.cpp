@@ -1,6 +1,7 @@
 #include "LogLayer.hpp"
 #include "LogCell.hpp"
-#include "../../../MoreIcons.hpp"
+#include "../../../utils/Constants.hpp"
+#include "../../../utils/Log.hpp"
 #include <Geode/ui/Scrollbar.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
 
@@ -18,7 +19,7 @@ LogLayer* LogLayer::create(IconType type) {
 
 bool LogLayer::setup(IconType type) {
     setID("LogLayer");
-    setTitle(fmt::format("{} Logs", MoreIcons::uppercase[MoreIcons::convertType(type)]));
+    setTitle(fmt::format("{} Logs", Constants::getIconLabel(type, true, false)));
     m_title->setID("more-icons-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -40,9 +41,10 @@ bool LogLayer::setup(IconType type) {
     scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(scrollLayer);
 
-    int i = 0;
-    for (auto& log : MoreIcons::logs) {
-        if (log.type == type) contentLayer->addChild(LogCell::create(log.name.c_str(), log.message, log.severity, i++));
+    auto light = true;
+    for (auto& log : Log::logs[type]) {
+        contentLayer->addChild(LogCell::create(log.name, log.message, log.severity, light));
+        light = !light;
     }
 
     contentLayer->updateLayout();

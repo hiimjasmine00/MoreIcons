@@ -1,5 +1,6 @@
 #include "ViewIconPopup.hpp"
 #include "../../../MoreIcons.hpp"
+#include "../../../utils/Constants.hpp"
 #include "../../../utils/Defaults.hpp"
 #include "../../../utils/Get.hpp"
 #include <Geode/binding/GameManager.hpp>
@@ -26,10 +27,8 @@ ViewIconPopup* ViewIconPopup::create(IconType type, int id, IconInfo* info) {
 }
 
 bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
-    auto miType = MoreIcons::convertType(type);
-
     setID("ViewIconPopup");
-    setTitle(info ? info->getShortName() : fmt::format("{} {}", MoreIcons::uppercase[miType], id));
+    setTitle(info ? info->getShortName() : fmt::format("{} {}", Constants::getIconLabel(type, true, false), id));
     m_title->setID("view-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");

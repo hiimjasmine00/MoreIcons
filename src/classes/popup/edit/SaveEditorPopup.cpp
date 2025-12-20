@@ -1,7 +1,9 @@
 #include "SaveEditorPopup.hpp"
 #include "ImageRenderer.hpp"
 #include "../../../MoreIcons.hpp"
+#include "../../../utils/Constants.hpp"
 #include "../../../utils/Get.hpp"
+#include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/utils/file.hpp>
 
@@ -21,7 +23,7 @@ SaveEditorPopup* SaveEditorPopup::create(
 
 bool SaveEditorPopup::setup(IconType type, const IconEditorState& state, CCDictionary* frames, std23::move_only_function<void()> callback) {
     setID("SaveEditorPopup");
-    setTitle(fmt::format("Save {} Editor", MoreIcons::uppercase[(int)type]));
+    setTitle(fmt::format("Save {} Editor", Constants::getIconLabel(type, true, false)));
     m_title->setID("save-editor-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -43,7 +45,7 @@ bool SaveEditorPopup::setup(IconType type, const IconEditorState& state, CCDicti
     auto saveSprite = ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f);
     auto saveButton = CCMenuItemExt::createSpriteExtra(saveSprite, [this](auto) {
         auto stateName = m_nameInput->getString();
-        if (stateName.empty()) return MoreIcons::notifyInfo("Please enter a name.");
+        if (stateName.empty()) return Notify::info("Please enter a name.");
 
         auto directory = MoreIcons::getEditorDir(m_iconType) / MoreIcons::strPath(stateName);
         if (MoreIcons::doesExist(directory)) {
@@ -71,12 +73,12 @@ bool SaveEditorPopup::setup(IconType type, const IconEditorState& state, CCDicti
 void SaveEditorPopup::saveEditor(const std::filesystem::path& directory) {
     if (!MoreIcons::doesExist(directory)) {
         if (auto res = file::createDirectoryAll(directory); res.isErr()) {
-            return MoreIcons::notifyFailure(res.unwrapErr());
+            return Notify::error(res.unwrapErr());
         }
     }
 
     if (auto res = file::writeToJson(directory / L("state.json"), m_state); res.isErr()) {
-        return MoreIcons::notifyFailure("Failed to save state: {}", res.unwrapErr());
+        return Notify::error("Failed to save state: {}", res.unwrapErr());
     }
 
     texpack::Packer packer;
@@ -89,22 +91,22 @@ void SaveEditorPopup::saveEditor(const std::filesystem::path& directory) {
     }
 
     if (auto res = ImageRenderer::save(packer, directory / L("icon.png"), directory / L("icon.plist"), "icon.png"); res.isErr()) {
-        return MoreIcons::notifyFailure(res.unwrapErr());
+        return Notify::error(res.unwrapErr());
     }
 
     m_callback();
     Popup::onClose(nullptr);
 
-    MoreIcons::notifySuccess("{} saved!", m_nameInput->getString());
+    Notify::success("{} saved!", m_nameInput->getString());
 }
 
 void SaveEditorPopup::onClose(CCObject* sender) {
     if (m_nameInput->getString().empty()) return Popup::onClose(sender);
 
-    auto type = (int)m_iconType;
+    auto type = m_iconType;
     createQuickPopup(
-        fmt::format("Exit {} Editor Saver", MoreIcons::uppercase[type]).c_str(),
-        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} editor saver</c>?", MoreIcons::lowercase[type]),
+        fmt::format("Exit {} Editor Saver", Constants::getIconLabel(type, true, false)).c_str(),
+        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} editor saver</c>?", Constants::getIconLabel(type, false, false)),
         "No",
         "Yes",
         [this](auto, bool btn2) {

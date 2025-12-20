@@ -1,5 +1,6 @@
 #include "LoadEditorPopup.hpp"
 #include "../../../MoreIcons.hpp"
+#include "../../../utils/Constants.hpp"
 #include <algorithm>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/ui/Scrollbar.hpp>
@@ -19,7 +20,7 @@ LoadEditorPopup* LoadEditorPopup::create(IconType type, std23::move_only_functio
 
 bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const std::filesystem::path&)> callback) {
     setID("LoadEditorPopup");
-    setTitle(fmt::format("Load {} Editor", MoreIcons::uppercase[(int)type]));
+    setTitle(fmt::format("Load {} Editor", Constants::getIconLabel(type, true, false)));
     m_title->setID("load-editor-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");

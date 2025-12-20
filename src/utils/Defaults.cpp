@@ -573,6 +573,12 @@ const matjson::Value& Defaults::getShipFireInfo(int id) {
 }
 
 int Defaults::getShipFireCount(int id) {
-    constexpr std::array fireCounts = { 9, 10, 6, 16, 5 };
-    return fireCounts[id - 2];
+    switch (id) {
+        case 2: return 9;
+        case 3: return 10;
+        case 4: return 6;
+        case 5: return 16;
+        case 6: return 5;
+        default: return 0;
+    }
 }

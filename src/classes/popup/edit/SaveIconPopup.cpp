@@ -2,8 +2,10 @@
 #include "EditIconPopup.hpp"
 #include "ImageRenderer.hpp"
 #include "../../../MoreIcons.hpp"
+#include "../../../utils/Constants.hpp"
 #include "../../../utils/Get.hpp"
 #include "../../../utils/Load.hpp"
+#include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <MoreIcons.hpp>
 
@@ -21,7 +23,7 @@ SaveIconPopup* SaveIconPopup::create(EditIconPopup* popup, IconType type, const 
 
 bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Value& definitions, CCDictionary* frames) {
     setID("SaveIconPopup");
-    setTitle(fmt::format("Save {}", MoreIcons::uppercase[(int)type]));
+    setTitle(fmt::format("Save {}", Constants::getIconLabel(type, true, false)));
     m_title->setID("save-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -43,7 +45,7 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Va
     auto saveSprite = ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f);
     auto saveButton = CCMenuItemExt::createSpriteExtra(saveSprite, [this](auto) {
         auto iconName = m_nameInput->getString();
-        if (iconName.empty()) return MoreIcons::notifyInfo("Please enter a name.");
+        if (iconName.empty()) return Notify::info("Please enter a name.");
 
         auto stem = MoreIcons::getPathString(MoreIcons::getIconStem(iconName, m_iconType));
         if (
@@ -77,7 +79,7 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Va
 
 bool SaveIconPopup::checkFrame(const std::string& suffix) {
     auto frame = m_frames->objectForKey(suffix);
-    if (!frame) MoreIcons::notifyInfo("Missing {}{}.", m_nameInput->getString(), suffix);
+    if (!frame) Notify::info("Missing {}{}.", m_nameInput->getString(), suffix);
     return frame != nullptr;
 }
 
@@ -101,11 +103,6 @@ void SaveIconPopup::saveIcon(std::basic_string_view<std::filesystem::path::value
     std::array<texpack::Packer, 3> packers = {};
     auto scaleFactor = Get::Director()->getContentScaleFactor();
     std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
-    constexpr std::array suffixes = {
-        std::make_tuple(L("-uhd"), "-uhd", "UHD"),
-        std::make_tuple(L("-hd"), "-hd", "HD"),
-        std::make_tuple(L(""), "", "SD")
-    };
     for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(m_frames)) {
         auto& definition = m_definitions[frameName];
         auto offsetX = definition.get<float>("offset-x").unwrapOr(0.0f);
@@ -142,7 +139,7 @@ void SaveIconPopup::saveIcon(std::basic_string_view<std::filesystem::path::value
     std::filesystem::path uhdPng = fmt::format(L("{}-uhd.png"), stem);
     std::filesystem::path uhdPlist = fmt::format(L("{}-uhd.plist"), stem);
     if (auto res = ImageRenderer::save(packers[0], uhdPng, uhdPlist, fmt::format("icons/{}-uhd.png", name)); res.isErr()) {
-        return MoreIcons::notifyFailure("Failed to save UHD icon: {}", res.unwrapErr());
+        return Notify::error("Failed to save UHD icon: {}", res.unwrapErr());
     }
     if (scales[0] == 1.0f) {
         selectedPNG = std::move(uhdPng);
@@ -152,7 +149,7 @@ void SaveIconPopup::saveIcon(std::basic_string_view<std::filesystem::path::value
     std::filesystem::path hdPng = fmt::format(L("{}-hd.png"), stem);
     std::filesystem::path hdPlist = fmt::format(L("{}-hd.plist"), stem);
     if (auto res = ImageRenderer::save(packers[1], hdPng, hdPlist, fmt::format("icons/{}-hd.png", name)); res.isErr()) {
-        return MoreIcons::notifyFailure("Failed to save HD icon: {}", res.unwrapErr());
+        return Notify::error("Failed to save HD icon: {}", res.unwrapErr());
     }
     if (scales[1] == 1.0f) {
         selectedPNG = std::move(hdPng);
@@ -162,7 +159,7 @@ void SaveIconPopup::saveIcon(std::basic_string_view<std::filesystem::path::value
     std::filesystem::path sdPng = fmt::format(L("{}.png"), stem);
     std::filesystem::path sdPlist = fmt::format(L("{}.plist"), stem);
     if (auto res = ImageRenderer::save(packers[2], sdPng, sdPlist, fmt::format("icons/{}.png", name)); res.isErr()) {
-        return MoreIcons::notifyFailure("Failed to save SD icon: {}", res.unwrapErr());
+        return Notify::error("Failed to save SD icon: {}", res.unwrapErr());
     }
     if (scales[2] == 1.0f) {
         selectedPNG = std::move(sdPng);
@@ -180,17 +177,17 @@ void SaveIconPopup::saveIcon(std::basic_string_view<std::filesystem::path::value
     m_parentPopup->close();
     Popup::onClose(nullptr);
 
-    MoreIcons::notifySuccess("{} saved!", name);
+    Notify::success("{} saved!", name);
     MoreIcons::updateGarage();
 }
 
 void SaveIconPopup::onClose(CCObject* sender) {
     if (m_nameInput->getString().empty()) return Popup::onClose(sender);
 
-    auto type = (int)m_iconType;
+    auto type = m_iconType;
     createQuickPopup(
-        fmt::format("Exit {} Saver", MoreIcons::uppercase[type]).c_str(),
-        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} saver</c>?", MoreIcons::lowercase[type]),
+        fmt::format("Exit {} Saver", Constants::getIconLabel(type, true, false)).c_str(),
+        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} saver</c>?", Constants::getIconLabel(type, false, false)),
         "No",
         "Yes",
         [this](auto, bool btn2) {

@@ -22,17 +22,17 @@ protected:
     bool m_looped;
     bool m_visited;
 
-    bool init(IconType, int, IconInfo*, std::string_view, std23::move_only_function<void()>);
+    bool init(IconType type, int id, IconInfo* info, std::string_view suffix, std23::move_only_function<void()> callback);
     void createIcon();
     void createSimpleIcon();
     void createComplexIcon();
     void updateComplexSprite(cocos2d::CCString*);
 public:
-    static LazyIcon* create(IconType, int, IconInfo*, std::string_view, std23::move_only_function<void()>);
+    static LazyIcon* create(IconType type, int id, IconInfo* info, std::string_view suffix, std23::move_only_function<void()> callback);
 
     void activate() override;
     void visit() override;
-    void update(float) override;
+    void update(float dt) override;
 
     ~LazyIcon();
 };

@@ -1,9 +1,11 @@
 #include "SpecialSettingsPopup.hpp"
-#include "../../../MoreIcons.hpp"
+#include "../../../utils/Constants.hpp"
+#include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/Slider.hpp>
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/file.hpp>
+#include <IconInfo.hpp>
 #include <jasmine/convert.hpp>
 
 using namespace geode::prelude;
@@ -23,14 +25,14 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     auto type = info->getType();
 
     setID("SpecialSettingsPopup");
-    setTitle(fmt::format("{} Settings", MoreIcons::uppercase[MoreIcons::convertType(type)]), "goldFont.fnt", 0.7f, 15.0f);
+    setTitle(fmt::format("{} Settings", Constants::getIconLabel(type, true, false)), "goldFont.fnt", 0.7f, 15.0f);
     m_title->setID("special-settings-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
     m_bgSprite->setID("background");
     m_closeBtn->setID("close-button");
 
-    m_info = info->getSpecialInfo();
+    m_settings = info->getSpecialInfo();
 
     if (type == IconType::Special) {
         addControl("fade", "Fade Time:", { 100.0f, 87.5f }, 0.0f, 2.0f, 0.3f, 2);
@@ -49,11 +51,11 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     }
 
     auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", 0.8f), [this, info](auto) {
-        if (auto res = file::writeToJson(info->getJSON(), m_info); res.isErr()) {
-            MoreIcons::notifyFailure("Failed to save info: {}", res.unwrapErr());
+        if (auto res = file::writeToJson(info->getJSON(), m_settings); res.isErr()) {
+            Notify::error("Failed to save info: {}", res.unwrapErr());
         }
         else {
-            info->setSpecialInfo(std::move(m_info));
+            info->setSpecialInfo(std::move(m_settings));
             onClose(nullptr);
         }
     });
@@ -69,7 +71,7 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
 void SpecialSettingsPopup::addControl(
     std::string_view id, const char* text, const CCPoint& position, float min, float max, float def, int decimals
 ) {
-    auto& value = m_info[id];
+    auto& value = m_settings[id];
     if (!value.isNumber()) value = def;
     auto initial = value.as<float>().unwrapOr(def);
     auto factor = max - min;
@@ -123,7 +125,7 @@ void SpecialSettingsPopup::addControl(
 }
 
 void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, const cocos2d::CCPoint& position, bool def) {
-    auto& value = m_info[id];
+    auto& value = m_settings[id];
     if (!value.isBool()) value = def;
 
     auto toggle = CCMenuItemExt::createTogglerWithStandardSprites(0.8f, [this, def, &value](auto) {
