@@ -20,6 +20,7 @@ target_include_directories(${PROJECT_NAME} PRIVATE include)
 
 if (PROJECT_IS_TOP_LEVEL)
     target_compile_definitions(${PROJECT_NAME} PRIVATE MORE_ICONS_EXPORTING)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE FMT_CPP_LIB_FILESYSTEM=0)
 endif()
 
 if (NOT DEFINED ENV{GEODE_SDK})
@@ -31,13 +32,13 @@ endif()
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
 CPMAddPackage("gh:zeux/pugixml@1.15")
-CPMAddPackage("gh:hiimjasmine00/texpack@0.5.1")
+CPMAddPackage("gh:hiimjasmine00/texpack@0.5.3")
 CPMAddPackage("gh:hiimjasmine00/jasmine-tools@1.1.0")
 CPMAddPackage("gh:zhihaoy/nontype_functional@1.0.2")
 if (WIN32)
     target_compile_definitions(pugixml-static PRIVATE _HAS_ITERATOR_DEBUGGING=0)
     target_compile_definitions(texpack PRIVATE _HAS_ITERATOR_DEBUGGING=0)
 endif()
-target_link_libraries(${PROJECT_NAME} pugixml-static texpack jasmine-tools nontype_functional)
+target_link_libraries(${PROJECT_NAME} texpack jasmine-tools nontype_functional)
 
 setup_geode_mod(${PROJECT_NAME})

@@ -43,8 +43,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         if (more_icons::hasIcon(IconType::Cube, false)) setupCustomPage(findIconPage(IconType::Cube, false), IconType::Cube);
         else createNavMenu(m_iconPages[IconType::Cube], IconType::Cube);
 
-        auto sdi = Loader::get()->isModLoaded("weebify.separate_dual_icons");
-        if (sdi) {
+        if (MoreIcons::separateDualIcons) {
             if (auto playerButtonsMenu = getChildByID("player-buttons-menu")) {
                 ButtonHooker::create(
                     static_cast<CCMenuItem*>(playerButtonsMenu->getChildByID("player1-button")),
@@ -74,7 +73,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             shardsMenu->addChild(miButton);
             shardsMenu->updateLayout();
 
-            if (sdi) ButtonHooker::create(
+            if (MoreIcons::separateDualIcons) ButtonHooker::create(
                 static_cast<CCMenuItem*>(shardsMenu->getChildByID("swap-2p-button")),
                 this, menu_selector(MIGarageLayer::newSwap2PKit)
             );
@@ -99,8 +98,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto btn = static_cast<CCMenuItemSpriteExtra*>(sender);
         if (btn->getUserObject("name"_spr)) return onCustomSelect(btn);
 
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto dual = sdi && sdi->getSavedValue("2pselected", false);
+        auto dual = MoreIcons::dualSelected();
         if (more_icons::hasIcon(m_iconType, dual)) m_iconID = 0;
 
         GJGarageLayer::onSelect(sender);
@@ -110,12 +108,12 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         if (btn->m_iconType == IconType::ShipFire) {
             m_cursor2->setOpacity(255);
             m_fields->m_selectedIcon.clear();
-            more_icons::setIcon({}, dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
+            more_icons::setIcon({}, dual ? (IconType)MoreIcons::separateDualIcons->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
         }
         else {
             m_cursor1->setOpacity(255);
             m_fields->m_selectedIcon.clear();
-            more_icons::setIcon({}, dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
+            more_icons::setIcon({}, dual ? (IconType)MoreIcons::separateDualIcons->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
         }
     }
 
@@ -153,7 +151,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         more_icons::updateSimplePlayer(m_playerObject, Get::GameManager()->m_playerIconType, false);
         more_icons::updateSimplePlayer(static_cast<SimplePlayer*>(getChildByID("player2-icon")),
-            (IconType)Loader::get()->getLoadedMod("weebify.separate_dual_icons")->getSavedValue("lastmode", 0), true);
+            (IconType)MoreIcons::separateDualIcons->getSavedValue("lastmode", 0), true);
         selectTab(m_iconType);
     }
 
@@ -345,8 +343,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
     void onCustomSelect(CCMenuItemSpriteExtra* sender) {
         auto& selectedIcon = m_fields->m_selectedIcon;
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto dual = sdi && sdi->getSavedValue("2pselected", false);
+        auto dual = MoreIcons::dualSelected();
         auto name = more_icons::getIconName(sender);
         auto type = sender->m_iconType;
         auto isIcon = type <= IconType::Jetpack;
@@ -368,13 +365,13 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             player->setScale(type == IconType::Jetpack ? 1.5f : 1.6f);
         }
 
-        if (name == selectedIcon && type == (dual ? (IconType)sdi->getSavedValue("lasttype", 0) : m_selectedIconType)) {
+        if (name == selectedIcon && type == (dual ? (IconType)MoreIcons::separateDualIcons->getSavedValue("lasttype", 0) : m_selectedIconType)) {
             if (auto popup = more_icons::createInfoPopup(name, type)) popup->show();
         }
 
         if (dual) {
-            if (isIcon) sdi->setSavedValue("lastmode", (int)type);
-            sdi->setSavedValue("lasttype", (int)type);
+            if (isIcon) MoreIcons::separateDualIcons->setSavedValue("lastmode", (int)type);
+            MoreIcons::separateDualIcons->setSavedValue("lasttype", (int)type);
         }
         else {
             if (isIcon) Get::GameManager()->m_playerIconType = type;

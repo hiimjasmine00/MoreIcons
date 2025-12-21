@@ -2,12 +2,14 @@
 #include "ImageRenderer.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
+#include "../../../utils/Filesystem.hpp"
 #include "../../../utils/Get.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/utils/file.hpp>
 
 using namespace geode::prelude;
+using namespace std::string_literals;
 
 SaveEditorPopup* SaveEditorPopup::create(
     IconType type, const IconEditorState& state, CCDictionary* frames, std23::move_only_function<void()> callback
@@ -47,8 +49,8 @@ bool SaveEditorPopup::setup(IconType type, const IconEditorState& state, CCDicti
         auto stateName = m_nameInput->getString();
         if (stateName.empty()) return Notify::info("Please enter a name.");
 
-        auto directory = MoreIcons::getEditorDir(m_iconType) / MoreIcons::strPath(stateName);
-        if (MoreIcons::doesExist(directory)) {
+        auto directory = MoreIcons::getEditorDir(m_iconType) / Filesystem::strPath(stateName);
+        if (Filesystem::doesExist(directory)) {
             createQuickPopup(
                 "Existing State",
                 fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", stateName),
@@ -71,13 +73,13 @@ bool SaveEditorPopup::setup(IconType type, const IconEditorState& state, CCDicti
 }
 
 void SaveEditorPopup::saveEditor(const std::filesystem::path& directory) {
-    if (!MoreIcons::doesExist(directory)) {
+    if (!Filesystem::doesExist(directory)) {
         if (auto res = file::createDirectoryAll(directory); res.isErr()) {
             return Notify::error(res.unwrapErr());
         }
     }
 
-    if (auto res = file::writeToJson(directory / L("state.json"), m_state); res.isErr()) {
+    if (auto res = file::writeToJson(directory / L("state.json"s), m_state); res.isErr()) {
         return Notify::error("Failed to save state: {}", res.unwrapErr());
     }
 
@@ -90,7 +92,7 @@ void SaveEditorPopup::saveEditor(const std::filesystem::path& directory) {
         sprite->release();
     }
 
-    if (auto res = ImageRenderer::save(packer, directory / L("icon.png"), directory / L("icon.plist"), "icon.png"); res.isErr()) {
+    if (auto res = ImageRenderer::save(packer, directory / L("icon.png"s), directory / L("icon.plist"s), "icon.png"); res.isErr()) {
         return Notify::error(res.unwrapErr());
     }
 

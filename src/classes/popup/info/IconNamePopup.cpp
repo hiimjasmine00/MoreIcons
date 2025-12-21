@@ -1,8 +1,8 @@
-#define FMT_CPP_LIB_FILESYSTEM 0
 #include "IconNamePopup.hpp"
 #include "MoreInfoPopup.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
+#include "../../../utils/Filesystem.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <MoreIcons.hpp>
@@ -22,13 +22,13 @@ IconNamePopup* IconNamePopup::create(MoreInfoPopup* popup, IconInfo* info) {
 void pushFile(
     fmt::memory_buffer& buffer, const std::filesystem::path& parent, const std::filesystem::path& file1, const std::filesystem::path& file2
 ) {
-    if (MoreIcons::doesExist(parent / file1) && MoreIcons::doesExist(parent / file2)) {
+    if (Filesystem::doesExist(parent / file1) && Filesystem::doesExist(parent / file2)) {
         fmt::format_to(std::back_inserter(buffer), "\n<cg>{}</c>", file1);
     }
 }
 
 bool renameFile(const std::filesystem::path& parent, const std::filesystem::path& from, const std::filesystem::path& to) {
-    auto res = MoreIcons::renameFile(parent / from, parent / to);
+    auto res = Filesystem::renameFile(parent / from, parent / to);
     if (res.isErr()) Notify::error(res.unwrapErr());
     return res.isOk();
 }
@@ -65,15 +65,15 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
         fmt::memory_buffer message;
         fmt::format_to(std::back_inserter(message), "Are you sure you want to rename <cy>{}</c> to <cy>{}</c>?", old, name);
 
-        auto parent = info->getTexture().parent_path();
+        auto parent = Filesystem::parentPath(info->getTexture());
         fmt::memory_buffer files;
 
-        auto wideOld = MoreIcons::strWide(old);
-        auto wideName = MoreIcons::strWide(name);
+        auto wideOld = Filesystem::strWide(old);
+        auto wideName = Filesystem::strWide(name);
         auto type = info->getType();
         if (type >= IconType::DeathEffect) {
-            parent = parent.parent_path();
-            pushFile(files, parent, wideOld, wideName);
+            parent = Filesystem::parentPath(parent);
+            pushFile(files, parent, std::basic_string(wideOld), std::basic_string(wideName));
         }
         else if (type <= IconType::Jetpack) {
             pushFile(files, parent, fmt::format(L("{}-uhd.png"), wideOld), fmt::format(L("{}-uhd.png"), wideName));
@@ -92,12 +92,12 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
         createQuickPopup(fmt::format("Rename {}", unlockName).c_str(), fmt::to_string(message), "No", "Yes", [
             this, info, parent = std::move(parent), old = std::move(old), name = std::move(name),
             wideOld = std::move(wideOld), wideName = std::move(wideName), popup
-        ](auto, bool btn2) {
+        ](auto, bool btn2) mutable {
             if (!btn2) return;
 
             auto type = info->getType();
             if (type >= IconType::DeathEffect) {
-                if (!renameFile(parent, wideOld, wideName)) return;
+                if (!renameFile(parent, std::move(wideOld), std::move(wideName))) return;
             }
             else if (type <= IconType::Jetpack) {
                 if (!renameFile(parent, fmt::format(L("{}-uhd.png"), wideOld), fmt::format(L("{}-uhd.png"), wideName))) return;

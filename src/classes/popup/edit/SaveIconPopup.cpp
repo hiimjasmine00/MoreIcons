@@ -3,6 +3,7 @@
 #include "ImageRenderer.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
+#include "../../../utils/Filesystem.hpp"
 #include "../../../utils/Get.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
@@ -47,14 +48,14 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Va
         auto iconName = m_nameInput->getString();
         if (iconName.empty()) return Notify::info("Please enter a name.");
 
-        auto stem = MoreIcons::getPathString(MoreIcons::getIconStem(iconName, m_iconType));
+        auto stem = MoreIcons::getIconStem(iconName, m_iconType);
         if (
-            MoreIcons::doesExist(fmt::format(L("{}-uhd.plist"), stem)) ||
-            MoreIcons::doesExist(fmt::format(L("{}-hd.plist"), stem)) ||
-            MoreIcons::doesExist(fmt::format(L("{}.plist"), stem)) ||
-            MoreIcons::doesExist(fmt::format(L("{}-uhd.png"), stem)) ||
-            MoreIcons::doesExist(fmt::format(L("{}-hd.png"), stem)) ||
-            MoreIcons::doesExist(fmt::format(L("{}.png"), stem))
+            Filesystem::doesExist(fmt::format(L("{}-uhd.plist"), stem)) ||
+            Filesystem::doesExist(fmt::format(L("{}-hd.plist"), stem)) ||
+            Filesystem::doesExist(fmt::format(L("{}.plist"), stem)) ||
+            Filesystem::doesExist(fmt::format(L("{}-uhd.png"), stem)) ||
+            Filesystem::doesExist(fmt::format(L("{}-hd.png"), stem)) ||
+            Filesystem::doesExist(fmt::format(L("{}.png"), stem))
         ) {
             createQuickPopup(
                 "Existing Icon",
@@ -83,7 +84,7 @@ bool SaveIconPopup::checkFrame(const std::string& suffix) {
     return frame != nullptr;
 }
 
-void SaveIconPopup::saveIcon(std::basic_string_view<std::filesystem::path::value_type> stem) {
+void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
     auto type = m_iconType;
     if (type == IconType::Robot || type == IconType::Spider) {
         if (!checkFrame("_01_001") || !checkFrame("_01_2_001") || !checkFrame("_01_glow_001")) return;

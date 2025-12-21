@@ -1,6 +1,8 @@
 #include "Constants.hpp"
 
 using namespace geode::prelude;
+using namespace std::string_literals;
+using namespace std::string_view_literals;
 
 const char* Constants::getSeverityFrame(Severity severity) {
     switch (severity) {
@@ -13,19 +15,32 @@ const char* Constants::getSeverityFrame(Severity severity) {
 
 std::string_view Constants::getIconLabel(IconType type, bool uppercase, bool plural) {
     switch (type) {
-        case IconType::Cube: return uppercase ? (plural ? "Icons" : "Icon") : (plural ? "icons" : "icon");
-        case IconType::Ship: return uppercase ? (plural ? "Ships" : "Ship") : (plural ? "ships" : "ship");
-        case IconType::Ball: return uppercase ? (plural ? "Balls" : "Ball") : (plural ? "balls" : "ball");
-        case IconType::Ufo: return plural ? "UFOs" : "UFO";
-        case IconType::Wave: return uppercase ? (plural ? "Waves" : "Wave") : (plural ? "waves" : "wave");
-        case IconType::Robot: return uppercase ? (plural ? "Robots" : "Robot") : (plural ? "robots" : "robot");
-        case IconType::Spider: return uppercase ? (plural ? "Spiders" : "Spider") : (plural ? "spiders" : "spider");
-        case IconType::Swing: return uppercase ? (plural ? "Swings" : "Swing") : (plural ? "swings" : "swing");
-        case IconType::Jetpack: return uppercase ? (plural ? "Jetpacks" : "Jetpack") : (plural ? "jetpacks" : "jetpack");
-        case IconType::DeathEffect: return uppercase ? (plural ? "Death Effects" : "Death Effect") : (plural ? "death effects" : "death effect");
-        case IconType::Special: return uppercase ? (plural ? "Trails" : "Trail") : (plural ? "trails" : "trail");
-        case IconType::ShipFire: return uppercase ? (plural ? "Ship Fires" : "Ship Fire") : (plural ? "ship fires" : "ship fire");
-        default: return "";
+        case IconType::Cube:
+            return uppercase ? (plural ? "Icons"sv : "Icon"sv) : (plural ? "icons"sv : "icon"sv);
+        case IconType::Ship:
+            return uppercase ? (plural ? "Ships"sv : "Ship"sv) : (plural ? "ships"sv : "ship"sv);
+        case IconType::Ball:
+            return uppercase ? (plural ? "Balls"sv : "Ball"sv) : (plural ? "balls"sv : "ball"sv);
+        case IconType::Ufo:
+            return plural ? "UFOs"sv : "UFO"sv;
+        case IconType::Wave:
+            return uppercase ? (plural ? "Waves"sv : "Wave"sv) : (plural ? "waves"sv : "wave"sv);
+        case IconType::Robot:
+            return uppercase ? (plural ? "Robots"sv : "Robot"sv) : (plural ? "robots"sv : "robot"sv);
+        case IconType::Spider:
+            return uppercase ? (plural ? "Spiders"sv : "Spider"sv) : (plural ? "spiders"sv : "spider"sv);
+        case IconType::Swing:
+            return uppercase ? (plural ? "Swings"sv : "Swing"sv) : (plural ? "swings"sv : "swing"sv);
+        case IconType::Jetpack:
+            return uppercase ? (plural ? "Jetpacks"sv : "Jetpack"sv) : (plural ? "jetpacks"sv : "jetpack"sv);
+        case IconType::DeathEffect:
+            return uppercase ? (plural ? "Death Effects"sv : "Death Effect"sv) : (plural ? "death effects"sv : "death effect"sv);
+        case IconType::Special:
+            return uppercase ? (plural ? "Trails"sv : "Trail"sv) : (plural ? "trails"sv : "trail"sv);
+        case IconType::ShipFire:
+            return uppercase ? (plural ? "Ship Fires"sv : "Ship Fire"sv) : (plural ? "ship fires"sv : "ship fire"sv);
+        default:
+            return ""sv;
     }
 }
 
@@ -37,18 +52,18 @@ std::string_view Constants::getIconLabel(IconType type, bool uppercase, bool plu
 
 std::filesystem::path Constants::getFolderName(IconType type) {
     switch (type) {
-        case IconType::Cube: return L("icon");
-        case IconType::Ship: return L("ship");
-        case IconType::Ball: return L("ball");
-        case IconType::Ufo: return L("ufo");
-        case IconType::Wave: return L("wave");
-        case IconType::Robot: return L("robot");
-        case IconType::Spider: return L("spider");
-        case IconType::Swing: return L("swing");
-        case IconType::Jetpack: return L("jetpack");
-        case IconType::DeathEffect: return L("death");
-        case IconType::Special: return L("trail");
-        case IconType::ShipFire: return L("fire");
+        case IconType::Cube: return L("icon"s);
+        case IconType::Ship: return L("ship"s);
+        case IconType::Ball: return L("ball"s);
+        case IconType::Ufo: return L("ufo"s);
+        case IconType::Wave: return L("wave"s);
+        case IconType::Robot: return L("robot"s);
+        case IconType::Spider: return L("spider"s);
+        case IconType::Swing: return L("swing"s);
+        case IconType::Jetpack: return L("jetpack"s);
+        case IconType::DeathEffect: return L("death"s);
+        case IconType::Special: return L("trail"s);
+        case IconType::ShipFire: return L("fire"s);
         default: return {};
     }
 }

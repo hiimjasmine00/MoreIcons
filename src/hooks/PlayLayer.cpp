@@ -1,4 +1,5 @@
 #include "../MoreIcons.hpp"
+#include "../utils/Filesystem.hpp"
 #include "../utils/Get.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/modify/PlayLayer.hpp>
@@ -37,7 +38,7 @@ class $modify(MIPlayLayer, PlayLayer) {
                 auto texturePath = fmt::format("PlayerExplosion_{:02}{}.png", effectID, factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : "");
                 std::string fullPath = Get::FileUtils()->fullPathForFilename(texturePath.c_str(), false);
                 auto vanillaPath = MoreIcons::vanillaTexturePath(texturePath, false);
-                if (MoreIcons::strPath(fullPath) != MoreIcons::strPath(vanillaPath)) {
+                if (Filesystem::strPath(fullPath) != Filesystem::strPath(vanillaPath)) {
                     auto textureCache = Get::TextureCache();
                     auto spriteFrameCache = Get::SpriteFrameCache();
                     textureCache->removeTextureForKey(fullPath.c_str());

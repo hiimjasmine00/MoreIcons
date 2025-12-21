@@ -1,4 +1,3 @@
-#define FMT_CPP_LIB_FILESYSTEM 0
 #include "EditIconPopup.hpp"
 #include "IconColorPopup.hpp"
 #include "IconPresetPopup.hpp"
@@ -9,6 +8,7 @@
 #include "../MoreIconsPopup.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
+#include "../../../utils/Filesystem.hpp"
 #include "../../../utils/Get.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
@@ -25,6 +25,7 @@
 
 using namespace geode::prelude;
 using namespace jasmine::mod;
+using namespace std::string_literals;
 
 EditIconPopup* EditIconPopup::create(MoreIconsPopup* popup, IconType type) {
     auto ret = new EditIconPopup();
@@ -214,11 +215,11 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     loadStateSprite->setScale(0.7f);
     auto loadStateButton = CCMenuItemExt::createSpriteExtra(loadStateSprite, [this](auto) {
         LoadEditorPopup::create(m_iconType, [this](const std::filesystem::path& directory) {
-            m_selectedPNG = directory / L("icon.png");
-            m_selectedPlist = directory / L("icon.plist");
+            m_selectedPNG = directory / L("icon.png"s);
+            m_selectedPlist = directory / L("icon.plist"s);
             if (!updateWithSelectedFiles()) return;
 
-            auto stateRes = file::readFromJson<IconEditorState>(directory / L("state.json"));
+            auto stateRes = file::readFromJson<IconEditorState>(directory / L("state.json"s));
             if (stateRes.isErr()) return Notify::error("Failed to load state: {}", stateRes.unwrapErr());
 
             m_state = std::move(stateRes).unwrap();
@@ -249,7 +250,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
                 }
             }
 
-            Notify::success("{} loaded!", directory.filename());
+            Notify::success("{} loaded!", Filesystem::filenameFormat(directory));
         })->show();
     });
     loadStateButton->setID("load-state-button");
@@ -324,8 +325,8 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
             }
             else {
                 auto [texture, sheet] = MoreIcons::getIconPaths(id, m_iconType);
-                m_selectedPNG = MoreIcons::strPath(texture);
-                m_selectedPlist = MoreIcons::strPath(sheet);
+                m_selectedPNG = Filesystem::strPath(texture);
+                m_selectedPlist = Filesystem::strPath(sheet);
             }
             updateWithSelectedFiles(m_suffix);
         })->show();
@@ -436,8 +437,8 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
             }
             else {
                 auto [texture, sheet] = MoreIcons::getIconPaths(id, m_iconType);
-                m_selectedPNG = MoreIcons::strPath(texture);
-                m_selectedPlist = MoreIcons::strPath(sheet);
+                m_selectedPNG = Filesystem::strPath(texture);
+                m_selectedPlist = Filesystem::strPath(sheet);
             }
             updateWithSelectedFiles();
         })->show();

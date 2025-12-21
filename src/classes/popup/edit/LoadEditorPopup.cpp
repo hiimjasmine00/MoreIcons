@@ -1,6 +1,7 @@
 #include "LoadEditorPopup.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
+#include "../../../utils/Filesystem.hpp"
 #include <algorithm>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/ui/Scrollbar.hpp>
@@ -46,10 +47,10 @@ bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const 
 
     std::vector<std::filesystem::path> entries;
 
-    MoreIcons::iterate(MoreIcons::getEditorDir(type), std::filesystem::file_type::directory, [&entries](const std::filesystem::path& path) {
-        auto a = MoreIcons::getPathFilename(path);
+    Filesystem::iterate(MoreIcons::getEditorDir(type), std::filesystem::file_type::directory, [&entries](const std::filesystem::path& path) {
+        auto a = Filesystem::filenameView(path);
         entries.insert(std::ranges::find_if(entries, [a](const std::filesystem::path& path) {
-            auto b = MoreIcons::getPathFilename(path);
+            auto b = Filesystem::filenameView(path);
             if (a == b) return false;
             for (size_t i = 0; i < a.size() && i < b.size(); i++) {
                 #ifdef GEODE_IS_WINDOWS
@@ -66,7 +67,7 @@ bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const 
     });
 
     for (auto& path : entries) {
-        auto filename = MoreIcons::strNarrow(MoreIcons::getPathFilename(path));
+        auto filename = Filesystem::strNarrow(Filesystem::filenameView(path));
 
         auto entryMenu = CCMenu::create();
         entryMenu->setContentSize({ 200.0f, 30.0f });

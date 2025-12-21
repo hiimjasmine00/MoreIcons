@@ -1,6 +1,7 @@
 #include "LazyIcon.hpp"
 #include "ThreadPool.hpp"
 #include "../../MoreIcons.hpp"
+#include "../../utils/Filesystem.hpp"
 #include "../../utils/Get.hpp"
 #include "../../utils/Load.hpp"
 #include <Geode/binding/CCAnimateFrameCache.hpp>
@@ -311,7 +312,7 @@ void LazyIcon::visit() {
     m_visited = true;
 
     ThreadPool::get().pushTask([
-        selfref = WeakRef(this), texture = MoreIcons::strPath(m_texture), sheet = MoreIcons::strPath(m_sheet),
+        selfref = WeakRef(this), texture = Filesystem::strPath(m_texture), sheet = Filesystem::strPath(m_sheet),
         name = m_info ? m_info->getName() : std::string(), type = m_type,
         frameName = m_suffix.empty() ? std::string() : fmt::format("{}{}.png", m_name, m_suffix)
     ] {

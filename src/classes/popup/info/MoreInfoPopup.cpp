@@ -1,9 +1,9 @@
-#define FMT_CPP_LIB_FILESYSTEM 0
 #include "MoreInfoPopup.hpp"
 #include "IconNamePopup.hpp"
 #include "SpecialSettingsPopup.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
+#include "../../../utils/Filesystem.hpp"
 #include "../../../utils/Get.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
@@ -12,9 +12,11 @@
 #include <Geode/binding/GJItemIcon.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/binding/TextArea.hpp>
+#include <Geode/loader/Dirs.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
+using namespace std::string_literals;
 
 MoreInfoPopup* MoreInfoPopup::create(IconInfo* info) {
     auto ret = new MoreInfoPopup();
@@ -26,49 +28,49 @@ MoreInfoPopup* MoreInfoPopup::create(IconInfo* info) {
     return nullptr;
 }
 
-Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem::path& dest, bool uhd) {
+Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem::path& dest) {
     GEODE_UNWRAP_INTO(auto vec, Load::readBinary(src).mapErr([&src](std::string err) {
-        return fmt::format("Failed to read {}: {}", src.filename(), err);
+        return fmt::format("Failed to read {}: {}", Filesystem::filenameFormat(src), err);
     }));
     return file::writeBinary(dest, vec).mapErr([&dest](std::string err) {
-        return fmt::format("Failed to write {}: {}", dest.filename(), err);
+        return fmt::format("Failed to write {}: {}", Filesystem::filenameFormat(dest), err);
     });
 }
 
 Result<> copyFile(const std::filesystem::path& src, const std::filesystem::path& dest) {
-    if (!MoreIcons::doesExist(src)) return Ok();
+    if (!Filesystem::doesExist(src)) return Ok();
     GEODE_UNWRAP_INTO(auto vec, file::readBinary(src).mapErr([&src](std::string err) {
-        return fmt::format("Failed to read {}: {}", src.filename(), err);
+        return fmt::format("Failed to read {}: {}", Filesystem::filenameFormat(src), err);
     }));
     return file::writeBinary(dest, vec).mapErr([&dest](std::string err) {
-        return fmt::format("Failed to write {}: {}", dest.filename(), err);
+        return fmt::format("Failed to write {}: {}", Filesystem::filenameFormat(dest), err);
     });
 }
 
 bool moveSheet(const std::filesystem::path& from, const std::filesystem::path& to, const std::filesystem::path& parent, bool trash) {
     auto& fromStr = from.native();
     auto& toStr = to.native();
-    auto resources = MoreIcons::getResourcesDir(false);
+    auto resources = dirs::getResourcesDir();
     if (!parent.empty()) resources /= parent;
 
     std::vector<std::pair<std::filesystem::path, std::filesystem::path>> files;
 
     std::filesystem::path uhdPng = fmt::format(L("{}-uhd.png"), fromStr);
-    if (MoreIcons::doesExist(uhdPng)) {
+    if (Filesystem::doesExist(uhdPng)) {
         files.emplace_back(std::move(uhdPng), fmt::format(L("{}-uhd.png"), toStr));
         std::filesystem::path fromPlist = fmt::format(L("{}-uhd.plist"), fromStr);
         std::filesystem::path toPlist = fmt::format(L("{}-uhd.plist"), toStr);
-        if (MoreIcons::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
+        if (Filesystem::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
         else if (!trash) {
             #ifdef GEODE_IS_DESKTOP
-            if (auto res = copyVanillaFile(resources / fromPlist.filename(), toPlist, true); res.isErr()) {
+            if (auto res = copyVanillaFile(resources / Filesystem::filenamePath(fromPlist), toPlist); res.isErr()) {
                 Notify::error(res.unwrapErr());
                 return false;
             }
             #else
-            auto uhdResources = MoreIcons::getResourcesDir(true);
+            auto uhdResources = MoreIcons::getUhdResourcesDir();
             if (!parent.empty()) uhdResources /= parent;
-            if (auto res = copyVanillaFile(uhdResources / fromPlist.filename(), toPlist, true); res.isErr()) {
+            if (auto res = copyVanillaFile(uhdResources / Filesystem::filenamePath(fromPlist), toPlist); res.isErr()) {
                 files.pop_back();
             }
             #endif
@@ -76,13 +78,13 @@ bool moveSheet(const std::filesystem::path& from, const std::filesystem::path& t
     }
 
     std::filesystem::path hdPng = fmt::format(L("{}-hd.png"), fromStr);
-    if (MoreIcons::doesExist(hdPng)) {
+    if (Filesystem::doesExist(hdPng)) {
         files.emplace_back(std::move(hdPng), fmt::format(L("{}-hd.png"), toStr));
         std::filesystem::path fromPlist = fmt::format(L("{}-hd.plist"), fromStr);
         std::filesystem::path toPlist = fmt::format(L("{}-hd.plist"), toStr);
-        if (MoreIcons::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
+        if (Filesystem::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
         else if (!trash) {
-            if (auto res = copyVanillaFile(resources / fromPlist.filename(), toPlist, false); res.isErr()) {
+            if (auto res = copyVanillaFile(resources / Filesystem::filenamePath(fromPlist), toPlist); res.isErr()) {
                 Notify::error(res.unwrapErr());
                 return false;
             }
@@ -90,13 +92,13 @@ bool moveSheet(const std::filesystem::path& from, const std::filesystem::path& t
     }
 
     std::filesystem::path png = fmt::format(L("{}.png"), fromStr);
-    if (MoreIcons::doesExist(png)) {
+    if (Filesystem::doesExist(png)) {
         files.emplace_back(std::move(png), fmt::format(L("{}.png"), toStr));
         std::filesystem::path fromPlist = fmt::format(L("{}.plist"), fromStr);
         std::filesystem::path toPlist = fmt::format(L("{}.plist"), toStr);
-        if (MoreIcons::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
+        if (Filesystem::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
         else if (!trash) {
-            if (auto res = copyVanillaFile(resources / fromPlist.filename(), toPlist, false); res.isErr()) {
+            if (auto res = copyVanillaFile(resources / Filesystem::filenamePath(fromPlist), toPlist); res.isErr()) {
                 Notify::error(res.unwrapErr());
                 return false;
             }
@@ -108,14 +110,10 @@ bool moveSheet(const std::filesystem::path& from, const std::filesystem::path& t
         return false;
     }
 
-    std::vector<std::filesystem::path> renames;
-    for (auto& file : files) {
-        if (auto res = MoreIcons::renameFile(file.first, file.second)) {
-            renames.push_back(std::move(res).unwrap());
-        }
-        else if (res.isErr()) {
-            for (size_t i = 0; i < renames.size(); i++) {
-                (void)MoreIcons::renameFile(renames[i], files[i].first);
+    for (auto it = files.begin(); it != files.end(); ++it) {
+        if (auto res = Filesystem::renameFile(it->first, it->second); res.isErr()) {
+            for (auto it2 = files.begin(); it2 != it; ++it2) {
+                (void)Filesystem::renameFile(it2->second, it2->first);
             }
             Notify::error(res.unwrapErr());
             return false;
@@ -130,8 +128,8 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
 
     if (type >= IconType::DeathEffect) {
         if (trash) {
-            auto parentDir = m_info->getTexture().parent_path();
-            if (auto res = MoreIcons::renameFile(parentDir, directory / parentDir.filename(), false, true); res.isErr()) {
+            auto parentDir = Filesystem::parentPath(m_info->getTexture());
+            if (auto res = Filesystem::renameFile(parentDir, directory / Filesystem::filenamePath(parentDir)); res.isErr()) {
                 return Notify::error(res.unwrapErr());
             }
         }
@@ -142,38 +140,37 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
 
             auto& texture = m_info->getTexture();
             if (type == IconType::ShipFire) {
-                if (auto res = MoreIcons::renameFile(texture, directory / L("fire_001.png"), false, true); res.isErr()) {
+                if (auto res = Filesystem::renameFile(texture, directory / L("fire_001.png"s)); res.isErr()) {
                     return Notify::error(res.unwrapErr());
                 }
             }
             else if (type == IconType::Special) {
-                if (auto res = MoreIcons::renameFile(texture, directory / L("trail.png"), false, true); res.isErr()) {
+                if (auto res = Filesystem::renameFile(texture, directory / L("trail.png"s)); res.isErr()) {
                     return Notify::error(res.unwrapErr());
                 }
             }
             else if (type == IconType::DeathEffect) {
-                if (!moveSheet(texture.parent_path(), directory / L("effect"), {}, false)) return;
+                if (!moveSheet(Filesystem::parentPath(texture), directory / L("effect"s), {}, false)) return;
             }
 
-            auto iconStem = MoreIcons::getPathString(Mod::get()->getResourcesDir() / fmt::format(L("{}{:02}"),
-                Constants::getFolderName(type).native(), m_info->getSpecialID()));
+            auto iconStem = Mod::get()->getResourcesDir() / fmt::format(L("{}{:02}"), Constants::getFolderName(type), m_info->getSpecialID());
 
-            if (auto res = copyFile(fmt::format(L("{}-uhd.png"), iconStem), directory / L("icon-uhd.png")); res.isErr()) {
+            if (auto res = copyFile(fmt::format(L("{}-uhd.png"), iconStem), directory / L("icon-uhd.png"s)); res.isErr()) {
                 return Notify::error(res.unwrapErr());
             }
 
-            if (auto res = copyFile(fmt::format(L("{}-hd.png"), iconStem), directory / L("icon-hd.png")); res.isErr()) {
+            if (auto res = copyFile(fmt::format(L("{}-hd.png"), iconStem), directory / L("icon-hd.png"s)); res.isErr()) {
                 return Notify::error(res.unwrapErr());
             }
 
-            if (auto res = copyFile(fmt::format(L("{}.png"), iconStem), directory / L("icon.png")); res.isErr()) {
+            if (auto res = copyFile(fmt::format(L("{}.png"), iconStem), directory / L("icon.png"s)); res.isErr()) {
                 return Notify::error(res.unwrapErr());
             }
         }
     }
     else if (type <= IconType::Jetpack) {
-        auto shortName = MoreIcons::strPath(m_info->getShortName());
-        if (!moveSheet(m_info->getTexture().parent_path() / shortName, directory / shortName, L("icons"), trash)) return;
+        auto shortName = Filesystem::strPath(m_info->getShortName());
+        if (!moveSheet(Filesystem::parentPath(m_info->getTexture()) / shortName, directory / shortName, L("icons"s), trash)) return;
     }
 
     auto name = m_info->getShortName();
@@ -283,12 +280,12 @@ bool MoreInfoPopup::setup(IconInfo* info) {
             fmt::format_to(std::back_inserter(message),
                 "Are you sure you want to <cy>convert</c> <cj>{}</c> into a <cl>More Icons</c> <cg>{}</c>?", shortName, lower);
 
-            auto parent = m_info->getTexture().parent_path();
-            if (type <= IconType::Jetpack) parent = parent.parent_path();
-            auto dir = std::move(parent) / WIDE_CONFIG / Constants::getFolderName(type);
+            auto parent = Filesystem::parentPath(m_info->getTexture());
+            if (type <= IconType::Jetpack) parent = Filesystem::parentPath(parent);
+            auto dir = std::move(parent) / MoreIcons::getConfigPath() / Constants::getFolderName(type);
             if (type >= IconType::DeathEffect) {
-                dir /= MoreIcons::strPath(shortName);
-                if (MoreIcons::doesExist(dir)) {
+                dir /= Filesystem::strPath(shortName);
+                if (Filesystem::doesExist(dir)) {
                     fmt::format_to(std::back_inserter(message), "\n<cr>This will overwrite the existing custom {}!</c>", lower);
                 }
             }

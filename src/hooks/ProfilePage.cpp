@@ -1,3 +1,4 @@
+#include "../MoreIcons.hpp"
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/ProfilePage.hpp>
 #include <jasmine/button.hpp>
@@ -33,9 +34,7 @@ class $modify(MIProfilePage, ProfilePage) {
         auto playerMenu = m_mainLayer->getChildByID("player-menu");
         if (!playerMenu) return;
 
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
-        auto dual = sdi && sdi->getSavedValue("2pselected", false);
-
+        auto dual = MoreIcons::dualSelected();
         updatePlayer(playerMenu, "player-icon", IconType::Cube, dual);
         updatePlayer(playerMenu, "player-ship", IconType::Ship, dual);
         updatePlayer(playerMenu, "player-ball", IconType::Ball, dual);
@@ -54,7 +53,7 @@ class $modify(MIProfilePage, ProfilePage) {
 
         changePlayers();
 
-        if (Loader::get()->isModLoaded("weebify.separate_dual_icons")) {
+        if (MoreIcons::separateDualIcons) {
             if (auto leftMenu = m_mainLayer->getChildByID("left-menu")) {
                 ButtonHooker::create(
                     static_cast<CCMenuItem*>(leftMenu->getChildByID("2p-toggler")),
@@ -75,8 +74,7 @@ class $modify(MIProfilePage, ProfilePage) {
 
         if (!m_ownProfile) return;
 
-        auto sdi = Loader::get()->getLoadedMod("weebify.separate_dual_icons");
         more_icons::updateSimplePlayer(static_cast<SimplePlayer*>(static_cast<CCMenuItemSprite*>(sender)->getNormalImage()),
-            (IconType)sender->getTag(), sdi && sdi->getSavedValue("2pselected", false));
+            (IconType)sender->getTag(), MoreIcons::dualSelected());
     }
 };

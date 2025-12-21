@@ -4,6 +4,7 @@
 #include "../MoreIconsPopup.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Defaults.hpp"
+#include "../../../utils/Filesystem.hpp"
 #include "../../../utils/Get.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
@@ -11,6 +12,7 @@
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
+using namespace std::string_literals;
 
 EditTrailPopup* EditTrailPopup::create(MoreIconsPopup* popup) {
     auto ret = new EditTrailPopup();
@@ -76,7 +78,7 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
 
     auto presetButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
         IconPresetPopup::create(IconType::Special, {}, [this](int id, IconInfo* info) {
-            updateWithPath(info ? info->getTexture() : MoreIcons::strPath(MoreIcons::getTrailTexture(id)));
+            updateWithPath(info ? info->getTexture() : Filesystem::strPath(MoreIcons::getTrailTexture(id)));
         })->show();
     });
     presetButton->setID("preset-button");
@@ -87,7 +89,7 @@ bool EditTrailPopup::setup(MoreIconsPopup* popup) {
         if (iconName.empty()) return Notify::info("Please enter a name.");
 
         auto path = MoreIcons::getIconStem(fmt::format("{}.png", iconName), IconType::Special);
-        if (MoreIcons::doesExist(path)) createQuickPopup(
+        if (Filesystem::doesExist(path)) createQuickPopup(
             "Existing Trail",
             fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
             "No",
@@ -137,7 +139,7 @@ void EditTrailPopup::saveTrail(std::filesystem::path&& path) {
         more_icons::updateIcon(icon);
     }
     else {
-        auto jsonPath = std::filesystem::path(path).replace_extension(L(".json"));
+        auto jsonPath = std::filesystem::path(path).replace_extension(L(".json"s));
         (void)file::writeString(jsonPath, "{}");
         icon = more_icons::addTrail(
             name, name, std::move(path), std::move(jsonPath), {},
