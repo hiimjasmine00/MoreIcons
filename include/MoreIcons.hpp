@@ -397,7 +397,7 @@ namespace more_icons {
     /// Renames an icon.
     /// @param info The icon info of the icon to rename.
     /// @param name The new name of the icon.
-    MI_DLL void renameIcon(IconInfo* info, std::string name) MI_EXP(&renameIcon, (info, name));
+    MI_DLL void renameIcon(IconInfo* info, std::string name) MI_EXP(&renameIcon, (info, std::move(name)));
 
     /// Updates an icon's image and sheet data.
     /// @param info The icon info of the icon to update.

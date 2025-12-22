@@ -82,8 +82,7 @@ Result<> ImageRenderer::save(texpack::Packer& packer, const std::filesystem::pat
     GEODE_UNWRAP(file::writeBinary(png, pngData).mapErr([](std::string err) {
         return fmt::format("Failed to save image: {}", err);
     }));
-    GEODE_UNWRAP(file::writeString(plist, plistData).mapErr([](std::string err) {
+    return file::writeString(plist, plistData).mapErr([](std::string err) {
         return fmt::format("Failed to save plist: {}", err);
-    }));
-    return Ok();
+    });
 }

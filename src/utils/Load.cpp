@@ -1,7 +1,9 @@
 #include <pugixml.hpp>
 #include "Load.hpp"
 #include "Get.hpp"
+#ifdef GEODE_IS_ANDROID
 #include <Geode/cocos/support/zip_support/unzip.h>
+#endif
 #include <Geode/utils/cocos.hpp>
 #include <Geode/utils/file.hpp>
 #include <jasmine/mod.hpp>
