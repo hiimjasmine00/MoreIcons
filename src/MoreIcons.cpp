@@ -876,7 +876,11 @@ std::string MoreIcons::getTrailTexture(int id) {
 void MoreIcons::setName(CCNode* node, std::string_view name) {
     auto str = name.empty() ? nullptr : new CCString();
     if (str) {
+        #ifdef GEODE_IS_ANDROID
         str->m_sString = gd::string(name.data(), name.size());
+        #else
+        str->m_sString = name;
+        #endif
         str->autorelease();
     }
     node->setUserObject("name"_spr, str);

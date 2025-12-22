@@ -77,7 +77,6 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
         m_mainLayer->addChild(player);
 
         auto prefix = info ? fmt::format("{}"_spr, info->getName()) : MoreIcons::getIconName(id, type);
-        auto spriteFrameCache = Get::SpriteFrameCache();
         for (size_t i = 0; i < suffixes.size(); i++) {
             auto& subSuffixes = *(suffixes.begin() + i);
 

@@ -12,10 +12,18 @@ namespace std::filesystem {
         auto& right = rhs.native();
         if (!right.empty() && !_Has_drive_letter_prefix(right.data(), right.data() + right.size()) && !_Is_slash(right[0])) {
             auto needsSlash = !left.empty() && (left.size() != 2 || !_Is_drive_prefix(left.data())) && !_Is_slash(left.back());
-            auto& str = const_cast<std::wstring&>(left);
-            str.reserve(str.size() + right.size() + (needsSlash ? 1 : 0));
-            if (needsSlash) str += L'\\';
-            str += right;
+            const_cast<std::wstring&>(left).resize_and_overwrite(left.size() + right.size() + (needsSlash ? 1 : 0), [
+                &left, &right, needsSlash
+            ](wchar_t* dest, size_t size) {
+                ::memcpy(dest, left.data(), left.size() * sizeof(wchar_t));
+                dest += left.size();
+                if (needsSlash) {
+                    *dest = L'\\';
+                    dest++;
+                }
+                ::memcpy(dest, right.data(), right.size() * sizeof(wchar_t));
+                return size;
+            });
             return std::move(lhs);
         }
         #endif
