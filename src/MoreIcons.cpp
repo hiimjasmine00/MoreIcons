@@ -740,14 +740,13 @@ ccColor3B MoreIcons::vanillaColorGlow(bool dual) {
 }
 
 bool MoreIcons::vanillaGlow(bool dual) {
-    auto gameManager = Get::GameManager();
     auto sdi = dual ? MoreIcons::separateDualIcons : nullptr;
-    return sdi ? sdi->getSavedValue("glow", false) : gameManager->m_playerGlow;
+    return sdi ? sdi->getSavedValue("glow", false) : Get::GameManager()->m_playerGlow;
 }
 
 int MoreIcons::vanillaIcon(IconType type, bool dual) {
-    auto gameManager = Get::GameManager();
     auto sdi = dual ? MoreIcons::separateDualIcons : nullptr;
+    auto gameManager = sdi ? nullptr : Get::GameManager();
     switch (type) {
         case IconType::Cube: return sdi ? sdi->getSavedValue("cube", 1) : gameManager->m_playerFrame;
         case IconType::Ship: return sdi ? sdi->getSavedValue("ship", 1) : gameManager->m_playerShip;
