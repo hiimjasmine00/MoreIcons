@@ -63,14 +63,14 @@ bool moveSheet(const std::filesystem::path& from, const std::filesystem::path& t
         if (Filesystem::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
         else if (!trash) {
             #ifdef GEODE_IS_DESKTOP
-            if (auto res = copyVanillaFile(resources / Filesystem::filenamePath(fromPlist), toPlist); res.isErr()) {
+            if (auto res = copyVanillaFile(resources / Filesystem::filenamePath(std::move(fromPlist)), toPlist); res.isErr()) {
                 Notify::error(res.unwrapErr());
                 return false;
             }
             #else
             auto uhdResources = MoreIcons::getUhdResourcesDir();
             if (!parent.empty()) uhdResources /= parent;
-            if (auto res = copyVanillaFile(uhdResources / Filesystem::filenamePath(fromPlist), toPlist); res.isErr()) {
+            if (auto res = copyVanillaFile(uhdResources / Filesystem::filenamePath(std::move(fromPlist)), toPlist); res.isErr()) {
                 files.pop_back();
             }
             #endif
@@ -84,7 +84,7 @@ bool moveSheet(const std::filesystem::path& from, const std::filesystem::path& t
         std::filesystem::path toPlist = fmt::format(L("{}-hd.plist"), toStr);
         if (Filesystem::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
         else if (!trash) {
-            if (auto res = copyVanillaFile(resources / Filesystem::filenamePath(fromPlist), toPlist); res.isErr()) {
+            if (auto res = copyVanillaFile(resources / Filesystem::filenamePath(std::move(fromPlist)), toPlist); res.isErr()) {
                 Notify::error(res.unwrapErr());
                 return false;
             }
@@ -98,7 +98,7 @@ bool moveSheet(const std::filesystem::path& from, const std::filesystem::path& t
         std::filesystem::path toPlist = fmt::format(L("{}.plist"), toStr);
         if (Filesystem::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
         else if (!trash) {
-            if (auto res = copyVanillaFile(resources / Filesystem::filenamePath(fromPlist), toPlist); res.isErr()) {
+            if (auto res = copyVanillaFile(resources / Filesystem::filenamePath(std::move(fromPlist)), toPlist); res.isErr()) {
                 Notify::error(res.unwrapErr());
                 return false;
             }
@@ -126,9 +126,12 @@ bool moveSheet(const std::filesystem::path& from, const std::filesystem::path& t
 void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash) {
     auto type = m_info->getType();
 
+    auto& texture = m_info->getTexture();
+    auto parentDir = Filesystem::parentPath(texture);
+    auto& shortName = m_info->getShortName();
+    auto stem = Filesystem::strPath(shortName);
     if (type >= IconType::DeathEffect) {
         if (trash) {
-            auto parentDir = Filesystem::parentPath(m_info->getTexture());
             if (auto res = Filesystem::renameFile(parentDir, directory / Filesystem::filenamePath(parentDir)); res.isErr()) {
                 return Notify::error(res.unwrapErr());
             }
@@ -138,7 +141,6 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
                 return Notify::error(res.unwrapErr());
             }
 
-            auto& texture = m_info->getTexture();
             if (type == IconType::ShipFire) {
                 if (auto res = Filesystem::renameFile(texture, directory / L("fire_001.png"s)); res.isErr()) {
                     return Notify::error(res.unwrapErr());
@@ -150,7 +152,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
                 }
             }
             else if (type == IconType::DeathEffect) {
-                if (!moveSheet(Filesystem::parentPath(texture), directory / L("effect"s), {}, false)) return;
+                if (!moveSheet(std::move(parentDir) / stem, directory / L("effect"s), {}, false)) return;
             }
 
             auto iconStem = Mod::get()->getResourcesDir() / fmt::format(L("{}{:02}"), Constants::getFolderName(type), m_info->getSpecialID());
@@ -169,11 +171,10 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
         }
     }
     else if (type <= IconType::Jetpack) {
-        auto shortName = Filesystem::strPath(m_info->getShortName());
-        if (!moveSheet(Filesystem::parentPath(m_info->getTexture()) / shortName, directory / shortName, L("icons"s), trash)) return;
+        if (!moveSheet(std::move(parentDir) / stem, directory / stem, L("icons"s), trash)) return;
     }
 
-    auto name = m_info->getShortName();
+    auto name = shortName;
     onClose(nullptr);
     if (trash) more_icons::removeIcon(m_info);
     else more_icons::moveIcon(m_info, directory);
@@ -281,7 +282,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
                 "Are you sure you want to <cy>convert</c> <cj>{}</c> into a <cl>More Icons</c> <cg>{}</c>?", shortName, lower);
 
             auto parent = Filesystem::parentPath(m_info->getTexture());
-            if (type <= IconType::Jetpack) parent = Filesystem::parentPath(parent);
+            if (type <= IconType::Jetpack) parent = Filesystem::parentPath(std::move(parent));
             auto dir = std::move(parent) / MoreIcons::getConfigPath() / Constants::getFolderName(type);
             if (type >= IconType::DeathEffect) {
                 dir /= Filesystem::strPath(shortName);

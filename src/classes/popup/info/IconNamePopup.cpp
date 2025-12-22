@@ -72,7 +72,7 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
         auto wideName = Filesystem::strWide(name);
         auto type = info->getType();
         if (type >= IconType::DeathEffect) {
-            parent = Filesystem::parentPath(parent);
+            parent = Filesystem::parentPath(std::move(parent));
             pushFile(files, parent, std::basic_string(wideOld), std::basic_string(wideName));
         }
         else if (type <= IconType::Jetpack) {

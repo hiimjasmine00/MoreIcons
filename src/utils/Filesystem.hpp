@@ -30,7 +30,9 @@ public:
     static std::string_view filenameFormat(const std::filesystem::path& path);
     #endif
     static std::filesystem::path filenamePath(const std::filesystem::path& path);
+    static std::filesystem::path filenamePath(std::filesystem::path&& path);
     static std::filesystem::path parentPath(const std::filesystem::path& path);
+    static std::filesystem::path parentPath(std::filesystem::path&& path);
     static geode::Result<> renameFile(const std::filesystem::path& from, const std::filesystem::path& to);
     static void iterate(
         const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<void(const std::filesystem::path&)> func

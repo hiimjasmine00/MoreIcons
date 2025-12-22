@@ -103,12 +103,26 @@ std::basic_string_view<std::filesystem::path::value_type> Filesystem::filenameVi
     return filename;
 }
 
+std::filesystem::path::string_type& getPathString(std::filesystem::path& path) {
+    return const_cast<std::filesystem::path::string_type&>(path.native());
+}
+
 std::filesystem::path Filesystem::filenamePath(const std::filesystem::path& path) {
     return std::filesystem::path(std::basic_string(_filename(path)));
 }
 
+std::filesystem::path Filesystem::filenamePath(std::filesystem::path&& path) {
+    auto filename = _filename(path);
+    return std::filesystem::path(std::move(getPathString(path)).substr(filename.data() - path.c_str(), filename.size()));
+}
+
 std::filesystem::path Filesystem::parentPath(const std::filesystem::path& path) {
     return std::filesystem::path(std::basic_string(_parent_path(path)));
+}
+
+std::filesystem::path Filesystem::parentPath(std::filesystem::path&& path) {
+    auto parent = _parent_path(path);
+    return std::filesystem::path(std::move(getPathString(path)).substr(parent.data() - path.c_str(), parent.size()));
 }
 
 #ifdef GEODE_IS_WINDOWS

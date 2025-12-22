@@ -214,13 +214,13 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     auto loadStateSprite = CircleButtonSprite::createWithSprite("MI_loadBtn_001.png"_spr, 1.0f, CircleBaseColor::Green, CircleBaseSize::Small);
     loadStateSprite->setScale(0.7f);
     auto loadStateButton = CCMenuItemExt::createSpriteExtra(loadStateSprite, [this](auto) {
-        LoadEditorPopup::create(m_iconType, [this](const std::filesystem::path& directory) {
+        LoadEditorPopup::create(m_iconType, [this](const std::filesystem::path& directory, std::string_view name) {
             m_selectedPNG = directory / L("icon.png"s);
             m_selectedPlist = directory / L("icon.plist"s);
             if (!updateWithSelectedFiles()) return;
 
             auto stateRes = file::readFromJson<IconEditorState>(directory / L("state.json"s));
-            if (stateRes.isErr()) return Notify::error("Failed to load state: {}", stateRes.unwrapErr());
+            if (stateRes.isErr()) return Notify::error("Failed to load {}: {}", name, stateRes.unwrapErr());
 
             m_state = std::move(stateRes).unwrap();
             updateColors();
@@ -250,7 +250,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
                 }
             }
 
-            Notify::success("{} loaded!", Filesystem::filenameFormat(directory));
+            Notify::success("{} loaded!", name);
         })->show();
     });
     loadStateButton->setID("load-state-button");

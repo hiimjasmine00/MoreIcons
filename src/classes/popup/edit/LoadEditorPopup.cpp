@@ -9,7 +9,7 @@
 
 using namespace geode::prelude;
 
-LoadEditorPopup* LoadEditorPopup::create(IconType type, std23::move_only_function<void(const std::filesystem::path&)> callback) {
+LoadEditorPopup* LoadEditorPopup::create(IconType type, std23::move_only_function<void(const std::filesystem::path&, std::string_view)> callback) {
     auto ret = new LoadEditorPopup();
     if (ret->initAnchored(230.0f, 250.0f, type, std::move(callback), "geode.loader/GE_square03.png")) {
         ret->autorelease();
@@ -19,7 +19,7 @@ LoadEditorPopup* LoadEditorPopup::create(IconType type, std23::move_only_functio
     return nullptr;
 }
 
-bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const std::filesystem::path&)> callback) {
+bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const std::filesystem::path&, std::string_view)> callback) {
     setID("LoadEditorPopup");
     setTitle(fmt::format("Load {} Editor", Constants::getIconLabel(type, true, false)));
     m_title->setID("load-editor-title");
@@ -77,8 +77,8 @@ bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const 
 
         auto entryButton = CCMenuItemExt::createSpriteExtra(
             ButtonSprite::create(filename.c_str(), 174, 0, 1.0f, false, "goldFont.fnt", "GJ_button_05.png", 0.0f),
-            [this, path = std::move(path)](auto) {
-                m_callback(path);
+            [this, path = std::move(path)](CCMenuItemSpriteExtra* sender) {
+                m_callback(path, sender->getID());
                 onClose(nullptr);
             }
         );
