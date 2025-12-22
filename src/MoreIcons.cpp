@@ -53,14 +53,6 @@ Mod* MoreIcons::separateDualIcons = nullptr;
 bool MoreIcons::traditionalPacks = true;
 bool MoreIcons::preloadIcons = false;
 
-std::unordered_map<std::string, Severity::type> severityMap = {
-    { "Debug", Severity::Debug },
-    { "Info", Severity::Info },
-    { "Warning", Severity::Warning },
-    { "Error", Severity::Error },
-    { "None", Severity::cast(4) }
-};
-
 void MoreIcons::loadSettings() {
     auto logLevel = jasmine::setting::get<std::string>("log-level");
     auto mod = Mod::get();
@@ -70,7 +62,13 @@ void MoreIcons::loadSettings() {
         else if (!data.get<bool>("debug-logs").unwrapOr(true)) logLevel->setValue("Info");
         else logLevel->setValue("Debug");
     }
-    mod->setLogLevel(severityMap[logLevel->getValue()]);
+
+    auto logLevelValue = logLevel->getValue();
+    if (logLevelValue == "Info") mod->setLogLevel(Severity::Info);
+    else if (logLevelValue == "Warning") mod->setLogLevel(Severity::Warning);
+    else if (logLevelValue == "Error") mod->setLogLevel(Severity::Error);
+    else if (logLevelValue == "None") mod->setLogLevel(Severity::cast(4));
+    else mod->setLogLevel(Severity::Debug);
     traditionalPacks = jasmine::setting::getValue<bool>("traditional-packs");
     preloadIcons = jasmine::setting::getValue<bool>("preload-icons");
 }

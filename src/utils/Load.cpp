@@ -93,13 +93,14 @@ thread_local ApkFile* apkFile = [] -> ApkFile* {
     std::string filename;
     filename.reserve(256);
 
+    auto& fileList = apkFile->fileList;
     auto res = unzGoToFirstFile64(zipFile, &fileInfo, filename.data(), 256);
     for (; res == 0; res = unzGoToNextFile64(zipFile, &fileInfo, filename.data(), 256)) {
         if (!filename.starts_with("assets/")) continue;
         ApkEntry entryInfo;
         if (unzGetFilePos(zipFile, &entryInfo.pos) != 0) continue;
         entryInfo.size = fileInfo.uncompressed_size;
-        apkFile->fileList[filename] = entryInfo;
+        fileList[filename] = entryInfo;
     }
 
     if (res != 0) {
@@ -115,14 +116,17 @@ Result<std::vector<uint8_t>> Load::readBinary(const std::filesystem::path& path)
     #ifdef GEODE_IS_ANDROID
     auto& str = path.native();
     if (str.starts_with("assets/")) {
-        if (auto it = apkFile->fileList.find(str); it != apkFile->fileList.end()) {
+        auto& fileList = apkFile->fileList;
+        if (auto it = fileList.find(str); it != fileList.end()) {
             auto& entryInfo = it->second;
-            if (unzGoToFilePos(apkFile->zipFile, &entryInfo.pos) != 0) return Err("Failed to seek to file");
-            if (unzOpenCurrentFile(apkFile->zipFile) != 0) return Err("Failed to open file");
+            auto zipFile = apkFile->zipFile;
+
+            if (unzGoToFilePos(zipFile, &entryInfo.pos) != 0) return Err("Failed to seek to file");
+            if (unzOpenCurrentFile(zipFile) != 0) return Err("Failed to open file");
 
             std::vector<uint8_t> data(entryInfo.size);
-            auto readBytes = unzReadCurrentFile(apkFile->zipFile, data.data(), data.size());
-            unzCloseCurrentFile(apkFile->zipFile);
+            auto readBytes = unzReadCurrentFile(zipFile, data.data(), data.size());
+            unzCloseCurrentFile(zipFile);
             if (readBytes != entryInfo.size) return Err("Failed to read file");
             return Ok(std::move(data));
         }

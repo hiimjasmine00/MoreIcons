@@ -224,12 +224,12 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
             m_state = std::move(stateRes).unwrap();
             updateColors();
-            updateControls("offset-x", -20.0f, 20.0f, 0.0f, true);
-            updateControls("offset-y", -20.0f, 20.0f, 0.0f, true);
-            updateControls("rotation-x", 0.0f, 360.0f, 0.0f, false);
-            updateControls("rotation-y", 0.0f, 360.0f, 0.0f, false);
-            updateControls("scale-x", -10.0f, 10.0f, 1.0f, true);
-            updateControls("scale-y", -10.0f, 10.0f, 1.0f, true);
+            updateControls("offset-x", m_offsetX, -20.0f, 20.0f, 0.0f, true);
+            updateControls("offset-y", m_offsetY, -20.0f, 20.0f, 0.0f, true);
+            updateControls("rotation-x", m_rotationX, 0.0f, 360.0f, 0.0f, false);
+            updateControls("rotation-y", m_rotationY, 0.0f, 360.0f, 0.0f, false);
+            updateControls("scale-x", m_scaleX, -10.0f, 10.0f, 1.0f, true);
+            updateControls("scale-y", m_scaleY, -10.0f, 10.0f, 1.0f, true);
 
             for (auto& [key, definition] : m_state.definitions) {
                 auto targets = static_cast<CCArray*>(m_targets->objectForKey(key));
@@ -274,12 +274,12 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     m_selectSprite->setID("select-sprite");
     m_mainLayer->addChild(m_selectSprite);
 
-    createControls({ 185.0f, 175.0f }, "Offset X:", "offset-x", -20.0f, 20.0f, 0.0f, true);
-    createControls({ 355.0f, 175.0f }, "Offset Y:", "offset-y", -20.0f, 20.0f, 0.0f, true);
-    createControls({ 185.0f, 135.0f }, "Rotation X:", "rotation-x", 0.0f, 360.0f, 0.0f, false);
-    createControls({ 355.0f, 135.0f }, "Rotation Y:", "rotation-y", 0.0f, 360.0f, 0.0f, false);
-    createControls({ 185.0f, 95.0f }, "Scale X:", "scale-x", -10.0f, 10.0f, 1.0f, true);
-    createControls({ 355.0f, 95.0f }, "Scale Y:", "scale-y", -10.0f, 10.0f, 1.0f, true);
+    createControls({ 185.0f, 175.0f }, "Offset X:", "offset-x", m_offsetX, -20.0f, 20.0f, 0.0f, true);
+    createControls({ 355.0f, 175.0f }, "Offset Y:", "offset-y", m_offsetY, -20.0f, 20.0f, 0.0f, true);
+    createControls({ 185.0f, 135.0f }, "Rotation X:", "rotation-x", m_rotationX, 0.0f, 360.0f, 0.0f, false);
+    createControls({ 355.0f, 135.0f }, "Rotation Y:", "rotation-y", m_rotationY, 0.0f, 360.0f, 0.0f, false);
+    createControls({ 185.0f, 95.0f }, "Scale X:", "scale-x", m_scaleX, -10.0f, 10.0f, 1.0f, true);
+    createControls({ 355.0f, 95.0f }, "Scale Y:", "scale-y", m_scaleY, -10.0f, 10.0f, 1.0f, true);
 
     auto pieceButtonMenu = CCMenu::create();
     pieceButtonMenu->setPosition({ 270.0f, 60.0f });
@@ -459,8 +459,10 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     return true;
 }
 
-void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::string_view id, float min, float max, float def, bool decimals) {
-    m_settings[id] = def;
+void EditIconPopup::createControls(
+    const CCPoint& pos, const char* text, std::string_view id, float& value, float min, float max, float def, bool decimals
+) {
+    value = def;
 
     auto div = max - min;
     auto key = getKey(id);
@@ -472,8 +474,7 @@ void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::st
     m_mainLayer->addChild(slider);
     m_sliders->setObject(slider, key);
 
-    CCMenuItemExt::assignCallback<SliderThumb>(slider->getThumb(), [this, min, div, decimals, id, key](SliderThumb* sender) {
-        auto& value = m_settings[id];
+    CCMenuItemExt::assignCallback<SliderThumb>(slider->getThumb(), [this, min, div, decimals, id, key, &value](SliderThumb* sender) {
         value = sender->getValue() * div + min;
         value = decimals ? roundf(value * 10.0f) / 10.0f : roundf(value);
         m_state.definitions[m_suffix][id] = value;
@@ -501,8 +502,7 @@ void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::st
     input->setString(decimals ? fmt::format("{:.1f}", def) : fmt::format("{:.0f}", def));
     input->setCommonFilter(decimals ? CommonFilter::Float : CommonFilter::Uint);
     input->setMaxCharCount(decimals ? 5 : 3);
-    input->setCallback([this, min, max, div, decimals, id, key](const std::string& str) {
-        auto& value = m_settings[id];
+    input->setCallback([this, min, max, div, decimals, id, key, &value](const std::string& str) {
         jasmine::convert::toFloat(str, value);
         value = std::clamp(value, min, max);
         m_state.definitions[m_suffix][id] = value;
@@ -515,8 +515,9 @@ void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::st
     menu->addChild(input);
     m_inputs->setObject(input, key);
 
-    auto resetButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [this, min, div, def, id, key, decimals](auto) {
-        auto& value = m_settings[id];
+    auto resetButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [
+        this, min, div, def, id, key, decimals, &value
+    ](auto) {
         value = def;
         m_state.definitions[m_suffix][id] = value;
         if (auto slider = static_cast<Slider*>(m_sliders->objectForKey(key))) {
@@ -533,12 +534,11 @@ void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::st
     menu->updateLayout();
 }
 
-void EditIconPopup::updateControls(std::string_view id, float minimum, float maximum, float defaultValue, bool decimals) {
-    auto& value = m_settings[id];
-    value = m_state.definitions[m_suffix][id].as<float>().unwrapOr(defaultValue);
+void EditIconPopup::updateControls(std::string_view id, float& value, float min, float max, float def, bool decimals) {
+    value = m_state.definitions[m_suffix][id].as<float>().unwrapOr(def);
     auto key = getKey(id);
     if (auto slider = static_cast<Slider*>(m_sliders->objectForKey(key))) {
-        slider->setValue((value - minimum) / (maximum - minimum));
+        slider->setValue((value - min) / (max - min));
     }
     if (auto input = static_cast<TextInput*>(m_inputs->objectForKey(key))) {
         input->setString(decimals ? fmt::format("{:.1f}", value) : fmt::format("{:.0f}", value));
@@ -645,12 +645,12 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
     auto pieceSprite = CCSprite::createWithSpriteFrame(pieceFrame);
     auto pieceButton = CCMenuItemExt::createSpriteExtra(pieceSprite, [this, suffix, page, targets](CCMenuItemSpriteExtra* sender) {
         m_suffix = suffix;
-        updateControls("offset-x", -20.0f, 20.0f, 0.0f, true);
-        updateControls("offset-y", -20.0f, 20.0f, 0.0f, true);
-        updateControls("rotation-x", 0.0f, 360.0f, 0.0f, false);
-        updateControls("rotation-y", 0.0f, 360.0f, 0.0f, false);
-        updateControls("scale-x", -10.0f, 10.0f, 1.0f, true);
-        updateControls("scale-y", -10.0f, 10.0f, 1.0f, true);
+        updateControls("offset-x", m_offsetX, -20.0f, 20.0f, 0.0f, true);
+        updateControls("offset-y", m_offsetY, -20.0f, 20.0f, 0.0f, true);
+        updateControls("rotation-x", m_rotationX, 0.0f, 360.0f, 0.0f, false);
+        updateControls("rotation-y", m_rotationY, 0.0f, 360.0f, 0.0f, false);
+        updateControls("scale-x", m_scaleX, -10.0f, 10.0f, 1.0f, true);
+        updateControls("scale-y", m_scaleY, -10.0f, 10.0f, 1.0f, true);
         m_targetsArray = targets;
         m_selectSprite->setTag(page);
         m_selectSprite->setVisible(true);
@@ -807,19 +807,13 @@ void EditIconPopup::goToPage(int page) {
 void EditIconPopup::updateTargets() {
     if (!m_targetsArray) return;
 
-    auto offsetX = m_settings["offset-x"];
-    auto offsetY = m_settings["offset-y"];
-    auto rotationX = m_settings["rotation-x"];
-    auto rotationY = m_settings["rotation-y"];
-    auto scaleX = m_settings["scale-x"];
-    auto scaleY = m_settings["scale-y"];
     for (auto target : m_targetsArray->asExt<CCNode>()) {
-        target->setPositionX(offsetX);
-        target->setPositionY(offsetY);
-        target->setRotationX(rotationX);
-        target->setRotationY(rotationY);
-        target->setScaleX(scaleX);
-        target->setScaleY(scaleY);
+        target->setPositionX(m_offsetX);
+        target->setPositionY(m_offsetY);
+        target->setRotationX(m_rotationX);
+        target->setRotationY(m_rotationY);
+        target->setScaleX(m_scaleX);
+        target->setScaleY(m_scaleY);
     }
 
     m_hasChanged = true;
