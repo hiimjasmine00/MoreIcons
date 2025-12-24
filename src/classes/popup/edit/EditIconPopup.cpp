@@ -25,7 +25,6 @@
 
 using namespace geode::prelude;
 using namespace jasmine::mod;
-using namespace std::string_literals;
 
 EditIconPopup* EditIconPopup::create(MoreIconsPopup* popup, IconType type) {
     auto ret = new EditIconPopup();
@@ -215,11 +214,11 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     loadStateSprite->setScale(0.7f);
     auto loadStateButton = CCMenuItemExt::createSpriteExtra(loadStateSprite, [this](auto) {
         LoadEditorPopup::create(m_iconType, [this](const std::filesystem::path& directory, std::string_view name) {
-            m_selectedPNG = directory / L("icon.png"s);
-            m_selectedPlist = directory / L("icon.plist"s);
+            m_selectedPNG = directory / L("icon.png");
+            m_selectedPlist = directory / L("icon.plist");
             if (!updateWithSelectedFiles()) return;
 
-            auto stateRes = file::readFromJson<IconEditorState>(directory / L("state.json"s));
+            auto stateRes = file::readFromJson<IconEditorState>(directory / L("state.json"));
             if (stateRes.isErr()) return Notify::error("Failed to load {}: {}", name, stateRes.unwrapErr());
 
             m_state = std::move(stateRes).unwrap();
@@ -325,8 +324,8 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
             }
             else {
                 auto [texture, sheet] = MoreIcons::getIconPaths(id, m_iconType);
-                m_selectedPNG = Filesystem::strPath(texture);
-                m_selectedPlist = Filesystem::strPath(sheet);
+                m_selectedPNG = Filesystem::strPath(std::move(texture));
+                m_selectedPlist = Filesystem::strPath(std::move(sheet));
             }
             updateWithSelectedFiles(m_suffix);
         })->show();
@@ -437,8 +436,8 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
             }
             else {
                 auto [texture, sheet] = MoreIcons::getIconPaths(id, m_iconType);
-                m_selectedPNG = Filesystem::strPath(texture);
-                m_selectedPlist = Filesystem::strPath(sheet);
+                m_selectedPNG = Filesystem::strPath(std::move(texture));
+                m_selectedPlist = Filesystem::strPath(std::move(sheet));
             }
             updateWithSelectedFiles();
         })->show();

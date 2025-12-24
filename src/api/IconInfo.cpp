@@ -1,6 +1,8 @@
 #include "IconInfoImpl.hpp"
 #include <fmt/format.h>
 #include <Geode/utils/string.hpp>
+#define GEODE_DEFINE_EVENT_EXPORTS
+#include <IconInfo.hpp>
 
 using namespace geode::prelude;
 

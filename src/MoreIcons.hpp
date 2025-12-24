@@ -3,6 +3,12 @@
 #include <Geode/GeneratedPredeclare.hpp>
 #include <IconInfo.hpp>
 
+#ifdef GEODE_IS_WINDOWS
+#define CONFIG_PATH L"config\\" GEODE_CONCAT(L, GEODE_MOD_ID)
+#else
+#define CONFIG_PATH "config/" GEODE_MOD_ID
+#endif
+
 class MoreIcons {
 public:
     static std::map<IconType, std::vector<IconInfo>> icons;
@@ -23,7 +29,6 @@ public:
     static geode::Result<std::filesystem::path> createTrash();
     static cocos2d::CCSprite* customIcon(IconInfo* info);
     static bool dualSelected();
-    static std::filesystem::path getConfigPath();
     static std::filesystem::path getEditorDir(IconType type);
     static std::filesystem::path getIconDir(IconType type);
     static std::string getIconName(int id, IconType type);

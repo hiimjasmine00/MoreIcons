@@ -1,5 +1,6 @@
-#define GEODE_DEFINE_EVENT_EXPORTS
-#include <IconInfo.hpp>
+#include <filesystem>
+#include <Geode/Enums.hpp>
+#include <matjson.hpp>
 
 class IconInfoImpl {
 public:

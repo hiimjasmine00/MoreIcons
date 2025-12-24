@@ -80,21 +80,39 @@ namespace more_icons {
     /// @param dual Whether or not to use the icon for the dual player. (Requires the "Separate Dual Icons" mod by Weebify)
     /// @returns The save key for the given icon type, or an empty string if there is none.
     inline std::string_view saveKey(IconType type, bool dual = false) {
-        auto isDual = dual && geode::Loader::get()->isModLoaded("weebify.separate_dual_icons");
-        switch (type) {
-            case IconType::Cube: return isDual ? "icon-dual" : "icon";
-            case IconType::Ship: return isDual ? "ship-dual" : "ship";
-            case IconType::Ball: return isDual ? "ball-dual" : "ball";
-            case IconType::Ufo: return isDual ? "ufo-dual" : "ufo";
-            case IconType::Wave: return isDual ? "wave-dual" : "wave";
-            case IconType::Robot: return isDual ? "robot-dual" : "robot";
-            case IconType::Spider: return isDual ? "spider-dual" : "spider";
-            case IconType::Swing: return isDual ? "swing-dual" : "swing";
-            case IconType::Jetpack: return isDual ? "jetpack-dual" : "jetpack";
-            case IconType::DeathEffect: return isDual ? "death-dual" : "death";
-            case IconType::Special: return isDual ? "trail-dual" : "trail";
-            case IconType::ShipFire: return isDual ? "fire-dual" : "fire";
-            default: return "";
+        if (dual && geode::Loader::get()->isModLoaded("weebify.separate_dual_icons")) {
+            switch (type) {
+                case IconType::Cube: return "icon-dual";
+                case IconType::Ship: return "ship-dual";
+                case IconType::Ball: return "ball-dual";
+                case IconType::Ufo: return "ufo-dual";
+                case IconType::Wave: return "wave-dual";
+                case IconType::Robot: return "robot-dual";
+                case IconType::Spider: return "spider-dual";
+                case IconType::Swing: return "swing-dual";
+                case IconType::Jetpack: return "jetpack-dual";
+                case IconType::DeathEffect: return "death-dual";
+                case IconType::Special: return "trail-dual";
+                case IconType::ShipFire: return "fire-dual";
+                default: return "";
+            }
+        }
+        else {
+            switch (type) {
+                case IconType::Cube: return "icon";
+                case IconType::Ship: return "ship";
+                case IconType::Ball: return "ball";
+                case IconType::Ufo: return "ufo";
+                case IconType::Wave: return "wave";
+                case IconType::Robot: return "robot";
+                case IconType::Spider: return "spider";
+                case IconType::Swing: return "swing";
+                case IconType::Jetpack: return "jetpack";
+                case IconType::DeathEffect: return "death";
+                case IconType::Special: return "trail";
+                case IconType::ShipFire: return "fire";
+                default: return "";
+            }
         }
     }
 

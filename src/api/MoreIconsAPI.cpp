@@ -14,7 +14,6 @@
 #include <texpack.hpp>
 
 using namespace geode::prelude;
-using namespace std::string_literals;
 
 FLAlertLayer* more_icons::createInfoPopup(std::string_view name, IconType type) {
     if (auto info = more_icons::getIcon(name, type)) return MoreInfoPopup::create(info);
@@ -186,53 +185,53 @@ void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
     auto oldPngs = info->getAllTextures();
     auto type = info->getType();
     if (type <= IconType::Jetpack) {
-        info->setTexture(path / Filesystem::filenamePath(info->getTexture()));
-        info->setSheet(path / Filesystem::filenamePath(info->getSheet()));
+        info->setTexture(path / Filesystem::filenameView(info->getTexture()));
+        info->setSheet(path / Filesystem::filenameView(info->getSheet()));
     }
     else if (type >= IconType::DeathEffect) {
         if (info->isVanilla()) {
             if (type == IconType::DeathEffect) {
                 switch (info->getQuality()) {
                     case kTextureQualityHigh:
-                        info->setTexture(path / L("effect-uhd.png"s));
-                        info->setSheet(path / L("effect-uhd.plist"s));
+                        info->setTexture(path / L("effect-uhd.png"));
+                        info->setSheet(path / L("effect-uhd.plist"));
                         break;
                     case kTextureQualityMedium:
-                        info->setTexture(path / L("effect-hd.png"s));
-                        info->setSheet(path / L("effect-hd.plist"s));
+                        info->setTexture(path / L("effect-hd.png"));
+                        info->setSheet(path / L("effect-hd.plist"));
                         break;
                     case kTextureQualityLow:
-                        info->setTexture(path / L("effect.png"s));
-                        info->setSheet(path / L("effect.plist"s));
+                        info->setTexture(path / L("effect.png"));
+                        info->setSheet(path / L("effect.plist"));
                         break;
                 }
             }
             else if (type == IconType::Special) {
-                info->setTexture(path / L("trail.png"s));
+                info->setTexture(path / L("trail.png"));
             }
             else if (type == IconType::ShipFire) {
-                info->setTexture(path / L("fire_001.png"s));
+                info->setTexture(path / L("fire_001.png"));
             }
 
-            info->setJSON(path / L("settings.json"s));
+            info->setJSON(path / L("settings.json"));
 
             auto factor = Get::Director()->getContentScaleFactor();
-            if (factor >= 4.0f) info->setIcon(path / L("icon-uhd.png"s));
-            else if (factor >= 2.0f) info->setIcon(path / L("icon-hd.png"s));
-            else info->setIcon(path / L("icon.png"s));
+            if (factor >= 4.0f) info->setIcon(path / L("icon-uhd.png"));
+            else if (factor >= 2.0f) info->setIcon(path / L("icon-hd.png"));
+            else info->setIcon(path / L("icon.png"));
         }
         else {
             if (auto& texture = info->getTexture(); !texture.empty()) {
-                info->setTexture(path / Filesystem::filenamePath(texture));
+                info->setTexture(path / Filesystem::filenameView(texture));
             }
             if (auto& sheet = info->getSheet(); !sheet.empty()) {
-                info->setSheet(path / Filesystem::filenamePath(sheet));
+                info->setSheet(path / Filesystem::filenameView(sheet));
             }
             if (auto& json = info->getJSON(); !json.empty()) {
-                info->setJSON(path / Filesystem::filenamePath(json));
+                info->setJSON(path / Filesystem::filenameView(json));
             }
             if (auto& icon = info->getIcon(); !icon.empty()) {
-                info->setIcon(path / Filesystem::filenamePath(icon));
+                info->setIcon(path / Filesystem::filenameView(icon));
             }
         }
     }
@@ -307,18 +306,17 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
         }
     }
     else if (type >= IconType::DeathEffect) {
-        std::filesystem::path directory = std::move(wideName);
         if (auto& texture = info->getTexture(); !texture.empty()) {
-            info->setTexture(Filesystem::parentPath(Filesystem::parentPath(texture)) / directory / Filesystem::filenamePath(texture));
+            info->setTexture(Filesystem::parentPath(Filesystem::parentPath(texture)) / wideName / Filesystem::filenameView(texture));
         }
         if (auto& sheet = info->getSheet(); !sheet.empty()) {
-            info->setSheet(Filesystem::parentPath(Filesystem::parentPath(sheet)) / directory / Filesystem::filenamePath(sheet));
+            info->setSheet(Filesystem::parentPath(Filesystem::parentPath(sheet)) / wideName / Filesystem::filenameView(sheet));
         }
         if (auto& json = info->getJSON(); !json.empty()) {
-            info->setJSON(Filesystem::parentPath(Filesystem::parentPath(json)) / directory / Filesystem::filenamePath(json));
+            info->setJSON(Filesystem::parentPath(Filesystem::parentPath(json)) / wideName / Filesystem::filenameView(json));
         }
         if (auto& icon = info->getIcon(); !icon.empty()) {
-            info->setIcon(Filesystem::parentPath(Filesystem::parentPath(icon)) / directory / Filesystem::filenamePath(icon));
+            info->setIcon(Filesystem::parentPath(Filesystem::parentPath(icon)) / wideName / Filesystem::filenameView(icon));
         }
     }
 

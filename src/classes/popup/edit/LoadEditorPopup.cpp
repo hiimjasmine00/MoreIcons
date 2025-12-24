@@ -67,7 +67,7 @@ bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const 
     });
 
     for (auto& path : entries) {
-        auto filename = Filesystem::strNarrow(Filesystem::filenameView(path));
+        auto filename = std::string(Filesystem::strNarrow(Filesystem::filenameView(path)));
 
         auto entryMenu = CCMenu::create();
         entryMenu->setContentSize({ 200.0f, 30.0f });

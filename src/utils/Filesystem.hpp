@@ -14,25 +14,48 @@
 #endif
 
 namespace std::filesystem {
-    path operator/(path&& lhs, const path& rhs);
+    void appendPath(path& lhs, basic_string_view<path::value_type> rhs);
+
+    template <class T>
+    path operator/(const path& lhs, const T& rhs) {
+        path ret = lhs;
+        appendPath(ret, rhs);
+        return ret;
+    }
+
+    template <class T>
+    path operator/(path&& lhs, const T& rhs) {
+        appendPath(lhs, rhs);
+        return std::move(lhs);
+    }
 }
 
 class Filesystem {
 public:
+    using PathView = std::basic_string_view<std::filesystem::path::value_type>;
+
     static bool doesExist(const std::filesystem::path& path);
-    static std::string strNarrow(std::basic_string_view<std::filesystem::path::value_type> str);
-    static std::filesystem::path::string_type strWide(std::string_view str);
-    static std::filesystem::path strPath(std::string_view path);
-    static std::basic_string_view<std::filesystem::path::value_type> filenameView(const std::filesystem::path& path, size_t removeCount = 0);
     #ifdef GEODE_IS_WINDOWS
+    static std::string strNarrow(std::wstring_view str);
+    static std::wstring strWide(std::string_view str);
     static std::string filenameFormat(const std::filesystem::path& path);
     #else
+    static std::string_view strNarrow(std::string_view str) {
+        return str;
+    }
+    static std::string_view strWide(std::string_view str) {
+        return str;
+    }
     static std::string_view filenameFormat(const std::filesystem::path& path);
     #endif
-    static std::filesystem::path filenamePath(const std::filesystem::path& path);
-    static std::filesystem::path filenamePath(std::filesystem::path&& path);
+    static std::filesystem::path strPath(std::string_view path);
+    #ifndef GEODE_IS_WINDOWS
+    static std::filesystem::path strPath(std::string&& path);
+    #endif
+    static PathView filenameView(const std::filesystem::path& path);
     static std::filesystem::path parentPath(const std::filesystem::path& path);
     static std::filesystem::path parentPath(std::filesystem::path&& path);
+    static std::filesystem::path withExt(const std::filesystem::path& path, PathView ext);
     static geode::Result<> renameFile(const std::filesystem::path& from, const std::filesystem::path& to);
     static void iterate(
         const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<void(const std::filesystem::path&)> func
@@ -47,15 +70,16 @@ struct fmt::formatter<std::filesystem::path, Char> {
 
     template <typename FormatContext>
     auto format(const std::filesystem::path& p, FormatContext& ctx) const {
+        auto& str = p.native();
         #ifdef GEODE_IS_WINDOWS
         if constexpr (std::is_same_v<Char, wchar_t>) {
-            return fmt::format_to(ctx.out(), L"{}", p.native());
+            return fmt::format_to(ctx.out(), L"{}", str);
         }
         else {
-            return fmt::format_to(ctx.out(), "{}", Filesystem::strNarrow(p.native()));
+            return fmt::format_to(ctx.out(), "{}", Filesystem::strNarrow(str));
         }
         #else
-        return fmt::format_to(ctx.out(), "{}", p.native());
+        return fmt::format_to(ctx.out(), "{}", str);
         #endif
     }
 };

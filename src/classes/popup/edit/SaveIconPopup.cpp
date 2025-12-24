@@ -48,7 +48,7 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Va
         auto iconName = m_nameInput->getString();
         if (iconName.empty()) return Notify::info("Please enter a name.");
 
-        auto stem = MoreIcons::getIconStem(iconName, m_iconType);
+        auto stem = std::move(const_cast<std::filesystem::path::string_type&>(MoreIcons::getIconStem(iconName, m_iconType).native()));
         if (
             Filesystem::doesExist(fmt::format(L("{}-uhd.plist"), stem)) ||
             Filesystem::doesExist(fmt::format(L("{}-hd.plist"), stem)) ||
@@ -84,7 +84,7 @@ bool SaveIconPopup::checkFrame(const std::string& suffix) {
     return frame != nullptr;
 }
 
-void SaveIconPopup::saveIcon(const std::filesystem::path& stem) {
+void SaveIconPopup::saveIcon(Filesystem::PathView stem) {
     auto type = m_iconType;
     if (type == IconType::Robot || type == IconType::Spider) {
         if (!checkFrame("_01_001") || !checkFrame("_01_2_001") || !checkFrame("_01_glow_001")) return;

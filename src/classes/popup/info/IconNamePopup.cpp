@@ -19,15 +19,13 @@ IconNamePopup* IconNamePopup::create(MoreInfoPopup* popup, IconInfo* info) {
     return nullptr;
 }
 
-void pushFile(
-    fmt::memory_buffer& buffer, const std::filesystem::path& parent, const std::filesystem::path& file1, const std::filesystem::path& file2
-) {
+void pushFile(fmt::memory_buffer& buffer, const std::filesystem::path& parent, Filesystem::PathView file1, Filesystem::PathView file2) {
     if (Filesystem::doesExist(parent / file1) && Filesystem::doesExist(parent / file2)) {
-        fmt::format_to(std::back_inserter(buffer), "\n<cg>{}</c>", file1);
+        fmt::format_to(std::back_inserter(buffer), "\n<cg>{}</c>", Filesystem::strNarrow(file1));
     }
 }
 
-bool renameFile(const std::filesystem::path& parent, const std::filesystem::path& from, const std::filesystem::path& to) {
+bool renameFile(const std::filesystem::path& parent, Filesystem::PathView from, Filesystem::PathView to) {
     auto res = Filesystem::renameFile(parent / from, parent / to);
     if (res.isErr()) Notify::error(res.unwrapErr());
     return res.isOk();
@@ -73,7 +71,7 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
         auto type = info->getType();
         if (type >= IconType::DeathEffect) {
             parent = Filesystem::parentPath(std::move(parent));
-            pushFile(files, parent, std::basic_string(wideOld), std::basic_string(wideName));
+            pushFile(files, parent, wideOld, wideName);
         }
         else if (type <= IconType::Jetpack) {
             pushFile(files, parent, fmt::format(L("{}-uhd.png"), wideOld), fmt::format(L("{}-uhd.png"), wideName));
@@ -97,7 +95,7 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
 
             auto type = info->getType();
             if (type >= IconType::DeathEffect) {
-                if (!renameFile(parent, std::move(wideOld), std::move(wideName))) return;
+                if (!renameFile(parent, wideOld, wideName)) return;
             }
             else if (type <= IconType::Jetpack) {
                 if (!renameFile(parent, fmt::format(L("{}-uhd.png"), wideOld), fmt::format(L("{}-uhd.png"), wideName))) return;

@@ -12,7 +12,6 @@
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
-using namespace std::string_literals;
 
 EditTrailPopup* EditTrailPopup::create(MoreIconsPopup* popup) {
     auto ret = new EditTrailPopup();
@@ -139,7 +138,7 @@ void EditTrailPopup::saveTrail(std::filesystem::path&& path) {
         more_icons::updateIcon(icon);
     }
     else {
-        auto jsonPath = std::filesystem::path(path).replace_extension(L(".json"s));
+        auto jsonPath = Filesystem::withExt(path, L(".json"));
         (void)file::writeString(jsonPath, "{}");
         icon = more_icons::addTrail(
             name, name, std::move(path), std::move(jsonPath), {},

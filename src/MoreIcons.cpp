@@ -17,7 +17,6 @@
 #include <std23/function_ref.h>
 
 using namespace geode::prelude;
-using namespace std::string_literals;
 
 $on_mod(Loaded) {
     MoreIcons::loadSettings();
@@ -73,13 +72,11 @@ void MoreIcons::loadSettings() {
     preloadIcons = jasmine::setting::getValue<bool>("preload-icons");
 }
 
-std::pair<
-    std::basic_string_view<std::filesystem::path::value_type>,
-    std::basic_string_view<std::filesystem::path::value_type>
-> splitPath(const std::filesystem::path& path, size_t removeCount) {
-    auto filename = Filesystem::filenameView(path, removeCount);
+std::pair<Filesystem::PathView, Filesystem::PathView> splitPath(const std::filesystem::path& path, size_t removeCount) {
+    auto filename = Filesystem::filenameView(path);
+    filename.remove_suffix(removeCount);
     auto& str = path.native();
-    return std::make_pair(std::basic_string_view(str.data(), str.size() - filename.size() - removeCount), filename);
+    return std::make_pair(Filesystem::PathView(str.data(), str.size() - filename.size() - removeCount), filename);
 }
 
 void migrateTrails(const std::filesystem::path& path) {
@@ -96,36 +93,29 @@ void migrateTrails(const std::filesystem::path& path) {
         auto filename = Filesystem::filenameView(path);
         if (!filename.ends_with(L(".png"))) return;
 
-        if (std::ranges::contains(migratedTrails, path)) return;
-        else migratedTrails.push(path);
+        matjson::Value pathValue = string::pathToString(path);
+        if (std::ranges::contains(migratedTrails, pathValue)) return;
+        else migratedTrails.push(std::move(pathValue));
 
         auto parentDir = Filesystem::parentPath(path);
         auto stem = filename.substr(0, filename.size() - 4);
-        auto directory = parentDir / std::basic_string(stem);
+        auto directory = parentDir / stem;
 
         if (auto res = file::createDirectoryAll(directory); res.isErr()) {
             return log::error("Failed to create trail directory {}: {}", Filesystem::strNarrow(stem), res.unwrapErr());
         }
 
-        if (auto res = Filesystem::renameFile(path, directory / L("trail.png"s)); res.isErr()) {
+        if (auto res = Filesystem::renameFile(path, directory / L("trail.png")); res.isErr()) {
             return log::error("Failed to move {}: {}", Filesystem::strNarrow(filename), res.unwrapErr());
         }
 
-        std::filesystem::path jsonName = fmt::format(L("{}.json"), stem);
-        if (auto res = Filesystem::renameFile(parentDir / jsonName, directory / L("settings.json"s)); res.isErr()) {
-            return log::error("Failed to move {}: {}", jsonName, res.unwrapErr());
+        auto jsonName = fmt::format(L("{}.json"), stem);
+        if (auto res = Filesystem::renameFile(parentDir / jsonName, directory / L("settings.json")); res.isErr()) {
+            return log::error("Failed to move {}: {}", Filesystem::strNarrow(jsonName), res.unwrapErr());
         }
     });
 
     log::info("Finished trail migration in {}", path);
-}
-
-std::filesystem::path MoreIcons::getConfigPath() {
-    #ifdef GEODE_IS_WINDOWS
-    return std::filesystem::path(L"config"s) / GEODE_CONCAT(GEODE_CONCAT(L, GEODE_MOD_ID), s);
-    #else
-    return std::filesystem::path("config"s) / GEODE_CONCAT(GEODE_MOD_ID, s);
-    #endif
 }
 
 struct IconPack {
@@ -143,7 +133,7 @@ void MoreIcons::loadPacks() {
     factor = Get::Director()->getContentScaleFactor();
     packs.clear();
     packs.emplace_back("More Icons", std::string(), dirs::getGeodeDir(), false, false);
-    migrateTrails(std::move(Mod::get()->getConfigDir().make_preferred()) / L("trail"s));
+    migrateTrails(std::move(Mod::get()->getConfigDir().make_preferred()) / L("trail"));
 
     for (auto& pack : texture_loader::getAppliedPacks()) {
         auto& name = pack.name;
@@ -155,7 +145,7 @@ void MoreIcons::loadPacks() {
         auto& str = pack.path.native();
         auto zipped = str.ends_with(L(".apk")) || str.ends_with(L(".zip"));
         if (traditionalPacks) {
-            if (Filesystem::doesExist(resourcesPath / L("icons"s))) {
+            if (Filesystem::doesExist(resourcesPath / L("icons"))) {
                 packs.emplace_back(name, id, resourcesPath, true, zipped);
             }
             else {
@@ -182,10 +172,10 @@ void MoreIcons::loadPacks() {
             }
         }
 
-        auto configPath = resourcesPath / MoreIcons::getConfigPath();
+        auto configPath = resourcesPath / CONFIG_PATH;
         if (Filesystem::doesExist(configPath)) {
             packs.emplace_back(name, id, resourcesPath, false, zipped);
-            migrateTrails(std::move(configPath) / L("trail"s));
+            migrateTrails(std::move(configPath) / L("trail"));
         }
     }
 }
@@ -212,21 +202,27 @@ std::filesystem::path MoreIcons::getUhdResourcesDir() {
     return dirs::getModConfigDir() / "weebify.high-graphics-android" / GEODE_GD_VERSION_STRING;
 }
 
-std::filesystem::path vanillaTexturePath(const std::filesystem::path& path, bool skipSuffix) {
+std::filesystem::path vanillaTexturePath(std::string_view path, bool skipSuffix) {
     return (!skipSuffix && Get::Director()->getContentScaleFactor() >= 4.0f ? MoreIcons::getUhdResourcesDir() : dirs::getResourcesDir()) / path;
 }
 #else
-std::filesystem::path vanillaTexturePath(const std::filesystem::path& path, bool skipSuffix) {
+std::filesystem::path vanillaTexturePath(Filesystem::PathView path, bool skipSuffix) {
     return dirs::getResourcesDir() / path;
 }
 #endif
 
+#ifdef GEODE_IS_WINDOWS
 std::string MoreIcons::vanillaTexturePath(std::string_view path, bool skipSuffix) {
-    return string::pathToString(::vanillaTexturePath(Filesystem::strPath(path), skipSuffix));
+    return string::pathToString(::vanillaTexturePath(Filesystem::strWide(path), skipSuffix));
 }
+#else
+std::string MoreIcons::vanillaTexturePath(Filesystem::PathView path, bool skipSuffix) {
+    return ::vanillaTexturePath(path, skipSuffix);
+}
+#endif
 
 Result<std::filesystem::path> MoreIcons::createTrash() {
-    auto trashPath = Mod::get()->getConfigDir() / L("trash"s);
+    auto trashPath = Mod::get()->getConfigDir() / L("trash");
     GEODE_UNWRAP(file::createDirectoryAll(trashPath));
     std::error_code code;
     std::filesystem::permissions(trashPath, std::filesystem::perms::all, code);
@@ -291,7 +287,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
         return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
-    auto texturePath = std::filesystem::path(path).replace_extension(L(".png"s));
+    auto texturePath = Filesystem::withExt(path, L(".png"));
     if (!Filesystem::doesExist(texturePath)) {
         return Log::error(std::move(name), fmt::format("Texture file {} not found", Filesystem::filenameFormat(texturePath)));
     }
@@ -306,9 +302,12 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
 void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     auto [parent, stem] = splitPath(path, 4);
 
-    auto plistPath = std::filesystem::path(path).replace_extension(L(".plist"s));
+    auto plistPath = Filesystem::withExt(path, L(".plist"));
     auto vanillaPath = !Filesystem::doesExist(plistPath);
-    if (vanillaPath) plistPath = vanillaTexturePath(L("icons"s) / Filesystem::filenamePath(plistPath), false);
+    if (vanillaPath) {
+        auto filename = Filesystem::filenameView(path);
+        plistPath = vanillaTexturePath(Filesystem::PathView(filename.data() - 6, filename.size() + 6), false);
+    }
 
     std::string name;
     std::string shortName;
@@ -342,7 +341,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
         return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
-    auto doesntExist = vanillaPath && !Filesystem::doesExist(plistPath);
+    auto doesntExist = vanillaPath && !Load::doesExist(plistPath);
     if (doesntExist) return Log::error(std::move(name), fmt::format("Plist file not found (Last attempt: {})", plistPath));
 
     auto icon = more_icons::addIcon(
@@ -353,9 +352,9 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
 }
 
 void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
-    auto shortName = Filesystem::strNarrow(Filesystem::filenameView(path));
+    auto shortName = std::string(Filesystem::strNarrow(Filesystem::filenameView(path)));
     auto name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
-    auto texturePath = path / L("trail.png"s);
+    auto texturePath = path / L("trail.png");
 
     if (!Filesystem::doesExist(texturePath)) {
         return Log::error(std::move(name), fmt::format("Texture file {} not found", Filesystem::filenameFormat(texturePath)));
@@ -367,11 +366,11 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
         return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
-    auto jsonPath = path / L("settings.json"s);
+    auto jsonPath = path / L("settings.json");
 
-    auto iconPng = path / L("icon.png"s);
-    auto iconHdPng = factor >= 2.0f ? path / L("icon-hd.png"s) : std::filesystem::path();
-    auto iconUhdPng = factor >= 4.0f ? path / L("icon-uhd.png"s) : std::filesystem::path();
+    auto iconPng = path / L("icon.png");
+    auto iconHdPng = factor >= 2.0f ? path / L("icon-hd.png") : std::filesystem::path();
+    auto iconUhdPng = factor >= 4.0f ? path / L("icon-uhd.png") : std::filesystem::path();
 
     std::filesystem::path iconPath;
     if (factor >= 4.0f && Filesystem::doesExist(iconUhdPng)) iconPath = std::move(iconUhdPng);
@@ -389,7 +388,9 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
 }
 
 void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
-    auto shortName = Filesystem::strNarrow(Filesystem::filenameView(path, 4));
+    auto filename = Filesystem::filenameView(path);
+    filename.remove_suffix(4);
+    auto shortName = std::string(Filesystem::strNarrow(filename));
     auto name = fmt::format("{}:{}", pack.id, shortName);
 
     log::debug("Pre-loading vanilla trail {} from {}", name, pack.name);
@@ -409,11 +410,11 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
 }
 
 void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
-    auto shortName = Filesystem::strNarrow(Filesystem::filenameView(path));
+    auto shortName = std::string(Filesystem::strNarrow(Filesystem::filenameView(path)));
     auto name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
-    auto uhdPath = path / L("effect-uhd.plist"s);
-    auto hdPath = path / L("effect-hd.plist"s);
-    auto sdPath = path / L("effect.plist"s);
+    auto uhdPath = path / L("effect-uhd.plist");
+    auto hdPath = path / L("effect-hd.plist");
+    auto sdPath = path / L("effect.plist");
 
     TextureQuality quality;
     std::filesystem::path plistPath;
@@ -439,16 +440,16 @@ void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
         return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
-    auto texturePath = std::filesystem::path(plistPath).replace_extension(L(".png"s));
+    auto texturePath = Filesystem::withExt(plistPath, L(".png"));
     if (!Filesystem::doesExist(texturePath)) {
         return Log::error(std::move(name), fmt::format("Texture file {} not found", Filesystem::filenameFormat(texturePath)));
     }
 
-    auto jsonPath = path / L("settings.json"s);
+    auto jsonPath = path / L("settings.json");
 
-    auto iconPng = path / L("icon.png"s);
-    auto iconHdPng = factor >= 2.0f ? path / L("icon-hd.png"s) : std::filesystem::path();
-    auto iconUhdPng = factor >= 4.0f ? path / L("icon-uhd.png"s) : std::filesystem::path();
+    auto iconPng = path / L("icon.png");
+    auto iconHdPng = factor >= 2.0f ? path / L("icon-hd.png") : std::filesystem::path();
+    auto iconUhdPng = factor >= 4.0f ? path / L("icon-uhd.png") : std::filesystem::path();
 
     std::filesystem::path iconPath;
     if (factor >= 4.0f && Filesystem::doesExist(iconUhdPng)) iconPath = std::move(iconUhdPng);
@@ -468,9 +469,9 @@ void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
 void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
     auto [parent, stem] = splitPath(path, 4);
 
-    auto plistPath = std::filesystem::path(path).replace_extension(L(".plist"s));
+    auto plistPath = Filesystem::withExt(path, L(".plist"));
     auto vanillaPath = !Filesystem::doesExist(plistPath);
-    if (vanillaPath) plistPath = vanillaTexturePath(Filesystem::filenamePath(plistPath), false);
+    if (vanillaPath) plistPath = vanillaTexturePath(Filesystem::filenameView(plistPath), false);
 
     std::string name;
     std::string shortName;
@@ -520,7 +521,7 @@ void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& p
 }
 
 void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
-    auto shortName = Filesystem::strNarrow(Filesystem::filenameView(path));
+    auto shortName = std::string(Filesystem::strNarrow(Filesystem::filenameView(path)));
     auto name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
     auto fireCount = 0;
@@ -536,11 +537,11 @@ void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
         return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
-    auto jsonPath = path / L("settings.json"s);
+    auto jsonPath = path / L("settings.json");
 
-    auto iconPng = path / L("icon.png"s);
-    auto iconHdPng = factor >= 2.0f ? path / L("icon-hd.png"s) : std::filesystem::path();
-    auto iconUhdPng = factor >= 4.0f ? path / L("icon-uhd.png"s) : std::filesystem::path();
+    auto iconPng = path / L("icon.png");
+    auto iconHdPng = factor >= 2.0f ? path / L("icon-hd.png") : std::filesystem::path();
+    auto iconUhdPng = factor >= 4.0f ? path / L("icon-uhd.png") : std::filesystem::path();
 
     std::filesystem::path iconPath;
     if (factor >= 4.0f && Filesystem::doesExist(iconUhdPng)) iconPath = std::move(iconUhdPng);
@@ -550,7 +551,7 @@ void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
 
     auto fireInfo = file::readJson(jsonPath).unwrapOr(Defaults::getShipFireInfo(0));
     auto icon = more_icons::addShipFire(
-        std::move(name), std::move(shortName), path / L("fire_001.png"s), std::move(jsonPath), std::move(iconPath),
+        std::move(name), std::move(shortName), path / L("fire_001.png"), std::move(jsonPath), std::move(iconPath),
         pack.id, pack.name, 0, std::move(fireInfo), fireCount, false, pack.zipped
     );
 
@@ -558,7 +559,9 @@ void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
 }
 
 void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack) {
-    auto shortName = Filesystem::strNarrow(Filesystem::filenameView(path, 8));
+    auto filename = Filesystem::filenameView(path);
+    filename.remove_suffix(8);
+    auto shortName = std::string(Filesystem::strNarrow(filename));
     auto name = fmt::format("{}:{}", pack.id, shortName);
 
     auto fireID = jasmine::convert::getInt<int>(std::string_view(shortName.data() + 12, shortName.size() - 12)).value_or(0);
@@ -591,7 +594,7 @@ CCTexture2D* addFrames(const ImageResult& image, IconInfo* info) {
 void MoreIcons::loadIcons(IconType type) {
     Log::currentType = type;
 
-    std::basic_string_view<std::filesystem::path::value_type> prefix;
+    Filesystem::PathView prefix;
     switch (type) {
         case IconType::Cube: prefix = L("player_"); break;
         case IconType::Ship: prefix = L("ship_"); break;
@@ -614,7 +617,7 @@ void MoreIcons::loadIcons(IconType type) {
         auto& pack = *it;
 
         if (!pack.vanilla) {
-            auto path = pack.path / MoreIcons::getConfigPath() / folder;
+            auto path = pack.path / CONFIG_PATH / folder;
             if (!Filesystem::doesExist(path)) {
                 if (it == packs.begin()) {
                     if (auto res = file::createDirectoryAll(path); res.isErr()) log::error("{}: {}", path, res.unwrapErr());
@@ -646,7 +649,7 @@ void MoreIcons::loadIcons(IconType type) {
             log::info("Finished pre-loading {} from {}", name, path);
         }
         else if (traditionalPacks) {
-            auto path = type == IconType::Special ? pack.path : pack.path / L("icons"s);
+            auto path = type <= IconType::Jetpack ? pack.path / L("icons") : pack.path;
             if (!Filesystem::doesExist(path)) continue;
 
             log::info("Pre-loading {} from {}", name, path);
@@ -824,7 +827,7 @@ CCSprite* MoreIcons::customIcon(IconInfo* info) {
 }
 
 std::filesystem::path MoreIcons::getEditorDir(IconType type) {
-    return Mod::get()->getConfigDir() / L("editor"s) / Constants::getFolderName(type);
+    return Mod::get()->getConfigDir() / L("editor") / Constants::getFolderName(type);
 }
 
 CCSpriteFrame* MoreIcons::getFrame(const char* name) {
@@ -838,7 +841,7 @@ std::filesystem::path MoreIcons::getIconDir(IconType type) {
 }
 
 std::filesystem::path MoreIcons::getIconStem(std::string_view name, IconType type) {
-    return getIconDir(type) / Filesystem::strPath(name);
+    return getIconDir(type) / Filesystem::strWide(name);
 }
 
 std::string MoreIcons::getIconName(int id, IconType type) {

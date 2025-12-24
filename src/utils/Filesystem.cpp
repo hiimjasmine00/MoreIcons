@@ -5,17 +5,19 @@
 
 using namespace geode;
 
+std::filesystem::path::string_type& getPathString(std::filesystem::path& path) {
+    return const_cast<std::filesystem::path::string_type&>(path.native());
+}
+
 namespace std::filesystem {
-    path operator/(path&& lhs, const path& rhs) {
+    void appendPath(path& p, Filesystem::PathView right) {
+        auto& left = getPathString(p);
         #ifdef GEODE_IS_WINDOWS
-        auto& left = lhs.native();
-        auto& right = rhs.native();
-        if (!right.empty() && !_Has_drive_letter_prefix(right.data(), right.data() + right.size()) && !_Is_slash(right[0])) {
+        if (!right.empty() && (right.size() < 2 || !_Is_drive_prefix(right.data())) && !_Is_slash(right[0])) {
             auto needsSlash = !left.empty() && (left.size() != 2 || !_Is_drive_prefix(left.data())) && !_Is_slash(left.back());
-            const_cast<std::wstring&>(left).resize_and_overwrite(left.size() + right.size() + (needsSlash ? 1 : 0), [
-                &left, &right, needsSlash
+            return const_cast<wstring&>(left).resize_and_overwrite(left.size() + right.size() + (needsSlash ? 1 : 0), [
+                &left, right, needsSlash
             ](wchar_t* dest, size_t size) {
-                ::memcpy(dest, left.data(), left.size() * sizeof(wchar_t));
                 dest += left.size();
                 if (needsSlash) {
                     *dest = L'\\';
@@ -24,11 +26,40 @@ namespace std::filesystem {
                 ::memcpy(dest, right.data(), right.size() * sizeof(wchar_t));
                 return size;
             });
-            return std::move(lhs);
         }
+
+        if (right.size() >= 3 && _Is_drive_prefix(right.data()) && _Is_slash(right[2])) {
+            left = right;
+            return;
+        }
+
+        auto rightName = _Parse_root_name(right);
+        if (!rightName.empty()) {
+            left = right;
+            return;
+        }
+
+        auto leftName = _Parse_root_name(left);
+        if (right.size() != rightName.size() && _Is_slash(rightName.back())) {
+            left.erase(leftName.size());
+        }
+        else if (left.size() == leftName.size()) {
+            if (leftName.size() >= 3) left += L'\\';
+        }
+        else {
+            if (!_Is_slash(left.back())) left += L'\\';
+        }
+
+        left += right.substr(rightName.size());
+        #else
+        if (!right.empty() && right[0] == '/') {
+            left = right;
+            return;
+        }
+
+        if (p.has_filename()) left += '/';
+        left += right;
         #endif
-        lhs /= rhs;
-        return std::move(lhs);
     }
 }
 
@@ -52,77 +83,54 @@ std::string Filesystem::strNarrow(std::wstring_view wstr) {
     return str;
 }
 #else
-std::string Filesystem::strWide(std::string_view str) {
-    return std::string(str);
-}
-
-std::string Filesystem::strNarrow(std::string_view str) {
-    return std::string(str);
+std::filesystem::path Filesystem::strPath(std::string&& path) {
+    return std::filesystem::path(std::move(path));
 }
 #endif
 
 std::filesystem::path Filesystem::strPath(std::string_view path) {
-    return std::filesystem::path(strWide(path));
+    return std::filesystem::path(std::filesystem::path::string_type(strWide(path)));
 }
 
 #ifdef GEODE_IS_WINDOWS
-std::wstring_view _filename(const std::filesystem::path& path) {
-    return std::filesystem::_Parse_filename(path.native());
-}
-
-std::wstring_view _parent_path(const std::filesystem::path& path) {
-    return std::filesystem::_Parse_parent_path(path.native());
-}
+#define PRIVATE_WRAPPER(func) \
+    std::wstring_view _##func(const std::filesystem::path& path) { \
+        return std::filesystem::_Parse_##func(path.native()); \
+    }
 #else
-template <std::string_view(std::filesystem::path::*func)() const>
-struct FilenameCaller {
-    friend std::string_view _filename(const std::filesystem::path& path) {
-        return (path.*func)();
-    }
-};
-
-template struct FilenameCaller<&std::filesystem::path::__filename>;
-
-std::string_view _filename(const std::filesystem::path& path);
-
-template <std::string_view(std::filesystem::path::*func)() const>
-struct ParentCaller {
-    friend std::string_view _parent_path(const std::filesystem::path& path) {
-        return (path.*func)();
-    }
-};
-
-template struct ParentCaller<&std::filesystem::path::__parent_path>;
-
-std::string_view _parent_path(const std::filesystem::path& path);
+#define PRIVATE_WRAPPER(func) \
+    template <std::string_view(std::filesystem::path::*funcT)() const> \
+    struct func##Caller { \
+        friend std::string_view _##func(const std::filesystem::path& path) { \
+            return (path.*funcT)(); \
+        } \
+    }; \
+    template struct func##Caller<&std::filesystem::path::__##func>; \
+    std::string_view _##func(const std::filesystem::path& path);
 #endif
 
-std::basic_string_view<std::filesystem::path::value_type> Filesystem::filenameView(const std::filesystem::path& path, size_t removeCount) {
-    auto filename = _filename(path);
-    filename.remove_suffix(removeCount);
-    return filename;
-}
+PRIVATE_WRAPPER(extension)
+PRIVATE_WRAPPER(filename)
+PRIVATE_WRAPPER(parent_path)
 
-std::filesystem::path::string_type& getPathString(std::filesystem::path& path) {
-    return const_cast<std::filesystem::path::string_type&>(path.native());
-}
-
-std::filesystem::path Filesystem::filenamePath(const std::filesystem::path& path) {
-    return std::filesystem::path(std::basic_string(_filename(path)));
-}
-
-std::filesystem::path Filesystem::filenamePath(std::filesystem::path&& path) {
-    auto filename = _filename(path);
-    return std::filesystem::path(std::move(getPathString(path)).substr(filename.data() - path.c_str(), filename.size()));
+Filesystem::PathView Filesystem::filenameView(const std::filesystem::path& path) {
+    return _filename(path);
 }
 
 std::filesystem::path Filesystem::parentPath(const std::filesystem::path& path) {
-    return std::filesystem::path(std::basic_string(_parent_path(path)));
+    return std::filesystem::path(std::filesystem::path::string_type(_parent_path(path)));
 }
 
 std::filesystem::path Filesystem::parentPath(std::filesystem::path&& path) {
     auto parent = _parent_path(path);
     return std::filesystem::path(std::move(getPathString(path)).substr(parent.data() - path.c_str(), parent.size()));
+}
+
+std::filesystem::path Filesystem::withExt(const std::filesystem::path& path, Filesystem::PathView ext) {
+    std::filesystem::path ret = path;
+    auto extension = _extension(ret);
+    getPathString(ret).replace(extension.data() - ret.c_str(), extension.size(), ext.data(), ext.size());
+    return ret;
 }
 
 #ifdef GEODE_IS_WINDOWS
