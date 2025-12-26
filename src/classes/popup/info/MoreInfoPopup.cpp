@@ -46,9 +46,10 @@ Result<> copyFile(const std::filesystem::path& src, const std::filesystem::path&
     });
 }
 
-bool moveSheet(Filesystem::PathView from, Filesystem::PathView to, Filesystem::PathView parent, bool trash) {
+bool moveSheet(Filesystem::PathView name, Filesystem::PathView from, Filesystem::PathView to, Filesystem::PathView parent, bool trash) {
     auto resources = dirs::getResourcesDir();
     if (!parent.empty()) resources = std::move(resources) / parent;
+    resources = std::move(resources) / name;
 
     std::vector<std::pair<std::filesystem::path, std::filesystem::path>> files;
 
@@ -60,14 +61,15 @@ bool moveSheet(Filesystem::PathView from, Filesystem::PathView to, Filesystem::P
         if (Filesystem::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
         else if (!trash) {
             #ifdef GEODE_IS_DESKTOP
-            if (auto res = copyVanillaFile(resources / Filesystem::filenameView(fromPlist), toPlist); res.isErr()) {
+            if (auto res = copyVanillaFile(fmt::format(L("{}-uhd.plist"), resources), toPlist); res.isErr()) {
                 Notify::error(res.unwrapErr());
                 return false;
             }
             #else
             auto uhdResources = MoreIcons::getUhdResourcesDir();
             if (!parent.empty()) uhdResources = std::move(uhdResources) / parent;
-            if (auto res = copyVanillaFile(uhdResources / Filesystem::filenameView(fromPlist), toPlist); res.isErr()) {
+            uhdResources = std::move(uhdResources) / name;
+            if (auto res = copyVanillaFile(fmt::format(L("{}-uhd.plist"), uhdResources), toPlist); res.isErr()) {
                 files.pop_back();
             }
             #endif
@@ -81,7 +83,7 @@ bool moveSheet(Filesystem::PathView from, Filesystem::PathView to, Filesystem::P
         std::filesystem::path toPlist = fmt::format(L("{}-hd.plist"), to);
         if (Filesystem::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
         else if (!trash) {
-            if (auto res = copyVanillaFile(resources / Filesystem::filenameView(fromPlist), toPlist); res.isErr()) {
+            if (auto res = copyVanillaFile(fmt::format(L("{}-hd.plist"), resources), toPlist); res.isErr()) {
                 Notify::error(res.unwrapErr());
                 return false;
             }
@@ -95,7 +97,7 @@ bool moveSheet(Filesystem::PathView from, Filesystem::PathView to, Filesystem::P
         std::filesystem::path toPlist = fmt::format(L("{}.plist"), to);
         if (Filesystem::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
         else if (!trash) {
-            if (auto res = copyVanillaFile(resources / Filesystem::filenameView(fromPlist), toPlist); res.isErr()) {
+            if (auto res = copyVanillaFile(fmt::format(L("{}.plist"), resources), toPlist); res.isErr()) {
                 Notify::error(res.unwrapErr());
                 return false;
             }
@@ -149,7 +151,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
                 }
             }
             else if (type == IconType::DeathEffect) {
-                if (!moveSheet((std::move(parentDir) / stem).native(), (directory / L("effect")).native(), {}, false)) return;
+                if (!moveSheet(stem, (std::move(parentDir) / stem).native(), (directory / L("effect")).native(), {}, false)) return;
             }
 
             auto iconStem = Mod::get()->getResourcesDir() / fmt::format(L("{}{:02}"), Constants::getFolderName(type), m_info->getSpecialID());
@@ -168,7 +170,7 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
         }
     }
     else if (type <= IconType::Jetpack) {
-        if (!moveSheet((std::move(parentDir) / stem).native(), (directory / stem).native(), L("icons"), trash)) return;
+        if (!moveSheet(stem, (std::move(parentDir) / stem).native(), (directory / stem).native(), L("icons"), trash)) return;
     }
 
     auto name = shortName;

@@ -78,10 +78,10 @@ bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Va
     return true;
 }
 
-bool SaveIconPopup::checkFrame(const std::string& suffix) {
-    auto frame = m_frames->objectForKey(suffix);
-    if (!frame) Notify::info("Missing {}{}.", m_nameInput->getString(), suffix);
-    return frame != nullptr;
+bool SaveIconPopup::checkFrame(std::string_view suffix) {
+    auto ret = m_frames->objectForKey(gd::string(suffix.data(), suffix.size())) != nullptr;
+    if (!ret) Notify::info("Missing {}{}.", m_nameInput->getString(), suffix);
+    return ret;
 }
 
 void SaveIconPopup::saveIcon(Filesystem::PathView stem) {

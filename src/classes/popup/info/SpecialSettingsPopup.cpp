@@ -1,12 +1,12 @@
 #include "SpecialSettingsPopup.hpp"
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Notify.hpp"
+#include <fast_float/fast_float.h>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/Slider.hpp>
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/file.hpp>
 #include <IconInfo.hpp>
-#include <jasmine/convert.hpp>
 
 using namespace geode::prelude;
 
@@ -140,7 +140,7 @@ void SpecialSettingsPopup::addControl(
     input->setMaxCharCount(fmt::to_string(max).size() + decimals + (min < 0.0f ? 2 : 1));
     input->setCallback([this, def, exponent, min, max, slider, &value](const std::string& str) {
         auto floatValue = value.as<float>().unwrapOr(def);
-        jasmine::convert::toFloat(str, floatValue);
+        fast_float::from_chars(str.data(), str.data() + str.size(), floatValue);
         floatValue = std::clamp(roundf(floatValue * exponent) / exponent, min, max);
         slider->setValue((floatValue - min) / (max - min));
         value = floatValue;

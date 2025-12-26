@@ -191,20 +191,24 @@ void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
     else if (type >= IconType::DeathEffect) {
         if (info->isVanilla()) {
             if (type == IconType::DeathEffect) {
+                Filesystem::PathView png;
+                Filesystem::PathView plist;
                 switch (info->getQuality()) {
                     case kTextureQualityHigh:
-                        info->setTexture(path / L("effect-uhd.png"));
-                        info->setSheet(path / L("effect-uhd.plist"));
+                        png = L("effect-uhd.png");
+                        plist = L("effect-uhd.plist");
                         break;
                     case kTextureQualityMedium:
-                        info->setTexture(path / L("effect-hd.png"));
-                        info->setSheet(path / L("effect-hd.plist"));
+                        png = L("effect-hd.png");
+                        plist = L("effect-hd.plist");
                         break;
                     case kTextureQualityLow:
-                        info->setTexture(path / L("effect.png"));
-                        info->setSheet(path / L("effect.plist"));
+                        png = L("effect.png");
+                        plist = L("effect.plist");
                         break;
                 }
+                info->setTexture(path / png);
+                info->setSheet(path / plist);
             }
             else if (type == IconType::Special) {
                 info->setTexture(path / L("trail.png"));
@@ -216,9 +220,11 @@ void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
             info->setJSON(path / L("settings.json"));
 
             auto factor = Get::Director()->getContentScaleFactor();
-            if (factor >= 4.0f) info->setIcon(path / L("icon-uhd.png"));
-            else if (factor >= 2.0f) info->setIcon(path / L("icon-hd.png"));
-            else info->setIcon(path / L("icon.png"));
+            Filesystem::PathView icon;
+            if (factor >= 4.0f) icon = L("icon-uhd.png");
+            else if (factor >= 2.0f) icon = L("icon-hd.png");
+            else icon = L("icon.png");
+            info->setIcon(path / icon);
         }
         else {
             if (auto& texture = info->getTexture(); !texture.empty()) {
@@ -290,20 +296,24 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
     auto type = info->getType();
 
     if (type <= IconType::Jetpack) {
+        std::filesystem::path::string_type png;
+        std::filesystem::path::string_type plist;
         switch (info->getQuality()) {
             case kTextureQualityHigh:
-                info->setTexture(Filesystem::parentPath(info->getTexture()) / fmt::format(L("{}-uhd.png"), wideName));
-                info->setSheet(Filesystem::parentPath(info->getSheet()) / fmt::format(L("{}-uhd.plist"), wideName));
+                png = fmt::format(L("{}-uhd.png"), wideName);
+                plist = fmt::format(L("{}-uhd.plist"), wideName);
                 break;
             case kTextureQualityMedium:
-                info->setTexture(Filesystem::parentPath(info->getTexture()) / fmt::format(L("{}-hd.png"), wideName));
-                info->setSheet(Filesystem::parentPath(info->getSheet()) / fmt::format(L("{}-hd.plist"), wideName));
+                png = fmt::format(L("{}-hd.png"), wideName);
+                plist = fmt::format(L("{}-hd.plist"), wideName);
                 break;
             case kTextureQualityLow:
-                info->setTexture(Filesystem::parentPath(info->getTexture()) / fmt::format(L("{}.png"), wideName));
-                info->setSheet(Filesystem::parentPath(info->getSheet()) / fmt::format(L("{}.plist"), wideName));
+                png = fmt::format(L("{}.png"), wideName);
+                plist = fmt::format(L("{}.plist"), wideName);
                 break;
         }
+        info->setTexture(Filesystem::parentPath(info->getTexture()) / png);
+        info->setSheet(Filesystem::parentPath(info->getSheet()) / plist);
     }
     else if (type >= IconType::DeathEffect) {
         if (auto& texture = info->getTexture(); !texture.empty()) {

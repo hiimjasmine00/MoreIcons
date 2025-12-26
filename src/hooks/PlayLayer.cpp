@@ -36,7 +36,7 @@ class $modify(MIPlayLayer, PlayLayer) {
             if (effectID > 0) {
                 auto factor = Get::Director()->getContentScaleFactor();
                 auto texturePath = fmt::format("PlayerExplosion_{:02}{}.png", effectID, factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : "");
-                std::string fullPath = Get::FileUtils()->fullPathForFilename(texturePath.c_str(), false);
+                std::string fullPath = Get::FileUtils()->fullPathForFilename(texturePath.c_str(), true);
                 auto vanillaPath = MoreIcons::vanillaTexturePath(texturePath, false);
                 if (Filesystem::strPath(fullPath) != Filesystem::strPath(vanillaPath)) {
                     auto textureCache = Get::TextureCache();

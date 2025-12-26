@@ -9,7 +9,8 @@ std::filesystem::path::string_type& getPathString(std::filesystem::path& path) {
     return const_cast<std::filesystem::path::string_type&>(path.native());
 }
 
-namespace std::filesystem {
+MI_FILESYSTEM_BEGIN
+namespace filesystem {
     void appendPath(path& p, Filesystem::PathView right) {
         auto& left = getPathString(p);
         #ifdef GEODE_IS_WINDOWS
@@ -61,7 +62,19 @@ namespace std::filesystem {
         left += right;
         #endif
     }
+
+    path operator/(const path& lhs, Filesystem::PathView rhs) {
+        path ret = lhs;
+        appendPath(ret, rhs);
+        return ret;
+    }
+
+    path operator/(path&& lhs, Filesystem::PathView rhs) {
+        appendPath(lhs, rhs);
+        return std::move(lhs);
+    }
 }
+MI_FILESYSTEM_END
 
 bool Filesystem::doesExist(const std::filesystem::path& path) {
     std::error_code code;

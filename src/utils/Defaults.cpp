@@ -67,7 +67,7 @@ const matjson::Value& Defaults::getTrailInfo(int id) {
 }
 
 std::array deathEffects = {
-    matjson::makeObject({ // 2
+    matjson::makeObject({
         { "blend", false },
         { "scale", 1.5f },
         { "scale-variance", 0.2f },
@@ -89,7 +89,7 @@ std::array deathEffects = {
         { "outline-use-scale", false },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 3
+    matjson::makeObject({
         { "blend", false },
         { "scale", 1.2f },
         { "scale-variance", 0.2f },
@@ -111,7 +111,7 @@ std::array deathEffects = {
         { "outline-use-scale", false },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 4
+    matjson::makeObject({
         { "blend", false },
         { "scale", 1.4f },
         { "scale-variance", 0.2f },
@@ -133,7 +133,7 @@ std::array deathEffects = {
         { "outline-use-scale", false },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 5
+    matjson::makeObject({
         { "blend", false },
         { "scale", 1.2f },
         { "scale-variance", 0.1f },
@@ -155,7 +155,7 @@ std::array deathEffects = {
         { "outline-use-scale", false },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 6
+    matjson::makeObject({
         { "blend", false },
         { "scale", 1.25f },
         { "scale-variance", 0.15f },
@@ -177,7 +177,7 @@ std::array deathEffects = {
         { "outline-use-scale", false },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 7
+    matjson::makeObject({
         { "blend", false },
         { "scale", 1.3f },
         { "scale-variance", 0.15f },
@@ -199,7 +199,7 @@ std::array deathEffects = {
         { "outline-use-scale", true },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 8
+    matjson::makeObject({
         { "blend", false },
         { "scale", 1.3f },
         { "scale-variance", 0.2f },
@@ -221,7 +221,7 @@ std::array deathEffects = {
         { "outline-use-scale", true },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 9
+    matjson::makeObject({
         { "blend", true },
         { "scale", 0.85f },
         { "scale-variance", 0.05f },
@@ -243,7 +243,7 @@ std::array deathEffects = {
         { "outline-use-scale", true },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 10
+    matjson::makeObject({
         { "blend", false },
         { "scale", 1.0f },
         { "scale-variance", 0.1f },
@@ -265,7 +265,7 @@ std::array deathEffects = {
         { "outline-use-scale", false },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 11
+    matjson::makeObject({
         { "blend", true },
         { "scale", 1.5f },
         { "scale-variance", 0.3f },
@@ -287,7 +287,7 @@ std::array deathEffects = {
         { "outline-use-scale", true },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 12
+    matjson::makeObject({
         { "blend", false },
         { "scale", 1.25f },
         { "scale-variance", 0.1f },
@@ -309,7 +309,7 @@ std::array deathEffects = {
         { "outline-use-scale", true },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 13
+    matjson::makeObject({
         { "blend", false },
         { "scale", 1.0f },
         { "scale-variance", 0.1f },
@@ -331,7 +331,7 @@ std::array deathEffects = {
         { "outline-use-scale", true },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 14
+    matjson::makeObject({
         { "blend", true },
         { "scale", 1.2f },
         { "scale-variance", 0.2f },
@@ -353,7 +353,7 @@ std::array deathEffects = {
         { "outline-use-scale", true },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 15
+    matjson::makeObject({
         { "blend", true },
         { "scale", 1.1f },
         { "scale-variance", 0.1f },
@@ -375,7 +375,7 @@ std::array deathEffects = {
         { "outline-use-scale", true },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 16
+    matjson::makeObject({
         { "blend", false },
         { "scale", 1.6f },
         { "scale-variance", 0.2f },
@@ -397,7 +397,7 @@ std::array deathEffects = {
         { "outline-use-scale", true },
         { "outline-use-delay", true }
     }),
-    matjson::makeObject({ // 17
+    matjson::makeObject({
         { "blend", false },
         { "scale", 1.15f },
         { "scale-variance", 0.15f },
@@ -419,7 +419,7 @@ std::array deathEffects = {
         { "outline-use-scale", true },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 18
+    matjson::makeObject({
         { "blend", true },
         { "scale", 1.1f },
         { "scale-variance", 0.1f },
@@ -441,7 +441,7 @@ std::array deathEffects = {
         { "outline-use-scale", false },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 19
+    matjson::makeObject({
         { "blend", false },
         { "scale", 1.15f },
         { "scale-variance", 0.15f },
@@ -463,7 +463,7 @@ std::array deathEffects = {
         { "outline-use-scale", true },
         { "outline-use-delay", false }
     }),
-    matjson::makeObject({ // 20
+    matjson::makeObject({
         { "blend", false },
         { "scale", 1.15f },
         { "scale-variance", 0.15f },

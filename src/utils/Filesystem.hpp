@@ -9,26 +9,37 @@
 
 #ifdef GEODE_IS_WINDOWS
 #define L(x) L##x
+#define MI_FILESYSTEM_BEGIN namespace std {
+#define MI_FILESYSTEM_END }
 #else
 #define L(x) x
+#define MI_FILESYSTEM_BEGIN namespace std { inline namespace _LIBCPP_ABI_NAMESPACE { inline namespace __fs {
+#define MI_FILESYSTEM_END } } }
 #endif
 
-namespace std::filesystem {
-    void appendPath(path& lhs, basic_string_view<path::value_type> rhs);
+MI_FILESYSTEM_BEGIN
+namespace filesystem {
+    path operator/(const path& lhs, basic_string_view<path::value_type> rhs);
 
-    template <class T>
-    path operator/(const path& lhs, const T& rhs) {
-        path ret = lhs;
-        appendPath(ret, rhs);
-        return ret;
+    inline path operator/(const path& lhs, const path::value_type* rhs) {
+        return lhs / basic_string_view<path::value_type>(rhs);
     }
 
-    template <class T>
-    path operator/(path&& lhs, const T& rhs) {
-        appendPath(lhs, rhs);
-        return std::move(lhs);
+    inline path operator/(const path& lhs, const path::string_type& rhs) {
+        return lhs / basic_string_view<path::value_type>(rhs.data(), rhs.size());
+    }
+
+    path operator/(path&& lhs, basic_string_view<path::value_type> rhs);
+
+    inline path operator/(path&& lhs, const path::value_type* rhs) {
+        return std::move(lhs) / basic_string_view<path::value_type>(rhs);
+    }
+
+    inline path operator/(path&& lhs, const path::string_type& rhs) {
+        return std::move(lhs) / basic_string_view<path::value_type>(rhs.data(), rhs.size());
     }
 }
+MI_FILESYSTEM_END
 
 class Filesystem {
 public:

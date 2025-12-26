@@ -21,7 +21,7 @@ std::string Load::getFrameName(std::string_view frameName, std::string_view name
 
     std::string_view suffix;
     auto isRobot = type == IconType::Robot || type == IconType::Spider;
-    auto end = std::string_view(frameName.data(), frameName.size() - 8);
+    auto end = frameName.substr(0, frameName.size() - 8);
 
     if (end.ends_with("_2")) {
         if (isRobot) {

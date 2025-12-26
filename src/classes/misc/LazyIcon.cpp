@@ -4,6 +4,7 @@
 #include "../../utils/Filesystem.hpp"
 #include "../../utils/Get.hpp"
 #include "../../utils/Load.hpp"
+#include <fast_float/fast_float.h>
 #include <Geode/binding/CCAnimateFrameCache.hpp>
 #include <Geode/binding/CCSpritePlus.hpp>
 #include <Geode/binding/FLAlertLayer.hpp>
@@ -11,7 +12,6 @@
 #include <Geode/binding/ObjectManager.hpp>
 #include <Geode/binding/SpriteDescription.hpp>
 #include <Geode/loader/Loader.hpp>
-#include <jasmine/convert.hpp>
 #include <jasmine/mod.hpp>
 
 using namespace geode::prelude;
@@ -171,14 +171,20 @@ void LazyIcon::createComplexIcon() {
         if (!usedTexture) continue;
 
         std::string_view texture = usedTexture->valueForKey("texture")->m_sString;
-        if (spider ? texture.size() < 12 : texture.size() < 11) continue;
+        if ((spider && texture.size() < 12) || (!spider && texture.size() < 11)) continue;
 
-        auto index = jasmine::convert::getInt<int>(texture.substr(spider ? 10 : 9, 2)).value_or(0);
+        auto index = 0;
+        fast_float::from_chars(texture.data() + (spider ? 10 : 9), texture.data() + (spider ? 12 : 11), index);
         if (index <= 0) continue;
 
         std::string_view customID = usedTexture->valueForKey("customID")->m_sString;
-        uint8_t spriteColor = customID == "back01" || customID == "back02" || customID == "back03" ? (spider ? 127 : 178) : 255;
-        ccColor3B spriteColor3B = { spriteColor, spriteColor, spriteColor };
+        ccColor3B spriteColor;
+        if (customID == "back01" || customID == "back02" || customID == "back03") {
+            spriteColor = spider ? ccColor3B { 127, 127, 127 } : ccColor3B { 178, 178, 178 };
+        }
+        else {
+            spriteColor = { 255, 255, 255 };
+        }
 
         auto id = i + 1;
 
@@ -191,14 +197,14 @@ void LazyIcon::createComplexIcon() {
 
         if (auto primaryFrame = MoreIcons::getFrame("{}_{:02}_001.png", m_name, index)) {
             auto sprite = CCSprite::createWithSpriteFrame(primaryFrame);
-            sprite->setColor(spriteColor3B);
+            sprite->setColor(spriteColor);
             sprite->setID(fmt::format("primary-sprite-{}", id));
             partNode->addChild(sprite, 0);
         }
 
         if (auto secondaryFrame = MoreIcons::getFrame("{}_{:02}_2_001.png", m_name, index)) {
             auto sprite = CCSprite::createWithSpriteFrame(secondaryFrame);
-            sprite->setColor(spriteColor3B);
+            sprite->setColor(spriteColor);
             sprite->setID(fmt::format("secondary-sprite-{}", id));
             partNode->addChild(sprite, -1);
         }

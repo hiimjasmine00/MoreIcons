@@ -6,12 +6,12 @@
 #include "utils/Get.hpp"
 #include "utils/Load.hpp"
 #include "utils/Log.hpp"
+#include <fast_float/fast_float.h>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/loader/Dirs.hpp>
 #include <geode.texture-loader/include/TextureLoader.hpp>
-#include <jasmine/convert.hpp>
 #include <jasmine/setting.hpp>
 #include <MoreIcons.hpp>
 #include <std23/function_ref.h>
@@ -97,9 +97,8 @@ void migrateTrails(const std::filesystem::path& path) {
         if (std::ranges::contains(migratedTrails, pathValue)) return;
         else migratedTrails.push(std::move(pathValue));
 
-        auto parentDir = Filesystem::parentPath(path);
         auto stem = filename.substr(0, filename.size() - 4);
-        auto directory = parentDir / stem;
+        auto directory = Filesystem::parentPath(path) / stem;
 
         if (auto res = file::createDirectoryAll(directory); res.isErr()) {
             return log::error("Failed to create trail directory {}: {}", Filesystem::strNarrow(stem), res.unwrapErr());
@@ -109,9 +108,8 @@ void migrateTrails(const std::filesystem::path& path) {
             return log::error("Failed to move {}: {}", Filesystem::strNarrow(filename), res.unwrapErr());
         }
 
-        auto jsonName = fmt::format(L("{}.json"), stem);
-        if (auto res = Filesystem::renameFile(parentDir / jsonName, directory / L("settings.json")); res.isErr()) {
-            return log::error("Failed to move {}: {}", Filesystem::strNarrow(jsonName), res.unwrapErr());
+        if (auto res = Filesystem::renameFile(fmt::format(L("{}.json"), directory), directory / L("settings.json")); res.isErr()) {
+            return log::error("Failed to move {}.json: {}", Filesystem::strNarrow(stem), res.unwrapErr());
         }
     });
 
@@ -399,7 +397,8 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
         return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
-    auto trailID = jasmine::convert::getInt<int>(std::string_view(shortName.data() + 7, shortName.size() - 11)).value_or(0);
+    auto trailID = 0;
+    fast_float::from_chars(shortName.data() + 7, shortName.data() + (shortName.size() - 11), trailID);
     if (trailID == 0) trailID = -1;
 
     auto icon = more_icons::addTrail(
@@ -508,7 +507,8 @@ void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& p
     auto doesntExist = vanillaPath && !Load::doesExist(plistPath);
     if (doesntExist) return Log::error(std::move(name), fmt::format("Plist file not found (Last attempt: {})", plistPath));
 
-    auto effectID = jasmine::convert::getInt<int>(std::string_view(shortName.data() + 16, shortName.size() - 16)).value_or(0);
+    auto effectID = 0;
+    fast_float::from_chars(shortName.data() + 16, shortName.data() + (shortName.size() - 16), effectID);
     if (effectID == 0) effectID = -1;
     else effectID++;
 
@@ -564,7 +564,8 @@ void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack
     auto shortName = std::string(Filesystem::strNarrow(filename));
     auto name = fmt::format("{}:{}", pack.id, shortName);
 
-    auto fireID = jasmine::convert::getInt<int>(std::string_view(shortName.data() + 12, shortName.size() - 12)).value_or(0);
+    auto fireID = 0;
+    fast_float::from_chars(shortName.data() + 12, shortName.data() + (shortName.size() - 12), fireID);
     if (fireID == 0) fireID = -1;
 
     auto fireCount = Defaults::getShipFireCount(fireID);

@@ -12,6 +12,7 @@
 #include "../../../utils/Get.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
+#include <fast_float/fast_float.h>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
@@ -20,7 +21,6 @@
 #include <Geode/binding/Slider.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
 #include <Geode/utils/file.hpp>
-#include <jasmine/convert.hpp>
 #include <jasmine/mod.hpp>
 
 using namespace geode::prelude;
@@ -502,7 +502,7 @@ void EditIconPopup::createControls(
     input->setCommonFilter(decimals ? CommonFilter::Float : CommonFilter::Uint);
     input->setMaxCharCount(decimals ? 5 : 3);
     input->setCallback([this, min, max, div, decimals, id, key, &value](const std::string& str) {
-        jasmine::convert::toFloat(str, value);
+        fast_float::from_chars(str.data(), str.data() + str.size(), value);
         value = std::clamp(value, min, max);
         m_state.definitions[m_suffix][id] = value;
         if (auto slider = static_cast<Slider*>(m_sliders->objectForKey(key))) {
