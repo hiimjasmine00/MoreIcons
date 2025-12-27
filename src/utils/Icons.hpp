@@ -16,28 +16,27 @@ struct IconPack {
     bool zipped;
 };
 
-class Icons {
-public:
-    static std::map<IconType, std::vector<IconInfo>> icons;
-    static std::map<int, std::map<IconType, std::string>> requestedIcons;
-    static std::map<std::pair<std::string, IconType>, int> loadedIcons;
-    static std::vector<IconPack> packs;
-    static bool traditionalPacks;
-    static bool preloadIcons;
+namespace Icons {
+    extern std::map<IconType, std::vector<IconInfo>> icons;
+    extern std::map<int, std::map<IconType, std::string>> requestedIcons;
+    extern std::map<std::pair<std::string, IconType>, int> loadedIcons;
+    extern std::vector<IconPack> packs;
+    extern bool traditionalPacks;
+    extern bool preloadIcons;
 
+    cocos2d::CCSpriteFrame* getFrame(const char* name);
     template <typename... Args>
-    static cocos2d::CCSpriteFrame* getFrame(fmt::format_string<Args...> name, Args&&... args) {
+    cocos2d::CCSpriteFrame* getFrame(fmt::format_string<Args...> name, Args&&... args) {
         return getFrame(fmt::format(name, std::forward<Args>(args)...).c_str());
     }
-    static cocos2d::CCSpriteFrame* getFrame(const char* name);
 
-    static cocos2d::CCTexture2D* createAndAddFrames(IconInfo* info);
+    cocos2d::CCTexture2D* createAndAddFrames(IconInfo* info);
     #ifdef GEODE_IS_MOBILE
-    static std::filesystem::path getUhdResourcesDir();
+    std::filesystem::path getUhdResourcesDir();
     #endif
-    static void loadIcons(IconType type);
-    static void loadPacks();
-    static void loadSettings();
-    static void setName(cocos2d::CCNode* node, std::string_view name);
-    static std::string vanillaTexturePath(std::string_view path, bool skipSuffix);
+    void loadIcons(IconType type);
+    void loadPacks();
+    void loadSettings();
+    void setName(cocos2d::CCNode* node, std::string_view name);
+    std::string vanillaTexturePath(std::string_view path, bool skipSuffix);
 };

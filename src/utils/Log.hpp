@@ -7,11 +7,10 @@ struct LogData {
     geode::Severity severity;
 };
 
-class Log {
-public:
-    static std::map<IconType, std::vector<LogData>> logs;
-    static IconType currentType;
+namespace Log {
+    extern std::map<IconType, std::vector<LogData>> logs;
+    extern IconType currentType;
 
-    static void error(std::string&& name, std::string&& message);
-    static void warn(std::string&& name, std::string&& message);
+    void error(std::string&& name, std::string&& message);
+    void warn(std::string&& name, std::string&& message);
 };

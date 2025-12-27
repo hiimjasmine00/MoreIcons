@@ -1,9 +1,8 @@
 #include <matjson.hpp>
 
-class Defaults {
-public:
-    static const matjson::Value& getTrailInfo(int id);
-    static const matjson::Value& getDeathEffectInfo(int id);
-    static const matjson::Value& getShipFireInfo(int id);
-    static int getShipFireCount(int id);
+namespace Defaults {
+    const matjson::Value& getTrailInfo(int id);
+    const matjson::Value& getDeathEffectInfo(int id);
+    const matjson::Value& getShipFireInfo(int id);
+    int getShipFireCount(int id);
 };

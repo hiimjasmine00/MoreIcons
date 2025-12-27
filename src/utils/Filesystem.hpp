@@ -33,36 +33,33 @@ namespace filesystem {
 }
 MI_FILESYSTEM_END
 
-class Filesystem {
-public:
+namespace Filesystem {
     using PathView = std::basic_string_view<std::filesystem::path::value_type>;
 
-    static bool doesExist(const std::filesystem::path& path);
+    bool doesExist(const std::filesystem::path& path);
     #ifdef GEODE_IS_WINDOWS
-    static std::string strNarrow(std::wstring_view str);
-    static std::wstring strWide(std::string_view str);
-    static std::string filenameFormat(const std::filesystem::path& path);
+    std::string strNarrow(std::wstring_view str);
+    std::wstring strWide(std::string_view str);
+    std::string filenameFormat(const std::filesystem::path& path);
     #else
-    static std::string_view strNarrow(std::string_view str) {
+    inline std::string_view strNarrow(std::string_view str) {
         return str;
     }
-    static std::string_view strWide(std::string_view str) {
+    inline std::string_view strWide(std::string_view str) {
         return str;
     }
-    static std::string_view filenameFormat(const std::filesystem::path& path);
+    std::string_view filenameFormat(const std::filesystem::path& path);
     #endif
-    static std::filesystem::path strPath(std::string_view path);
+    std::filesystem::path strPath(std::string_view path);
     #ifndef GEODE_IS_WINDOWS
-    static std::filesystem::path strPath(std::string&& path);
+    std::filesystem::path strPath(std::string&& path);
     #endif
-    static PathView filenameView(const std::filesystem::path& path);
-    static std::filesystem::path parentPath(const std::filesystem::path& path);
-    static std::filesystem::path parentPath(std::filesystem::path&& path);
-    static std::filesystem::path withExt(const std::filesystem::path& path, PathView ext);
-    static geode::Result<> renameFile(const std::filesystem::path& from, const std::filesystem::path& to);
-    static void iterate(
-        const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<void(const std::filesystem::path&)> func
-    );
+    PathView filenameView(const std::filesystem::path& path);
+    std::filesystem::path parentPath(const std::filesystem::path& path);
+    std::filesystem::path parentPath(std::filesystem::path&& path);
+    std::filesystem::path withExt(const std::filesystem::path& path, PathView ext);
+    geode::Result<> renameFile(const std::filesystem::path& from, const std::filesystem::path& to);
+    void iterate(const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<void(const std::filesystem::path&)> func);
 };
 
 template <typename Char>
