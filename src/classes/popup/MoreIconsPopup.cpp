@@ -84,7 +84,7 @@ void MoreIconsPopup::createMenu(cocos2d::CCNode* gamemodesNode, IconType type) {
     gamemodeMenu->setPosition({ 0.0f, 0.0f });
     gamemodeMenu->setContentSize({ 70.0f, 120.0f });
     gamemodeMenu->ignoreAnchorPointForPosition(false);
-    gamemodeMenu->setID(fmt::format("{}-menu", Constants::getIconLabel(type, false, true)));
+    gamemodeMenu->setID(fmt::format("{}-menu", Constants::getPluralLowercase(type)));
 
     auto background = CCScale9Sprite::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
     background->setPosition({ 35.0f, 60.0f });
@@ -131,7 +131,7 @@ void MoreIconsPopup::createMenu(cocos2d::CCNode* gamemodesNode, IconType type) {
         gamemodeMenu->addChild(severityIcon);
     }
 
-    auto label = CCLabelBMFont::create(Constants::getIconLabel(type, true, true).data(), "bigFont.fnt");
+    auto label = CCLabelBMFont::create(Constants::getPluralUppercase(type).data(), "bigFont.fnt");
     label->setPosition({ 35.0f, 76.0f });
     label->limitLabelWidth(65.0f, 0.45f, 0.0f);
     switch (type) {

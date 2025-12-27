@@ -2,6 +2,7 @@
 #include "../classes/popup/MoreIconsPopup.hpp"
 #include "../utils/Constants.hpp"
 #include "../utils/Get.hpp"
+#include "../utils/Icons.hpp"
 #include "../utils/Log.hpp"
 #include <Geode/binding/BoomScrollLayer.hpp>
 #include <Geode/binding/GameManager.hpp>
@@ -294,7 +295,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
                     if (auto spiderSprite = simplePlayer->m_spiderSprite) spiderSprite->runAnimation("idle01");
                 }
                 auto iconButton = CCMenuItemSpriteExtra::create(itemIcon, this, menu_selector(GJGarageLayer::onSelect));
-                MoreIcons::setName(iconButton, name);
+                Icons::setName(iconButton, name);
                 iconButton->setContentSize({ 30.0f, 30.0f });
                 itemIcon->setPosition({ 15.0f, 15.0f });
                 iconButton->setTag(i + 1);
@@ -311,7 +312,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
                 auto sprite = MoreIcons::customIcon(info);
                 sprite->setScale(0.8f);
                 auto iconButton = CCMenuItemSpriteExtra::create(sprite, this, menu_selector(GJGarageLayer::onSelect));
-                MoreIcons::setName(iconButton, name);
+                Icons::setName(iconButton, name);
                 iconButton->setTag(i + 1);
                 iconButton->m_iconType = infoType;
                 objs->addObject(iconButton);

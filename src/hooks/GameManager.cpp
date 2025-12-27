@@ -1,5 +1,5 @@
-#include "../MoreIcons.hpp"
 #include "../utils/Get.hpp"
+#include "../utils/Icons.hpp"
 #include "../utils/Log.hpp"
 #include <Geode/modify/GameManager.hpp>
 #include <jasmine/hook.hpp>
@@ -26,18 +26,18 @@ class $modify(MIGameManager, GameManager) {
         Get::spriteFrameCache = nullptr;
         Get::textureCache = nullptr;
         Get::objectManager = nullptr;
-        std::ranges::for_each(std::views::values(MoreIcons::icons), &std::vector<IconInfo>::clear);
-        MoreIcons::requestedIcons.clear();
-        MoreIcons::loadedIcons.clear();
+        std::ranges::for_each(std::views::values(Icons::icons), &std::vector<IconInfo>::clear);
+        Icons::requestedIcons.clear();
+        Icons::loadedIcons.clear();
         Log::logs.clear();
-        MoreIcons::loadSettings();
-        jasmine::hook::toggle(sheetHook, MoreIcons::traditionalPacks);
+        Icons::loadSettings();
+        jasmine::hook::toggle(sheetHook, Icons::traditionalPacks);
     }
 
     gd::string sheetNameForIcon(int id, int type) {
         auto ret = GameManager::sheetNameForIcon(id, type);
-        if (ret.empty() || !MoreIcons::traditionalPacks || id < 1) return ret;
-        return MoreIcons::vanillaTexturePath(ret, false);
+        if (ret.empty() || !Icons::traditionalPacks || id < 1) return ret;
+        return Icons::vanillaTexturePath(ret, false);
     }
 
     CCTexture2D* loadIcon(int id, int type, int requestID) {
@@ -62,7 +62,7 @@ class $modify(MIGameManager, GameManager) {
             m_iconRequests[requestID][type] = id;
         }
 
-        if (auto foundRequests = MoreIcons::requestedIcons.find(requestID); foundRequests != MoreIcons::requestedIcons.end()) {
+        if (auto foundRequests = Icons::requestedIcons.find(requestID); foundRequests != Icons::requestedIcons.end()) {
             auto iconType = (IconType)type;
             auto& iconRequests = foundRequests->second;
             if (auto found = iconRequests.find(iconType); found != iconRequests.end()) {

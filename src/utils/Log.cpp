@@ -1,5 +1,4 @@
 #include "Log.hpp"
-#include <algorithm>
 #include <Geode/loader/Log.hpp>
 
 using namespace geode::prelude;

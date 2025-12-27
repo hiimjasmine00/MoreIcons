@@ -24,7 +24,7 @@ SaveEditorPopup* SaveEditorPopup::create(
 
 bool SaveEditorPopup::setup(IconType type, const IconEditorState& state, CCDictionary* frames, std23::move_only_function<void()> callback) {
     setID("SaveEditorPopup");
-    setTitle(fmt::format("Save {} Editor", Constants::getIconLabel(type, true, false)));
+    setTitle(fmt::format("Save {} Editor", Constants::getSingularUppercase(type)));
     m_title->setID("save-editor-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -106,8 +106,8 @@ void SaveEditorPopup::onClose(CCObject* sender) {
 
     auto type = m_iconType;
     createQuickPopup(
-        fmt::format("Exit {} Editor Saver", Constants::getIconLabel(type, true, false)).c_str(),
-        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} editor saver</c>?", Constants::getIconLabel(type, false, false)),
+        fmt::format("Exit {} Editor Saver", Constants::getSingularUppercase(type)).c_str(),
+        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} editor saver</c>?", Constants::getSingularLowercase(type)),
         "No",
         "Yes",
         [this](auto, bool btn2) {

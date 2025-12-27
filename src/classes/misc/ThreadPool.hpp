@@ -12,7 +12,7 @@ private:
     std::queue<std23::move_only_function<void()>> m_tasks;
     std::unique_ptr<std::thread[]> m_threads;
     std::unique_ptr<std::atomic_bool[]> m_threadsBusy;
-    std::atomic_size_t m_spinCount = 0;
+    std::condition_variable m_condvar;
     std::atomic_bool m_requestedStop;
 
     void threadFunc(size_t idx);

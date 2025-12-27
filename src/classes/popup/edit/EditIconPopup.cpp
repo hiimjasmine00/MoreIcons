@@ -10,6 +10,7 @@
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Filesystem.hpp"
 #include "../../../utils/Get.hpp"
+#include "../../../utils/Icons.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
 #include <fast_float/fast_float.h>
@@ -57,7 +58,7 @@ gd::string getKey(std::string_view suffix) {
 
 bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     setID("EditIconPopup");
-    setTitle(fmt::format("{} Editor", Constants::getIconLabel(type, true, false)));
+    setTitle(fmt::format("{} Editor", Constants::getSingularUppercase(type)));
     m_title->setID("edit-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -107,7 +108,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
 
     m_player = SimplePlayer::create(1);
     m_player->updatePlayerFrame(1, type);
-    m_player->m_hasGlowOutline = true;
+    m_player->setGlowOutline({ 255, 255, 255 });
     m_player->updateColors();
 
     auto previewNode = CCNode::create();
@@ -341,7 +342,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
             m_frames->removeObjectForKey(key);
         }
         else {
-            auto emptyFrame = MoreIcons::getFrame("emptyFrame.png"_spr);
+            auto emptyFrame = Icons::getFrame("emptyFrame.png"_spr);
             if (!emptyFrame) {
                 emptyFrame = CCSpriteFrame::createWithTexture(Load::createTexture(nullptr, 0, 0), { 0.0f, 0.0f, 0.0f, 0.0f });
                 Get::SpriteFrameCache()->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
@@ -638,7 +639,7 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
 
     auto key = getKey(suffix);
 
-    auto pieceFrame = MoreIcons::getFrame("{}{}.png", MoreIcons::getIconName(1, m_iconType), suffix);
+    auto pieceFrame = Icons::getFrame("{}{}.png", MoreIcons::getIconName(1, m_iconType), suffix);
     if (pieceFrame) m_frames->setObject(pieceFrame, key);
     else pieceFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
     auto pieceSprite = CCSprite::createWithSpriteFrame(pieceFrame);
@@ -823,9 +824,9 @@ void EditIconPopup::onClose(CCObject* sender) {
 
     auto type = m_iconType;
     createQuickPopup(
-        fmt::format("Exit {} Editor", Constants::getIconLabel(type, true, false)).c_str(),
+        fmt::format("Exit {} Editor", Constants::getSingularUppercase(type)).c_str(),
         fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} editor</c>?\n<cr>All unsaved changes will be lost!</c>",
-            Constants::getIconLabel(type, false, false)),
+            Constants::getSingularLowercase(type)),
         "No",
         "Yes",
         [this](auto, bool btn2) {

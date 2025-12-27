@@ -11,78 +11,75 @@ const char* Constants::getSeverityFrame(Severity severity) {
     }
 }
 
-std::string_view Constants::getIconLabel(IconType type, bool uppercase, bool plural) {
-    if (uppercase) {
-        if (plural) {
-            switch (type) {
-                case IconType::Cube: return "Icons";
-                case IconType::Ship: return "Ships";
-                case IconType::Ball: return "Balls";
-                case IconType::Ufo: return "UFOs";
-                case IconType::Wave: return "Waves";
-                case IconType::Robot: return "Robots";
-                case IconType::Spider: return "Spiders";
-                case IconType::Swing: return "Swings";
-                case IconType::Jetpack: return "Jetpacks";
-                case IconType::DeathEffect: return "Death Effects";
-                case IconType::Special: return "Trails";
-                case IconType::ShipFire: return "Ship Fires";
-                default: return "";
-            }
-        }
-        else {
-            switch (type) {
-                case IconType::Cube: return "Icon";
-                case IconType::Ship: return "Ship";
-                case IconType::Ball: return "Ball";
-                case IconType::Ufo: return "UFO";
-                case IconType::Wave: return "Wave";
-                case IconType::Robot: return "Robot";
-                case IconType::Spider: return "Spider";
-                case IconType::Swing: return "Swing";
-                case IconType::Jetpack: return "Jetpack";
-                case IconType::DeathEffect: return "Death Effect";
-                case IconType::Special: return "Trail";
-                case IconType::ShipFire: return "Ship Fire";
-                default: return "";
-            }
-        }
+std::string_view Constants::getSingularLowercase(IconType type) {
+    switch (type) {
+        case IconType::Cube: return "icon";
+        case IconType::Ship: return "ship";
+        case IconType::Ball: return "ball";
+        case IconType::Ufo: return "UFO";
+        case IconType::Wave: return "wave";
+        case IconType::Robot: return "robot";
+        case IconType::Spider: return "spider";
+        case IconType::Swing: return "swing";
+        case IconType::Jetpack: return "jetpack";
+        case IconType::DeathEffect: return "death effect";
+        case IconType::Special: return "trail";
+        case IconType::ShipFire: return "ship fire";
+        default: return "";
     }
-    else {
-        if (plural) {
-            switch (type) {
-                case IconType::Cube: return "icons";
-                case IconType::Ship: return "ships";
-                case IconType::Ball: return "balls";
-                case IconType::Ufo: return "UFOs";
-                case IconType::Wave: return "waves";
-                case IconType::Robot: return "robots";
-                case IconType::Spider: return "spiders";
-                case IconType::Swing: return "swings";
-                case IconType::Jetpack: return "jetpacks";
-                case IconType::DeathEffect: return "death effects";
-                case IconType::Special: return "trails";
-                case IconType::ShipFire: return "ship fires";
-                default: return "";
-            }
-        }
-        else {
-            switch (type) {
-                case IconType::Cube: return "icon";
-                case IconType::Ship: return "ship";
-                case IconType::Ball: return "ball";
-                case IconType::Ufo: return "UFO";
-                case IconType::Wave: return "wave";
-                case IconType::Robot: return "robot";
-                case IconType::Spider: return "spider";
-                case IconType::Swing: return "swing";
-                case IconType::Jetpack: return "jetpack";
-                case IconType::DeathEffect: return "death effect";
-                case IconType::Special: return "trail";
-                case IconType::ShipFire: return "ship fire";
-                default: return "";
-            }
-        }
+}
+
+std::string_view Constants::getPluralLowercase(IconType type) {
+    switch (type) {
+        case IconType::Cube: return "icons";
+        case IconType::Ship: return "ships";
+        case IconType::Ball: return "balls";
+        case IconType::Ufo: return "UFOs";
+        case IconType::Wave: return "waves";
+        case IconType::Robot: return "robots";
+        case IconType::Spider: return "spiders";
+        case IconType::Swing: return "swings";
+        case IconType::Jetpack: return "jetpacks";
+        case IconType::DeathEffect: return "death effects";
+        case IconType::Special: return "trails";
+        case IconType::ShipFire: return "ship fires";
+        default: return "";
+    }
+}
+
+std::string_view Constants::getSingularUppercase(IconType type) {
+    switch (type) {
+        case IconType::Cube: return "Icon";
+        case IconType::Ship: return "Ship";
+        case IconType::Ball: return "Ball";
+        case IconType::Ufo: return "UFO";
+        case IconType::Wave: return "Wave";
+        case IconType::Robot: return "Robot";
+        case IconType::Spider: return "Spider";
+        case IconType::Swing: return "Swing";
+        case IconType::Jetpack: return "Jetpack";
+        case IconType::DeathEffect: return "Death Effect";
+        case IconType::Special: return "Trail";
+        case IconType::ShipFire: return "Ship Fire";
+        default: return "";
+    }
+}
+
+std::string_view Constants::getPluralUppercase(IconType type) {
+    switch (type) {
+        case IconType::Cube: return "Icons";
+        case IconType::Ship: return "Ships";
+        case IconType::Ball: return "Balls";
+        case IconType::Ufo: return "UFOs";
+        case IconType::Wave: return "Waves";
+        case IconType::Robot: return "Robots";
+        case IconType::Spider: return "Spiders";
+        case IconType::Swing: return "Swings";
+        case IconType::Jetpack: return "Jetpacks";
+        case IconType::DeathEffect: return "Death Effects";
+        case IconType::Special: return "Trails";
+        case IconType::ShipFire: return "Ship Fires";
+        default: return "";
     }
 }
 

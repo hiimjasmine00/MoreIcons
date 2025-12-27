@@ -22,7 +22,7 @@ IconPresetPopup* IconPresetPopup::create(IconType type, std::string_view suffix,
 
 bool IconPresetPopup::setup(IconType type, std::string_view suffix, std23::move_only_function<void(int, IconInfo*)> callback) {
     setID("IconPresetPopup");
-    setTitle(fmt::format("{} Presets", Constants::getIconLabel(type, true, false)));
+    setTitle(fmt::format("{} Presets", Constants::getSingularUppercase(type)));
     m_title->setID("icon-preset-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");

@@ -5,6 +5,7 @@
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Filesystem.hpp"
 #include "../../../utils/Get.hpp"
+#include "../../../utils/Icons.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
@@ -24,7 +25,7 @@ SaveIconPopup* SaveIconPopup::create(EditIconPopup* popup, IconType type, const 
 
 bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Value& definitions, CCDictionary* frames) {
     setID("SaveIconPopup");
-    setTitle(fmt::format("Save {}", Constants::getIconLabel(type, true, false)));
+    setTitle(fmt::format("Save {}", Constants::getSingularUppercase(type)));
     m_title->setID("save-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -172,7 +173,7 @@ void SaveIconPopup::saveIcon(Filesystem::PathView stem) {
     }
     else {
         icon = more_icons::addIcon(name, name, type, std::move(selectedPNG), std::move(selectedPlist), Get::Director()->getLoadedTextureQuality());
-        if (MoreIcons::preloadIcons) MoreIcons::createAndAddFrames(icon);
+        if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }
 
     m_parentPopup->close();
@@ -187,8 +188,8 @@ void SaveIconPopup::onClose(CCObject* sender) {
 
     auto type = m_iconType;
     createQuickPopup(
-        fmt::format("Exit {} Saver", Constants::getIconLabel(type, true, false)).c_str(),
-        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} saver</c>?", Constants::getIconLabel(type, false, false)),
+        fmt::format("Exit {} Saver", Constants::getSingularUppercase(type)).c_str(),
+        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} saver</c>?", Constants::getSingularLowercase(type)),
         "No",
         "Yes",
         [this](auto, bool btn2) {

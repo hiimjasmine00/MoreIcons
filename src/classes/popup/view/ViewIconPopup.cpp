@@ -3,6 +3,7 @@
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Defaults.hpp"
 #include "../../../utils/Get.hpp"
+#include "../../../utils/Icons.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <MoreIcons.hpp>
@@ -28,7 +29,7 @@ ViewIconPopup* ViewIconPopup::create(IconType type, int id, IconInfo* info) {
 
 bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
     setID("ViewIconPopup");
-    setTitle(info ? info->getShortName() : fmt::format("{} {}", Constants::getIconLabel(type, true, false), id));
+    setTitle(info ? info->getShortName() : fmt::format("{} {}", Constants::getSingularUppercase(type), id));
     m_title->setID("view-icon-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -45,7 +46,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
 
     if (type <= IconType::Jetpack) {
         auto isRobot = type == IconType::Robot || type == IconType::Spider;
-        std::initializer_list<std::initializer_list<std::string_view>> suffixes;
+        std::span<const std::initializer_list<std::string_view>> suffixes;
         if (isRobot) {
             static std::initializer_list<std::initializer_list<std::string_view>> robotSuffixes = {
                 { "_01_001", "_01_2_001", "_01_glow_001", "_01_extra_001" },
@@ -78,7 +79,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
 
         auto prefix = info ? fmt::format("{}"_spr, info->getName()) : MoreIcons::getIconName(id, type);
         for (size_t i = 0; i < suffixes.size(); i++) {
-            auto& subSuffixes = *(suffixes.begin() + i);
+            auto& subSuffixes = suffixes[i];
 
             auto container = CCNode::create();
             container->setPosition({ 175.0f, (isRobot ? 140.0f : 100.0f) - i * 30.0f + std::max<ptrdiff_t>(i - 1, 0) * 10.0f });
@@ -87,7 +88,7 @@ bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
             container->setID(isRobot ? fmt::format("frame-container{}", (*subSuffixes.begin()).substr(0, 3)) : "frame-container_01");
 
             for (auto& suffix : subSuffixes) {
-                if (auto spriteFrame = MoreIcons::getFrame("{}{}.png", prefix, suffix)) {
+                if (auto spriteFrame = Icons::getFrame("{}{}.png", prefix, suffix)) {
                     auto sprite = CCSprite::createWithSpriteFrame(spriteFrame);
                     auto& size = sprite->getContentSize();
                     sprite->setPosition(size / 2.0f);

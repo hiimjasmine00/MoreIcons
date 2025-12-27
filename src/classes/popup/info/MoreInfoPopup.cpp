@@ -5,6 +5,7 @@
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Filesystem.hpp"
 #include "../../../utils/Get.hpp"
+#include "../../../utils/Icons.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
@@ -66,7 +67,7 @@ bool moveSheet(Filesystem::PathView name, Filesystem::PathView from, Filesystem:
                 return false;
             }
             #else
-            auto uhdResources = MoreIcons::getUhdResourcesDir();
+            auto uhdResources = Icons::getUhdResourcesDir();
             if (!parent.empty()) uhdResources = std::move(uhdResources) / parent;
             uhdResources = std::move(uhdResources) / name;
             if (auto res = copyVanillaFile(fmt::format(L("{}-uhd.plist"), uhdResources), toPlist); res.isErr()) {
@@ -105,7 +106,8 @@ bool moveSheet(Filesystem::PathView name, Filesystem::PathView from, Filesystem:
     }
 
     if (files.empty()) {
-        Notify::info("No files found to {}.", trash ? "trash" : "move");
+        if (trash) Notify::info("No files found to trash.");
+        else Notify::info("No files found to move.");
         return false;
     }
 
@@ -175,9 +177,14 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
 
     auto name = shortName;
     onClose(nullptr);
-    if (trash) more_icons::removeIcon(m_info);
-    else more_icons::moveIcon(m_info, directory);
-    Notify::success("{} {}ed!", name, trash ? "trash" : "convert");
+    if (trash) {
+        more_icons::removeIcon(m_info);
+        Notify::success("{} trashed!", name);
+    }
+    else {
+        more_icons::moveIcon(m_info, directory);
+        Notify::success("{} moved!", name);
+    }
     MoreIcons::updateGarage();
 }
 
@@ -211,7 +218,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     m_mainLayer->addChild(customLabel);
 
     auto descriptionArea = TextArea::create(fmt::format("This <cg>{}</c> is added by the <cl>More Icons</c> mod.",
-        Constants::getIconLabel(type, true, false)), "bigFont.fnt", 1.0f, 600.0f, { 0.5f, 1.0f }, 42.0f, false);
+        Constants::getSingularUppercase(type)), "bigFont.fnt", 1.0f, 600.0f, { 0.5f, 1.0f }, 42.0f, false);
     descriptionArea->setPosition({ 150.0f, 91.0f });
     descriptionArea->setScale(0.4f);
     descriptionArea->setID("description-area");
@@ -274,7 +281,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     if (info->isVanilla() && !info->isZipped()) {
         operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.7f, [this, type](auto) {
             auto& shortName = m_info->getShortName();
-            auto lower = Constants::getIconLabel(type, false, false);
+            auto lower = Constants::getSingularLowercase(type);
 
             fmt::memory_buffer message;
             fmt::format_to(std::back_inserter(message),
@@ -290,7 +297,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
                 }
             }
 
-            createQuickPopup(fmt::format("Convert {}", Constants::getIconLabel(type, true, false)).c_str(), fmt::to_string(message), "No", "Yes", [
+            createQuickPopup(fmt::format("Convert {}", Constants::getSingularUppercase(type)).c_str(), fmt::to_string(message), "No", "Yes", [
                 this, dir = std::move(dir)
             ](auto, bool btn2) {
                 if (!btn2) return;
@@ -313,8 +320,8 @@ bool MoreInfoPopup::setup(IconInfo* info) {
 
         operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [this, type](auto) {
             createQuickPopup(
-                fmt::format("Trash {}", Constants::getIconLabel(type, true, false)).c_str(),
-                fmt::format("Are you sure you want to <cr>trash</c> this <cg>{}</c>?", Constants::getIconLabel(type, false, false)),
+                fmt::format("Trash {}", Constants::getSingularUppercase(type)).c_str(),
+                fmt::format("Are you sure you want to <cr>trash</c> this <cg>{}</c>?", Constants::getSingularLowercase(type)),
                 "No",
                 "Yes",
                 [this](auto, bool btn2) {

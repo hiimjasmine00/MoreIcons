@@ -21,7 +21,7 @@ LoadEditorPopup* LoadEditorPopup::create(IconType type, std23::move_only_functio
 
 bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const std::filesystem::path&, std::string_view)> callback) {
     setID("LoadEditorPopup");
-    setTitle(fmt::format("Load {} Editor", Constants::getIconLabel(type, true, false)));
+    setTitle(fmt::format("Load {} Editor", Constants::getSingularUppercase(type)));
     m_title->setID("load-editor-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");

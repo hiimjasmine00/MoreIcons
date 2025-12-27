@@ -20,7 +20,7 @@ void ThreadPool::pushTask(std23::move_only_function<void()> task) {
     }
 
     m_tasks.emplace(std::move(task));
-    m_spinCount++;
+    m_condvar.notify_one();
 }
 
 void ThreadPool::threadFunc(size_t idx) {
@@ -33,30 +33,7 @@ void ThreadPool::threadFunc(size_t idx) {
             std::unique_lock lock(m_mutex);
 
             if (m_tasks.empty()) {
-                lock.unlock();
-
-                while (!m_requestedStop) {
-                    auto shouldQuit = false;
-                    auto count = m_spinCount.load();
-                    while (true) {
-                        if (count == 0) break;
-
-                        if (m_spinCount.compare_exchange_weak(count, count - 1)) {
-                            shouldQuit = true;
-                            break;
-                        }
-                    }
-
-                    if (shouldQuit) {
-                        lock.lock();
-                        break;
-                    }
-                    else {
-                        std::this_thread::sleep_for(std::chrono::milliseconds(5));
-                        continue;
-                    }
-                }
-
+                m_condvar.wait_for(lock, std::chrono::milliseconds(50), [this] { return !m_tasks.empty(); });
                 if (m_tasks.empty()) continue;
             }
 
@@ -73,7 +50,7 @@ void ThreadPool::threadFunc(size_t idx) {
         {
             std::unique_lock lock(m_mutex);
             m_tasksBusy--;
-            if (m_tasks.empty() && m_tasksBusy == 0) m_spinCount.store(0);
+            if (m_tasks.empty() && m_tasksBusy == 0) m_condvar.notify_all();
         }
     }
 }
@@ -88,11 +65,7 @@ void ThreadPool::tryAllocThread() {
 void ThreadPool::wait() {
     std::unique_lock lock(m_mutex);
 
-    while (!m_tasks.empty() || m_tasksBusy > 0) {
-        lock.unlock();
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
-        lock.lock();
-    }
+    m_condvar.wait(lock, [this] { return m_tasks.empty() && m_tasksBusy == 0; });
 }
 
 ThreadPool::~ThreadPool() {

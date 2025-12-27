@@ -9,6 +9,7 @@
 #include <IconInfo.hpp>
 
 using namespace geode::prelude;
+using namespace std::string_literals;
 
 SpecialSettingsPopup* SpecialSettingsPopup::create(IconInfo* info) {
     auto ret = new SpecialSettingsPopup();
@@ -29,7 +30,7 @@ bool SpecialSettingsPopup::setup(IconInfo* info) {
     auto type = info->getType();
 
     setID("SpecialSettingsPopup");
-    setTitle(fmt::format("{} Settings", Constants::getIconLabel(type, true, false)), "goldFont.fnt", 0.7f, 15.0f);
+    setTitle(fmt::format("{} Settings", Constants::getSingularUppercase(type)), "goldFont.fnt", 0.7f, 15.0f);
     m_title->setID("special-settings-title");
     m_mainLayer->setID("main-layer");
     m_buttonMenu->setID("button-menu");
@@ -136,7 +137,7 @@ void SpecialSettingsPopup::addControl(
     auto input = TextInput::create(60.0f, "Num");
     input->setScale(0.6f);
     input->setString(fmt::format("{:.{}f}", initial, decimals));
-    input->setFilter(min < 0.0f ? "-.0123456789" : ".0123456789");
+    input->setFilter(min < 0.0f ? "-.0123456789"s : ".0123456789"s);
     input->setMaxCharCount(fmt::to_string(max).size() + decimals + (min < 0.0f ? 2 : 1));
     input->setCallback([this, def, exponent, min, max, slider, &value](const std::string& str) {
         auto floatValue = value.as<float>().unwrapOr(def);

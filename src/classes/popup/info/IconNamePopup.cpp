@@ -33,7 +33,7 @@ bool renameFile(const std::filesystem::path& file1, const std::filesystem::path&
 
 bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
     m_iconType = info->getType();
-    auto unlockName = Constants::getIconLabel(m_iconType, true, false);
+    auto unlockName = Constants::getSingularUppercase(m_iconType);
 
     setID("IconNamePopup");
     setTitle(fmt::format("Edit {} Name", unlockName));
@@ -135,8 +135,8 @@ void IconNamePopup::onClose(CCObject* sender) {
 
     auto type = m_iconType;
     createQuickPopup(
-        fmt::format("Exit {} Name Editor", Constants::getIconLabel(type, true, false)).c_str(),
-        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} name editor</c>?", Constants::getIconLabel(type, false, false)),
+        fmt::format("Exit {} Name Editor", Constants::getSingularUppercase(type)).c_str(),
+        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} name editor</c>?", Constants::getSingularLowercase(type)),
         "No",
         "Yes",
         [this, sender](auto, bool btn2) {

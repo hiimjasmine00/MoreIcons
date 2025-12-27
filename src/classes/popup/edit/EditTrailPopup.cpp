@@ -6,6 +6,7 @@
 #include "../../../utils/Defaults.hpp"
 #include "../../../utils/Filesystem.hpp"
 #include "../../../utils/Get.hpp"
+#include "../../../utils/Icons.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
@@ -144,7 +145,7 @@ void EditTrailPopup::saveTrail(std::filesystem::path&& path) {
             name, name, std::move(path), std::move(jsonPath), {},
             {}, "More Icons", 0, Defaults::getTrailInfo(0), false, false
         );
-        if (MoreIcons::preloadIcons) MoreIcons::createAndAddFrames(icon);
+        if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }
 
     m_parentPopup->close();

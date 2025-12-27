@@ -250,7 +250,7 @@ namespace more_icons {
 
     /// Returns a map of all custom icons.
     /// @returns A map of all custom icons.
-    MI_DLL std::map<IconType, std::vector<IconInfo>>& getAllIcons() MI_EXP_REF(&getAllIcons, ());
+    MI_DLL const std::map<IconType, std::vector<IconInfo>>& getAllIcons() MI_EXP_REF(&getAllIcons, ());
 
     /// Returns a pointer to a vector of all icons for a specific type.
     /// @param type The type of icon to get all icons for.
