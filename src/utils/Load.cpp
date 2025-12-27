@@ -11,54 +11,55 @@
 
 using namespace geode::prelude;
 using namespace jasmine::mod;
+using namespace std::string_view_literals;
 
 std::string Load::getFrameName(std::string_view frameName, std::string_view name, IconType type) {
     if (type == IconType::DeathEffect) {
         return fmt::format("{}{}"_spr, name, frameName.substr(std::max<ptrdiff_t>(frameName.size() - 8, 0)));
     }
 
-    if (!frameName.ends_with("_001.png")) return std::string(frameName);
+    if (!frameName.ends_with("_001.png"sv)) return std::string(frameName);
 
     std::string_view suffix;
     auto isRobot = type == IconType::Robot || type == IconType::Spider;
     auto end = frameName.substr(0, frameName.size() - 8);
 
-    if (end.ends_with("_2")) {
+    if (end.ends_with("_2"sv)) {
         if (isRobot) {
             end.remove_suffix(2);
-            if (end.ends_with("_01")) suffix = "_01_2_001.png";
-            else if (end.ends_with("_02")) suffix = "_02_2_001.png";
-            else if (end.ends_with("_03")) suffix = "_03_2_001.png";
-            else if (end.ends_with("_04")) suffix = "_04_2_001.png";
+            if (end.ends_with("_01"sv)) suffix = "_01_2_001.png";
+            else if (end.ends_with("_02"sv)) suffix = "_02_2_001.png";
+            else if (end.ends_with("_03"sv)) suffix = "_03_2_001.png";
+            else if (end.ends_with("_04"sv)) suffix = "_04_2_001.png";
         }
         else suffix = "_2_001.png";
     }
-    else if (type == IconType::Ufo && end.ends_with("_3")) {
+    else if (type == IconType::Ufo && end.ends_with("_3"sv)) {
         suffix = "_3_001.png";
     }
-    else if (end.ends_with("_extra")) {
+    else if (end.ends_with("_extra"sv)) {
         if (isRobot) {
             end.remove_suffix(6);
-            if (end.ends_with("_01")) suffix = "_01_extra_001.png";
+            if (end.ends_with("_01"sv)) suffix = "_01_extra_001.png";
         }
         else suffix = "_extra_001.png";
     }
-    else if (end.ends_with("_glow")) {
+    else if (end.ends_with("_glow"sv)) {
         if (isRobot) {
             end.remove_suffix(5);
-            if (end.ends_with("_01")) suffix = "_01_glow_001.png";
-            else if (end.ends_with("_02")) suffix = "_02_glow_001.png";
-            else if (end.ends_with("_03")) suffix = "_03_glow_001.png";
-            else if (end.ends_with("_04")) suffix = "_04_glow_001.png";
+            if (end.ends_with("_01"sv)) suffix = "_01_glow_001.png";
+            else if (end.ends_with("_02"sv)) suffix = "_02_glow_001.png";
+            else if (end.ends_with("_03"sv)) suffix = "_03_glow_001.png";
+            else if (end.ends_with("_04"sv)) suffix = "_04_glow_001.png";
         }
         else suffix = "_glow_001.png";
     }
     else {
         if (isRobot) {
-            if (end.ends_with("_01")) suffix = "_01_001.png";
-            else if (end.ends_with("_02")) suffix = "_02_001.png";
-            else if (end.ends_with("_03")) suffix = "_03_001.png";
-            else if (end.ends_with("_04")) suffix = "_04_001.png";
+            if (end.ends_with("_01"sv)) suffix = "_01_001.png";
+            else if (end.ends_with("_02"sv)) suffix = "_02_001.png";
+            else if (end.ends_with("_03"sv)) suffix = "_03_001.png";
+            else if (end.ends_with("_04"sv)) suffix = "_04_001.png";
         }
         else suffix = "_001.png";
     }
@@ -79,7 +80,7 @@ struct ApkFile {
     std::unordered_map<std::string, ApkEntry> fileList;
 };
 
-thread_local ApkFile* apkFile = [] -> ApkFile* {
+thread_local ApkFile* apkFile = [] {
     ApkFile* apkFile = new ApkFile();
 
     auto apkPath = getApkPath();
@@ -92,13 +93,12 @@ thread_local ApkFile* apkFile = [] -> ApkFile* {
     apkFile->zipFile = zipFile;
 
     unz_file_info64 fileInfo;
-    std::string filename;
-    filename.reserve(256);
+    char filename[257];
 
     auto& fileList = apkFile->fileList;
-    auto res = unzGoToFirstFile64(zipFile, &fileInfo, filename.data(), 256);
-    for (; res == 0; res = unzGoToNextFile64(zipFile, &fileInfo, filename.data(), 256)) {
-        if (!filename.starts_with("assets/")) continue;
+    auto res = unzGoToFirstFile64(zipFile, &fileInfo, filename, 256);
+    for (; res == 0; res = unzGoToNextFile64(zipFile, &fileInfo, filename, 256)) {
+        if (memcmp(filename, "assets/", 7) != 0) continue;
         ApkEntry entryInfo;
         if (unzGetFilePos(zipFile, &entryInfo.pos) != 0) continue;
         entryInfo.size = fileInfo.uncompressed_size;
@@ -106,7 +106,7 @@ thread_local ApkFile* apkFile = [] -> ApkFile* {
     }
 
     if (res != 0) {
-        if (filename.empty()) log::error("Failed to iterate over APK file entries");
+        if (filename[0] == '\0') log::error("Failed to iterate over APK file entries");
         else log::error("APK file iteration prematurely aborted after {}", filename);
     }
 
@@ -117,7 +117,7 @@ thread_local ApkFile* apkFile = [] -> ApkFile* {
 Result<std::vector<uint8_t>> Load::readBinary(const std::filesystem::path& path) {
     #ifdef GEODE_IS_ANDROID
     auto& str = path.native();
-    if (str.starts_with("assets/")) {
+    if (str.starts_with("assets/"sv)) {
         auto& fileList = apkFile->fileList;
         if (auto it = fileList.find(str); it != fileList.end()) {
             auto& entryInfo = it->second;
@@ -141,7 +141,7 @@ Result<std::vector<uint8_t>> Load::readBinary(const std::filesystem::path& path)
 bool Load::doesExist(const std::filesystem::path& path) {
     #ifdef GEODE_IS_ANDROID
     auto& str = path.native();
-    if (str.starts_with("assets/")) return apkFile->fileList.contains(str);
+    if (str.starts_with("assets/"sv)) return apkFile->fileList.contains(str);
     #endif
     std::error_code code;
     return std::filesystem::exists(path, code);

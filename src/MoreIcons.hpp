@@ -4,9 +4,9 @@
 #include <IconInfo.hpp>
 
 #ifdef GEODE_IS_WINDOWS
-#define CONFIG_PATH L"config\\" GEODE_CONCAT(L, GEODE_MOD_ID)
+#define CONFIG_PATH std::wstring_view(L"config\\" GEODE_CONCAT(L, GEODE_MOD_ID), sizeof(GEODE_MOD_ID) + 6)
 #else
-#define CONFIG_PATH "config/" GEODE_MOD_ID
+#define CONFIG_PATH std::string_view("config/" GEODE_MOD_ID, sizeof(GEODE_MOD_ID) + 6)
 #endif
 
 class MoreIcons {

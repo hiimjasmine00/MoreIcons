@@ -197,7 +197,7 @@ Result<> checkPath(const std::filesystem::path& path) {
 
 #ifdef GEODE_IS_MOBILE
 std::filesystem::path MoreIcons::getUhdResourcesDir() {
-    return dirs::getModConfigDir() / "weebify.high-graphics-android" / GEODE_GD_VERSION_STRING;
+    return dirs::getModConfigDir() / L("weebify.high-graphics-android") / L(GEODE_GD_VERSION_STRING);
 }
 
 std::filesystem::path vanillaTexturePath(std::string_view path, bool skipSuffix) {
@@ -374,7 +374,6 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
     if (factor >= 4.0f && Filesystem::doesExist(iconUhdPng)) iconPath = std::move(iconUhdPng);
     else if (factor >= 2.0f && Filesystem::doesExist(iconHdPng)) iconPath = std::move(iconHdPng);
     else if (Filesystem::doesExist(iconPng)) iconPath = std::move(iconPng);
-    else iconPath.clear();
 
     auto trailInfo = file::readJson(jsonPath).unwrapOr(Defaults::getTrailInfo(0));
     auto icon = more_icons::addTrail(
@@ -454,7 +453,6 @@ void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
     if (factor >= 4.0f && Filesystem::doesExist(iconUhdPng)) iconPath = std::move(iconUhdPng);
     else if (factor >= 2.0f && Filesystem::doesExist(iconHdPng)) iconPath = std::move(iconHdPng);
     else if (Filesystem::doesExist(iconPng)) iconPath = std::move(iconPng);
-    else iconPath.clear();
 
     auto deathInfo = file::readJson(jsonPath).unwrapOr(Defaults::getDeathEffectInfo(0));
     auto icon = more_icons::addDeathEffect(
@@ -547,7 +545,6 @@ void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
     if (factor >= 4.0f && Filesystem::doesExist(iconUhdPng)) iconPath = std::move(iconUhdPng);
     else if (factor >= 2.0f && Filesystem::doesExist(iconHdPng)) iconPath = std::move(iconHdPng);
     else if (Filesystem::doesExist(iconPng)) iconPath = std::move(iconPng);
-    else iconPath.clear();
 
     auto fireInfo = file::readJson(jsonPath).unwrapOr(Defaults::getShipFireInfo(0));
     auto icon = more_icons::addShipFire(

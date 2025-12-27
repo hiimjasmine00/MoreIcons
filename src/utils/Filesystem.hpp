@@ -8,11 +8,11 @@
 #include <std23/function_ref.h>
 
 #ifdef GEODE_IS_WINDOWS
-#define L(x) L##x
+#define L(x) std::wstring_view(L##x, sizeof(x) - 1)
 #define MI_FILESYSTEM_BEGIN namespace std {
 #define MI_FILESYSTEM_END }
 #else
-#define L(x) x
+#define L(x) std::string_view(x, sizeof(x) - 1)
 #define MI_FILESYSTEM_BEGIN namespace std { inline namespace _LIBCPP_ABI_NAMESPACE { inline namespace __fs {
 #define MI_FILESYSTEM_END } } }
 #endif
@@ -21,19 +21,11 @@ MI_FILESYSTEM_BEGIN
 namespace filesystem {
     path operator/(const path& lhs, basic_string_view<path::value_type> rhs);
 
-    inline path operator/(const path& lhs, const path::value_type* rhs) {
-        return lhs / basic_string_view<path::value_type>(rhs);
-    }
-
     inline path operator/(const path& lhs, const path::string_type& rhs) {
         return lhs / basic_string_view<path::value_type>(rhs.data(), rhs.size());
     }
 
     path operator/(path&& lhs, basic_string_view<path::value_type> rhs);
-
-    inline path operator/(path&& lhs, const path::value_type* rhs) {
-        return std::move(lhs) / basic_string_view<path::value_type>(rhs);
-    }
 
     inline path operator/(path&& lhs, const path::string_type& rhs) {
         return std::move(lhs) / basic_string_view<path::value_type>(rhs.data(), rhs.size());
