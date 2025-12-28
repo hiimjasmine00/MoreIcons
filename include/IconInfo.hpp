@@ -46,6 +46,12 @@ private:
 
     IconInfo(std::shared_ptr<IconInfoImpl> impl) : m_impl(std::move(impl)) {}
 public:
+    IconInfo() = delete;
+    IconInfo(const IconInfo&) = default;
+    IconInfo& operator=(const IconInfo&) = default;
+    IconInfo(IconInfo&&) = default;
+    IconInfo& operator=(IconInfo&&) = default;
+
     const std::string& getName() const MI_EXPORT_REF(&IconInfo::getName, (this));
     const std::string& getShortName() const MI_EXPORT_REF(&IconInfo::getShortName, (this));
     const std::filesystem::path& getTexture() const MI_EXPORT_REF(&IconInfo::getTexture, (this));
