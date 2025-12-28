@@ -27,9 +27,9 @@
 using namespace geode::prelude;
 using namespace jasmine::mod;
 
-EditIconPopup* EditIconPopup::create(MoreIconsPopup* popup, IconType type) {
+EditIconPopup* EditIconPopup::create(BasePopup* popup, IconType type) {
     auto ret = new EditIconPopup();
-    if (ret->initAnchored(450.0f, 280.0f, popup, type, "geode.loader/GE_square03.png")) {
+    if (ret->init(popup, type)) {
         ret->autorelease();
         return ret;
     }
@@ -56,14 +56,12 @@ gd::string getKey(std::string_view suffix) {
     return gd::string(suffix.data(), suffix.size());
 }
 
-bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
+bool EditIconPopup::init(BasePopup* popup, IconType type) {
+    if (!BasePopup::init(450.0f, 280.0f, "geode.loader/GE_square03.png")) return false;
+
     setID("EditIconPopup");
     setTitle(fmt::format("{} Editor", Constants::getSingularUppercase(type)));
     m_title->setID("edit-icon-title");
-    m_mainLayer->setID("main-layer");
-    m_buttonMenu->setID("button-menu");
-    m_bgSprite->setID("background");
-    m_closeBtn->setID("close-button");
 
     m_parentPopup = popup;
     m_pages = CCArray::create();
@@ -447,7 +445,7 @@ bool EditIconPopup::setup(MoreIconsPopup* popup, IconType type) {
     iconButtonMenu->addChild(presetButton);
 
     auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f), [this](auto) {
-        SaveIconPopup::create(this, m_iconType, m_state.definitions, m_frames)->show();
+        SaveIconPopup::create(m_parentPopup, this, m_iconType, m_state.definitions, m_frames)->show();
     });
     saveButton->setID("save-button");
     iconButtonMenu->addChild(saveButton);
@@ -833,9 +831,4 @@ void EditIconPopup::onClose(CCObject* sender) {
             if (btn2) Popup::onClose(m_closeBtn);
         }
     );
-}
-
-void EditIconPopup::close() {
-    m_parentPopup->close();
-    Popup::onClose(nullptr);
 }

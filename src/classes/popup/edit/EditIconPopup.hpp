@@ -1,14 +1,12 @@
 #include "IconEditorState.hpp"
+#include "../BasePopup.hpp"
 #include <Geode/binding/SimplePlayer.hpp>
-#include <Geode/ui/Popup.hpp>
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/Task.hpp>
 
-class MoreIconsPopup;
-
-class EditIconPopup : public geode::Popup<MoreIconsPopup*, IconType> {
+class EditIconPopup : public BasePopup {
 protected:
-    MoreIconsPopup* m_parentPopup;
+    BasePopup* m_parentPopup;
     geode::EventListener<geode::Task<geode::Result<std::filesystem::path>>> m_listener;
     std::filesystem::path m_selectedPNG;
     std::filesystem::path m_selectedPlist;
@@ -37,7 +35,7 @@ protected:
     float m_scaleY = 1.0f;
     bool m_hasChanged = false;
 
-    bool setup(MoreIconsPopup* popup, IconType type) override;
+    bool init(BasePopup* popup, IconType type);
     void createControls(
         const cocos2d::CCPoint& pos, const char* text, std::string_view id, float& value, float min, float max, float def, bool decimals
     );
@@ -52,7 +50,5 @@ protected:
     void updateTargets();
     void onClose(cocos2d::CCObject* sender) override;
 public:
-    static EditIconPopup* create(MoreIconsPopup* popup, IconType type);
-
-    void close();
+    static EditIconPopup* create(BasePopup* popup, IconType type);
 };

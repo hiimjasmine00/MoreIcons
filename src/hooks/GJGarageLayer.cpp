@@ -239,8 +239,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto icons = more_icons::getIcons(type);
         if (!icons) return;
 
-        auto gameManager = Get::GameManager();
-        auto customPage = page - (gameManager->countForType(type) + 35) / 36;
+        auto customPage = page - (Get::GameManager()->countForType(type) + 35) / 36;
         if (customPage < 0) return;
 
         std::vector<IconInfo*> infoView;
@@ -282,7 +281,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         std::span<IconInfo*> infoPage(infoView.data() + index, std::min<size_t>(36, size - index));
 
         if (type <= IconType::Jetpack) {
-            auto unlockType = gameManager->iconTypeToUnlockType(type);
+            auto unlockType = Constants::getUnlockType(type);
             auto hasAnimProf = Loader::get()->isModLoaded("thesillydoggo.animatedprofiles");
             for (size_t i = 0; i < infoPage.size(); i++) {
                 auto& name = infoPage[i]->getName();

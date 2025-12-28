@@ -14,11 +14,7 @@ using namespace std::string_literals;
 SpecialSettingsPopup* SpecialSettingsPopup::create(IconInfo* info) {
     auto ret = new SpecialSettingsPopup();
     auto type = info->getType();
-    if (ret->initAnchored(
-        type == IconType::DeathEffect ? 500.0f : 400.0f,
-        type == IconType::DeathEffect ? 280.0f : type == IconType::ShipFire ? 200.0f : 150.0f,
-        info
-    )) {
+    if (ret->init(info)) {
         ret->autorelease();
         return ret;
     }
@@ -26,16 +22,15 @@ SpecialSettingsPopup* SpecialSettingsPopup::create(IconInfo* info) {
     return nullptr;
 }
 
-bool SpecialSettingsPopup::setup(IconInfo* info) {
+bool SpecialSettingsPopup::init(IconInfo* info) {
     auto type = info->getType();
+    if (!BasePopup::init(
+        type == IconType::DeathEffect ? 500.0f : 400.0f, type == IconType::DeathEffect ? 280.0f : type == IconType::ShipFire ? 200.0f : 150.0f
+    )) return false;
 
     setID("SpecialSettingsPopup");
     setTitle(fmt::format("{} Settings", Constants::getSingularUppercase(type)), "goldFont.fnt", 0.7f, 15.0f);
     m_title->setID("special-settings-title");
-    m_mainLayer->setID("main-layer");
-    m_buttonMenu->setID("button-menu");
-    m_bgSprite->setID("background");
-    m_closeBtn->setID("close-button");
 
     m_settings = info->getSpecialInfo();
 

@@ -4,12 +4,10 @@
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Filesystem.hpp"
-#include "../../../utils/Get.hpp"
 #include "../../../utils/Icons.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
-#include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJItemIcon.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/binding/TextArea.hpp>
@@ -20,7 +18,7 @@ using namespace geode::prelude;
 
 MoreInfoPopup* MoreInfoPopup::create(IconInfo* info) {
     auto ret = new MoreInfoPopup();
-    if (ret->initAnchored(300.0f, 230.0f, info)) {
+    if (ret->init(info)) {
         ret->autorelease();
         return ret;
     }
@@ -188,14 +186,12 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
     MoreIcons::updateGarage();
 }
 
-bool MoreInfoPopup::setup(IconInfo* info) {
+bool MoreInfoPopup::init(IconInfo* info) {
+    if (!BasePopup::init(300.0f, 230.0f)) return false;
+
     setID("MoreInfoPopup");
     setTitle(info->getShortName(), "goldFont.fnt", 0.8f, 16.0f);
     m_title->setID("more-info-title");
-    m_mainLayer->setID("main-layer");
-    m_buttonMenu->setID("button-menu");
-    m_bgSprite->setID("background");
-    m_closeBtn->setID("close-button");
     m_closeBtn->setVisible(false);
 
     m_info = info;
@@ -233,7 +229,7 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     }
 
     if (type <= IconType::Jetpack) {
-        auto itemIcon = GJItemIcon::createBrowserItem(Get::GameManager()->iconTypeToUnlockType(type), 1);
+        auto itemIcon = GJItemIcon::createBrowserItem(Constants::getUnlockType(type), 1);
         itemIcon->setScale(hasPack ? 1.1f : 1.25f);
 
         auto player = static_cast<SimplePlayer*>(itemIcon->m_player);
@@ -350,8 +346,4 @@ bool MoreInfoPopup::setup(IconInfo* info) {
     handleTouchPriority(this);
 
     return true;
-}
-
-void MoreInfoPopup::close() {
-    onClose(nullptr);
 }

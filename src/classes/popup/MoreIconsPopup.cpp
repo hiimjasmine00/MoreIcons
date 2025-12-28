@@ -18,7 +18,7 @@ using namespace geode::prelude;
 
 MoreIconsPopup* MoreIconsPopup::create() {
     auto ret = new MoreIconsPopup();
-    if (ret->initAnchored(460.0f, 290.0f, "geode.loader/GE_square02.png")) {
+    if (ret->init()) {
         ret->autorelease();
         return ret;
     }
@@ -26,16 +26,14 @@ MoreIconsPopup* MoreIconsPopup::create() {
     return nullptr;
 }
 
-bool MoreIconsPopup::setup() {
+bool MoreIconsPopup::init() {
+    if (!BasePopup::init(460.0f, 290.0f, "geode.loader/GE_square02.png")) return false;
+
     auto& metadata = Mod::get()->getMetadataRef();
 
     setID("MoreIconsPopup");
     setTitle(fmt::format("{} {}", metadata.getName(), metadata.getVersion().toNonVString()), "goldFont.fnt", 0.7f, 17.0f);
     m_title->setID("more-icons-title");
-    m_mainLayer->setID("main-layer");
-    m_buttonMenu->setID("button-menu");
-    m_bgSprite->setID("background");
-    m_closeBtn->setID("close-button");
 
     auto gamemodesNode = CCNode::create();
     gamemodesNode->setPosition({ 230.0f, 135.0f });
@@ -200,8 +198,4 @@ void MoreIconsPopup::createMenu(cocos2d::CCNode* gamemodesNode, IconType type) {
     gamemodeMenu->addChild(folderButton);
 
     gamemodesNode->addChild(gamemodeMenu);
-}
-
-void MoreIconsPopup::close() {
-    onClose(nullptr);
 }

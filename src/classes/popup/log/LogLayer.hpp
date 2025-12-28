@@ -1,8 +1,8 @@
-#include <Geode/ui/Popup.hpp>
+#include "../BasePopup.hpp"
 
-class LogLayer : public geode::Popup<IconType> {
+class LogLayer : public BasePopup {
 protected:
-    bool setup(IconType type) override;
+    bool init(IconType type);
 public:
     static LogLayer* create(IconType type);
 };

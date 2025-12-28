@@ -9,7 +9,7 @@ using namespace geode::prelude;
 
 LogLayer* LogLayer::create(IconType type) {
     auto ret = new LogLayer();
-    if (ret->initAnchored(440.0f, 290.0f, type, "geode.loader/GE_square03.png")) {
+    if (ret->init(type)) {
         ret->autorelease();
         return ret;
     }
@@ -17,14 +17,12 @@ LogLayer* LogLayer::create(IconType type) {
     return nullptr;
 }
 
-bool LogLayer::setup(IconType type) {
+bool LogLayer::init(IconType type) {
+    if (!BasePopup::init(440.0f, 290.0f, "geode.loader/GE_square03.png")) return false;
+
     setID("LogLayer");
     setTitle(fmt::format("{} Logs", Constants::getSingularUppercase(type)));
     m_title->setID("more-icons-title");
-    m_mainLayer->setID("main-layer");
-    m_buttonMenu->setID("button-menu");
-    m_bgSprite->setID("background");
-    m_closeBtn->setID("close-button");
 
     auto scrollBackground = CCLayerColor::create({ 0, 0, 0, 105 }, 400.0f, 230.0f);
     scrollBackground->setPosition({ 215.0f, 135.0f });

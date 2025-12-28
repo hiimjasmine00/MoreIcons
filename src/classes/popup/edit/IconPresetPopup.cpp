@@ -12,7 +12,7 @@ using namespace geode::prelude;
 
 IconPresetPopup* IconPresetPopup::create(IconType type, std::string_view suffix, std23::move_only_function<void(int, IconInfo*)> callback) {
     auto ret = new IconPresetPopup();
-    if (ret->initAnchored(440.0f, 290.0f, type, suffix, std::move(callback), "geode.loader/GE_square03.png")) {
+    if (ret->init(type, suffix, std::move(callback))) {
         ret->autorelease();
         return ret;
     }
@@ -20,14 +20,12 @@ IconPresetPopup* IconPresetPopup::create(IconType type, std::string_view suffix,
     return nullptr;
 }
 
-bool IconPresetPopup::setup(IconType type, std::string_view suffix, std23::move_only_function<void(int, IconInfo*)> callback) {
+bool IconPresetPopup::init(IconType type, std::string_view suffix, std23::move_only_function<void(int, IconInfo*)> callback) {
+    if (!BasePopup::init(440.0f, 290.0f, "geode.loader/GE_square03.png")) return false;
+
     setID("IconPresetPopup");
     setTitle(fmt::format("{} Presets", Constants::getSingularUppercase(type)));
     m_title->setID("icon-preset-title");
-    m_mainLayer->setID("main-layer");
-    m_buttonMenu->setID("button-menu");
-    m_bgSprite->setID("background");
-    m_closeBtn->setID("close-button");
 
     m_callback = std::move(callback);
 
@@ -42,8 +40,7 @@ bool IconPresetPopup::setup(IconType type, std::string_view suffix, std23::move_
     auto contentLayer = scrollLayer->m_contentLayer;
     scrollLayer->setPosition({ 215.0f, 135.0f });
     scrollLayer->ignoreAnchorPointForPosition(false);
-    contentLayer->setLayout(
-        RowLayout::create()->setGap(roundf(7.5f / GJItemIcon::scaleForType(gameManager->iconTypeToUnlockType(type))))->setGrowCrossAxis(true));
+    contentLayer->setLayout(RowLayout::create()->setGap(Constants::getIconGap(type))->setGrowCrossAxis(true));
     scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(scrollLayer);
 

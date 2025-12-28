@@ -120,3 +120,45 @@ std::string_view Constants::getFolderName(IconType type) {
     }
 }
 #endif
+
+float Constants::getIconGap(IconType type) {
+    switch (type) {
+        case IconType::Cube:
+        case IconType::Wave:
+        case IconType::DeathEffect:
+        case IconType::Special:
+        case IconType::ShipFire:
+            return 9.0f;
+        case IconType::Ship:
+        case IconType::Jetpack:
+            return 13.0f;
+        case IconType::Ball:
+            return 10.0f;
+        case IconType::Ufo:
+        case IconType::Swing:
+            return 11.0f;
+        case IconType::Robot:
+        case IconType::Spider:
+            return 12.0f;
+        default:
+            return 8.0f;
+    }
+}
+
+UnlockType Constants::getUnlockType(IconType type) {
+    switch (type) {
+        case IconType::Cube: return UnlockType::Cube;
+        case IconType::Ship: return UnlockType::Ship;
+        case IconType::Ball: return UnlockType::Ball;
+        case IconType::Ufo: return UnlockType::Bird;
+        case IconType::Wave: return UnlockType::Dart;
+        case IconType::Robot: return UnlockType::Robot;
+        case IconType::Spider: return UnlockType::Spider;
+        case IconType::Swing: return UnlockType::Swing;
+        case IconType::Jetpack: return UnlockType::Jetpack;
+        case IconType::DeathEffect: return UnlockType::Death;
+        case IconType::Special: return UnlockType::Streak;
+        case IconType::ShipFire: return UnlockType::ShipFire;
+        default: return (UnlockType)0;
+    }
+}

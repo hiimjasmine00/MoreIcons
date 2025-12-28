@@ -1,5 +1,4 @@
 #include "SaveIconPopup.hpp"
-#include "EditIconPopup.hpp"
 #include "ImageRenderer.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
@@ -13,9 +12,9 @@
 
 using namespace geode::prelude;
 
-SaveIconPopup* SaveIconPopup::create(EditIconPopup* popup, IconType type, const matjson::Value& definitions, CCDictionary* frames) {
+SaveIconPopup* SaveIconPopup::create(BasePopup* popup1, BasePopup* popup2, IconType type, const matjson::Value& definitions, CCDictionary* frames) {
     auto ret = new SaveIconPopup();
-    if (ret->initAnchored(350.0f, 130.0f, popup, type, definitions, frames, "geode.loader/GE_square03.png")) {
+    if (ret->init(popup1, popup2, type, definitions, frames)) {
         ret->autorelease();
         return ret;
     }
@@ -23,16 +22,15 @@ SaveIconPopup* SaveIconPopup::create(EditIconPopup* popup, IconType type, const 
     return nullptr;
 }
 
-bool SaveIconPopup::setup(EditIconPopup* popup, IconType type, const matjson::Value& definitions, CCDictionary* frames) {
+bool SaveIconPopup::init(BasePopup* popup1, BasePopup* popup2, IconType type, const matjson::Value& definitions, CCDictionary* frames) {
+    if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png")) return false;
+
     setID("SaveIconPopup");
     setTitle(fmt::format("Save {}", Constants::getSingularUppercase(type)));
     m_title->setID("save-icon-title");
-    m_mainLayer->setID("main-layer");
-    m_buttonMenu->setID("button-menu");
-    m_bgSprite->setID("background");
-    m_closeBtn->setID("close-button");
 
-    m_parentPopup = popup;
+    m_parentPopup1 = popup1;
+    m_parentPopup2 = popup2;
     m_iconType = type;
     m_definitions = definitions;
     m_frames = frames;
@@ -176,7 +174,8 @@ void SaveIconPopup::saveIcon(Filesystem::PathView stem) {
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }
 
-    m_parentPopup->close();
+    m_parentPopup1->close();
+    m_parentPopup2->close();
     Popup::onClose(nullptr);
 
     Notify::success("{} saved!", name);

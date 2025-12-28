@@ -1,20 +1,21 @@
-#include <Geode/ui/Popup.hpp>
+#include "../BasePopup.hpp"
 #include <Geode/ui/TextInput.hpp>
 
-class EditIconPopup;
-
-class SaveIconPopup : public geode::Popup<EditIconPopup*, IconType, const matjson::Value&, cocos2d::CCDictionary*> {
+class SaveIconPopup : public BasePopup {
 protected:
-    EditIconPopup* m_parentPopup;
+    BasePopup* m_parentPopup1;
+    BasePopup* m_parentPopup2;
     IconType m_iconType;
     matjson::Value m_definitions;
     cocos2d::CCDictionary* m_frames;
     geode::TextInput* m_nameInput;
 
-    bool setup(EditIconPopup* popup, IconType type, const matjson::Value& definitions, cocos2d::CCDictionary* frames) override;
+    bool init(BasePopup* popup1, BasePopup* popup2, IconType type, const matjson::Value& definitions, cocos2d::CCDictionary* frames);
     void onClose(cocos2d::CCObject* sender) override;
     bool checkFrame(std::string_view suffix);
     void saveIcon(std::basic_string_view<std::filesystem::path::value_type> stem);
 public:
-    static SaveIconPopup* create(EditIconPopup* popup, IconType type, const matjson::Value& definitions, cocos2d::CCDictionary* frames);
+    static SaveIconPopup* create(
+        BasePopup* popup1, BasePopup* popup2, IconType type, const matjson::Value& definitions, cocos2d::CCDictionary* frames
+    );
 };

@@ -13,7 +13,7 @@ using namespace geode::prelude;
 
 IconViewPopup* IconViewPopup::create(IconType type, bool custom) {
     auto ret = new IconViewPopup();
-    if (ret->initAnchored(440.0f, 290.0f, type, custom, "geode.loader/GE_square03.png")) {
+    if (ret->init(type, custom)) {
         ret->autorelease();
         return ret;
     }
@@ -21,15 +21,13 @@ IconViewPopup* IconViewPopup::create(IconType type, bool custom) {
     return nullptr;
 }
 
-bool IconViewPopup::setup(IconType type, bool custom) {
+bool IconViewPopup::init(IconType type, bool custom) {
+    if (!BasePopup::init(440.0f, 290.0f, "geode.loader/GE_square03.png")) return false;
+
     setID("IconViewPopup");
     auto name = Constants::getPluralUppercase(type);
     setTitle(custom ? fmt::format("Custom {}", name) : fmt::format("Vanilla {}", name));
     m_title->setID("icon-view-title");
-    m_mainLayer->setID("main-layer");
-    m_buttonMenu->setID("button-menu");
-    m_bgSprite->setID("background");
-    m_closeBtn->setID("close-button");
 
     auto scrollBackground = CCLayerColor::create({ 0, 0, 0, 105 }, 400.0f, 240.0f);
     scrollBackground->setPosition({ 215.0f, 135.0f });
@@ -42,8 +40,7 @@ bool IconViewPopup::setup(IconType type, bool custom) {
     auto contentLayer = scrollLayer->m_contentLayer;
     scrollLayer->setPosition({ 215.0f, 135.0f });
     scrollLayer->ignoreAnchorPointForPosition(false);
-    contentLayer->setLayout(
-        RowLayout::create()->setGap(roundf(7.5f / GJItemIcon::scaleForType(gameManager->iconTypeToUnlockType(type))))->setGrowCrossAxis(true));
+    contentLayer->setLayout(RowLayout::create()->setGap(Constants::getIconGap(type))->setGrowCrossAxis(true));
     scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(scrollLayer);
 

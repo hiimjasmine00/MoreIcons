@@ -1,7 +1,6 @@
 #include "EditTrailPopup.hpp"
 #include "IconPresetPopup.hpp"
 #include "ImageRenderer.hpp"
-#include "../MoreIconsPopup.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Defaults.hpp"
 #include "../../../utils/Filesystem.hpp"
@@ -14,9 +13,9 @@
 
 using namespace geode::prelude;
 
-EditTrailPopup* EditTrailPopup::create(MoreIconsPopup* popup) {
+EditTrailPopup* EditTrailPopup::create(BasePopup* popup) {
     auto ret = new EditTrailPopup();
-    if (ret->initAnchored(350.0f, 180.0f, popup, "geode.loader/GE_square03.png")) {
+    if (ret->init(popup)) {
         ret->autorelease();
         return ret;
     }
@@ -24,14 +23,12 @@ EditTrailPopup* EditTrailPopup::create(MoreIconsPopup* popup) {
     return nullptr;
 }
 
-bool EditTrailPopup::setup(MoreIconsPopup* popup) {
+bool EditTrailPopup::init(BasePopup* popup) {
+    if (!BasePopup::init(350.0f, 180.0f, "geode.loader/GE_square03.png")) return false;
+
     setID("EditTrailPopup");
     setTitle("Trail Editor");
     m_title->setID("edit-trail-title");
-    m_mainLayer->setID("main-layer");
-    m_buttonMenu->setID("button-menu");
-    m_bgSprite->setID("background");
-    m_closeBtn->setID("close-button");
 
     m_parentPopup = popup;
 

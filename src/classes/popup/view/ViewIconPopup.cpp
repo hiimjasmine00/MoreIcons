@@ -12,14 +12,7 @@ using namespace geode::prelude;
 
 ViewIconPopup* ViewIconPopup::create(IconType type, int id, IconInfo* info) {
     auto ret = new ViewIconPopup();
-    if (ret->initAnchored(
-        350.0f,
-        120.0f + (type <= IconType::Jetpack ? 50.0f : 0.0f) + (type == IconType::Robot || type == IconType::Spider ? 30.0f : 0.0f),
-        type,
-        id,
-        info,
-        "geode.loader/GE_square03.png"
-    )) {
+    if (ret->init(type, id, info)) {
         ret->autorelease();
         return ret;
     }
@@ -27,14 +20,15 @@ ViewIconPopup* ViewIconPopup::create(IconType type, int id, IconInfo* info) {
     return nullptr;
 }
 
-bool ViewIconPopup::setup(IconType type, int id, IconInfo* info) {
+bool ViewIconPopup::init(IconType type, int id, IconInfo* info) {
+    if (!BasePopup::init(
+        350.0f, type == IconType::Robot || type == IconType::Spider ? 200.0f : type <= IconType::Jetpack ? 170.0f : 120.0f,
+        "geode.loader/GE_square03.png"
+    )) return false;
+
     setID("ViewIconPopup");
     setTitle(info ? info->getShortName() : fmt::format("{} {}", Constants::getSingularUppercase(type), id));
     m_title->setID("view-icon-title");
-    m_mainLayer->setID("main-layer");
-    m_buttonMenu->setID("button-menu");
-    m_bgSprite->setID("background");
-    m_closeBtn->setID("close-button");
 
     if (info && info->inTexturePack()) {
         auto subTitle = CCLabelBMFont::create(info->getPackName().c_str(), "goldFont.fnt");

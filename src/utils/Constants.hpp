@@ -12,4 +12,6 @@ namespace Constants {
     #else
     std::string_view getFolderName(IconType type);
     #endif
+    float getIconGap(IconType type);
+    UnlockType getUnlockType(IconType type);
 };

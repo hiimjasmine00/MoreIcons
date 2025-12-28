@@ -1,8 +1,8 @@
-#include <Geode/ui/Popup.hpp>
+#include "../BasePopup.hpp"
 
-class IconViewPopup : public geode::Popup<IconType, bool> {
+class IconViewPopup : public BasePopup {
 protected:
-    bool setup(IconType type, bool custom) override;
+    bool init(IconType type, bool custom);
 public:
     static IconViewPopup* create(IconType type, bool custom);
 };

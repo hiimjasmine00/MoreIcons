@@ -11,7 +11,7 @@ using namespace geode::prelude;
 
 LoadEditorPopup* LoadEditorPopup::create(IconType type, std23::move_only_function<void(const std::filesystem::path&, std::string_view)> callback) {
     auto ret = new LoadEditorPopup();
-    if (ret->initAnchored(230.0f, 250.0f, type, std::move(callback), "geode.loader/GE_square03.png")) {
+    if (ret->init(type, std::move(callback))) {
         ret->autorelease();
         return ret;
     }
@@ -19,14 +19,12 @@ LoadEditorPopup* LoadEditorPopup::create(IconType type, std23::move_only_functio
     return nullptr;
 }
 
-bool LoadEditorPopup::setup(IconType type, std23::move_only_function<void(const std::filesystem::path&, std::string_view)> callback) {
+bool LoadEditorPopup::init(IconType type, std23::move_only_function<void(const std::filesystem::path&, std::string_view)> callback) {
+    if (!BasePopup::init(230.0f, 250.0f, "geode.loader/GE_square03.png")) return false;
+
     setID("LoadEditorPopup");
     setTitle(fmt::format("Load {} Editor", Constants::getSingularUppercase(type)));
     m_title->setID("load-editor-title");
-    m_mainLayer->setID("main-layer");
-    m_buttonMenu->setID("button-menu");
-    m_bgSprite->setID("background");
-    m_closeBtn->setID("close-button");
 
     m_callback = std::move(callback);
 

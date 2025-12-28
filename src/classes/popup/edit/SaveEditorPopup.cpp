@@ -14,7 +14,7 @@ SaveEditorPopup* SaveEditorPopup::create(
     IconType type, const IconEditorState& state, CCDictionary* frames, std23::move_only_function<void()> callback
 ) {
     auto ret = new SaveEditorPopup();
-    if (ret->initAnchored(350.0f, 130.0f, type, state, frames, std::move(callback), "geode.loader/GE_square03.png")) {
+    if (ret->init(type, state, frames, std::move(callback))) {
         ret->autorelease();
         return ret;
     }
@@ -22,14 +22,12 @@ SaveEditorPopup* SaveEditorPopup::create(
     return nullptr;
 }
 
-bool SaveEditorPopup::setup(IconType type, const IconEditorState& state, CCDictionary* frames, std23::move_only_function<void()> callback) {
+bool SaveEditorPopup::init(IconType type, const IconEditorState& state, CCDictionary* frames, std23::move_only_function<void()> callback) {
+    if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png")) return false;
+
     setID("SaveEditorPopup");
     setTitle(fmt::format("Save {} Editor", Constants::getSingularUppercase(type)));
     m_title->setID("save-editor-title");
-    m_mainLayer->setID("main-layer");
-    m_buttonMenu->setID("button-menu");
-    m_bgSprite->setID("background");
-    m_closeBtn->setID("close-button");
 
     m_callback = std::move(callback);
     m_iconType = type;

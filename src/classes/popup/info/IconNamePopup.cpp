@@ -11,7 +11,7 @@ using namespace geode::prelude;
 
 IconNamePopup* IconNamePopup::create(MoreInfoPopup* popup, IconInfo* info) {
     auto ret = new IconNamePopup();
-    if (ret->initAnchored(350.0f, 130.0f, popup, info)) {
+    if (ret->init(popup, info)) {
         ret->autorelease();
         return ret;
     }
@@ -21,7 +21,7 @@ IconNamePopup* IconNamePopup::create(MoreInfoPopup* popup, IconInfo* info) {
 
 void pushFile(fmt::memory_buffer& buffer, const std::filesystem::path& file1, const std::filesystem::path& file2, std::string_view name) {
     if (Filesystem::doesExist(file1) && Filesystem::doesExist(file2)) {
-        fmt::vformat_to(std::back_inserter(buffer), "{}", fmt::make_format_args(name));
+        fmt::format_to(std::back_inserter(buffer), "{}", name);
     }
 }
 
@@ -31,17 +31,15 @@ bool renameFile(const std::filesystem::path& file1, const std::filesystem::path&
     return res.isOk();
 }
 
-bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
+bool IconNamePopup::init(MoreInfoPopup* popup, IconInfo* info) {
+    if (!BasePopup::init(350.0f, 130.0f)) return false;
+
     m_iconType = info->getType();
     auto unlockName = Constants::getSingularUppercase(m_iconType);
 
     setID("IconNamePopup");
     setTitle(fmt::format("Edit {} Name", unlockName));
     m_title->setID("icon-name-title");
-    m_mainLayer->setID("main-layer");
-    m_buttonMenu->setID("button-menu");
-    m_bgSprite->setID("background");
-    m_closeBtn->setID("close-button");
 
     m_info = info;
 
@@ -53,18 +51,18 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
     m_nameInput->setID("name-input");
     m_mainLayer->addChild(m_nameInput);
 
-    auto confirmButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Confirm", 0.8f), [this, info, popup, unlockName](auto) {
+    auto confirmButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Confirm", 0.8f), [this, popup, unlockName](auto) {
         auto name = m_nameInput->getString();
         if (name.empty()) return Notify::info("Name cannot be empty.");
 
-        auto old = info->getShortName();
+        auto old = m_info->getShortName();
         if (name == old) return Notify::info("Name is already set to {}.", name);
 
         fmt::memory_buffer message;
         fmt::format_to(std::back_inserter(message), "Are you sure you want to rename <cy>{}</c> to <cy>{}</c>?", old, name);
 
-        auto parent = Filesystem::parentPath(info->getTexture());
-        auto type = info->getType();
+        auto parent = Filesystem::parentPath(m_info->getTexture());
+        auto type = m_info->getType();
         if (type >= IconType::DeathEffect) parent = Filesystem::parentPath(std::move(parent));
 
         auto stemOld = parent / Filesystem::strWide(old);
@@ -95,12 +93,12 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
         }
 
         createQuickPopup(fmt::format("Rename {}", unlockName).c_str(), fmt::to_string(message), "No", "Yes", [
-            this, info, parent = std::move(parent), old = std::move(old), name = std::move(name),
+            this, parent = std::move(parent), old = std::move(old), name = std::move(name),
             stemOld = std::move(stemOld), stemNew = std::move(stemNew), popup
         ](auto, bool btn2) {
             if (!btn2) return;
 
-            auto type = info->getType();
+            auto type = m_info->getType();
             if (type >= IconType::DeathEffect) {
                 if (!renameFile(stemOld, stemNew)) return;
             }
@@ -115,7 +113,7 @@ bool IconNamePopup::setup(MoreInfoPopup* popup, IconInfo* info) {
 
             Popup::onClose(nullptr);
             popup->close();
-            more_icons::renameIcon(info, name);
+            more_icons::renameIcon(m_info, name);
             Notify::success("{} renamed to {}!", old, name);
             MoreIcons::updateGarage();
         });
