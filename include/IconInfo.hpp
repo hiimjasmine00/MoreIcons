@@ -44,7 +44,7 @@ private:
         int specialID, matjson::Value specialInfo, int fireCount, bool vanilla, bool zipped
     );
 
-    IconInfo(std::shared_ptr<IconInfoImpl> impl) : m_impl(impl) {}
+    IconInfo(std::shared_ptr<IconInfoImpl> impl) : m_impl(std::move(impl)) {}
 public:
     const std::string& getName() const MI_EXPORT_REF(&IconInfo::getName, (this));
     const std::string& getShortName() const MI_EXPORT_REF(&IconInfo::getShortName, (this));
@@ -86,21 +86,23 @@ public:
     void setVanilla(bool vanilla) MI_EXPORT(&IconInfo::setVanilla, (this, vanilla));
     void setZipped(bool zipped) MI_EXPORT(&IconInfo::setZipped, (this, zipped));
 
+    bool equals(std::string_view name, IconType type) const
+        MI_EXPORT(&IconInfo::equals, (this, name, type));
+    bool equals(const IconInfo& other) const {
+        return equals(other.getName(), other.getType());
+    }
     bool operator==(const IconInfo& other) const {
         return equals(other);
     }
-    bool equals(const IconInfo& other) const MI_EXPORT((bool(IconInfo::*)(const IconInfo&) const)(&IconInfo::equals), (this, other));
-    bool equals(
-        std::string_view name, IconType type
-    ) const MI_EXPORT((bool(IconInfo::*)(std::string_view, IconType) const)(&IconInfo::equals), (this, name, type));
 
-    std::strong_ordering operator<=>(const IconInfo& other) const {
-        return compare(other) <=> 0;
+    std::strong_ordering compare(std::string_view packID, std::string_view shortName, IconType type) const
+        MI_EXPORT(&IconInfo::compare, (this, packID, shortName, type));
+    std::strong_ordering compare(const IconInfo& other) const {
+        return compare(other.getPackID(), other.getShortName(), other.getType());
     }
-    int compare(const IconInfo& other) const MI_EXPORT((int(IconInfo::*)(const IconInfo&) const)(&IconInfo::compare), (this, other));
-    int compare(
-        std::string_view packID, std::string_view shortName, IconType type
-    ) const MI_EXPORT((int(IconInfo::*)(std::string_view, std::string_view, IconType) const)(&IconInfo::compare), (this, packID, shortName, type));
+    std::strong_ordering operator<=>(const IconInfo& other) const {
+        return compare(other);
+    }
 };
 
 #undef MI_EXPORT

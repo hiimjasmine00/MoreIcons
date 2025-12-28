@@ -167,28 +167,20 @@ void IconInfo::setZipped(bool zipped) {
     m_impl->m_zipped = zipped;
 }
 
-bool IconInfo::equals(const IconInfo& other) const {
-    return equals(other.m_impl->m_name, other.m_impl->m_type);
-}
-
 bool IconInfo::equals(std::string_view name, IconType type) const {
     return m_impl->m_name == name && m_impl->m_type == type;
 }
 
-int IconInfo::compare(const IconInfo& other) const {
-    return compare(other.m_impl->m_packID, other.m_impl->m_shortName, other.m_impl->m_type);
-}
-
-int IconInfo::compare(std::string_view packID2, std::string_view shortName2, IconType type) const {
+std::strong_ordering IconInfo::compare(std::string_view packID2, std::string_view shortName2, IconType type) const {
     auto comparison = m_impl->m_type <=> type;
-    if (comparison != 0) return comparison < 0 ? -1 : 1;
+    if (comparison != std::strong_ordering::equal) return comparison;
 
     std::string_view packID1 = m_impl->m_packID;
     std::string_view shortName1 = m_impl->m_shortName;
     auto samePack = packID1 == packID2;
-    if (samePack && shortName1 == shortName2) return 0;
-    if (packID1.empty() && !packID2.empty()) return -1;
-    if (!packID1.empty() && packID2.empty()) return 1;
+    if (samePack && shortName1 == shortName2) return std::strong_ordering::equal;
+    if (packID1.empty() && !packID2.empty()) return std::strong_ordering::less;
+    if (!packID1.empty() && packID2.empty()) return std::strong_ordering::greater;
 
     auto a = samePack ? shortName1 : packID1;
     auto b = samePack ? shortName2 : packID2;
@@ -207,8 +199,8 @@ int IconInfo::compare(std::string_view packID2, std::string_view shortName2, Ico
         }
         else comparison = tolower(a[aIt++]) <=> tolower(b[bIt++]);
 
-        if (comparison != 0) return comparison < 0 ? -1 : 1;
+        if (comparison != std::strong_ordering::equal) return comparison;
     }
 
-    return a.size() < b.size() ? -1 : a.size() > b.size() ? 1 : 0;
+    return a.size() <=> b.size();
 }

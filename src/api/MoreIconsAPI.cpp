@@ -109,7 +109,7 @@ IconInfo* addIcon(
     auto icons = more_icons::getIcons(type);
     if (!icons) return nullptr;
     auto it = std::ranges::find_if(*icons, [&packID, &shortName, type](const IconInfo& icon) {
-        return icon.compare(packID, shortName, type) >= 0;
+        return icon.compare(packID, shortName, type) != std::strong_ordering::less;
     });
     if (it != icons->end() && it->equals(name, type)) icons->erase(it);
 
