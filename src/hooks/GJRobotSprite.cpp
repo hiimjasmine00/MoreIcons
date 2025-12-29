@@ -6,6 +6,8 @@ class $modify(MIRobotSprite, GJRobotSprite) {
     void updateFrame(int frame) {
         GJRobotSprite::updateFrame(frame);
 
-        setUserObject("name"_spr, nullptr);
+        if (auto str = static_cast<CCString*>(getUserObject("name"_spr))) {
+            str->m_sString.clear();
+        }
     }
 };

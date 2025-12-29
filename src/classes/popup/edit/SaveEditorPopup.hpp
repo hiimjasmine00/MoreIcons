@@ -8,14 +8,18 @@ protected:
     std23::move_only_function<void()> m_callback;
     IconType m_iconType;
     IconEditorState m_state;
-    cocos2d::CCDictionary* m_frames;
+    StringMap<geode::Ref<cocos2d::CCSpriteFrame>> m_frames;
     geode::TextInput* m_nameInput;
 
-    bool init(IconType type, const IconEditorState& state, cocos2d::CCDictionary* frames, std23::move_only_function<void()> callback);
+    bool init(
+        IconType type, const IconEditorState& state,
+        const StringMap<geode::Ref<cocos2d::CCSpriteFrame>>& frames, std23::move_only_function<void()> callback
+    );
     void onClose(cocos2d::CCObject* sender) override;
     void saveEditor(const std::filesystem::path& directory);
 public:
     static SaveEditorPopup* create(
-        IconType type, const IconEditorState& state, cocos2d::CCDictionary* frames, std23::move_only_function<void()> callback
+        IconType type, const IconEditorState& state,
+        const StringMap<geode::Ref<cocos2d::CCSpriteFrame>>& frames, std23::move_only_function<void()> callback
     );
 };

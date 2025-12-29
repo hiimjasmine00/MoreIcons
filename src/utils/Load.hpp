@@ -1,6 +1,7 @@
+#include "../classes/misc/StringMap.hpp"
 #include <cocos2d.h>
 #include <Geode/Enums.hpp>
-#include <Geode/Result.hpp>
+#include <matjson.hpp>
 
 template <class T>
 struct Autorelease {
@@ -47,7 +48,7 @@ struct ImageResult {
     std::string name;
     std::vector<uint8_t> data;
     Autorelease<cocos2d::CCTexture2D> texture;
-    Autorelease<cocos2d::CCDictionary> frames;
+    StringMap<Autorelease<cocos2d::CCSpriteFrame>> frames;
     uint32_t width;
     uint32_t height;
 };
@@ -55,6 +56,7 @@ struct ImageResult {
 namespace Load {
     std::string getFrameName(std::string_view frameName, std::string_view name, IconType type);
     geode::Result<std::vector<uint8_t>> readBinary(const std::filesystem::path& path);
+    geode::Result<matjson::Value> readPlist(const std::filesystem::path& path);
     bool doesExist(const std::filesystem::path& path);
     geode::Result<Autorelease<cocos2d::CCTexture2D>> createTexture(const std::filesystem::path& path);
     Autorelease<cocos2d::CCTexture2D> createTexture(const uint8_t* data, uint32_t width, uint32_t height);
@@ -62,8 +64,8 @@ namespace Load {
     geode::Result<ImageResult> createFrames(
         const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type, bool premultiplyAlpha = true
     );
-    geode::Result<Autorelease<cocos2d::CCDictionary>> createFrames(
+    geode::Result<StringMap<Autorelease<cocos2d::CCSpriteFrame>>> createFrames(
         const std::filesystem::path& path, cocos2d::CCTexture2D* texture, std::string_view name, IconType type, bool fixNames = true
     );
     cocos2d::CCTexture2D* addFrames(const ImageResult& image, std::vector<std::string>& frameNames, std::string_view target = {});
-};
+}

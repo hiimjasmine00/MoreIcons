@@ -77,7 +77,7 @@ bool MoreIconsPopup::init() {
     return true;
 }
 
-void MoreIconsPopup::createMenu(cocos2d::CCNode* gamemodesNode, IconType type) {
+void MoreIconsPopup::createMenu(CCNode* gamemodesNode, IconType type) {
     auto gamemodeMenu = CCMenu::create();
     gamemodeMenu->setPosition({ 0.0f, 0.0f });
     gamemodeMenu->setContentSize({ 70.0f, 120.0f });

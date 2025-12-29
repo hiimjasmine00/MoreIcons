@@ -24,4 +24,4 @@ namespace MoreIcons {
     cocos2d::ccColor3B vanillaColorGlow(bool dual);
     bool vanillaGlow(bool dual);
     int vanillaIcon(IconType type, bool dual);
-};
+}

@@ -13,4 +13,4 @@ namespace Log {
 
     void error(std::string&& name, std::string&& message);
     void warn(std::string&& name, std::string&& message);
-};
+}

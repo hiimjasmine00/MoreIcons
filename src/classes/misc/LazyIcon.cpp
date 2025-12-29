@@ -12,6 +12,7 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/ObjectManager.hpp>
 #include <Geode/binding/SpriteDescription.hpp>
+#include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Loader.hpp>
 #include <jasmine/mod.hpp>
 
@@ -94,68 +95,122 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
 }
 
 void LazyIcon::createSimpleIcon() {
-    auto ufo = m_type == IconType::Ufo;
     auto primaryFrame = Icons::getFrame("{}_001.png", m_name);
     auto secondaryFrame = Icons::getFrame("{}_2_001.png", m_name);
-    auto tertiaryFrame = ufo ? Icons::getFrame("{}_3_001.png", m_name) : nullptr;
+    auto tertiaryFrame = m_type == IconType::Ufo ? Icons::getFrame("{}_3_001.png", m_name) : nullptr;
     auto glowFrame = Icons::getFrame("{}_glow_001.png", m_name);
     auto extraFrame = Icons::getFrame("{}_extra_001.png", m_name);
     auto normalImage = getNormalImage();
+    auto yOffset = m_type == IconType::Ufo ? -7.0f : 0.0f;
+    auto scale = m_type == IconType::Ball ? 0.9f : 1.0f;
 
     if (primaryFrame) {
         auto sprite = CCSprite::createWithSpriteFrame(primaryFrame);
-        if (ufo) sprite->setPositionY(-7.0f);
-        sprite->setID("primary-sprite");
+        sprite->setPositionY(yOffset);
+        sprite->setScale(scale);
+        sprite->setID("sprite_001");
         normalImage->addChild(sprite, 0);
     }
 
     if (secondaryFrame) {
         auto sprite = CCSprite::createWithSpriteFrame(secondaryFrame);
-        if (ufo) sprite->setPositionY(-7.0f);
-        sprite->setID("secondary-sprite");
+        sprite->setPositionY(yOffset);
+        sprite->setScale(scale);
+        sprite->setID("sprite_2_001");
         normalImage->addChild(sprite, -1);
     }
 
     if (tertiaryFrame) {
         auto sprite = CCSprite::createWithSpriteFrame(tertiaryFrame);
-        sprite->setPositionY(-7.0f);
-        sprite->setID("tertiary-sprite");
+        sprite->setPositionY(yOffset);
+        sprite->setScale(scale);
+        sprite->setID("sprite_3_001");
         normalImage->addChild(sprite, -2);
     }
 
     if (glowFrame) {
         auto sprite = CCSprite::createWithSpriteFrame(glowFrame);
-        if (ufo) sprite->setPositionY(-7.0f);
-        sprite->setID("glow-sprite");
+        sprite->setPositionY(yOffset);
+        sprite->setScale(scale);
+        sprite->setID("sprite_glow_001");
         normalImage->addChild(sprite, -3);
     }
 
     if (extraFrame) {
         auto sprite = CCSprite::createWithSpriteFrame(extraFrame);
-        if (ufo) sprite->setPositionY(-7.0f);
-        sprite->setID("extra-sprite");
+        sprite->setPositionY(yOffset);
+        sprite->setScale(scale);
+        sprite->setID("sprite_extra_001");
         normalImage->addChild(sprite, 1);
     }
+}
+matjson::Value getJSON(Filesystem::PathView filename, std::string_view filenameNarrow) {
+    if (auto def = Load::readPlist(dirs::getResourcesDir() / filename)) {
+        return std::move(def).unwrap();
+    }
+    else {
+        log::error("Failed to load {}: {}", filenameNarrow, def.unwrapErr());
+        return nullptr;
+    }
+}
+
+const matjson::Value definitions = [] {
+    auto json = getJSON(L("objectDefinitions.plist"), "objectDefinitions.plist");
+    for (auto& value : json) {
+        if (auto keyOpt = value.getKey()) {
+            auto key = std::move(keyOpt).value();
+            if (key == "Robot" || key == "Spider") {
+                if (auto animDesc = value["animDesc"].asString()) {
+                    auto filename = std::move(animDesc).unwrap();
+                    value["animDesc"] = getJSON(Filesystem::strWide(filename), filename);
+                }
+            }
+            else json.erase(key);
+        }
+    }
+    return json;
+}();
+
+std::vector<SpriteDefinition> parseDefinition(const matjson::Value& definition) {
+    std::vector<SpriteDefinition> definitions;
+    for (size_t i = 0; i < definition.size(); i++) {
+        auto& value = definition[fmt::format("sprite_{}", i)];
+        if (!value.isObject()) continue;
+
+        auto& def = definitions.emplace_back();
+        def.position = CCPointFromString(value["position"].asString().unwrapOrDefault().c_str());
+        def.scale = CCPointFromString(value["scale"].asString().unwrapOrDefault().c_str());
+        def.flipped = CCPointFromString(value["flipped"].asString().unwrapOrDefault().c_str());
+        def.rotation = value["rotation"].asDouble().unwrapOrDefault();
+        def.zValue = value["zValue"].asInt().unwrapOrDefault();
+        def.tag = value["tag"].asInt().unwrapOrDefault();
+    }
+    return definitions;
 }
 
 void LazyIcon::createComplexIcon() {
     auto spider = m_type == IconType::Spider;
 
-    auto definition = Get::ObjectManager()->getDefinition(spider ? "Spider" : "Robot");
-    if (!definition) return;
+    std::string_view anim = "idle";
+    std::string_view key = spider ? "Spider" : "Robot";
 
-    auto object = static_cast<CCObject*>(Get::AnimationCache()->animationByName(spider ? "Spider_idle" : "Robot_idle"));
-    if (!object) return;
+    auto& definition = definitions[key];
+    if (!definition.isObject()) return;
 
-    auto animations = static_cast<CCDictionary*>(definition->objectForKey("animations"));
-    if (!animations) return;
+    auto& animations = definition["animations"];
+    if (!animations.isObject()) return;
 
-    auto animation = static_cast<CCDictionary*>(animations->objectForKey("idle"));
-    if (!animation) return;
+    auto& animation = animations[anim];
+    if (!animation.isObject()) return;
 
-    auto usedTextures = static_cast<CCDictionary*>(Get::AnimateFrameCache()->addSpriteFramesWithFile(
-        definition->valueForKey("animDesc")->getCString())->objectForKey("usedTextures"));
-    if (!usedTextures) return;
+    auto& animDesc = definition["animDesc"];
+    if (!animDesc.isObject()) return;
+
+    auto& container = animDesc["animationContainer"];
+    if (!container.isObject()) return;
+
+    auto& usedTextures = animDesc["usedTextures"];
+    if (!usedTextures.isObject()) return;
 
     auto normalImage = getNormalImage();
 
@@ -163,22 +218,19 @@ void LazyIcon::createComplexIcon() {
     glowNode->setAnchorPoint({ 0.5f, 0.5f });
     glowNode->setID("glow-node");
 
-    m_spriteParts = CCArray::create();
+    for (size_t i = 0; i < usedTextures.size(); i++) {
+        auto& usedTexture = usedTextures[fmt::format("texture_{}", i)];
+        if (!usedTexture.isObject()) continue;
 
-    for (int i = 0; i < usedTextures->count(); i++) {
-        auto usedTexture = static_cast<CCDictionary*>(usedTextures->objectForKey(fmt::format("texture_{}", i)));
-        if (!usedTexture) continue;
-
-        std::string_view texture = usedTexture->valueForKey("texture")->m_sString;
+        auto texture = usedTexture["texture"].asString().unwrapOrDefault();
         if ((spider && texture.size() < 12) || (!spider && texture.size() < 11)) continue;
 
-        texture.remove_prefix(spider ? 10 : 9);
-
         auto index = 0;
-        fast_float::from_chars(texture.data(), texture.data() + 2, index);
+        auto start = texture.data() + (spider ? 10 : 9);
+        fast_float::from_chars(start, start + 2, index);
         if (index <= 0) continue;
 
-        std::string_view customID = usedTexture->valueForKey("customID")->m_sString;
+        auto customID = usedTexture["customID"].asString().unwrapOrDefault();
         ccColor3B spriteColor;
         if (customID == "back01" || customID == "back02" || customID == "back03") {
             spriteColor = spider ? ccColor3B { 127, 127, 127 } : ccColor3B { 178, 178, 178 };
@@ -187,32 +239,30 @@ void LazyIcon::createComplexIcon() {
             spriteColor = { 255, 255, 255 };
         }
 
-        auto id = i + 1;
-
         auto partNode = new CCSpritePlus();
         partNode->init();
         partNode->autorelease();
         partNode->m_propagateScaleChanges = true;
         partNode->m_propagateFlipChanges = true;
-        partNode->setID(fmt::format("part-node-{}", id));
+        partNode->setID(fmt::format("sprite_{:02}", index));
 
         if (auto primaryFrame = Icons::getFrame("{}_{:02}_001.png", m_name, index)) {
             auto sprite = CCSprite::createWithSpriteFrame(primaryFrame);
             sprite->setColor(spriteColor);
-            sprite->setID(fmt::format("primary-sprite-{}", id));
+            sprite->setID(fmt::format("sprite_{:02}_001", index));
             partNode->addChild(sprite, 0);
         }
 
         if (auto secondaryFrame = Icons::getFrame("{}_{:02}_2_001.png", m_name, index)) {
             auto sprite = CCSprite::createWithSpriteFrame(secondaryFrame);
             sprite->setColor(spriteColor);
-            sprite->setID(fmt::format("secondary-sprite-{}", id));
+            sprite->setID(fmt::format("sprite_{:02}_2_001", index));
             partNode->addChild(sprite, -1);
         }
 
         if (auto glowFrame = Icons::getFrame("{}_{:02}_glow_001.png", m_name, index)) {
             auto sprite = CCSprite::createWithSpriteFrame(glowFrame);
-            sprite->setID(fmt::format("glow-sprite-{}", id));
+            sprite->setID(fmt::format("sprite_{:02}_glow_001", index));
             glowNode->addChild(sprite, -1);
             partNode->addFollower(sprite);
         }
@@ -220,55 +270,63 @@ void LazyIcon::createComplexIcon() {
         if (index == 1) {
             if (auto extraFrame = Icons::getFrame("{}_01_extra_001.png", m_name)) {
                 auto sprite = CCSprite::createWithSpriteFrame(extraFrame);
-                sprite->setID(fmt::format("extra-sprite-{}", id));
+                sprite->setID("sprite_01_extra_001");
                 partNode->addChild(sprite, 1);
             }
         }
 
-        m_spriteParts->addObject(partNode);
+        m_spriteParts.emplace_back(partNode);
         normalImage->addChild(partNode);
     }
 
     normalImage->addChild(glowNode, -1);
 
-    if (animation->objectForKey("singleFrame")) updateComplexSprite(static_cast<CCString*>(object));
+    if (auto singleFrame = animation.get("singleFrame")) {
+        updateComplexSprite(parseDefinition(container[singleFrame.unwrap().asString().unwrapOrDefault()]));
+    }
     else {
-        m_animation = static_cast<CCAnimation*>(object);
-        m_looped = animation->valueForKey("looped")->boolValue();
+        auto frames = animation["frames"].asInt().unwrapOrDefault();
+        m_divisor = std::max(0.01, animation["delay"].asDouble().unwrapOrDefault() * frames);
+        auto prefix = fmt::format("{}_{}_", key, anim);
+        for (int i = 1; i <= frames; i++) {
+            m_definitions.push_back(parseDefinition(container[fmt::format("{}{:03}.png", prefix, i)]));
+        }
+        auto looped = animation["looped"].asString().unwrapOrDefault();
+        m_looped = !looped.empty() && looped != "0" && looped != "false";
         m_elapsed = 0.0f;
         scheduleUpdate();
     }
 }
 
-void LazyIcon::updateComplexSprite(CCString* frame) {
-    for (auto spritePart : m_spriteParts->asExt<CCNode>()) {
+void LazyIcon::updateComplexSprite(const std::vector<SpriteDefinition>& definitions) {
+    for (auto& spritePart : m_spriteParts) {
         spritePart->setVisible(false);
     }
-    auto normalImage = getNormalImage();
-    for (auto description : Get::AnimateFrameCache()->spriteFrameByName(frame->getCString())->asExt<SpriteDescription>()) {
-        auto spritePart = static_cast<CCSpritePlus*>(m_spriteParts->objectAtIndex(description->m_tag));
-        spritePart->setPosition(description->m_position);
-        spritePart->setScaleX(description->m_scale.x);
-        spritePart->setScaleY(description->m_scale.y);
-        spritePart->setRotation(description->m_rotation);
-        spritePart->setFlipX(description->m_flipped.x != 0.0f);
-        spritePart->setFlipY(description->m_flipped.y != 0.0f);
-        if (spritePart->getZOrder() != description->m_zValue) normalImage->reorderChild(spritePart, description->m_zValue);
+
+    for (auto& definition : definitions) {
+        auto spritePart = m_spriteParts[definition.tag].data();
+        spritePart->setPosition(definition.position);
+        spritePart->setScaleX(definition.scale.x);
+        spritePart->setScaleY(definition.scale.y);
+        spritePart->setRotation(definition.rotation);
+        spritePart->setFlipX(definition.flipped.x != 0.0f);
+        spritePart->setFlipY(definition.flipped.y != 0.0f);
+        if (spritePart->getZOrder() != definition.zValue) {
+            spritePart->getParent()->reorderChild(spritePart, definition.zValue);
+        }
         spritePart->setVisible(true);
     }
 }
 
 void LazyIcon::update(float dt) {
     m_elapsed += dt;
-    auto interval = m_elapsed / (m_animation->getDelayPerUnit() * m_animation->getTotalDelayUnits());
-    if (!m_looped && interval >= 1.0f) {
-        m_elapsed = 0.0f;
+    auto interval = m_elapsed / m_divisor;
+    if (!m_looped && interval >= 1.0) {
+        m_elapsed = 0.0;
         return unscheduleUpdate();
     }
 
-    auto frames = m_animation->getFrames();
-    updateComplexSprite(static_cast<CCString*>(static_cast<CCObject*>(static_cast<CCAnimationFrame*>(
-        frames->objectAtIndex((int)(fmodf(interval, 1.0f) * frames->count())))->getSpriteFrame())));
+    updateComplexSprite(m_definitions[fmod(interval, 1.0) * m_definitions.size()]);
 }
 
 void LazyIcon::createIcon() {

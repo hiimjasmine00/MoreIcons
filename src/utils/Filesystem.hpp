@@ -60,7 +60,7 @@ namespace Filesystem {
     std::filesystem::path withExt(const std::filesystem::path& path, PathView ext);
     geode::Result<> renameFile(const std::filesystem::path& from, const std::filesystem::path& to);
     void iterate(const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<void(const std::filesystem::path&)> func);
-};
+}
 
 template <typename Char>
 struct fmt::formatter<std::filesystem::path, Char> {

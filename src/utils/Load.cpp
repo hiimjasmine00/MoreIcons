@@ -4,7 +4,6 @@
 #ifdef GEODE_IS_ANDROID
 #include <Geode/cocos/support/zip_support/unzip.h>
 #endif
-#include <Geode/utils/cocos.hpp>
 #include <Geode/utils/file.hpp>
 #include <jasmine/mod.hpp>
 #include <texpack.hpp>
@@ -147,7 +146,7 @@ bool Load::doesExist(const std::filesystem::path& path) {
     return std::filesystem::exists(path, code);
 }
 
-Result<Autorelease<cocos2d::CCTexture2D>> Load::createTexture(const std::filesystem::path& path) {
+Result<Autorelease<CCTexture2D>> Load::createTexture(const std::filesystem::path& path) {
     GEODE_UNWRAP_INTO(auto data, readBinary(path).mapErr([](std::string err) {
         return fmt::format("Failed to read image: {}", err);
     }));
@@ -159,13 +158,13 @@ Result<Autorelease<cocos2d::CCTexture2D>> Load::createTexture(const std::filesys
     return Ok(createTexture(image.data.data(), image.width, image.height));
 }
 
-Autorelease<cocos2d::CCTexture2D> Load::createTexture(const uint8_t* data, uint32_t width, uint32_t height) {
+Autorelease<CCTexture2D> Load::createTexture(const uint8_t* data, uint32_t width, uint32_t height) {
     Autorelease texture = new CCTexture2D();
     initTexture(texture, data, width, height, false);
     return texture;
 }
 
-void Load::initTexture(cocos2d::CCTexture2D* texture, const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha) {
+void Load::initTexture(CCTexture2D* texture, const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha) {
     texture->initWithData(data, kCCTexture2DPixelFormat_RGBA8888, width, height, { (float)width, (float)height });
     texture->m_bHasPremultipliedAlpha = premultiplyAlpha;
 }
@@ -220,14 +219,8 @@ matjson::Value parseNode(const pugi::xml_node& node) {
     else return nullptr;
 }
 
-Result<Autorelease<CCDictionary>> Load::createFrames(
-    const std::filesystem::path& path, CCTexture2D* texture, std::string_view name, IconType type, bool fixNames
-) {
-    if (path.empty()) return Ok(nullptr);
-
-    GEODE_UNWRAP_INTO(auto data, readBinary(path).mapErr([](std::string err) {
-        return fmt::format("Failed to read file: {}", err);
-    }));
+Result<matjson::Value> Load::readPlist(const std::filesystem::path& path) {
+    GEODE_UNWRAP_INTO(auto data, readBinary(path));
 
     pugi::xml_document doc;
     auto result = doc.load_buffer(data.data(), data.size());
@@ -238,18 +231,27 @@ Result<Autorelease<CCDictionary>> Load::createFrames(
 
     auto json = parseNode(root.first_child());
     if (!json.isObject()) return Err("No root <dict> element found");
-    if (!json.contains("frames")) return Err("No frames <dict> element found");
+
+    return Ok(json);
+}
+
+Result<StringMap<Autorelease<cocos2d::CCSpriteFrame>>> Load::createFrames(
+    const std::filesystem::path& path, CCTexture2D* texture, std::string_view name, IconType type, bool fixNames
+) {
+    if (path.empty()) return Ok(StringMap<Autorelease<cocos2d::CCSpriteFrame>>());
+
+    GEODE_UNWRAP_INTO(auto json, readPlist(path));
+
+    auto framesRes = json.get("frames");
+    if (!framesRes.isOk()) return Err("No frames <dict> element found");
 
     auto format = json.get("metadata").andThen([](const matjson::Value& v) {
         return v.get<int>("format");
-    }).unwrapOr(0);
+    }).unwrapOrDefault();
 
-    Autorelease frames = new CCDictionary();
-    for (auto& [frameName, obj] : json["frames"]) {
+    StringMap<Autorelease<cocos2d::CCSpriteFrame>> frames;
+    for (auto& [frameName, obj] : framesRes.unwrap()) {
         if (!obj.isObject()) continue;
-
-        Autorelease frame = new CCSpriteFrame();
-        frames->setObject(frame, fixNames ? getFrameName(frameName, name, type) : frameName);
 
         CCRect rect;
         CCPoint offset;
@@ -324,7 +326,9 @@ Result<Autorelease<CCDictionary>> Load::createFrames(
         auto absY = std::abs(offset.y) * 2.0f;
         if (originalSize.height - rect.size.height < absY) originalSize.height = rect.size.height + absY;
 
+        Autorelease frame = new CCSpriteFrame();
         frame->initWithTexture(texture, rect, rotated, offset, originalSize);
+        frames.emplace(fixNames ? getFrameName(frameName, name, type) : frameName, std::move(frame));
     }
 
     return Ok(std::move(frames));
@@ -337,21 +341,21 @@ CCTexture2D* Load::addFrames(const ImageResult& image, std::vector<std::string>&
     }
 
     frameNames.clear();
-    if (auto frames = image.frames.data) {
+    if (!image.frames.empty()) {
         auto spriteFrameCache = Get::SpriteFrameCache();
         if (target.empty()) {
-            frameNames.reserve(frames->count());
-            for (auto [frameName, frame] : CCDictionaryExt<const char*, CCSpriteFrame*>(frames)) {
-                spriteFrameCache->addSpriteFrame(frame, frameName);
-                frameNames.emplace_back(frameName);
+            frameNames.reserve(image.frames.size());
+            for (auto& [frameName, frame] : image.frames) {
+                spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
+                frameNames.push_back(frameName);
             }
         }
         else {
             frameNames.reserve(1);
-            for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(frames)) {
+            for (auto& [frameName, frame] : image.frames) {
                 if (frameName == target) {
-                    spriteFrameCache->addSpriteFrame(frame, frameName.data());
-                    frameNames.emplace_back(frameName);
+                    spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
+                    frameNames.push_back(frameName);
                 }
             }
         }

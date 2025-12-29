@@ -164,10 +164,10 @@ std::string MoreIcons::getIconName(int id, IconType type) {
 std::pair<std::string, std::string> MoreIcons::getIconPaths(int id, IconType type) {
     auto fileUtils = Get::FileUtils();
     std::string sheetName = Get::GameManager()->sheetNameForIcon(id, (int)type);
-    return std::make_pair(
-        std::string(fileUtils->fullPathForFilename(fmt::format("{}.png", sheetName).c_str(), false)),
-        std::string(fileUtils->fullPathForFilename(fmt::format("{}.plist", sheetName).c_str(), false))
-    );
+    std::pair<std::string, std::string> paths;
+    paths.first = fileUtils->fullPathForFilename(fmt::format("{}.png", sheetName).c_str(), false);
+    paths.second = fileUtils->fullPathForFilename(fmt::format("{}.plist", sheetName).c_str(), false);
+    return paths;
 }
 
 std::string MoreIcons::getTrailTexture(int id) {

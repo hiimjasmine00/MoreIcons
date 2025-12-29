@@ -19,4 +19,4 @@ namespace Get {
     ObjectManager* ObjectManager();
     cocos2d::CCSpriteFrameCache* SpriteFrameCache();
     cocos2d::CCTextureCache* TextureCache();
-};
+}

@@ -243,14 +243,18 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         if (customPage < 0) return;
 
         std::vector<IconInfo*> infoView;
+        auto begin = icons->data();
         auto end = icons->data() + icons->size();
-        for (auto info = icons->data(); info != end; info++) {
+        infoView.reserve(end - begin);
+        for (auto info = begin; info != end; info++) {
             infoView.push_back(info);
         }
         if (type == IconType::Special) {
             if (auto shipFires = more_icons::getIcons(IconType::ShipFire)) {
+                auto shipFireBegin = shipFires->data();
                 auto shipFireEnd = shipFires->data() + shipFires->size();
-                for (auto info = shipFires->data(); info != shipFireEnd; info++) {
+                infoView.reserve(infoView.size() + (shipFireEnd - shipFireBegin));
+                for (auto info = shipFireBegin; info != shipFireEnd; info++) {
                     infoView.push_back(info);
                 }
             }

@@ -9,7 +9,6 @@
 #include <IconInfo.hpp>
 
 using namespace geode::prelude;
-using namespace std::string_literals;
 
 SpecialSettingsPopup* SpecialSettingsPopup::create(IconInfo* info) {
     auto ret = new SpecialSettingsPopup();
@@ -132,7 +131,7 @@ void SpecialSettingsPopup::addControl(
     auto input = TextInput::create(60.0f, "Num");
     input->setScale(0.6f);
     input->setString(fmt::format("{:.{}f}", initial, decimals));
-    input->setFilter(min < 0.0f ? "-.0123456789"s : ".0123456789"s);
+    input->setFilter(std::string(min < 0.0f ? "-.0123456789" : ".0123456789", min < 0.0f ? 12 : 11));
     input->setMaxCharCount(fmt::to_string(max).size() + decimals + (min < 0.0f ? 2 : 1));
     input->setCallback([this, def, exponent, min, max, slider, &value](const std::string& str) {
         auto floatValue = value.as<float>().unwrapOr(def);
@@ -155,7 +154,7 @@ void SpecialSettingsPopup::addControl(
     });
 }
 
-void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, const cocos2d::CCPoint& position, float scale, bool def) {
+void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, const CCPoint& position, float scale, bool def) {
     auto& value = m_settings[id];
     if (!value.isBool()) value = def;
 
@@ -184,7 +183,7 @@ void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, con
     positioner->addChild(toggleLabel);
 }
 
-void SpecialSettingsPopup::addLabel(std::string&& id, const char* text, const cocos2d::CCPoint& position) {
+void SpecialSettingsPopup::addLabel(std::string&& id, const char* text, const CCPoint& position) {
     auto label = CCLabelBMFont::create(text, "goldFont.fnt");
     label->setPosition(position);
     label->setScale(0.7f);

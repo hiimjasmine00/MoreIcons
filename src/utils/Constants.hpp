@@ -14,4 +14,4 @@ namespace Constants {
     #endif
     float getIconGap(IconType type);
     UnlockType getUnlockType(IconType type);
-};
+}

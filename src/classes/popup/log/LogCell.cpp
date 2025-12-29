@@ -44,19 +44,19 @@ bool LogCell::init(std::string_view name, std::string_view message, Severity sev
     nameLabel->setID("name-label");
     addChild(nameLabel);
 
-    std::string_view prefix;
+    std::string text;
     switch (severity) {
-        case Severity::Debug: prefix = "<cg>DEBUG:</c> "; break;
-        case Severity::Info: prefix = "<cj>INFO:</c> "; break;
-        case Severity::Warning: prefix = "<cy>WARNING:</c> "; break;
-        case Severity::Error: prefix = "<cr>ERROR:</c> "; break;
-        default: prefix = ""; break;
+        case Severity::Debug: text = fmt::format("<cg>DEBUG:</c> {}", message); break;
+        case Severity::Info: text = fmt::format("<cj>INFO:</c> {}", message); break;
+        case Severity::Warning: text = fmt::format("<cy>WARNING:</c> {}", message); break;
+        case Severity::Error: text = fmt::format("<cr>ERROR:</c> {}", message); break;
+        default: text = message; break;
     }
 
     auto viewSprite = ButtonSprite::create("View", "bigFont.fnt", "GJ_button_05.png", 0.8f);
     viewSprite->setScale(0.5f);
-    auto viewButton = CCMenuItemExt::createSpriteExtra(viewSprite, [name, message = fmt::format("{}{}", prefix, message)](auto) {
-        FLAlertLayer::create(name.data(), message, "OK")->show();
+    auto viewButton = CCMenuItemExt::createSpriteExtra(viewSprite, [name, text = std::move(text)](auto) {
+        FLAlertLayer::create(name.data(), text, "OK")->show();
     });
     viewButton->setID("view-button");
 

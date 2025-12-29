@@ -402,21 +402,21 @@ void more_icons::updateIcon(IconInfo* info) {
     if (!framesRes.isOk()) return;
 
     auto frames = std::move(framesRes).unwrap();
-    if (!frames) return;
+    if (frames.empty()) return;
 
     auto spriteFrameCache = Get::SpriteFrameCache();
     auto& frameNames = const_cast<std::vector<std::string>&>(info->getFrameNames());
     for (auto it = frameNames.begin(); it != frameNames.end();) {
         auto& frameName = *it;
-        if (frames->objectForKey(frameName)) ++it;
+        if (frames.contains(frameName)) ++it;
         else {
             spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
             it = frameNames.erase(it);
         }
     }
 
-    for (auto [frameName, frame] : CCDictionaryExt<const char*, CCSpriteFrame*>(frames)) {
-        if (auto spriteFrame = Icons::getFrame(frameName)) {
+    for (auto& [frameName, frame] : frames) {
+        if (auto spriteFrame = Icons::getFrame(frameName.c_str())) {
             spriteFrame->m_obOffset = frame->m_obOffset;
             spriteFrame->m_obOriginalSize = frame->m_obOriginalSize;
             spriteFrame->m_obRectInPixels = frame->m_obRectInPixels;
@@ -426,8 +426,8 @@ void more_icons::updateIcon(IconInfo* info) {
             spriteFrame->m_obOriginalSizeInPixels = frame->m_obOriginalSizeInPixels;
         }
         else {
-            spriteFrameCache->addSpriteFrame(frame, frameName);
-            frameNames.emplace_back(frameName);
+            spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
+            frameNames.push_back(frameName);
         }
     }
 }

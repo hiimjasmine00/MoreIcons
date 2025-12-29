@@ -12,7 +12,10 @@
 
 using namespace geode::prelude;
 
-SaveIconPopup* SaveIconPopup::create(BasePopup* popup1, BasePopup* popup2, IconType type, const matjson::Value& definitions, CCDictionary* frames) {
+SaveIconPopup* SaveIconPopup::create(
+    BasePopup* popup1, BasePopup* popup2, IconType type,
+    const StringMap<FrameDefinition>& definitions, const StringMap<geode::Ref<cocos2d::CCSpriteFrame>>& frames
+) {
     auto ret = new SaveIconPopup();
     if (ret->init(popup1, popup2, type, definitions, frames)) {
         ret->autorelease();
@@ -22,7 +25,10 @@ SaveIconPopup* SaveIconPopup::create(BasePopup* popup1, BasePopup* popup2, IconT
     return nullptr;
 }
 
-bool SaveIconPopup::init(BasePopup* popup1, BasePopup* popup2, IconType type, const matjson::Value& definitions, CCDictionary* frames) {
+bool SaveIconPopup::init(
+    BasePopup* popup1, BasePopup* popup2, IconType type,
+    const StringMap<FrameDefinition>& definitions, const StringMap<geode::Ref<cocos2d::CCSpriteFrame>>& frames
+) {
     if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png")) return false;
 
     setID("SaveIconPopup");
@@ -78,7 +84,7 @@ bool SaveIconPopup::init(BasePopup* popup1, BasePopup* popup2, IconType type, co
 }
 
 bool SaveIconPopup::checkFrame(std::string_view suffix) {
-    auto ret = m_frames->objectForKey(gd::string(suffix.data(), suffix.size())) != nullptr;
+    auto ret = m_frames.contains(suffix);
     if (!ret) Notify::info("Missing {}{}.", m_nameInput->getString(), suffix);
     return ret;
 }
@@ -103,28 +109,22 @@ void SaveIconPopup::saveIcon(Filesystem::PathView stem) {
     std::array<texpack::Packer, 3> packers = {};
     auto scaleFactor = Get::Director()->getContentScaleFactor();
     std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
-    for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(m_frames)) {
+    for (auto& [frameName, frame] : m_frames) {
         auto& definition = m_definitions[frameName];
-        auto offsetX = definition.get<float>("offset-x").unwrapOr(0.0f);
-        auto offsetY = definition.get<float>("offset-y").unwrapOr(0.0f);
-        auto rotationX = definition.get<float>("rotation-x").unwrapOr(0.0f);
-        auto rotationY = definition.get<float>("rotation-y").unwrapOr(0.0f);
-        auto scaleX = definition.get<float>("scale-x").unwrapOr(1.0f);
-        auto scaleY = definition.get<float>("scale-y").unwrapOr(1.0f);
         auto joinedName = fmt::format("{}{}.png", name, frameName);
         for (int i = 0; i < 3; i++) {
             auto node = CCNode::create();
             node->setScale(scales[i]);
             node->setAnchorPoint({ 0.0f, 0.0f });
             auto sprite = CCSprite::createWithSpriteFrame(frame);
-            sprite->setPosition({ offsetX, offsetY });
-            sprite->setScaleX(scaleX);
-            sprite->setScaleY(scaleY);
-            sprite->setRotationX(rotationX);
-            sprite->setRotationY(rotationY);
+            sprite->setPosition({ definition.offsetX, definition.offsetY });
+            sprite->setScaleX(definition.scaleX);
+            sprite->setScaleY(definition.scaleY);
+            sprite->setRotationX(definition.rotationX);
+            sprite->setRotationY(definition.rotationY);
             node->addChild(sprite);
             auto boundingSize = sprite->boundingBox().size;
-            node->setContentSize(boundingSize + CCSize { std::abs(offsetX * 2.0f), std::abs(offsetY * 2.0f) });
+            node->setContentSize(boundingSize + CCSize { std::abs(definition.offsetX * 2.0f), std::abs(definition.offsetY * 2.0f) });
             sprite->setPosition(node->getContentSize() / 2.0f + sprite->getPosition());
             sprite->setBlendFunc({ GL_ONE, GL_ZERO });
             packers[i].frame(joinedName, ImageRenderer::getImage(node));
@@ -163,7 +163,7 @@ void SaveIconPopup::saveIcon(Filesystem::PathView stem) {
     }
     if (scales[2] == 1.0f) {
         selectedPNG = std::move(sdPng);
-        selectedPlist = std::move(sdPlist);;
+        selectedPlist = std::move(sdPlist);
     }
 
     if (auto icon = more_icons::getIcon(name, type)) {

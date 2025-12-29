@@ -11,7 +11,8 @@
 using namespace geode::prelude;
 
 SaveEditorPopup* SaveEditorPopup::create(
-    IconType type, const IconEditorState& state, CCDictionary* frames, std23::move_only_function<void()> callback
+    IconType type, const IconEditorState& state, const StringMap<geode::Ref<cocos2d::CCSpriteFrame>>& frames,
+    std23::move_only_function<void()> callback
 ) {
     auto ret = new SaveEditorPopup();
     if (ret->init(type, state, frames, std::move(callback))) {
@@ -22,7 +23,10 @@ SaveEditorPopup* SaveEditorPopup::create(
     return nullptr;
 }
 
-bool SaveEditorPopup::init(IconType type, const IconEditorState& state, CCDictionary* frames, std23::move_only_function<void()> callback) {
+bool SaveEditorPopup::init(
+    IconType type, const IconEditorState& state, const StringMap<geode::Ref<cocos2d::CCSpriteFrame>>& frames,
+    std23::move_only_function<void()> callback
+) {
     if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png")) return false;
 
     setID("SaveEditorPopup");
@@ -81,7 +85,7 @@ void SaveEditorPopup::saveEditor(const std::filesystem::path& directory) {
     }
 
     texpack::Packer packer;
-    for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(m_frames)) {
+    for (auto& [frameName, frame] : m_frames) {
         auto sprite = CCSprite::createWithSpriteFrame(frame);
         sprite->setAnchorPoint({ 0.0f, 0.0f });
         sprite->setBlendFunc({ GL_ONE, GL_ZERO });

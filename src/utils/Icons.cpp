@@ -103,7 +103,7 @@ float factor = 0.0f;
 void Icons::loadPacks() {
     factor = Get::Director()->getContentScaleFactor();
     packs.clear();
-    packs.emplace_back(std::string("More Icons"), std::string(), dirs::getGeodeDir(), false, false);
+    packs.emplace_back(std::string("More Icons", 10), std::string(), dirs::getGeodeDir(), false, false);
     migrateTrails(std::move(Mod::get()->getConfigDir().make_preferred()) / L("trail"));
 
     for (auto& pack : texture_loader::getAppliedPacks()) {
@@ -697,14 +697,21 @@ CCSpriteFrame* Icons::getFrame(const char* name) {
 }
 
 void Icons::setName(CCNode* node, std::string_view name) {
-    auto str = name.empty() ? nullptr : new CCString();
-    if (str) {
+    auto str = static_cast<CCString*>(node->getUserObject("name"_spr));
+    if (!str) {
+        str = new CCString();
+        str->autorelease();
+        node->setUserObject("name"_spr, str);
+    }
+
+    if (name.empty()) {
+        str->m_sString.clear();
+    }
+    else {
         #ifdef GEODE_IS_ANDROID
-        str->m_sString = gd::string(name.data(), name.size());
+        str->m_sString = name.data();
         #else
         str->m_sString = name;
         #endif
-        str->autorelease();
     }
-    node->setUserObject("name"_spr, str);
 }

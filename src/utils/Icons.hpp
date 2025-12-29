@@ -39,4 +39,4 @@ namespace Icons {
     void loadSettings();
     void setName(cocos2d::CCNode* node, std::string_view name);
     std::string vanillaTexturePath(std::string_view path, bool skipSuffix);
-};
+}

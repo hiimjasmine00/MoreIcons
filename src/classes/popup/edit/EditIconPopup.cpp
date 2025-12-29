@@ -37,23 +37,21 @@ EditIconPopup* EditIconPopup::create(BasePopup* popup, IconType type) {
     return nullptr;
 }
 
-CCArray* arrayWithObject(CCObject* obj) {
-    auto arr = CCArray::create();
-    if (obj) arr->addObject(obj);
-    return arr;
+std::vector<Ref<CCNode>> arrayWithObject(CCNode* obj) {
+    return { obj };
 }
 
 template <class... T>
-CCArray* arrayWithObjects(CCArray* parent, T... indices) {
-    auto arr = CCArray::create();
+std::vector<Ref<CCNode>> arrayWithObjects(CCArray* parent, T... indices) {
+    std::vector<Ref<CCNode>> arr;
     for (auto index : { indices... }) {
-        if (auto obj = parent->objectAtIndex(index)) arr->addObject(obj);
+        if (auto obj = static_cast<CCNode*>(parent->objectAtIndex(index))) arr.emplace_back(obj);
     }
     return arr;
 }
 
-gd::string getKey(std::string_view suffix) {
-    return gd::string(suffix.data(), suffix.size());
+CCSpriteFrame* frameWithTexture(CCTexture2D* texture) {
+    return CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() });
 }
 
 bool EditIconPopup::init(BasePopup* popup, IconType type) {
@@ -64,12 +62,6 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     m_title->setID("edit-icon-title");
 
     m_parentPopup = popup;
-    m_pages = CCArray::create();
-    m_pieces = CCDictionary::create();
-    m_frames = CCDictionary::create();
-    m_sliders = CCDictionary::create();
-    m_inputs = CCDictionary::create();
-    m_targets = CCDictionary::create();
     m_iconType = type;
 
     auto isRobot = type == IconType::Robot || type == IconType::Spider;
@@ -222,29 +214,24 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
 
             m_state = std::move(stateRes).unwrap();
             updateColors();
-            updateControls("offset-x", m_offsetX, -20.0f, 20.0f, 0.0f, true);
-            updateControls("offset-y", m_offsetY, -20.0f, 20.0f, 0.0f, true);
-            updateControls("rotation-x", m_rotationX, 0.0f, 360.0f, 0.0f, false);
-            updateControls("rotation-y", m_rotationY, 0.0f, 360.0f, 0.0f, false);
-            updateControls("scale-x", m_scaleX, -10.0f, 10.0f, 1.0f, true);
-            updateControls("scale-y", m_scaleY, -10.0f, 10.0f, 1.0f, true);
+            updateControls("offset-x", 0, -20.0f, 20.0f, true);
+            updateControls("offset-y", 1, -20.0f, 20.0f, true);
+            updateControls("rotation-x", 2, 0.0f, 360.0f, false);
+            updateControls("rotation-y", 3, 0.0f, 360.0f, false);
+            updateControls("scale-x", 4, -10.0f, 10.0f, true);
+            updateControls("scale-y", 5, -10.0f, 10.0f, true);
 
             for (auto& [key, definition] : m_state.definitions) {
-                auto targets = static_cast<CCArray*>(m_targets->objectForKey(key));
-                if (!targets) continue;
-                auto offsetX = definition.get<float>("offset-x").unwrapOr(0.0f);
-                auto offsetY = definition.get<float>("offset-y").unwrapOr(0.0f);
-                auto rotationX = definition.get<float>("rotation-x").unwrapOr(0.0f);
-                auto rotationY = definition.get<float>("rotation-y").unwrapOr(0.0f);
-                auto scaleX = definition.get<float>("scale-x").unwrapOr(1.0f);
-                auto scaleY = definition.get<float>("scale-y").unwrapOr(1.0f);
-                for (auto target : targets->asExt<CCNode>()) {
-                    target->setPositionX(offsetX);
-                    target->setPositionY(offsetY);
-                    target->setRotationX(rotationX);
-                    target->setRotationY(rotationY);
-                    target->setScaleX(scaleX);
-                    target->setScaleY(scaleY);
+                auto targets = m_targets.find(key);
+                if (targets == m_targets.end()) continue;
+                for (auto& targetRef : targets->second) {
+                    auto target = targetRef.data();
+                    target->setPositionX(definition.offsetX);
+                    target->setPositionY(definition.offsetY);
+                    target->setRotationX(definition.rotationX);
+                    target->setRotationY(definition.rotationY);
+                    target->setScaleX(definition.scaleX);
+                    target->setScaleY(definition.scaleY);
                 }
             }
 
@@ -272,12 +259,12 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     m_selectSprite->setID("select-sprite");
     m_mainLayer->addChild(m_selectSprite);
 
-    createControls({ 185.0f, 175.0f }, "Offset X:", "offset-x", m_offsetX, -20.0f, 20.0f, 0.0f, true);
-    createControls({ 355.0f, 175.0f }, "Offset Y:", "offset-y", m_offsetY, -20.0f, 20.0f, 0.0f, true);
-    createControls({ 185.0f, 135.0f }, "Rotation X:", "rotation-x", m_rotationX, 0.0f, 360.0f, 0.0f, false);
-    createControls({ 355.0f, 135.0f }, "Rotation Y:", "rotation-y", m_rotationY, 0.0f, 360.0f, 0.0f, false);
-    createControls({ 185.0f, 95.0f }, "Scale X:", "scale-x", m_scaleX, -10.0f, 10.0f, 1.0f, true);
-    createControls({ 355.0f, 95.0f }, "Scale Y:", "scale-y", m_scaleY, -10.0f, 10.0f, 1.0f, true);
+    createControls({ 185.0f, 175.0f }, "Offset X:", "offset-x", 0, -20.0f, 20.0f, 0.0f, true);
+    createControls({ 355.0f, 175.0f }, "Offset Y:", "offset-y", 1, -20.0f, 20.0f, 0.0f, true);
+    createControls({ 185.0f, 135.0f }, "Rotation X:", "rotation-x", 2, 0.0f, 360.0f, 0.0f, false);
+    createControls({ 355.0f, 135.0f }, "Rotation Y:", "rotation-y", 3, 0.0f, 360.0f, 0.0f, false);
+    createControls({ 185.0f, 95.0f }, "Scale X:", "scale-x", 4, -10.0f, 10.0f, 1.0f, true);
+    createControls({ 355.0f, 95.0f }, "Scale Y:", "scale-y", 5, -10.0f, 10.0f, 1.0f, true);
 
     auto pieceButtonMenu = CCMenu::create();
     pieceButtonMenu->setPosition({ 270.0f, 60.0f });
@@ -297,7 +284,7 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
 
             if (auto textureRes = Load::createTexture(res->unwrap())) {
                 auto texture = std::move(textureRes).unwrap();
-                m_frames->setObject(CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() }), getKey(m_suffix));
+                m_frames.emplace(m_suffix, frameWithTexture(texture));
                 updatePieces();
             }
             else if (textureRes.isErr()) return Notify::error(textureRes.unwrapErr());
@@ -335,17 +322,18 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     auto pieceClearSprite = ButtonSprite::create("Clear", "goldFont.fnt", "GJ_button_05.png", 0.8f);
     pieceClearSprite->setScale(0.6f);
     auto pieceClearButton = CCMenuItemExt::createSpriteExtra(pieceClearSprite, [this](auto) {
-        auto key = getKey(m_suffix);
         if (m_suffix.ends_with("_extra_001")) {
-            m_frames->removeObjectForKey(key);
+            if (auto it = m_frames.find(m_suffix); it != m_frames.end()) {
+                m_frames.erase(it);
+            }
         }
         else {
             auto emptyFrame = Icons::getFrame("emptyFrame.png"_spr);
             if (!emptyFrame) {
-                emptyFrame = CCSpriteFrame::createWithTexture(Load::createTexture(nullptr, 0, 0), { 0.0f, 0.0f, 0.0f, 0.0f });
+                emptyFrame = frameWithTexture(Load::createTexture(nullptr, 0, 0));
                 Get::SpriteFrameCache()->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
             }
-            m_frames->setObject(emptyFrame, key);
+            m_frames.emplace(m_suffix, emptyFrame);
         }
         updatePieces();
     });
@@ -458,27 +446,27 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
 }
 
 void EditIconPopup::createControls(
-    const CCPoint& pos, const char* text, std::string_view id, float& value, float min, float max, float def, bool decimals
+    const CCPoint& pos, const char* text, std::string_view id, int offset, float min, float max, float def, bool decimals
 ) {
+    auto it = m_state.definitions.find(m_suffix);
+    if (it == m_state.definitions.end()) return;
+
+    auto& value = *(reinterpret_cast<float*>(&it->second) + offset);
     value = def;
 
     auto div = max - min;
-    auto key = getKey(id);
 
     auto slider = Slider::create(nullptr, nullptr, 0.75f);
     slider->setPosition(pos - CCPoint { 0.0f, 10.0f });
     slider->setValue((def - min) / div);
     slider->setID(fmt::format("{}-slider", id));
     m_mainLayer->addChild(slider);
-    m_sliders->setObject(slider, key);
+    m_sliders[offset] = slider;
 
-    CCMenuItemExt::assignCallback<SliderThumb>(slider->getThumb(), [this, min, div, decimals, id, key, &value](SliderThumb* sender) {
+    CCMenuItemExt::assignCallback<SliderThumb>(slider->getThumb(), [this, min, div, decimals, id, offset, &value](SliderThumb* sender) {
         value = sender->getValue() * div + min;
         value = decimals ? roundf(value * 10.0f) / 10.0f : roundf(value);
-        m_state.definitions[m_suffix][id] = value;
-        if (auto input = static_cast<TextInput*>(m_inputs->objectForKey(key))) {
-            input->setString(decimals ? fmt::format("{:.1f}", value) : fmt::format("{:.0f}", value));
-        }
+        m_inputs[offset]->setString(decimals ? fmt::format("{:.1f}", value) : fmt::format("{:.0f}", value));
         updateTargets();
     });
 
@@ -500,30 +488,22 @@ void EditIconPopup::createControls(
     input->setString(decimals ? fmt::format("{:.1f}", def) : fmt::format("{:.0f}", def));
     input->setCommonFilter(decimals ? CommonFilter::Float : CommonFilter::Uint);
     input->setMaxCharCount(decimals ? 5 : 3);
-    input->setCallback([this, min, max, div, decimals, id, key, &value](const std::string& str) {
+    input->setCallback([this, min, max, div, decimals, id, offset, &value](const std::string& str) {
         fast_float::from_chars(str.data(), str.data() + str.size(), value);
         value = std::clamp(value, min, max);
-        m_state.definitions[m_suffix][id] = value;
-        if (auto slider = static_cast<Slider*>(m_sliders->objectForKey(key))) {
-            slider->setValue((value - min) / div);
-        }
+        m_sliders[offset]->setValue((value - min) / div);
         updateTargets();
     });
     input->setID(fmt::format("{}-input", id));
     menu->addChild(input);
-    m_inputs->setObject(input, key);
+    m_inputs[offset] = input;
 
     auto resetButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [
-        this, min, div, def, id, key, decimals, &value
+        this, min, div, def, id, decimals, offset, &value
     ](auto) {
         value = def;
-        m_state.definitions[m_suffix][id] = value;
-        if (auto slider = static_cast<Slider*>(m_sliders->objectForKey(key))) {
-            slider->setValue((value - min) / div);
-        }
-        if (auto input = static_cast<TextInput*>(m_inputs->objectForKey(key))) {
-            input->setString(decimals ? fmt::format("{:.1f}", value) : fmt::format("{:.0f}", value));
-        }
+        m_sliders[offset]->setValue((value - min) / div);
+        m_inputs[offset]->setString(decimals ? fmt::format("{:.1f}", value) : fmt::format("{:.0f}", value));
         updateTargets();
     });
     resetButton->setID(fmt::format("reset-{}-button", id));
@@ -532,15 +512,13 @@ void EditIconPopup::createControls(
     menu->updateLayout();
 }
 
-void EditIconPopup::updateControls(std::string_view id, float& value, float min, float max, float def, bool decimals) {
-    value = m_state.definitions[m_suffix][id].as<float>().unwrapOr(def);
-    auto key = getKey(id);
-    if (auto slider = static_cast<Slider*>(m_sliders->objectForKey(key))) {
-        slider->setValue((value - min) / (max - min));
-    }
-    if (auto input = static_cast<TextInput*>(m_inputs->objectForKey(key))) {
-        input->setString(decimals ? fmt::format("{:.1f}", value) : fmt::format("{:.0f}", value));
-    }
+void EditIconPopup::updateControls(std::string_view id, int offset, float min, float max, bool decimals) {
+    auto it = m_state.definitions.find(id);
+    if (it == m_state.definitions.end()) return;
+
+    auto value = *(reinterpret_cast<float*>(&it->second) + offset);
+    m_sliders[offset]->setValue((value - min) / (max - min));
+    m_inputs[offset]->setString(decimals ? fmt::format("{:.1f}", value) : fmt::format("{:.0f}", value));
 }
 
 void EditIconPopup::transferPlayerToNode(CCNode* node, SimplePlayer* player) {
@@ -625,31 +603,29 @@ void EditIconPopup::transferPlayerToNode(CCNode* node, SimplePlayer* player) {
     }
 }
 
-void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* targets) {
-    m_state.definitions[suffix] = matjson::makeObject({
-        { "offset-x", 0.0f },
-        { "offset-y", 0.0f },
-        { "rotation-x", 0.0f },
-        { "rotation-y", 0.0f },
-        { "scale-x", 1.0f },
-        { "scale-y", 1.0f }
-    });
-
-    auto key = getKey(suffix);
+void EditIconPopup::addPieceButton(std::string_view suffix, int page, std::vector<Ref<CCNode>> targets) {
+    auto definitionP = &m_state.definitions[std::string(suffix)];
+    auto targetsP = &m_targets[std::string(suffix)];
+    *targetsP = std::move(targets);
+    if (m_suffix == suffix) {
+        m_targetsArray = targetsP;
+        m_definition = definitionP;
+    }
 
     auto pieceFrame = Icons::getFrame("{}{}.png", MoreIcons::getIconName(1, m_iconType), suffix);
-    if (pieceFrame) m_frames->setObject(pieceFrame, key);
+    if (pieceFrame) m_frames.emplace(suffix, pieceFrame);
     else pieceFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
     auto pieceSprite = CCSprite::createWithSpriteFrame(pieceFrame);
-    auto pieceButton = CCMenuItemExt::createSpriteExtra(pieceSprite, [this, suffix, page, targets](CCMenuItemSpriteExtra* sender) {
+    auto pieceButton = CCMenuItemExt::createSpriteExtra(pieceSprite, [this, suffix, page, definitionP, targetsP](CCMenuItemSpriteExtra* sender) {
         m_suffix = suffix;
-        updateControls("offset-x", m_offsetX, -20.0f, 20.0f, 0.0f, true);
-        updateControls("offset-y", m_offsetY, -20.0f, 20.0f, 0.0f, true);
-        updateControls("rotation-x", m_rotationX, 0.0f, 360.0f, 0.0f, false);
-        updateControls("rotation-y", m_rotationY, 0.0f, 360.0f, 0.0f, false);
-        updateControls("scale-x", m_scaleX, -10.0f, 10.0f, 1.0f, true);
-        updateControls("scale-y", m_scaleY, -10.0f, 10.0f, 1.0f, true);
-        m_targetsArray = targets;
+        updateControls("offset-x", 0, -20.0f, 20.0f, true);
+        updateControls("offset-y", 1, -20.0f, 20.0f, true);
+        updateControls("rotation-x", 2, 0.0f, 360.0f, false);
+        updateControls("rotation-y", 3, 0.0f, 360.0f, false);
+        updateControls("scale-x", 4, -10.0f, 10.0f, true);
+        updateControls("scale-y", 5, -10.0f, 10.0f, true);
+        m_definition = definitionP;
+        m_targetsArray = targetsP;
         m_selectSprite->setTag(page);
         m_selectSprite->setVisible(true);
         m_selectSprite->setPosition(m_mainLayer->convertToNodeSpace(m_pieceMenu->convertToWorldSpace(sender->getPosition())));
@@ -657,17 +633,13 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, CCArray* t
     pieceButton->setContentSize({ 30.0f, 30.0f });
     pieceSprite->setPosition({ 15.0f, 15.0f });
 
-    if (targets) {
-        m_targets->setObject(targets, key);
-        if (m_suffix == suffix) m_targetsArray = targets;
-    }
     pieceButton->setID(fmt::format("piece-button{}", suffix));
 
     if (page == 0) m_pieceMenu->addChild(pieceButton);
 
-    if (m_pages->count() <= page) m_pages->addObject(CCArray::create());
-    static_cast<CCArray*>(m_pages->objectAtIndex(page))->addObject(pieceButton);
-    m_pieces->setObject(pieceSprite, key);
+    if (m_pages.size() <= page) m_pages.emplace_back();
+    m_pages[page].emplace_back(pieceButton);
+    m_pieces.emplace(suffix, pieceSprite);
 }
 
 CCSprite* EditIconPopup::addColorButton(int& index, CCMenu* menu, const char* text, std::string_view id) {
@@ -714,17 +686,20 @@ bool EditIconPopup::updateWithSelectedFiles(std::string_view suffix) {
         auto image = std::move(imageRes).unwrap();
         Load::initTexture(image.texture, image.data.data(), image.width, image.height, false);
         if (suffix.empty()) {
-            m_frames->removeAllObjects();
-            for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(image.frames)) {
-                frameName.remove_suffix(4);
-                m_frames->setObject(frame, getKey(frameName));
+            m_frames.clear();
+            for (auto& [frameName, frame] : image.frames) {
+                m_frames.emplace(frameName.substr(0, frameName.size() - 4), frame.data);
             }
         }
         else {
-            m_frames->removeObjectForKey(getKey(suffix));
-            for (auto [frameName, frame] : CCDictionaryExt<std::string_view, CCSpriteFrame*>(image.frames)) {
-                frameName.remove_suffix(4);
-                if (frameName == suffix) m_frames->setObject(frame, getKey(frameName));
+            if (auto it = m_frames.find(suffix); it != m_frames.end()) {
+                m_frames.erase(it);
+            }
+            for (auto& [frameName, frame] : image.frames) {
+                if (std::string_view(frameName.data(), frameName.size() - 4) == suffix) {
+                    m_frames.emplace(frameName.substr(0, frameName.size() - 4), frame.data);
+                    break;
+                }
             }
         }
         updatePieces();
@@ -737,10 +712,16 @@ bool EditIconPopup::updateWithSelectedFiles(std::string_view suffix) {
     return ret;
 }
 
+CCSpriteFrame* EditIconPopup::getFrame(std::string_view suffix) {
+    auto it = m_frames.find(suffix);
+    if (it != m_frames.end()) return it->second;
+    return nullptr;
+}
+
 void EditIconPopup::updatePieces() {
     auto crossFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
-    for (auto [suffix, sprite] : CCDictionaryExt<gd::string, CCSprite*>(m_pieces)) {
-        auto spriteFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(suffix));
+    for (auto& [suffix, sprite] : m_pieces) {
+        auto spriteFrame = getFrame(suffix);
         sprite->setDisplayFrame(spriteFrame ? spriteFrame : crossFrame);
     }
 
@@ -756,28 +737,28 @@ void EditIconPopup::updatePieces() {
             auto spritePart = static_cast<CCSprite*>(spriteParts->objectAtIndex(i));
             auto tag = spritePart->getTag();
 
-            spritePart->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_001", tag))));
+            spritePart->setDisplayFrame(getFrame(fmt::format("_{:02}_001", tag)));
             if (auto secondSprite = static_cast<CCSprite*>(secondArray->objectAtIndex(i))) {
-                secondSprite->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_2_001", tag))));
+                secondSprite->setDisplayFrame(getFrame(fmt::format("_{:02}_2_001", tag)));
             }
 
             if (auto glowChild = static_cast<CCSprite*>(glowArray->objectAtIndex(i))) {
-                glowChild->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_glow_001", tag))));
+                glowChild->setDisplayFrame(getFrame(fmt::format("_{:02}_glow_001", tag)));
             }
 
             if (spritePart == headSprite) {
-                auto extraFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey(fmt::format("_{:02}_extra_001", tag)));
+                auto extraFrame = getFrame(fmt::format("_{:02}_extra_001", tag));
                 if (extraFrame) extraSprite->setDisplayFrame(extraFrame);
                 extraSprite->setVisible(extraFrame != nullptr);
             }
         }
     }
     else {
-        m_player->m_firstLayer->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_001")));
-        m_player->m_secondLayer->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_2_001")));
-        if (type == IconType::Ufo) m_player->m_birdDome->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_3_001")));
-        m_player->m_outlineSprite->setDisplayFrame(static_cast<CCSpriteFrame*>(m_frames->objectForKey("_glow_001")));
-        auto extraFrame = static_cast<CCSpriteFrame*>(m_frames->objectForKey("_extra_001"));
+        m_player->m_firstLayer->setDisplayFrame(getFrame("_001"));
+        m_player->m_secondLayer->setDisplayFrame(getFrame("_2_001"));
+        if (type == IconType::Ufo) m_player->m_birdDome->setDisplayFrame(getFrame("_3_001"));
+        m_player->m_outlineSprite->setDisplayFrame(getFrame("_glow_001"));
+        auto extraFrame = getFrame("_extra_001");
         auto detailSprite = m_player->m_detailSprite;
         detailSprite->setVisible(extraFrame != nullptr);
         if (extraFrame) detailSprite->setDisplayFrame(extraFrame);
@@ -787,15 +768,15 @@ void EditIconPopup::updatePieces() {
 }
 
 void EditIconPopup::goToPage(int page) {
-    for (auto sprite : static_cast<CCArray*>(m_pages->objectAtIndex(m_page))->asExt<CCNode>()) {
+    for (auto sprite : m_pages[m_page]) {
         m_pieceMenu->removeChild(sprite, false);
     }
 
-    auto count = m_pages->count();
+    auto count = m_pages.size();
     m_page = ((page % count) + count) % count;
     m_selectSprite->setVisible(m_selectSprite->getTag() == m_page);
 
-    for (auto sprite : static_cast<CCArray*>(m_pages->objectAtIndex(m_page))->asExt<CCNode>()) {
+    for (auto sprite : m_pages[m_page]) {
         m_pieceMenu->addChild(sprite);
     }
 
@@ -803,15 +784,15 @@ void EditIconPopup::goToPage(int page) {
 }
 
 void EditIconPopup::updateTargets() {
-    if (!m_targetsArray) return;
+    if (!m_targetsArray || !m_definition) return;
 
-    for (auto target : m_targetsArray->asExt<CCNode>()) {
-        target->setPositionX(m_offsetX);
-        target->setPositionY(m_offsetY);
-        target->setRotationX(m_rotationX);
-        target->setRotationY(m_rotationY);
-        target->setScaleX(m_scaleX);
-        target->setScaleY(m_scaleY);
+    for (auto target : *m_targetsArray) {
+        target->setPositionX(m_definition->offsetX);
+        target->setPositionY(m_definition->offsetY);
+        target->setRotationX(m_definition->rotationX);
+        target->setRotationY(m_definition->rotationY);
+        target->setScaleX(m_definition->scaleX);
+        target->setScaleY(m_definition->scaleY);
     }
 
     m_hasChanged = true;

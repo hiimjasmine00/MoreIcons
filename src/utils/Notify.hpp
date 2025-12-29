@@ -18,4 +18,4 @@ namespace Notify {
     void success(fmt::format_string<Args...> message, Args&&... args) {
         success(fmt::format(message, std::forward<Args>(args)...));
     }
-};
+}
