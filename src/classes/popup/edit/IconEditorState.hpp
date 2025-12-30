@@ -1,6 +1,6 @@
 #pragma once
-#include "../../misc/StringMap.hpp"
 #include <matjson.hpp>
+#include <unordered_map>
 
 struct FrameDefinition {
     float offsetX = 0.0f;
@@ -18,7 +18,7 @@ struct matjson::Serialize<FrameDefinition> {
 };
 
 struct IconEditorState {
-    StringMap<FrameDefinition> definitions;
+    std::unordered_map<std::string, FrameDefinition> definitions;
     int mainColor = 12;
     int secondaryColor = 12;
     int glowColor = 12;

@@ -11,8 +11,8 @@
 using namespace geode::prelude;
 
 SaveEditorPopup* SaveEditorPopup::create(
-    IconType type, const IconEditorState& state, const StringMap<geode::Ref<cocos2d::CCSpriteFrame>>& frames,
-    std23::move_only_function<void()> callback
+    IconType type, const IconEditorState& state,
+    const std::unordered_map<std::string, Ref<CCSpriteFrame>>& frames, std23::move_only_function<void()> callback
 ) {
     auto ret = new SaveEditorPopup();
     if (ret->init(type, state, frames, std::move(callback))) {
@@ -24,8 +24,8 @@ SaveEditorPopup* SaveEditorPopup::create(
 }
 
 bool SaveEditorPopup::init(
-    IconType type, const IconEditorState& state, const StringMap<geode::Ref<cocos2d::CCSpriteFrame>>& frames,
-    std23::move_only_function<void()> callback
+    IconType type, const IconEditorState& state,
+    const std::unordered_map<std::string, Ref<CCSpriteFrame>>& frames, std23::move_only_function<void()> callback
 ) {
     if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png")) return false;
 
@@ -36,7 +36,7 @@ bool SaveEditorPopup::init(
     m_callback = std::move(callback);
     m_iconType = type;
     m_state = state;
-    m_frames = frames;
+    m_frames = &frames;
 
     m_nameInput = TextInput::create(300.0f, "State Name");
     m_nameInput->setPosition({ 175.0f, 70.0f });
@@ -85,7 +85,7 @@ void SaveEditorPopup::saveEditor(const std::filesystem::path& directory) {
     }
 
     texpack::Packer packer;
-    for (auto& [frameName, frame] : m_frames) {
+    for (auto& [frameName, frame] : *m_frames) {
         auto sprite = CCSprite::createWithSpriteFrame(frame);
         sprite->setAnchorPoint({ 0.0f, 0.0f });
         sprite->setBlendFunc({ GL_ONE, GL_ZERO });

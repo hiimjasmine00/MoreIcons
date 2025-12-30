@@ -1,14 +1,29 @@
 #include "ViewIconPopup.hpp"
+#include "../../misc/SimpleIcon.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Defaults.hpp"
-#include "../../../utils/Get.hpp"
 #include "../../../utils/Icons.hpp"
-#include <Geode/binding/GameManager.hpp>
-#include <Geode/binding/SimplePlayer.hpp>
-#include <MoreIcons.hpp>
+#include <jasmine/mod.hpp>
+#include <span>
 
 using namespace geode::prelude;
+using namespace jasmine::mod;
+
+static std::initializer_list<std::initializer_list<std::string_view>> robotSuffixes = {
+    { "_01_001", "_01_2_001", "_01_glow_001", "_01_extra_001" },
+    { "_02_001", "_02_2_001", "_02_glow_001" },
+    { "_03_001", "_03_2_001", "_03_glow_001" },
+    { "_04_001", "_04_2_001", "_04_glow_001" }
+};
+
+static std::initializer_list<std::initializer_list<std::string_view>> ufoSuffixes = {
+    { "_001", "_2_001", "_3_001", "_glow_001", "_extra_001" }
+};
+
+static std::initializer_list<std::initializer_list<std::string_view>> cubeSuffixes = {
+    { "_001", "_2_001", "_glow_001", "_extra_001" }
+};
 
 ViewIconPopup* ViewIconPopup::create(IconType type, int id, IconInfo* info) {
     auto ret = new ViewIconPopup();
@@ -41,37 +56,17 @@ bool ViewIconPopup::init(IconType type, int id, IconInfo* info) {
     if (type <= IconType::Jetpack) {
         auto isRobot = type == IconType::Robot || type == IconType::Spider;
         std::span<const std::initializer_list<std::string_view>> suffixes;
-        if (isRobot) {
-            static std::initializer_list<std::initializer_list<std::string_view>> robotSuffixes = {
-                { "_01_001", "_01_2_001", "_01_glow_001", "_01_extra_001" },
-                { "_02_001", "_02_2_001", "_02_glow_001" },
-                { "_03_001", "_03_2_001", "_03_glow_001" },
-                { "_04_001", "_04_2_001", "_04_glow_001" }
-            };
-            suffixes = robotSuffixes;
-        }
-        else if (type == IconType::Ufo) {
-            static std::initializer_list<std::initializer_list<std::string_view>> ufoSuffixes = {
-                { "_001", "_2_001", "_3_001", "_glow_001", "_extra_001" }
-            };
-            suffixes = ufoSuffixes;
-        }
-        else {
-            static std::initializer_list<std::initializer_list<std::string_view>> cubeSuffixes = {
-                { "_001", "_2_001", "_glow_001", "_extra_001" }
-            };
-            suffixes = cubeSuffixes;
-        }
+        if (isRobot) suffixes = robotSuffixes;
+        else if (type == IconType::Ufo) suffixes = ufoSuffixes;
+        else suffixes = cubeSuffixes;
 
-        auto player = SimplePlayer::create(1);
-        if (info) more_icons::updateSimplePlayer(player, info->getName(), type);
-        else player->updatePlayerFrame(id, type);
-        player->setGlowOutline({ 255, 255, 255 });
+        auto prefix = info ? fmt::format("{}"_spr, info->getName()) : MoreIcons::getIconName(id, type);
+
+        auto player = SimpleIcon::create(type, prefix);
         player->setPosition({ 175.0f, (isRobot ? 160.0f : 80.0f) - suffixes.size() * 30.0f });
         player->setID("player-icon");
         m_mainLayer->addChild(player);
 
-        auto prefix = info ? fmt::format("{}"_spr, info->getName()) : MoreIcons::getIconName(id, type);
         for (size_t i = 0; i < suffixes.size(); i++) {
             auto& subSuffixes = suffixes[i];
 

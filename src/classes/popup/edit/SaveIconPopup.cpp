@@ -14,7 +14,7 @@ using namespace geode::prelude;
 
 SaveIconPopup* SaveIconPopup::create(
     BasePopup* popup1, BasePopup* popup2, IconType type,
-    const StringMap<FrameDefinition>& definitions, const StringMap<geode::Ref<cocos2d::CCSpriteFrame>>& frames
+    const std::unordered_map<std::string, FrameDefinition>& definitions, const std::unordered_map<std::string, Ref<CCSpriteFrame>>& frames
 ) {
     auto ret = new SaveIconPopup();
     if (ret->init(popup1, popup2, type, definitions, frames)) {
@@ -27,7 +27,7 @@ SaveIconPopup* SaveIconPopup::create(
 
 bool SaveIconPopup::init(
     BasePopup* popup1, BasePopup* popup2, IconType type,
-    const StringMap<FrameDefinition>& definitions, const StringMap<geode::Ref<cocos2d::CCSpriteFrame>>& frames
+    const std::unordered_map<std::string, FrameDefinition>& definitions, const std::unordered_map<std::string, Ref<CCSpriteFrame>>& frames
 ) {
     if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png")) return false;
 
@@ -38,8 +38,8 @@ bool SaveIconPopup::init(
     m_parentPopup1 = popup1;
     m_parentPopup2 = popup2;
     m_iconType = type;
-    m_definitions = definitions;
-    m_frames = frames;
+    m_definitions = &definitions;
+    m_frames = &frames;
 
     m_nameInput = TextInput::create(300.0f, "Icon Name");
     m_nameInput->setPosition({ 175.0f, 70.0f });
@@ -83,8 +83,8 @@ bool SaveIconPopup::init(
     return true;
 }
 
-bool SaveIconPopup::checkFrame(std::string_view suffix) {
-    auto ret = m_frames.contains(suffix);
+bool SaveIconPopup::checkFrame(const std::string& suffix) {
+    auto ret = m_frames->contains(suffix);
     if (!ret) Notify::info("Missing {}{}.", m_nameInput->getString(), suffix);
     return ret;
 }
@@ -109,9 +109,13 @@ void SaveIconPopup::saveIcon(Filesystem::PathView stem) {
     std::array<texpack::Packer, 3> packers = {};
     auto scaleFactor = Get::Director()->getContentScaleFactor();
     std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
-    for (auto& [frameName, frame] : m_frames) {
-        auto& definition = m_definitions[frameName];
+    for (auto& [frameName, frameRef] : *m_frames) {
+        auto it = m_definitions->find(frameName);
+        if (it == m_definitions->end()) continue;
+
+        auto& definition = it->second;
         auto joinedName = fmt::format("{}{}.png", name, frameName);
+        auto frame = frameRef.data();
         for (int i = 0; i < 3; i++) {
             auto node = CCNode::create();
             node->setScale(scales[i]);

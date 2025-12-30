@@ -415,7 +415,8 @@ void more_icons::updateIcon(IconInfo* info) {
         }
     }
 
-    for (auto& [frameName, frame] : frames) {
+    for (auto& [frameName, frameRef] : frames) {
+        auto frame = frameRef.data;
         if (auto spriteFrame = Icons::getFrame(frameName.c_str())) {
             spriteFrame->m_obOffset = frame->m_obOffset;
             spriteFrame->m_obOriginalSize = frame->m_obOriginalSize;

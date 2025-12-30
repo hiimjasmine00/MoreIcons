@@ -13,7 +13,6 @@
 #include "../../../utils/Icons.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
-#include <fast_float/fast_float.h>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
@@ -22,6 +21,7 @@
 #include <Geode/binding/Slider.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
 #include <Geode/utils/file.hpp>
+#include <jasmine/convert.hpp>
 #include <jasmine/mod.hpp>
 
 using namespace geode::prelude;
@@ -35,19 +35,6 @@ EditIconPopup* EditIconPopup::create(BasePopup* popup, IconType type) {
     }
     delete ret;
     return nullptr;
-}
-
-std::vector<Ref<CCNode>> arrayWithObject(CCNode* obj) {
-    return { obj };
-}
-
-template <class... T>
-std::vector<Ref<CCNode>> arrayWithObjects(CCArray* parent, T... indices) {
-    std::vector<Ref<CCNode>> arr;
-    for (auto index : { indices... }) {
-        if (auto obj = static_cast<CCNode*>(parent->objectAtIndex(index))) arr.emplace_back(obj);
-    }
-    return arr;
 }
 
 CCSpriteFrame* frameWithTexture(CCTexture2D* texture) {
@@ -92,22 +79,17 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     m_pieceMenu->setPosition({ 270.0f, 222.0f });
     m_pieceMenu->setContentSize({ isRobot ? 260.0f : 330.0f, 45.0f });
     m_pieceMenu->ignoreAnchorPointForPosition(false);
-    m_pieceMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Even));
+    auto layout = RowLayout::create()->setAxisAlignment(AxisAlignment::Even);
+    layout->ignoreInvisibleChildren(true);
+    m_pieceMenu->setLayout(layout);
     m_pieceMenu->setID("piece-menu");
     m_mainLayer->addChild(m_pieceMenu);
 
-    m_player = SimplePlayer::create(1);
-    m_player->updatePlayerFrame(1, type);
-    m_player->setGlowOutline({ 255, 255, 255 });
-    m_player->updateColors();
-
-    auto previewNode = CCNode::create();
-    previewNode->setPosition({ 51.0f, 205.0f });
-    previewNode->setScale(2.0f);
-    previewNode->setAnchorPoint({ 0.5f, 0.5f });
-    transferPlayerToNode(previewNode, m_player);
-    previewNode->setID("preview-node");
-    m_mainLayer->addChild(previewNode);
+    m_player = SimpleIcon::create(type, MoreIcons::getIconName(1, type));
+    m_player->setPosition({ 51.0f, 205.0f });
+    m_player->setScale(2.0f);
+    m_player->setID("icon-preview");
+    m_mainLayer->addChild(m_player);
 
     if (isRobot) {
         m_suffix = "_01_001";
@@ -131,52 +113,28 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
         nextButton->setID("next-button");
         m_buttonMenu->addChild(nextButton);
 
-        auto isSpider = type == IconType::Spider;
-        auto robotSprite = isSpider ? m_player->m_spiderSprite : m_player->m_robotSprite;
-        auto firstArray = robotSprite->m_paSprite->m_spriteParts;
-        auto secondArray = robotSprite->m_secondArray;
-        auto glowArray = robotSprite->m_glowSprite->getChildren();
-        auto extraSprite = robotSprite->m_extraSprite;
-        if (!extraSprite) {
-            extraSprite = CCSprite::create();
-            robotSprite->m_extraSprite = extraSprite;
-        }
-
-        addPieceButton("_01_001", 0, arrayWithObjects(firstArray, 3));
-        addPieceButton("_01_2_001", 0, arrayWithObjects(secondArray, 3));
-        addPieceButton("_01_glow_001", 0, arrayWithObjects(glowArray, 3));
-        addPieceButton("_01_extra_001", 0, arrayWithObject(extraSprite));
-        if (isSpider) {
-            addPieceButton("_02_001", 1, arrayWithObjects(firstArray, 0, 1, 5));
-            addPieceButton("_02_2_001", 1, arrayWithObjects(secondArray, 0, 1, 5));
-            addPieceButton("_02_glow_001", 1, arrayWithObjects(glowArray, 0, 1, 5));
-            addPieceButton("_03_001", 2, arrayWithObjects(firstArray, 4));
-            addPieceButton("_03_2_001", 2, arrayWithObjects(secondArray, 4));
-            addPieceButton("_03_glow_001", 2, arrayWithObjects(glowArray, 4));
-            addPieceButton("_04_001", 3, arrayWithObjects(firstArray, 2));
-            addPieceButton("_04_2_001", 3, arrayWithObjects(secondArray, 2));
-            addPieceButton("_04_glow_001", 3, arrayWithObjects(glowArray, 2));
-        }
-        else {
-            addPieceButton("_02_001", 1, arrayWithObjects(firstArray, 1, 5));
-            addPieceButton("_02_2_001", 1, arrayWithObjects(secondArray, 1, 5));
-            addPieceButton("_02_glow_001", 1, arrayWithObjects(glowArray, 1, 5));
-            addPieceButton("_03_001", 2, arrayWithObjects(firstArray, 0, 4));
-            addPieceButton("_03_2_001", 2, arrayWithObjects(secondArray, 0, 4));
-            addPieceButton("_03_glow_001", 2, arrayWithObjects(glowArray, 0, 4));
-            addPieceButton("_04_001", 3, arrayWithObjects(firstArray, 2, 6));
-            addPieceButton("_04_2_001", 3, arrayWithObjects(secondArray, 2, 6));
-            addPieceButton("_04_glow_001", 3, arrayWithObjects(glowArray, 2, 6));
-        }
+        addPieceButton("_01_001", 0);
+        addPieceButton("_01_2_001", 0);
+        addPieceButton("_01_glow_001", 0);
+        addPieceButton("_01_extra_001", 0);
+        addPieceButton("_02_001", 1);
+        addPieceButton("_02_2_001", 1);
+        addPieceButton("_02_glow_001", 1);
+        addPieceButton("_03_001", 2);
+        addPieceButton("_03_2_001", 2);
+        addPieceButton("_03_glow_001", 2);
+        addPieceButton("_04_001", 3);
+        addPieceButton("_04_2_001", 3);
+        addPieceButton("_04_glow_001", 3);
     }
     else {
         m_suffix = "_001";
 
-        addPieceButton("_001", 0, arrayWithObject(m_player->m_firstLayer));
-        addPieceButton("_2_001", 0, arrayWithObject(m_player->m_secondLayer));
-        if (type == IconType::Ufo) addPieceButton("_3_001", 0, arrayWithObject(m_player->m_birdDome));
-        addPieceButton("_glow_001", 0, arrayWithObject(m_player->m_outlineSprite));
-        addPieceButton("_extra_001", 0, arrayWithObject(m_player->m_detailSprite));
+        addPieceButton("_001", 0);
+        addPieceButton("_2_001", 0);
+        if (type == IconType::Ufo) addPieceButton("_3_001", 0);
+        addPieceButton("_glow_001", 0);
+        addPieceButton("_extra_001", 0);
     }
 
     m_pieceMenu->updateLayout();
@@ -214,18 +172,10 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
 
             m_state = std::move(stateRes).unwrap();
             updateColors();
-            updateControls("offset-x", 0, -20.0f, 20.0f, true);
-            updateControls("offset-y", 1, -20.0f, 20.0f, true);
-            updateControls("rotation-x", 2, 0.0f, 360.0f, false);
-            updateControls("rotation-y", 3, 0.0f, 360.0f, false);
-            updateControls("scale-x", 4, -10.0f, 10.0f, true);
-            updateControls("scale-y", 5, -10.0f, 10.0f, true);
+            updateControls();
 
             for (auto& [key, definition] : m_state.definitions) {
-                auto targets = m_targets.find(key);
-                if (targets == m_targets.end()) continue;
-                for (auto& targetRef : targets->second) {
-                    auto target = targetRef.data();
+                for (auto target : m_player->getTargets(key)) {
                     target->setPositionX(definition.offsetX);
                     target->setPositionY(definition.offsetY);
                     target->setRotationX(definition.rotationX);
@@ -259,12 +209,12 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     m_selectSprite->setID("select-sprite");
     m_mainLayer->addChild(m_selectSprite);
 
-    createControls({ 185.0f, 175.0f }, "Offset X:", "offset-x", 0, -20.0f, 20.0f, 0.0f, true);
-    createControls({ 355.0f, 175.0f }, "Offset Y:", "offset-y", 1, -20.0f, 20.0f, 0.0f, true);
-    createControls({ 185.0f, 135.0f }, "Rotation X:", "rotation-x", 2, 0.0f, 360.0f, 0.0f, false);
-    createControls({ 355.0f, 135.0f }, "Rotation Y:", "rotation-y", 3, 0.0f, 360.0f, 0.0f, false);
-    createControls({ 185.0f, 95.0f }, "Scale X:", "scale-x", 4, -10.0f, 10.0f, 1.0f, true);
-    createControls({ 355.0f, 95.0f }, "Scale Y:", "scale-y", 5, -10.0f, 10.0f, 1.0f, true);
+    createControls({ 185.0f, 175.0f }, "Offset X:", "offset-x", 0);
+    createControls({ 355.0f, 175.0f }, "Offset Y:", "offset-y", 1);
+    createControls({ 185.0f, 135.0f }, "Rotation X:", "rotation-x", 2);
+    createControls({ 355.0f, 135.0f }, "Rotation Y:", "rotation-y", 3);
+    createControls({ 185.0f, 95.0f }, "Scale X:", "scale-x", 4);
+    createControls({ 355.0f, 95.0f }, "Scale Y:", "scale-y", 5);
 
     auto pieceButtonMenu = CCMenu::create();
     pieceButtonMenu->setPosition({ 270.0f, 60.0f });
@@ -313,7 +263,7 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
                 m_selectedPNG = Filesystem::strPath(std::move(texture));
                 m_selectedPlist = Filesystem::strPath(std::move(sheet));
             }
-            updateWithSelectedFiles(m_suffix);
+            updateWithSelectedFiles(true);
         })->show();
     });
     piecePresetButton->setID("piece-preset-button");
@@ -323,9 +273,7 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     pieceClearSprite->setScale(0.6f);
     auto pieceClearButton = CCMenuItemExt::createSpriteExtra(pieceClearSprite, [this](auto) {
         if (m_suffix.ends_with("_extra_001")) {
-            if (auto it = m_frames.find(m_suffix); it != m_frames.end()) {
-                m_frames.erase(it);
-            }
+            m_frames.erase(m_suffix);
         }
         else {
             auto emptyFrame = Icons::getFrame("emptyFrame.png"_spr);
@@ -445,28 +393,28 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     return true;
 }
 
-void EditIconPopup::createControls(
-    const CCPoint& pos, const char* text, std::string_view id, int offset, float min, float max, float def, bool decimals
-) {
-    auto it = m_state.definitions.find(m_suffix);
-    if (it == m_state.definitions.end()) return;
-
-    auto& value = *(reinterpret_cast<float*>(&it->second) + offset);
-    value = def;
-
+void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::string_view id, int offset) {
+    auto def = *(&m_definition->offsetX + offset);
+    auto min = offset == 0 || offset == 1 ? -20.0f : offset == 4 || offset == 5 ? -10.0f : 0.0f;
+    auto max = offset == 0 || offset == 1 ? 20.0f : offset == 4 || offset == 5 ? 10.0f : 360.0f;
+    auto decimals = offset != 2 && offset != 3;
     auto div = max - min;
 
     auto slider = Slider::create(nullptr, nullptr, 0.75f);
+    auto input = TextInput::create(60.0f, "Num");
+
+    auto sliderValue = (def - min) / div;
     slider->setPosition(pos - CCPoint { 0.0f, 10.0f });
-    slider->setValue((def - min) / div);
+    slider->setValue(sliderValue);
     slider->setID(fmt::format("{}-slider", id));
     m_mainLayer->addChild(slider);
     m_sliders[offset] = slider;
 
-    CCMenuItemExt::assignCallback<SliderThumb>(slider->getThumb(), [this, min, div, decimals, id, offset, &value](SliderThumb* sender) {
+    CCMenuItemExt::assignCallback<SliderThumb>(slider->getThumb(), [this, min, div, decimals, id, input, offset](SliderThumb* sender) {
+        auto& value = *(&m_definition->offsetX + offset);
         value = sender->getValue() * div + min;
         value = decimals ? roundf(value * 10.0f) / 10.0f : roundf(value);
-        m_inputs[offset]->setString(decimals ? fmt::format("{:.1f}", value) : fmt::format("{:.0f}", value));
+        input->setString(decimals ? fmt::format("{:.1f}", value) : fmt::format("{:.0f}", value));
         updateTargets();
     });
 
@@ -483,15 +431,16 @@ void EditIconPopup::createControls(
     label->setID(fmt::format("{}-label", id));
     menu->addChild(label);
 
-    auto input = TextInput::create(60.0f, "Num");
+    auto inputString = decimals ? fmt::format("{:.1f}", def) : fmt::format("{:.0f}", def);
     input->setScale(0.5f);
-    input->setString(decimals ? fmt::format("{:.1f}", def) : fmt::format("{:.0f}", def));
+    input->setString(inputString);
     input->setCommonFilter(decimals ? CommonFilter::Float : CommonFilter::Uint);
     input->setMaxCharCount(decimals ? 5 : 3);
-    input->setCallback([this, min, max, div, decimals, id, offset, &value](const std::string& str) {
-        fast_float::from_chars(str.data(), str.data() + str.size(), value);
+    input->setCallback([this, min, max, div, slider, offset](const std::string& str) {
+        auto& value = *(&m_definition->offsetX + offset);
+        jasmine::convert::to(str, value);
         value = std::clamp(value, min, max);
-        m_sliders[offset]->setValue((value - min) / div);
+        slider->setValue((value - min) / div);
         updateTargets();
     });
     input->setID(fmt::format("{}-input", id));
@@ -499,11 +448,12 @@ void EditIconPopup::createControls(
     m_inputs[offset] = input;
 
     auto resetButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [
-        this, min, div, def, id, decimals, offset, &value
+        this, def, slider, input, sliderValue, inputString = std::move(inputString), offset
     ](auto) {
+        auto& value = *(&m_definition->offsetX + offset);
         value = def;
-        m_sliders[offset]->setValue((value - min) / div);
-        m_inputs[offset]->setString(decimals ? fmt::format("{:.1f}", value) : fmt::format("{:.0f}", value));
+        slider->setValue(sliderValue);
+        input->setString(inputString);
         updateTargets();
     });
     resetButton->setID(fmt::format("reset-{}-button", id));
@@ -512,104 +462,38 @@ void EditIconPopup::createControls(
     menu->updateLayout();
 }
 
-void EditIconPopup::updateControls(std::string_view id, int offset, float min, float max, bool decimals) {
-    auto it = m_state.definitions.find(id);
-    if (it == m_state.definitions.end()) return;
+void EditIconPopup::updateControls() {
+    auto offsetX = m_definition->offsetX;
+    m_sliders[0]->setValue((offsetX + 20.0f) / 40.0f);
+    m_inputs[0]->setString(fmt::format("{:.1f}", offsetX));
 
-    auto value = *(reinterpret_cast<float*>(&it->second) + offset);
-    m_sliders[offset]->setValue((value - min) / (max - min));
-    m_inputs[offset]->setString(decimals ? fmt::format("{:.1f}", value) : fmt::format("{:.0f}", value));
+    auto offsetY = m_definition->offsetY;
+    m_sliders[1]->setValue((offsetY + 20.0f) / 40.0f);
+    m_inputs[1]->setString(fmt::format("{:.1f}", offsetY));
+
+    auto rotationX = m_definition->rotationX;
+    m_sliders[2]->setValue(rotationX / 360.0f);
+    m_inputs[2]->setString(fmt::format("{:.0f}", rotationX));
+
+    auto rotationY = m_definition->rotationY;
+    m_sliders[3]->setValue(rotationY / 360.0f);
+    m_inputs[3]->setString(fmt::format("{:.0f}", rotationY));
+
+    auto scaleX = m_definition->scaleX;
+    m_sliders[4]->setValue((scaleX + 10.0f) / 20.0f);
+    m_inputs[4]->setString(fmt::format("{:.1f}", scaleX));
+
+    auto scaleY = m_definition->scaleY;
+    m_sliders[5]->setValue((scaleY + 10.0f) / 20.0f);
+    m_inputs[5]->setString(fmt::format("{:.1f}", scaleY));
 }
 
-void EditIconPopup::transferPlayerToNode(CCNode* node, SimplePlayer* player) {
-    auto type = m_iconType;
-    if (type == IconType::Robot || type == IconType::Spider) {
-        auto robotSprite = type == IconType::Spider ? player->m_spiderSprite : player->m_robotSprite;
-
-        auto glowNode = CCNode::create();
-        glowNode->setAnchorPoint({ 0.5f, 0.5f });
-        node->addChild(glowNode, -1);
-
-        auto headSprite = robotSprite->m_headSprite;
-        auto spriteParts = robotSprite->m_paSprite->m_spriteParts;
-        auto secondArray = robotSprite->m_secondArray;
-        auto glowArray = robotSprite->m_glowSprite->getChildren();
-        for (int i = 0; i < spriteParts->count(); i++) {
-            auto spritePart = static_cast<CCSpritePart*>(spriteParts->objectAtIndex(i));
-            auto position = spritePart->getPosition();
-            auto scaleX = spritePart->getScaleX();
-            auto scaleY = spritePart->getScaleY();
-            auto rotation = spritePart->getRotation();
-            auto zOrder = spritePart->getZOrder();
-
-            auto partNode = CCNode::create();
-            partNode->setPosition(position);
-            partNode->setScaleX(scaleX);
-            partNode->setScaleY(scaleY);
-            partNode->setRotation(rotation);
-            partNode->setAnchorPoint({ 0.5f, 0.5f });
-            node->addChild(partNode, zOrder);
-
-            auto secondSprite = static_cast<CCSprite*>(secondArray->objectAtIndex(i));
-            secondSprite->removeFromParentAndCleanup(false);
-            secondSprite->setPosition({ 0.0f, 0.0f });
-            partNode->addChild(secondSprite, -1);
-
-            auto glowParent = CCNode::create();
-            glowParent->setPosition(position);
-            glowParent->setScaleX(scaleX);
-            glowParent->setScaleY(scaleY);
-            glowParent->setRotation(rotation);
-            glowParent->setAnchorPoint({ 0.5f, 0.5f });
-            glowNode->addChild(glowParent, zOrder);
-
-            auto glowSprite = static_cast<CCSprite*>(glowArray->objectAtIndex(i));
-            glowSprite->setPosition({ 0.0f, 0.0f });
-            spritePart->setScaleX(1.0f);
-            spritePart->setScaleY(1.0f);
-            spritePart->setRotation(0.0f);
-            glowParent->addChild(glowSprite);
-
-            if (spritePart == headSprite) {
-                auto extraSprite = robotSprite->m_extraSprite;
-                extraSprite->removeFromParentAndCleanup(false);
-                extraSprite->setPosition({ 0.0f, 0.0f });
-                partNode->addChild(extraSprite, 1);
-            }
-
-            spritePart->m_followers->removeAllObjects();
-            spritePart->m_hasFollower = false;
-            spritePart->setPosition({ 0.0f, 0.0f });
-            spritePart->setScaleX(1.0f);
-            spritePart->setScaleY(1.0f);
-            spritePart->setRotation(0.0f);
-            partNode->addChild(spritePart, 0);
-        }
-    }
-    else {
-        Ref firstLayer = player->m_firstLayer;
-        node->setPosition(node->getPosition() + firstLayer->getPosition());
-        node->setScale(node->getScale() * firstLayer->getScale());
-        while (firstLayer->getChildrenCount() > 0) {
-            auto child = firstLayer->getChildByIndex(0);
-            child->removeFromParentAndCleanup(false);
-            child->setPosition({ 0.0f, 0.0f });
-            node->addChild(child);
-        }
-        firstLayer->setPosition({ 0.0f, 0.0f });
-        firstLayer->setScale(1.0f);
-        firstLayer->removeFromParentAndCleanup(false);
-        node->addChild(firstLayer, 0);
-    }
-}
-
-void EditIconPopup::addPieceButton(std::string_view suffix, int page, std::vector<Ref<CCNode>> targets) {
-    auto definitionP = &m_state.definitions[std::string(suffix)];
-    auto targetsP = &m_targets[std::string(suffix)];
-    *targetsP = std::move(targets);
+void EditIconPopup::addPieceButton(const std::string& suffix, int page) {
+    auto definitionP = &m_state.definitions[suffix];
+    auto targetsP = &m_player->getTargets(suffix);
     if (m_suffix == suffix) {
-        m_targetsArray = targetsP;
         m_definition = definitionP;
+        m_targetsArray = targetsP;
     }
 
     auto pieceFrame = Icons::getFrame("{}{}.png", MoreIcons::getIconName(1, m_iconType), suffix);
@@ -618,31 +502,25 @@ void EditIconPopup::addPieceButton(std::string_view suffix, int page, std::vecto
     auto pieceSprite = CCSprite::createWithSpriteFrame(pieceFrame);
     auto pieceButton = CCMenuItemExt::createSpriteExtra(pieceSprite, [this, suffix, page, definitionP, targetsP](CCMenuItemSpriteExtra* sender) {
         m_suffix = suffix;
-        updateControls("offset-x", 0, -20.0f, 20.0f, true);
-        updateControls("offset-y", 1, -20.0f, 20.0f, true);
-        updateControls("rotation-x", 2, 0.0f, 360.0f, false);
-        updateControls("rotation-y", 3, 0.0f, 360.0f, false);
-        updateControls("scale-x", 4, -10.0f, 10.0f, true);
-        updateControls("scale-y", 5, -10.0f, 10.0f, true);
         m_definition = definitionP;
         m_targetsArray = targetsP;
+        updateControls();
         m_selectSprite->setTag(page);
         m_selectSprite->setVisible(true);
         m_selectSprite->setPosition(m_mainLayer->convertToNodeSpace(m_pieceMenu->convertToWorldSpace(sender->getPosition())));
     });
-    pieceButton->setContentSize({ 30.0f, 30.0f });
     pieceSprite->setPosition({ 15.0f, 15.0f });
-
-    pieceButton->setID(fmt::format("piece-button{}", suffix));
-
-    if (page == 0) m_pieceMenu->addChild(pieceButton);
+    pieceButton->setContentSize({ 30.0f, 30.0f });
+    pieceButton->setVisible(page == 0);
+    pieceButton->setID(fmt::format("piece{}", suffix));
+    m_pieceMenu->addChild(pieceButton);
 
     if (m_pages.size() <= page) m_pages.emplace_back();
-    m_pages[page].emplace_back(pieceButton);
+    m_pages[page].push_back(pieceButton);
     m_pieces.emplace(suffix, pieceSprite);
 }
 
-CCSprite* EditIconPopup::addColorButton(int& index, CCMenu* menu, const char* text, std::string_view id) {
+CCSprite* EditIconPopup::addColorButton(int& index, CCMenu* menu, const char* text, std::string&& id) {
     auto sprite = CCSprite::createWithSpriteFrameName("player_special_01_001.png");
     sprite->setScale(0.85f);
     sprite->setCascadeColorEnabled(true);
@@ -657,7 +535,7 @@ CCSprite* EditIconPopup::addColorButton(int& index, CCMenu* menu, const char* te
             updateColors();
         })->show();
     });
-    button->setID(std::string(id));
+    button->setID(std::move(id));
     menu->addChild(button);
     return sprite;
 }
@@ -667,36 +545,31 @@ void EditIconPopup::updateColors() {
 
     auto mainColor = gameManager->colorForIdx(m_state.mainColor);
     m_mainColorSprite->setColor(mainColor);
-    m_player->setColor(mainColor);
 
     auto secondaryColor = gameManager->colorForIdx(m_state.secondaryColor);
     m_secondaryColorSprite->setColor(secondaryColor);
-    m_player->setSecondColor(secondaryColor);
 
     auto glowColor = gameManager->colorForIdx(m_state.glowColor);
     m_glowColorSprite->setColor(glowColor);
-    m_player->enableCustomGlowColor(glowColor);
 
-    m_player->updateColors();
+    m_player->setColors(mainColor, secondaryColor, glowColor);
 }
 
-bool EditIconPopup::updateWithSelectedFiles(std::string_view suffix) {
+bool EditIconPopup::updateWithSelectedFiles(bool useSuffix) {
     auto ret = false;
     if (auto imageRes = Load::createFrames(m_selectedPNG, m_selectedPlist, {}, m_iconType, false)) {
         auto image = std::move(imageRes).unwrap();
         Load::initTexture(image.texture, image.data.data(), image.width, image.height, false);
-        if (suffix.empty()) {
+        if (!useSuffix) {
             m_frames.clear();
             for (auto& [frameName, frame] : image.frames) {
                 m_frames.emplace(frameName.substr(0, frameName.size() - 4), frame.data);
             }
         }
         else {
-            if (auto it = m_frames.find(suffix); it != m_frames.end()) {
-                m_frames.erase(it);
-            }
+            m_frames.erase(m_suffix);
             for (auto& [frameName, frame] : image.frames) {
-                if (std::string_view(frameName.data(), frameName.size() - 4) == suffix) {
+                if (std::string_view(frameName.data(), frameName.size() - 4) == m_suffix) {
                     m_frames.emplace(frameName.substr(0, frameName.size() - 4), frame.data);
                     break;
                 }
@@ -712,7 +585,7 @@ bool EditIconPopup::updateWithSelectedFiles(std::string_view suffix) {
     return ret;
 }
 
-CCSpriteFrame* EditIconPopup::getFrame(std::string_view suffix) {
+CCSpriteFrame* EditIconPopup::getFrame(const std::string& suffix) {
     auto it = m_frames.find(suffix);
     if (it != m_frames.end()) return it->second;
     return nullptr;
@@ -723,45 +596,10 @@ void EditIconPopup::updatePieces() {
     for (auto& [suffix, sprite] : m_pieces) {
         auto spriteFrame = getFrame(suffix);
         sprite->setDisplayFrame(spriteFrame ? spriteFrame : crossFrame);
-    }
-
-    auto type = m_iconType;
-    if (type == IconType::Robot || type == IconType::Spider) {
-        auto sprite = type == IconType::Spider ? m_player->m_spiderSprite : m_player->m_robotSprite;
-        auto spriteParts = sprite->m_paSprite->m_spriteParts;
-        auto secondArray = sprite->m_secondArray;
-        auto glowArray = sprite->m_glowSprite->getChildren();
-        auto headSprite = sprite->m_headSprite;
-        auto extraSprite = sprite->m_extraSprite;
-        for (int i = 0; i < spriteParts->count(); i++) {
-            auto spritePart = static_cast<CCSprite*>(spriteParts->objectAtIndex(i));
-            auto tag = spritePart->getTag();
-
-            spritePart->setDisplayFrame(getFrame(fmt::format("_{:02}_001", tag)));
-            if (auto secondSprite = static_cast<CCSprite*>(secondArray->objectAtIndex(i))) {
-                secondSprite->setDisplayFrame(getFrame(fmt::format("_{:02}_2_001", tag)));
-            }
-
-            if (auto glowChild = static_cast<CCSprite*>(glowArray->objectAtIndex(i))) {
-                glowChild->setDisplayFrame(getFrame(fmt::format("_{:02}_glow_001", tag)));
-            }
-
-            if (spritePart == headSprite) {
-                auto extraFrame = getFrame(fmt::format("_{:02}_extra_001", tag));
-                if (extraFrame) extraSprite->setDisplayFrame(extraFrame);
-                extraSprite->setVisible(extraFrame != nullptr);
-            }
+        for (auto target : m_player->getTargets(suffix)) {
+            target->setVisible(spriteFrame != nullptr);
+            if (spriteFrame) target->setDisplayFrame(spriteFrame);
         }
-    }
-    else {
-        m_player->m_firstLayer->setDisplayFrame(getFrame("_001"));
-        m_player->m_secondLayer->setDisplayFrame(getFrame("_2_001"));
-        if (type == IconType::Ufo) m_player->m_birdDome->setDisplayFrame(getFrame("_3_001"));
-        m_player->m_outlineSprite->setDisplayFrame(getFrame("_glow_001"));
-        auto extraFrame = getFrame("_extra_001");
-        auto detailSprite = m_player->m_detailSprite;
-        detailSprite->setVisible(extraFrame != nullptr);
-        if (extraFrame) detailSprite->setDisplayFrame(extraFrame);
     }
 
     m_hasChanged = true;
@@ -769,7 +607,7 @@ void EditIconPopup::updatePieces() {
 
 void EditIconPopup::goToPage(int page) {
     for (auto sprite : m_pages[m_page]) {
-        m_pieceMenu->removeChild(sprite, false);
+        sprite->setVisible(false);
     }
 
     auto count = m_pages.size();
@@ -777,7 +615,7 @@ void EditIconPopup::goToPage(int page) {
     m_selectSprite->setVisible(m_selectSprite->getTag() == m_page);
 
     for (auto sprite : m_pages[m_page]) {
-        m_pieceMenu->addChild(sprite);
+        sprite->setVisible(true);
     }
 
     m_pieceMenu->updateLayout();

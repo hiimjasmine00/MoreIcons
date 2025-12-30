@@ -159,7 +159,7 @@ Result<Autorelease<CCTexture2D>> Load::createTexture(const std::filesystem::path
 }
 
 Autorelease<CCTexture2D> Load::createTexture(const uint8_t* data, uint32_t width, uint32_t height) {
-    Autorelease texture = new CCTexture2D();
+    auto texture = new CCTexture2D();
     initTexture(texture, data, width, height, false);
     return texture;
 }
@@ -235,21 +235,19 @@ Result<matjson::Value> Load::readPlist(const std::filesystem::path& path) {
     return Ok(std::move(json));
 }
 
-Result<StringMap<Autorelease<cocos2d::CCSpriteFrame>>> Load::createFrames(
+Result<std::unordered_map<std::string, Autorelease<CCSpriteFrame>>> Load::createFrames(
     const std::filesystem::path& path, CCTexture2D* texture, std::string_view name, IconType type, bool fixNames
 ) {
-    if (path.empty()) return Ok(StringMap<Autorelease<cocos2d::CCSpriteFrame>>());
+    std::unordered_map<std::string, Autorelease<CCSpriteFrame>> frames;
+    if (path.empty()) return Ok(std::move(frames));
 
-    GEODE_UNWRAP_INTO(auto json, readPlist(path));
+    GEODE_UNWRAP_INTO(const auto json, readPlist(path));
 
     auto framesRes = json.get("frames");
     if (!framesRes.isOk()) return Err("No frames <dict> element found");
 
-    auto format = json.get("metadata").andThen([](const matjson::Value& v) {
-        return v.get<int>("format");
-    }).unwrapOrDefault();
+    auto format = json["metadata"].get<int>("format").unwrapOrDefault();
 
-    StringMap<Autorelease<cocos2d::CCSpriteFrame>> frames;
     for (auto& [frameName, obj] : framesRes.unwrap()) {
         if (!obj.isObject()) continue;
 
@@ -326,9 +324,9 @@ Result<StringMap<Autorelease<cocos2d::CCSpriteFrame>>> Load::createFrames(
         auto absY = std::abs(offset.y) * 2.0f;
         if (originalSize.height - rect.size.height < absY) originalSize.height = rect.size.height + absY;
 
-        Autorelease frame = new CCSpriteFrame();
+        auto frame = new CCSpriteFrame();
         frame->initWithTexture(texture, rect, rotated, offset, originalSize);
-        frames.emplace(fixNames ? getFrameName(frameName, name, type) : frameName, std::move(frame));
+        frames.emplace(fixNames ? getFrameName(frameName, name, type) : frameName, frame);
     }
 
     return Ok(std::move(frames));

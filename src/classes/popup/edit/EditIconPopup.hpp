@@ -1,7 +1,6 @@
 #include "IconEditorState.hpp"
 #include "../BasePopup.hpp"
-#include <Geode/binding/SimplePlayer.hpp>
-#include <Geode/binding/Slider.hpp>
+#include "../../misc/SimpleIcon.hpp"
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/Task.hpp>
 
@@ -11,16 +10,15 @@ protected:
     geode::EventListener<geode::Task<geode::Result<std::filesystem::path>>> m_listener;
     std::filesystem::path m_selectedPNG;
     std::filesystem::path m_selectedPlist;
-    std::vector<std::vector<geode::Ref<cocos2d::CCNode>>> m_pages;
+    std::vector<std::vector<cocos2d::CCNode*>> m_pages;
     IconEditorState m_state;
-    StringMap<cocos2d::CCSprite*> m_pieces;
-    StringMap<geode::Ref<cocos2d::CCSpriteFrame>> m_frames;
-    geode::Ref<SimplePlayer> m_player;
-    std::array<geode::Ref<Slider>, 6> m_sliders = {};
-    std::array<geode::Ref<geode::TextInput>, 6> m_inputs = {};
-    std::string_view m_suffix;
-    StringMap<std::vector<geode::Ref<cocos2d::CCNode>>> m_targets;
-    std::vector<geode::Ref<cocos2d::CCNode>>* m_targetsArray;
+    std::unordered_map<std::string, cocos2d::CCSprite*> m_pieces;
+    std::unordered_map<std::string, geode::Ref<cocos2d::CCSpriteFrame>> m_frames;
+    SimpleIcon* m_player;
+    std::array<Slider*, 6> m_sliders;
+    std::array<geode::TextInput*, 6> m_inputs;
+    std::string m_suffix;
+    const std::vector<cocos2d::CCSprite*>* m_targetsArray;
     cocos2d::CCSprite* m_selectSprite;
     cocos2d::CCMenu* m_pieceMenu;
     cocos2d::CCSprite* m_mainColorSprite;
@@ -32,16 +30,13 @@ protected:
     bool m_hasChanged = false;
 
     bool init(BasePopup* popup, IconType type);
-    void createControls(
-        const cocos2d::CCPoint& pos, const char* text, std::string_view id, int offset, float min, float max, float def, bool decimals
-    );
-    void updateControls(std::string_view id, int offset, float min, float max, bool decimals);
-    void transferPlayerToNode(cocos2d::CCNode* node, SimplePlayer* player);
-    void addPieceButton(std::string_view suffix, int page, std::vector<geode::Ref<cocos2d::CCNode>> targets);
-    cocos2d::CCSprite* addColorButton(int& index, cocos2d::CCMenu* menu, const char* text, std::string_view id);
+    void createControls(const cocos2d::CCPoint& pos, const char* text, std::string_view id, int offset);
+    void updateControls();
+    void addPieceButton(const std::string& suffix, int page);
+    cocos2d::CCSprite* addColorButton(int& index, cocos2d::CCMenu* menu, const char* text, std::string&& id);
     void updateColors();
-    bool updateWithSelectedFiles(std::string_view suffix = {});
-    cocos2d::CCSpriteFrame* getFrame(std::string_view suffix);
+    bool updateWithSelectedFiles(bool useSuffix = false);
+    cocos2d::CCSpriteFrame* getFrame(const std::string& suffix);
     void updatePieces();
     void goToPage(int page);
     void updateTargets();

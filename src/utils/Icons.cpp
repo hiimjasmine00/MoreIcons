@@ -6,9 +6,9 @@
 #include "Load.hpp"
 #include "Log.hpp"
 #include "../classes/misc/ThreadPool.hpp"
-#include <fast_float/fast_float.h>
 #include <Geode/loader/Dirs.hpp>
 #include <geode.texture-loader/include/TextureLoader.hpp>
+#include <jasmine/convert.hpp>
 #include <jasmine/setting.hpp>
 #include <MoreIcons.hpp>
 
@@ -361,8 +361,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
         return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
-    auto trailID = 0;
-    fast_float::from_chars(shortName.data() + 7, shortName.data() + (shortName.size() - 11), trailID);
+    auto trailID = jasmine::convert::getOr<int>(std::string_view(shortName.data() + 7, shortName.size() - 11));
     if (trailID == 0) trailID = -1;
 
     auto icon = more_icons::addTrail(
@@ -470,8 +469,7 @@ void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& p
     auto doesntExist = vanillaPath && !Load::doesExist(plistPath);
     if (doesntExist) return Log::error(std::move(name), fmt::format("Plist file not found (Last attempt: {})", plistPath));
 
-    auto effectID = 0;
-    fast_float::from_chars(shortName.data() + 16, shortName.data() + (shortName.size() - 16), effectID);
+    auto effectID = jasmine::convert::getOr<int>(std::string_view(shortName.data() + 16, shortName.size() - 16));
     if (effectID == 0) effectID = -1;
     else effectID++;
 
@@ -526,8 +524,7 @@ void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack
     auto shortName = std::string(Filesystem::strNarrow(filename));
     auto name = fmt::format("{}:{}", pack.id, shortName);
 
-    auto fireID = 0;
-    fast_float::from_chars(shortName.data() + 12, shortName.data() + (shortName.size() - 12), fireID);
+    auto fireID = jasmine::convert::getOr<int>(std::string_view(shortName.data() + 12, shortName.size() - 12));
     if (fireID == 0) fireID = -1;
 
     auto fireCount = Defaults::getShipFireCount(fireID);

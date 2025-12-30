@@ -31,7 +31,7 @@ Result<std::filesystem::path> MoreIcons::createTrash() {
     GEODE_UNWRAP(file::createDirectoryAll(trashPath));
     std::error_code code;
     std::filesystem::permissions(trashPath, std::filesystem::perms::all, code);
-    return Ok(trashPath);
+    return Ok(std::move(trashPath));
 }
 
 bool MoreIcons::dualSelected() {
