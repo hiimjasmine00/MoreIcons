@@ -6,12 +6,9 @@
 #include "../../utils/Icons.hpp"
 #include "../../utils/Load.hpp"
 #include <fast_float/fast_float.h>
-#include <Geode/binding/CCAnimateFrameCache.hpp>
 #include <Geode/binding/CCSpritePlus.hpp>
 #include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/binding/GameManager.hpp>
-#include <Geode/binding/ObjectManager.hpp>
-#include <Geode/binding/SpriteDescription.hpp>
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Loader.hpp>
 #include <jasmine/mod.hpp>
@@ -144,32 +141,44 @@ void LazyIcon::createSimpleIcon() {
         normalImage->addChild(sprite, 1);
     }
 }
+
 matjson::Value getJSON(Filesystem::PathView filename, std::string_view filenameNarrow) {
     if (auto def = Load::readPlist(dirs::getResourcesDir() / filename)) {
         return std::move(def).unwrap();
     }
     else {
         log::error("Failed to load {}: {}", filenameNarrow, def.unwrapErr());
-        return nullptr;
+        return {};
     }
 }
 
 const matjson::Value definitions = [] {
     auto json = getJSON(L("objectDefinitions.plist"), "objectDefinitions.plist");
-    for (auto& value : json) {
+    for (auto it = json.begin(); it != json.end();) {
+        auto& value = *it;
         if (auto keyOpt = value.getKey()) {
             auto key = std::move(keyOpt).value();
             if (key == "Robot" || key == "Spider") {
-                if (auto animDesc = value["animDesc"].asString()) {
-                    auto filename = std::move(animDesc).unwrap();
-                    value["animDesc"] = getJSON(Filesystem::strWide(filename), filename);
+                auto& animDesc = value["animDesc"];
+                if (auto filenameRes = animDesc.asString()) {
+                    auto filename = std::move(filenameRes).unwrap();
+                    animDesc = getJSON(Filesystem::strWide(filename), filename);
                 }
+                ++it;
             }
             else json.erase(key);
         }
     }
     return json;
 }();
+
+template <class T>
+T valueToNumber(const matjson::Value& value) {
+    auto str = value.asString().unwrapOrDefault();
+    T num = T();
+    fast_float::from_chars(str.data(), str.data() + str.size(), num);
+    return num;
+}
 
 std::vector<SpriteDefinition> parseDefinition(const matjson::Value& definition) {
     std::vector<SpriteDefinition> definitions;
@@ -181,9 +190,9 @@ std::vector<SpriteDefinition> parseDefinition(const matjson::Value& definition) 
         def.position = CCPointFromString(value["position"].asString().unwrapOrDefault().c_str());
         def.scale = CCPointFromString(value["scale"].asString().unwrapOrDefault().c_str());
         def.flipped = CCPointFromString(value["flipped"].asString().unwrapOrDefault().c_str());
-        def.rotation = value["rotation"].asDouble().unwrapOrDefault();
-        def.zValue = value["zValue"].asInt().unwrapOrDefault();
-        def.tag = value["tag"].asInt().unwrapOrDefault();
+        def.rotation = valueToNumber<float>(value["rotation"]);
+        def.zValue = valueToNumber<int>(value["zValue"]);
+        def.tag = valueToNumber<int>(value["tag"]);
     }
     return definitions;
 }
@@ -285,9 +294,10 @@ void LazyIcon::createComplexIcon() {
         updateComplexSprite(parseDefinition(container[singleFrame.unwrap().asString().unwrapOrDefault()]));
     }
     else {
-        auto frames = animation["frames"].asInt().unwrapOrDefault();
-        m_divisor = std::max(0.01, animation["delay"].asDouble().unwrapOrDefault() * frames);
+        auto frames = valueToNumber<int>(animation["frames"]);
+        m_divisor = std::max(0.01f, valueToNumber<float>(animation["delay"]) * frames);
         auto prefix = fmt::format("{}_{}_", key, anim);
+        m_definitions.reserve(frames);
         for (int i = 1; i <= frames; i++) {
             m_definitions.push_back(parseDefinition(container[fmt::format("{}{:03}.png", prefix, i)]));
         }
@@ -321,12 +331,12 @@ void LazyIcon::updateComplexSprite(const std::vector<SpriteDefinition>& definiti
 void LazyIcon::update(float dt) {
     m_elapsed += dt;
     auto interval = m_elapsed / m_divisor;
-    if (!m_looped && interval >= 1.0) {
-        m_elapsed = 0.0;
+    if (!m_looped && interval >= 1.0f) {
+        m_elapsed = 0.0f;
         return unscheduleUpdate();
     }
 
-    updateComplexSprite(m_definitions[fmod(interval, 1.0) * m_definitions.size()]);
+    updateComplexSprite(m_definitions[fmodf(interval, 1.0f) * m_definitions.size()]);
 }
 
 void LazyIcon::createIcon() {

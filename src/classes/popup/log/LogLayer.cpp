@@ -39,10 +39,12 @@ bool LogLayer::init(IconType type) {
     scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(scrollLayer);
 
-    auto light = true;
-    for (auto& log : Log::logs[type]) {
-        contentLayer->addChild(LogCell::create(log.name, log.message, log.severity, light));
-        light = !light;
+    if (auto it = Log::logs.find(type); it != Log::logs.end()) {
+        auto light = true;
+        for (auto& log : it->second) {
+            contentLayer->addChild(LogCell::create(log.name, log.message, log.severity, light));
+            light = !light;
+        }
     }
 
     contentLayer->updateLayout();

@@ -232,7 +232,7 @@ Result<matjson::Value> Load::readPlist(const std::filesystem::path& path) {
     auto json = parseNode(root.first_child());
     if (!json.isObject()) return Err("No root <dict> element found");
 
-    return Ok(json);
+    return Ok(std::move(json));
 }
 
 Result<StringMap<Autorelease<cocos2d::CCSpriteFrame>>> Load::createFrames(

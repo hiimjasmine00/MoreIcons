@@ -5,7 +5,6 @@ using namespace geode::prelude;
 
 class $modify(MIDirector, CCDirector) {
     void purgeDirector() {
-        Get::animationCache = nullptr;
         Get::director = nullptr;
         Get::fileUtils = nullptr;
         Get::spriteFrameCache = nullptr;

@@ -27,8 +27,8 @@ protected:
     IconInfo* m_info;
     IconType m_type;
     int m_id;
-    double m_divisor;
-    double m_elapsed;
+    float m_divisor;
+    float m_elapsed;
     bool m_looped;
     bool m_visited;
 

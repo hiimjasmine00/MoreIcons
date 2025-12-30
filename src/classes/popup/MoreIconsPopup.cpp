@@ -119,9 +119,10 @@ void MoreIconsPopup::createMenu(CCNode* gamemodesNode, IconType type) {
         gamemodeMenu->addChild(sprite);
     }
 
-    auto& logs = Log::logs[type];
-
-    if (!logs.empty()) {
+    size_t logsSize = 0;
+    if (auto it = Log::logs.find(type); it != Log::logs.end()) {
+        auto& logs = it->second;
+        logsSize = logs.size();
         auto severityIcon = CCSprite::createWithSpriteFrameName(Constants::getSeverityFrame(logs[0].severity));
         severityIcon->setPosition({ 48.5f, 113.5f });
         severityIcon->setScale(0.5f);
@@ -168,7 +169,7 @@ void MoreIconsPopup::createMenu(CCNode* gamemodesNode, IconType type) {
     customButton->setID("custom-button");
     gamemodeMenu->addChild(customButton);
 
-    auto logLabel = CCLabelBMFont::create(fmt::format("Logs: {}", logs.size()).c_str(), "goldFont.fnt");
+    auto logLabel = CCLabelBMFont::create(fmt::format("Logs: {}", logsSize).c_str(), "goldFont.fnt");
     logLabel->limitLabelWidth(65.0f, 0.4f, 0.0f);
     auto logButton = CCMenuItemExt::createSpriteExtra(logLabel, [type](auto) {
         LogLayer::create(type)->show();

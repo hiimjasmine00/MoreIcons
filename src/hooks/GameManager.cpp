@@ -25,7 +25,6 @@ class $modify(MIGameManager, GameManager) {
         Get::fileUtils = nullptr;
         Get::spriteFrameCache = nullptr;
         Get::textureCache = nullptr;
-        Get::objectManager = nullptr;
         std::ranges::for_each(std::views::values(Icons::icons), &std::vector<IconInfo>::clear);
         Icons::requestedIcons.clear();
         Icons::loadedIcons.clear();
