@@ -117,13 +117,13 @@ bool ViewIconPopup::init(IconType type, int id, IconInfo* info) {
     else if (type == IconType::Special) {
         auto streak = CCSprite::create((info ? info->getTextureString() : MoreIcons::getTrailTexture(id)).c_str());
         auto& trailInfo = info ? info->getSpecialInfo() : Defaults::getTrailInfo(id);
-        if (trailInfo.get<bool>("blend").unwrapOr(true)) streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
+        if (trailInfo["blend"].asBool().unwrapOr(true)) streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
         streak->setPosition({ 175.0f, 50.0f });
         streak->setRotation(-90.0f);
         auto& size = streak->getContentSize();
-        streak->setScaleX(trailInfo.get<float>("stroke").unwrapOr(14.0f) / size.width);
+        streak->setScaleX((float)trailInfo["stroke"].asDouble().unwrapOr(14.0) / size.width);
         streak->setScaleY(320.0f / size.height);
-        if (trailInfo.get<bool>("tint").unwrapOr(false)) {
+        if (trailInfo["tint"].asBool().unwrapOr(false)) {
             streak->setColor(MoreIcons::vanillaColor2(MoreIcons::dualSelected()));
         }
         streak->setID("streak-preview");

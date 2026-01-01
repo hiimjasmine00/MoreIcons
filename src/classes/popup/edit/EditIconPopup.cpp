@@ -233,8 +233,7 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
             if (!res || !res->isOk()) return;
 
             if (auto textureRes = Load::createTexture(res->unwrap())) {
-                auto texture = std::move(textureRes).unwrap();
-                m_frames.emplace(m_suffix, frameWithTexture(texture));
+                m_frames.emplace(m_suffix, frameWithTexture(textureRes.unwrap()));
                 updatePieces();
             }
             else if (textureRes.isErr()) return Notify::error(textureRes.unwrapErr());
@@ -254,15 +253,7 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     piecePresetSprite->setScale(0.6f);
     auto piecePresetButton = CCMenuItemExt::createSpriteExtra(piecePresetSprite, [this](auto) {
         IconPresetPopup::create(m_iconType, m_suffix, [this](int id, IconInfo* info) {
-            if (info) {
-                m_selectedPNG = info->getTexture();
-                m_selectedPlist = info->getSheet();
-            }
-            else {
-                auto [texture, sheet] = MoreIcons::getIconPaths(id, m_iconType);
-                m_selectedPNG = Filesystem::strPath(std::move(texture));
-                m_selectedPlist = Filesystem::strPath(std::move(sheet));
-            }
+            MoreIcons::getIconPaths(info, id, m_iconType, m_selectedPNG, m_selectedPlist);
             updateWithSelectedFiles(true);
         })->show();
     });
@@ -365,15 +356,7 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
 
     auto presetButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png", 0.8f), [this](auto) {
         IconPresetPopup::create(m_iconType, {}, [this](int id, IconInfo* info) {
-            if (info) {
-                m_selectedPNG = info->getTexture();
-                m_selectedPlist = info->getSheet();
-            }
-            else {
-                auto [texture, sheet] = MoreIcons::getIconPaths(id, m_iconType);
-                m_selectedPNG = Filesystem::strPath(std::move(texture));
-                m_selectedPlist = Filesystem::strPath(std::move(sheet));
-            }
+            MoreIcons::getIconPaths(info, id, m_iconType, m_selectedPNG, m_selectedPlist);
             updateWithSelectedFiles();
         })->show();
     });
@@ -557,24 +540,35 @@ void EditIconPopup::updateColors() {
 
 bool EditIconPopup::updateWithSelectedFiles(bool useSuffix) {
     auto ret = false;
-    if (auto imageRes = Load::createFrames(m_selectedPNG, m_selectedPlist, {}, m_iconType, false)) {
+    if (auto imageRes = Load::createFrames(m_selectedPNG, m_selectedPlist, {}, m_iconType, useSuffix ? m_suffix : std::string_view(), false)) {
         auto image = std::move(imageRes).unwrap();
         Load::initTexture(image.texture, image.data.data(), image.width, image.height, false);
-        if (!useSuffix) {
-            m_frames.clear();
-            for (auto& [frameName, frame] : image.frames) {
-                m_frames.emplace(frameName.substr(0, frameName.size() - 4), frame.data);
+
+        if (useSuffix) {
+            if (auto it = image.frames.find(m_suffix); it != image.frames.end()) {
+                m_frames[m_suffix] = std::move(it->second);
+            }
+            else {
+                m_frames.erase(m_suffix);
             }
         }
         else {
-            m_frames.erase(m_suffix);
-            for (auto& [frameName, frame] : image.frames) {
-                if (std::string_view(frameName.data(), frameName.size() - 4) == m_suffix) {
-                    m_frames.emplace(frameName.substr(0, frameName.size() - 4), frame.data);
-                    break;
+            for (auto it = m_frames.begin(); it != m_frames.end();) {
+                auto frameIt = image.frames.find(it->first);
+                if (frameIt != image.frames.end()) {
+                    it->second = std::move(frameIt->second);
+                    image.frames.erase(frameIt);
+                    ++it;
+                }
+                else {
+                    it = m_frames.erase(it);
                 }
             }
+            for (auto& pair : image.frames) {
+                m_frames.insert(std::move(pair));
+            }
         }
+
         updatePieces();
         ret = true;
     }

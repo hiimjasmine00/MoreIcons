@@ -5,7 +5,7 @@
 
 using namespace geode;
 
-std::filesystem::path::string_type& getPathString(std::filesystem::path& path) {
+inline std::filesystem::path::string_type& getPathString(std::filesystem::path& path) {
     return const_cast<std::filesystem::path::string_type&>(path.native());
 }
 
@@ -107,19 +107,19 @@ std::filesystem::path Filesystem::strPath(std::string_view path) {
 
 #ifdef GEODE_IS_WINDOWS
 #define PRIVATE_WRAPPER(func) \
-    std::wstring_view _##func(const std::filesystem::path& path) { \
+    inline std::wstring_view _##func(const std::filesystem::path& path) { \
         return std::filesystem::_Parse_##func(path.native()); \
     }
 #else
 #define PRIVATE_WRAPPER(func) \
     template <std::string_view(std::filesystem::path::*funcT)() const> \
     struct func##Caller { \
-        friend std::string_view _##func(const std::filesystem::path& path) { \
+        inline friend std::string_view _##func(const std::filesystem::path& path) { \
             return (path.*funcT)(); \
         } \
     }; \
     template struct func##Caller<&std::filesystem::path::__##func>; \
-    std::string_view _##func(const std::filesystem::path& path);
+    inline std::string_view _##func(const std::filesystem::path& path);
 #endif
 
 PRIVATE_WRAPPER(extension)
@@ -142,7 +142,7 @@ std::filesystem::path Filesystem::parentPath(std::filesystem::path&& path) {
 std::filesystem::path Filesystem::withExt(const std::filesystem::path& path, Filesystem::PathView ext) {
     std::filesystem::path ret = path;
     auto extension = _extension(ret);
-    getPathString(ret).replace(extension.data() - ret.c_str(), extension.size(), ext.data(), ext.size());
+    getPathString(ret).replace(extension.data() - ret.c_str(), extension.size(), ext);
     return ret;
 }
 

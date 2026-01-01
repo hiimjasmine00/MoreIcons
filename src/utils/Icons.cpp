@@ -38,9 +38,9 @@ void Icons::loadSettings() {
     auto logLevel = jasmine::setting::get<std::string>("log-level");
     auto mod = Mod::get();
     if (!mod->setSavedValue("migrated-log-level", true)) {
-        auto& data = mod->getSavedSettingsData();
-        if (!data.get<bool>("info-logs").unwrapOr(true)) logLevel->setValue("Warning");
-        else if (!data.get<bool>("debug-logs").unwrapOr(true)) logLevel->setValue("Info");
+        const auto& data = mod->getSavedSettingsData();
+        if (!data["info-logs"].asBool().unwrapOr(true)) logLevel->setValue("Warning");
+        else if (!data["debug-logs"].asBool().unwrapOr(true)) logLevel->setValue("Info");
         else logLevel->setValue("Debug");
     }
 

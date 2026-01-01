@@ -1,74 +1,29 @@
-#include <cocos2d.h>
-#include <Geode/Enums.hpp>
-#include <matjson.hpp>
-
-template <class T>
-struct Autorelease {
-    T* data;
-
-    Autorelease() : data(nullptr) {}
-    Autorelease(T* data) : data(data) {}
-    Autorelease(const Autorelease& other) : data(other.data) {
-        CC_SAFE_RETAIN(data);
-    }
-    Autorelease(Autorelease&& other) : data(other.data) {
-        other.data = nullptr;
-    }
-
-    ~Autorelease() {
-        CC_SAFE_RELEASE(data);
-    }
-
-    Autorelease& operator=(const Autorelease& other) {
-        if (this != &other) {
-            CC_SAFE_RELEASE(data);
-            data = other.data;
-            CC_SAFE_RETAIN(data);
-        }
-        return *this;
-    }
-    Autorelease& operator=(Autorelease&& other) {
-        if (this != &other) {
-            data = other.data;
-            other.data = nullptr;
-        }
-        return *this;
-    }
-    Autorelease& operator=(T* other) {
-        data = other;
-        return *this;
-    }
-
-    operator T*() const {
-        return data;
-    }
-    T* operator->() const {
-        return data;
-    }
-};
+#include <Geode/utils/cocos.hpp>
 
 struct ImageResult {
     std::string name;
     std::vector<uint8_t> data;
-    Autorelease<cocos2d::CCTexture2D> texture;
-    std::unordered_map<std::string, Autorelease<cocos2d::CCSpriteFrame>> frames;
+    geode::Ref<cocos2d::CCTexture2D> texture;
+    std::unordered_map<std::string, geode::Ref<cocos2d::CCSpriteFrame>> frames;
     uint32_t width;
     uint32_t height;
 };
 
 namespace Load {
-    std::string getFrameName(std::string_view frameName, std::string_view name, IconType type);
+    std::string getFrameName(std::string&& frameName, std::string_view name, IconType type);
     geode::Result<std::vector<uint8_t>> readBinary(const std::filesystem::path& path);
     geode::Result<matjson::Value> readPlist(const std::filesystem::path& path);
     bool doesExist(const std::filesystem::path& path);
-    geode::Result<Autorelease<cocos2d::CCTexture2D>> createTexture(const std::filesystem::path& path);
-    Autorelease<cocos2d::CCTexture2D> createTexture(const uint8_t* data, uint32_t width, uint32_t height);
+    geode::Result<cocos2d::CCTexture2D*> createTexture(const std::filesystem::path& path);
+    cocos2d::CCTexture2D* createTexture(const uint8_t* data, uint32_t width, uint32_t height);
     void initTexture(cocos2d::CCTexture2D* texture, const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha = true);
     geode::Result<ImageResult> createFrames(
-        const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type, bool premultiplyAlpha = true
+        const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type,
+        std::string_view target = {}, bool premultiply = true
     );
-    geode::Result<std::unordered_map<std::string, Autorelease<cocos2d::CCSpriteFrame>>> createFrames(
-        const std::filesystem::path& path, cocos2d::CCTexture2D* texture, std::string_view name, IconType type, bool fixNames = true
+    geode::Result<std::unordered_map<std::string, geode::Ref<cocos2d::CCSpriteFrame>>> createFrames(
+        const std::filesystem::path& path, cocos2d::CCTexture2D* texture, std::string_view name, IconType type,
+        std::string_view target = {}, bool fixNames = true
     );
-    cocos2d::CCTexture2D* addFrames(const ImageResult& image, std::vector<std::string>& frameNames, std::string_view target = {});
+    cocos2d::CCTexture2D* addFrames(const ImageResult& image, std::vector<std::string>& frameNames);
 }

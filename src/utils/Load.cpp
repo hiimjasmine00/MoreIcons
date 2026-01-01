@@ -12,58 +12,76 @@ using namespace geode::prelude;
 using namespace jasmine::mod;
 using namespace std::string_view_literals;
 
-std::string Load::getFrameName(std::string_view frameName, std::string_view name, IconType type) {
+void replaceOrErase(std::string& str, size_t offset, std::string_view name) {
+    if (name.empty()) {
+        str.erase(0, str.size() - offset);
+        str.erase(str.size() - 4);
+    }
+    else {
+        str.replace(0, str.size() - offset, fmt::format("{}"_spr, name));
+    }
+}
+
+std::string Load::getFrameName(std::string&& frameName, std::string_view name, IconType type) {
+    if (frameName.size() < 8 || !frameName.ends_with(".png"sv)) return std::move(frameName);
+
     if (type == IconType::DeathEffect) {
-        return fmt::format("{}{}"_spr, name, frameName.substr(std::max<ptrdiff_t>(frameName.size() - 8, 0)));
+        replaceOrErase(frameName, 8, name);
     }
 
-    if (!frameName.ends_with("_001.png"sv)) return std::string(frameName);
+    if (!frameName.ends_with("_001.png"sv)) return std::move(frameName);
 
     std::string_view suffix;
     auto isRobot = type == IconType::Robot || type == IconType::Spider;
-    auto end = frameName.substr(0, frameName.size() - 8);
+    auto end = std::string_view(frameName.data(), frameName.size() - 8);
 
     if (end.ends_with("_2"sv)) {
         if (isRobot) {
             end.remove_suffix(2);
-            if (end.ends_with("_01"sv)) suffix = "_01_2_001.png";
-            else if (end.ends_with("_02"sv)) suffix = "_02_2_001.png";
-            else if (end.ends_with("_03"sv)) suffix = "_03_2_001.png";
-            else if (end.ends_with("_04"sv)) suffix = "_04_2_001.png";
+            if (end.ends_with("_01"sv) || end.ends_with("_02"sv) || end.ends_with("_03"sv) || end.ends_with("_04"sv)) {
+                replaceOrErase(frameName, 13, name);
+            }
         }
-        else suffix = "_2_001.png";
+        else {
+            replaceOrErase(frameName, 10, name);
+        }
     }
     else if (type == IconType::Ufo && end.ends_with("_3"sv)) {
-        suffix = "_3_001.png";
+        replaceOrErase(frameName, 10, name);
     }
     else if (end.ends_with("_extra"sv)) {
         if (isRobot) {
             end.remove_suffix(6);
-            if (end.ends_with("_01"sv)) suffix = "_01_extra_001.png";
+            if (end.ends_with("_01"sv)) {
+                replaceOrErase(frameName, 17, name);
+            }
         }
-        else suffix = "_extra_001.png";
+        else {
+            replaceOrErase(frameName, 14, name);
+        }
     }
     else if (end.ends_with("_glow"sv)) {
         if (isRobot) {
-            end.remove_suffix(5);
-            if (end.ends_with("_01"sv)) suffix = "_01_glow_001.png";
-            else if (end.ends_with("_02"sv)) suffix = "_02_glow_001.png";
-            else if (end.ends_with("_03"sv)) suffix = "_03_glow_001.png";
-            else if (end.ends_with("_04"sv)) suffix = "_04_glow_001.png";
+            if (end.ends_with("_01"sv) || end.ends_with("_02"sv) || end.ends_with("_03"sv) || end.ends_with("_04"sv)) {
+                replaceOrErase(frameName, 16, name);
+            }
         }
-        else suffix = "_glow_001.png";
+        else {
+            replaceOrErase(frameName, 13, name);
+        }
     }
     else {
         if (isRobot) {
-            if (end.ends_with("_01"sv)) suffix = "_01_001.png";
-            else if (end.ends_with("_02"sv)) suffix = "_02_001.png";
-            else if (end.ends_with("_03"sv)) suffix = "_03_001.png";
-            else if (end.ends_with("_04"sv)) suffix = "_04_001.png";
+            if (end.ends_with("_01"sv) || end.ends_with("_02"sv) || end.ends_with("_03"sv) || end.ends_with("_04"sv)) {
+                replaceOrErase(frameName, 11, name);
+            }
         }
-        else suffix = "_001.png";
+        else {
+            replaceOrErase(frameName, 8, name);
+        }
     }
 
-    return suffix.empty() ? std::string(frameName) : name.empty() ? std::string(suffix) : fmt::format("{}{}"_spr, name, suffix);
+    return std::move(frameName);
 }
 
 #ifdef GEODE_IS_ANDROID
@@ -146,7 +164,7 @@ bool Load::doesExist(const std::filesystem::path& path) {
     return std::filesystem::exists(path, code);
 }
 
-Result<Autorelease<CCTexture2D>> Load::createTexture(const std::filesystem::path& path) {
+Result<CCTexture2D*> Load::createTexture(const std::filesystem::path& path) {
     GEODE_UNWRAP_INTO(auto data, readBinary(path).mapErr([](std::string err) {
         return fmt::format("Failed to read image: {}", err);
     }));
@@ -158,9 +176,10 @@ Result<Autorelease<CCTexture2D>> Load::createTexture(const std::filesystem::path
     return Ok(createTexture(image.data.data(), image.width, image.height));
 }
 
-Autorelease<CCTexture2D> Load::createTexture(const uint8_t* data, uint32_t width, uint32_t height) {
+CCTexture2D* Load::createTexture(const uint8_t* data, uint32_t width, uint32_t height) {
     auto texture = new CCTexture2D();
     initTexture(texture, data, width, height, false);
+    texture->autorelease();
     return texture;
 }
 
@@ -169,19 +188,25 @@ void Load::initTexture(CCTexture2D* texture, const uint8_t* data, uint32_t width
     texture->m_bHasPremultipliedAlpha = premultiplyAlpha;
 }
 
+template <class T>
+inline Ref<T> makeRef(T* ptr) {
+    return std::move(*reinterpret_cast<Ref<T>*>(&ptr));
+}
+
 Result<ImageResult> Load::createFrames(
-    const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type, bool premultiplyAlpha
+    const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type,
+    std::string_view target, bool premultiply
 ) {
     GEODE_UNWRAP_INTO(auto data, readBinary(png).mapErr([](std::string err) {
         return fmt::format("Failed to read image: {}", err);
     }));
 
-    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(data, premultiplyAlpha).mapErr([](std::string err) {
+    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(data, premultiply).mapErr([](std::string err) {
         return fmt::format("Failed to parse image: {}", err);
     }));
 
-    Autorelease texture = new CCTexture2D();
-    GEODE_UNWRAP_INTO(auto frames, createFrames(plist, texture, name, type, !premultiplyAlpha || !name.empty()).mapErr([](std::string err) {
+    auto texture = makeRef(new CCTexture2D());
+    GEODE_UNWRAP_INTO(auto frames, createFrames(plist, texture, name, type, target, !premultiply || !name.empty()).mapErr([](std::string err) {
         return fmt::format("Failed to load frames: {}", err);
     }));
 
@@ -235,10 +260,10 @@ Result<matjson::Value> Load::readPlist(const std::filesystem::path& path) {
     return Ok(std::move(json));
 }
 
-Result<std::unordered_map<std::string, Autorelease<CCSpriteFrame>>> Load::createFrames(
-    const std::filesystem::path& path, CCTexture2D* texture, std::string_view name, IconType type, bool fixNames
+Result<std::unordered_map<std::string, Ref<CCSpriteFrame>>> Load::createFrames(
+    const std::filesystem::path& path, CCTexture2D* texture, std::string_view name, IconType type, std::string_view target, bool fixNames
 ) {
-    std::unordered_map<std::string, Autorelease<CCSpriteFrame>> frames;
+    std::unordered_map<std::string, Ref<CCSpriteFrame>> frames;
     if (path.empty()) return Ok(std::move(frames));
 
     GEODE_UNWRAP_INTO(const auto json, readPlist(path));
@@ -246,10 +271,14 @@ Result<std::unordered_map<std::string, Autorelease<CCSpriteFrame>>> Load::create
     auto framesRes = json.get("frames");
     if (!framesRes.isOk()) return Err("No frames <dict> element found");
 
-    auto format = json["metadata"].get<int>("format").unwrapOrDefault();
+    int format = json["metadata"]["format"].asInt().unwrapOrDefault();
+    if (format < 0 || format > 3) return Err("Unsupported plist format: {}", format);
 
-    for (auto& [frameName, obj] : framesRes.unwrap()) {
+    for (auto& obj : framesRes.unwrap()) {
         if (!obj.isObject()) continue;
+
+        auto frameName = obj.getKey().value_or(std::string());
+        if (!target.empty() && frameName != target) continue;
 
         CCRect rect;
         CCPoint offset;
@@ -258,64 +287,32 @@ Result<std::unordered_map<std::string, Autorelease<CCSpriteFrame>>> Load::create
 
         switch (format) {
             case 0: {
-                if (auto x = obj.get<float>("x")) {
-                    rect.origin.x = x.unwrap();
-                }
-                if (auto y = obj.get<float>("y")) {
-                    rect.origin.y = y.unwrap();
-                }
-                if (auto w = obj.get<float>("width")) {
-                    rect.size.width = w.unwrap();
-                }
-                if (auto h = obj.get<float>("height")) {
-                    rect.size.height = h.unwrap();
-                }
-                if (auto offsetX = obj.get<float>("offsetX")) {
-                    offset.x = offsetX.unwrap();
-                }
-                if (auto offsetY = obj.get<float>("offsetY")) {
-                    offset.y = offsetY.unwrap();
-                }
-                if (auto originalWidth = obj.get<float>("originalWidth")) {
-                    originalSize.width = abs(floor(originalWidth.unwrap()));
-                }
-                if (auto originalHeight = obj.get<float>("originalHeight")) {
-                    originalSize.height = abs(floor(originalHeight.unwrap()));
-                }
+                rect.origin.x = obj["x"].asDouble().unwrapOr(0.0);
+                rect.origin.y = obj["y"].asDouble().unwrapOr(0.0);
+                rect.size.width = obj["width"].asDouble().unwrapOr(0.0);
+                rect.size.height = obj["height"].asDouble().unwrapOr(0.0);
+                offset.x = obj["offsetX"].asDouble().unwrapOr(0.0);
+                offset.y = obj["offsetY"].asDouble().unwrapOr(0.0);
+                originalSize.width = abs(floor(obj["originalWidth"].asDouble().unwrapOr(0.0)));
+                originalSize.height = abs(floor(obj["originalHeight"].asDouble().unwrapOr(0.0)));
                 break;
             }
             case 1: case 2: {
-                if (auto textureRect = obj.get<std::string>("frame")) {
-                    rect = CCRectFromString(textureRect.unwrap().c_str());
-                }
-                if (auto spriteSize = obj.get<std::string>("sourceSize")) {
-                    originalSize = CCSizeFromString(spriteSize.unwrap().c_str());
-                }
-                if (auto spriteOffset = obj.get<std::string>("offset")) {
-                    offset = CCPointFromString(spriteOffset.unwrap().c_str());
-                }
+                rect = CCRectFromString(obj["frame"].asString().unwrapOrDefault().c_str());
+                originalSize = CCSizeFromString(obj["sourceSize"].asString().unwrapOrDefault().c_str());
+                offset = CCPointFromString(obj["offset"].asString().unwrapOrDefault().c_str());
                 if (format == 2) {
-                    if (auto textureRotated = obj.get<bool>("rotated")) {
-                        rotated = textureRotated.unwrap();
-                    }
+                    rotated = obj["rotated"].asBool().unwrapOr(false);
                 }
+                break;
             }
             case 3: {
-                if (auto textureRect = obj.get<std::string>("textureRect")) {
-                    rect.origin = CCRectFromString(textureRect.unwrap().c_str()).origin;
-                }
-                if (auto spriteSize = obj.get<std::string>("spriteSize")) {
-                    rect.size = CCSizeFromString(spriteSize.unwrap().c_str());
-                }
-                if (auto spriteOffset = obj.get<std::string>("spriteOffset")) {
-                    offset = CCPointFromString(spriteOffset.unwrap().c_str());
-                }
-                if (auto spriteSourceSize = obj.get<std::string>("spriteSourceSize")) {
-                    originalSize = CCSizeFromString(spriteSourceSize.unwrap().c_str());
-                }
-                if (auto textureRotated = obj.get<bool>("textureRotated")) {
-                    rotated = textureRotated.unwrap();
-                }
+                rect.origin = CCRectFromString(obj["textureRect"].asString().unwrapOrDefault().c_str()).origin;
+                rect.size = CCSizeFromString(obj["spriteSize"].asString().unwrapOrDefault().c_str());
+                offset = CCPointFromString(obj["spriteOffset"].asString().unwrapOrDefault().c_str());
+                originalSize = CCSizeFromString(obj["spriteSourceSize"].asString().unwrapOrDefault().c_str());
+                rotated = obj["textureRotated"].asBool().unwrapOr(false);
+                break;
             }
         }
 
@@ -326,14 +323,14 @@ Result<std::unordered_map<std::string, Autorelease<CCSpriteFrame>>> Load::create
 
         auto frame = new CCSpriteFrame();
         frame->initWithTexture(texture, rect, rotated, offset, originalSize);
-        frames.emplace(fixNames ? getFrameName(frameName, name, type) : frameName, frame);
+        frames.emplace(fixNames ? getFrameName(std::move(frameName), name, type) : std::move(frameName), makeRef(frame));
     }
 
     return Ok(std::move(frames));
 }
 
-CCTexture2D* Load::addFrames(const ImageResult& image, std::vector<std::string>& frameNames, std::string_view target) {
-    if (auto texture = image.texture.data) {
+CCTexture2D* Load::addFrames(const ImageResult& image, std::vector<std::string>& frameNames) {
+    if (auto texture = image.texture.data()) {
         initTexture(texture, image.data.data(), image.width, image.height);
         Get::TextureCache()->m_pTextures->setObject(texture, image.name);
     }
@@ -341,21 +338,10 @@ CCTexture2D* Load::addFrames(const ImageResult& image, std::vector<std::string>&
     frameNames.clear();
     if (!image.frames.empty()) {
         auto spriteFrameCache = Get::SpriteFrameCache();
-        if (target.empty()) {
-            frameNames.reserve(image.frames.size());
-            for (auto& [frameName, frame] : image.frames) {
-                spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
-                frameNames.push_back(frameName);
-            }
-        }
-        else {
-            frameNames.reserve(1);
-            for (auto& [frameName, frame] : image.frames) {
-                if (frameName == target) {
-                    spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
-                    frameNames.push_back(frameName);
-                }
-            }
+        frameNames.reserve(image.frames.size());
+        for (auto& [frameName, frame] : image.frames) {
+            spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
+            frameNames.push_back(frameName);
         }
     }
 

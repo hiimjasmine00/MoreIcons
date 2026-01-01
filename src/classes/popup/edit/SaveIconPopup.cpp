@@ -11,6 +11,7 @@
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
+using namespace std::string_literals;
 
 SaveIconPopup* SaveIconPopup::create(
     BasePopup* popup1, BasePopup* popup2, IconType type,
@@ -92,16 +93,16 @@ bool SaveIconPopup::checkFrame(const std::string& suffix) {
 void SaveIconPopup::saveIcon(Filesystem::PathView stem) {
     auto type = m_iconType;
     if (type == IconType::Robot || type == IconType::Spider) {
-        if (!checkFrame("_01_001") || !checkFrame("_01_2_001") || !checkFrame("_01_glow_001")) return;
-        if (!checkFrame("_02_001") || !checkFrame("_02_2_001") || !checkFrame("_02_glow_001")) return;
-        if (!checkFrame("_03_001") || !checkFrame("_03_2_001") || !checkFrame("_03_glow_001")) return;
-        if (!checkFrame("_04_001") || !checkFrame("_04_2_001") || !checkFrame("_04_glow_001")) return;
+        if (!checkFrame("_01_001"s) || !checkFrame("_01_2_001"s) || !checkFrame("_01_glow_001"s)) return;
+        if (!checkFrame("_02_001"s) || !checkFrame("_02_2_001"s) || !checkFrame("_02_glow_001"s)) return;
+        if (!checkFrame("_03_001"s) || !checkFrame("_03_2_001"s) || !checkFrame("_03_glow_001"s)) return;
+        if (!checkFrame("_04_001"s) || !checkFrame("_04_2_001"s) || !checkFrame("_04_glow_001"s)) return;
     }
     else {
-        if (!checkFrame("_001")) return;
-        if (!checkFrame("_2_001")) return;
-        if (type == IconType::Ufo && !checkFrame("_3_001")) return;
-        if (!checkFrame("_glow_001")) return;
+        if (!checkFrame("_001"s)) return;
+        if (!checkFrame("_2_001"s)) return;
+        if (type == IconType::Ufo && !checkFrame("_3_001"s)) return;
+        if (!checkFrame("_glow_001"s)) return;
     }
 
     auto name = m_nameInput->getString();

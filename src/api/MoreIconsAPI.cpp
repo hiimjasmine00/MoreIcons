@@ -31,10 +31,12 @@ std::vector<IconInfo>* more_icons::getIcons(IconType type) {
 
 IconInfo* more_icons::getIcon(std::string_view name, IconType type) {
     if (name.empty()) return nullptr;
-    auto icons = getIcons(type);
-    if (!icons) return nullptr;
-    auto it = std::ranges::find(*icons, name, &IconInfo::getName);
-    return it != icons->end() ? std::to_address(it) : nullptr;
+    if (auto icons = getIcons(type)) {
+        for (auto& icon : *icons) {
+            if (name == icon.getName()) return &icon;
+        }
+    }
+    return nullptr;
 }
 
 CCTexture2D* more_icons::loadIcon(std::string_view name, IconType type, int requestID) {
@@ -344,7 +346,7 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
         for (auto& frameName : frameNames) {
             if (Ref spriteFrame = Icons::getFrame(frameName.c_str())) {
                 spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
-                frameName = Load::getFrameName(frameName, newName, type);
+                frameName = Load::getFrameName(std::move(frameName), newName, type);
                 spriteFrameCache->addSpriteFrame(spriteFrame, frameName.c_str());
             }
         }
@@ -416,7 +418,7 @@ void more_icons::updateIcon(IconInfo* info) {
     }
 
     for (auto& [frameName, frameRef] : frames) {
-        auto frame = frameRef.data;
+        auto frame = frameRef.data();
         if (auto spriteFrame = Icons::getFrame(frameName.c_str())) {
             spriteFrame->m_obOffset = frame->m_obOffset;
             spriteFrame->m_obOriginalSize = frame->m_obOriginalSize;

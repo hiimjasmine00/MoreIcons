@@ -104,7 +104,7 @@ void MoreIcons::updateGarage(GJGarageLayer* layer) {
 }
 
 void MoreIcons::blendStreak(CCMotionStreak* streak, IconInfo* info) {
-    if (info->getSpecialInfo().get<bool>("blend").unwrapOr(true)) streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
+    if (info->getSpecialInfo()["blend"].asBool().unwrapOr(true)) streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
     else streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA });
 }
 
@@ -161,13 +161,17 @@ std::string MoreIcons::getIconName(int id, IconType type) {
     }
 }
 
-std::pair<std::string, std::string> MoreIcons::getIconPaths(int id, IconType type) {
-    auto fileUtils = Get::FileUtils();
-    std::string sheetName = Get::GameManager()->sheetNameForIcon(id, (int)type);
-    std::pair<std::string, std::string> paths;
-    paths.first = fileUtils->fullPathForFilename(fmt::format("{}.png", sheetName).c_str(), false);
-    paths.second = fileUtils->fullPathForFilename(fmt::format("{}.plist", sheetName).c_str(), false);
-    return paths;
+void MoreIcons::getIconPaths(IconInfo* info, int id, IconType type, std::filesystem::path& png, std::filesystem::path& plist) {
+    if (info) {
+        png = info->getTexture();
+        plist = info->getSheet();
+    }
+    else {
+        auto fileUtils = Get::FileUtils();
+        std::string sheetName = Get::GameManager()->sheetNameForIcon(id, (int)type);
+        png = Filesystem::strPath(std::string(fileUtils->fullPathForFilename(fmt::format("{}.png", sheetName).c_str(), false)));
+        plist = Filesystem::strPath(std::string(fileUtils->fullPathForFilename(fmt::format("{}.plist", sheetName).c_str(), false)));
+    }
 }
 
 std::string MoreIcons::getTrailTexture(int id) {

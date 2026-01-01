@@ -137,9 +137,9 @@ namespace more_icons {
         if (!mod) return {};
         auto savedType = saveKey(type, dual);
         if (savedType.empty()) return {};
-        auto& saveContainer = mod->getSaveContainer();
-        auto previous = saveContainer.get<std::string>(savedType).unwrapOrDefault();
-        saveContainer[savedType] = std::move(icon);
+        auto& saveValue = mod->getSaveContainer()[savedType];
+        auto previous = saveValue.asString().unwrapOrDefault();
+        saveValue = std::move(icon);
         return previous;
     }
 
@@ -324,7 +324,7 @@ namespace more_icons {
     /// @returns A pointer to the added icon info, or nullptr if the mod is not loaded or the type is unsupported.
     MI_DLL IconInfo* addIcon(
         std::string name, std::string shortName, IconType type, std::filesystem::path png, std::filesystem::path plist,
-        cocos2d::TextureQuality quality, std::string packID = {}, std::string packName = "More Icons",
+        cocos2d::TextureQuality quality, std::string packID = {}, std::string packName = std::string("More Icons", 10),
         bool vanilla = false, bool zipped = false
     ) MI_EXP(&addIcon, (
         std::move(name), std::move(shortName), type, std::move(png), std::move(plist),
@@ -346,7 +346,7 @@ namespace more_icons {
     /// @returns A pointer to the added icon info, or nullptr if the mod is not loaded.
     MI_DLL IconInfo* addTrail(
         std::string name, std::string shortName, std::filesystem::path png, std::filesystem::path json, std::filesystem::path icon,
-        std::string packID = {}, std::string packName = "More Icons", int specialID = 0, matjson::Value specialInfo = {},
+        std::string packID = {}, std::string packName = std::string("More Icons", 10), int specialID = 0, matjson::Value specialInfo = {},
         bool vanilla = false, bool zipped = false
     ) MI_EXP(&addTrail, (
         std::move(name), std::move(shortName), std::move(png), std::move(json), std::move(icon),
@@ -371,7 +371,7 @@ namespace more_icons {
     MI_DLL IconInfo* addDeathEffect(
         std::string name, std::string shortName, std::filesystem::path png, std::filesystem::path plist,
         std::filesystem::path json, std::filesystem::path icon, cocos2d::TextureQuality quality,
-        std::string packID = {}, std::string packName = "More Icons", int specialID = 0, matjson::Value specialInfo = {},
+        std::string packID = {}, std::string packName = std::string("More Icons", 10), int specialID = 0, matjson::Value specialInfo = {},
         bool vanilla = false, bool zipped = false
     ) MI_EXP(&addDeathEffect, (
         std::move(name), std::move(shortName), std::move(png), std::move(plist), std::move(json), std::move(icon),
@@ -395,7 +395,7 @@ namespace more_icons {
     MI_DLL IconInfo* addShipFire(
         std::string name, std::string shortName,
         std::filesystem::path png, std::filesystem::path json, std::filesystem::path icon,
-        std::string packID = {}, std::string packName = "More Icons",
+        std::string packID = {}, std::string packName = std::string("More Icons", 10),
         int specialID = 0, matjson::Value specialInfo = {},
         int fireCount = 0, bool vanilla = false, bool zipped = false
     ) MI_EXP(&addShipFire, (

@@ -2,40 +2,29 @@
 #include <matjson/std.hpp>
 
 using namespace geode;
+using namespace std::string_literals;
 
 Result<FrameDefinition> matjson::Serialize<FrameDefinition>::fromJson(const matjson::Value& value) {
     if (!value.isObject()) Err("Expected object");
 
     FrameDefinition def;
-    if (auto offsetX = value.get<float>("offset-x")) {
-        def.offsetX = offsetX.unwrap();
-    }
-    if (auto offsetY = value.get<float>("offset-y")) {
-        def.offsetY = offsetY.unwrap();
-    }
-    if (auto rotationX = value.get<float>("rotation-x")) {
-        def.rotationX = rotationX.unwrap();
-    }
-    if (auto rotationY = value.get<float>("rotation-y")) {
-        def.rotationY = rotationY.unwrap();
-    }
-    if (auto scaleX = value.get<float>("scale-x")) {
-        def.scaleX = scaleX.unwrap();
-    }
-    if (auto scaleY = value.get<float>("scale-y")) {
-        def.scaleY = scaleY.unwrap();
-    }
+    def.offsetX = value["offset-x"].asDouble().unwrapOr(0.0);
+    def.offsetY = value["offset-y"].asDouble().unwrapOr(0.0);
+    def.rotationX = value["rotation-x"].asDouble().unwrapOr(0.0);
+    def.rotationY = value["rotation-y"].asDouble().unwrapOr(0.0);
+    def.scaleX = value["scale-x"].asDouble().unwrapOr(1.0);
+    def.scaleY = value["scale-y"].asDouble().unwrapOr(1.0);
     return Ok(def);
 }
 
 matjson::Value matjson::Serialize<FrameDefinition>::toJson(const FrameDefinition& def) {
     return makeObject({
-        { "offset-x", def.offsetX },
-        { "offset-y", def.offsetY },
-        { "rotation-x", def.rotationX },
-        { "rotation-y", def.rotationY },
-        { "scale-x", def.scaleX },
-        { "scale-y", def.scaleY },
+        { "offset-x"s, matjson::Value(def.offsetX) },
+        { "offset-y"s, matjson::Value(def.offsetY) },
+        { "rotation-x"s, matjson::Value(def.rotationX) },
+        { "rotation-y"s, matjson::Value(def.rotationY) },
+        { "scale-x"s, matjson::Value(def.scaleX) },
+        { "scale-y"s, matjson::Value(def.scaleY) },
     });
 }
 
@@ -43,26 +32,18 @@ Result<IconEditorState> matjson::Serialize<IconEditorState>::fromJson(const matj
     if (!value.isObject()) Err("Expected object");
 
     IconEditorState state;
-    if (auto definitions = value.get<std::unordered_map<std::string, FrameDefinition>>("definitions")) {
-        state.definitions = definitions.unwrap();
-    }
-    if (auto mainColor = value.get<int>("main-color")) {
-        state.mainColor = mainColor.unwrap();
-    }
-    if (auto secondaryColor = value.get<int>("secondary-color")) {
-        state.secondaryColor = secondaryColor.unwrap();
-    }
-    if (auto glowColor = value.get<int>("glow-color")) {
-        state.glowColor = glowColor.unwrap();
-    }
+    state.definitions = value["definitions"].as<std::unordered_map<std::string, FrameDefinition>>().unwrapOrDefault();
+    state.mainColor = value["main-color"].asInt().unwrapOr(12);
+    state.secondaryColor = value["secondary-color"].asInt().unwrapOr(12);
+    state.glowColor = value["glow-color"].asInt().unwrapOr(12);
     return Ok(std::move(state));
 }
 
 matjson::Value matjson::Serialize<IconEditorState>::toJson(const IconEditorState& state) {
     return makeObject({
-        { "definitions", state.definitions },
-        { "main-color", state.mainColor },
-        { "secondary-color", state.secondaryColor },
-        { "glow-color", state.glowColor },
+        { "definitions"s, matjson::Value(state.definitions) },
+        { "main-color"s, matjson::Value(state.mainColor) },
+        { "secondary-color"s, matjson::Value(state.secondaryColor) },
+        { "glow-color"s, matjson::Value(state.glowColor) },
     });
 }

@@ -46,10 +46,10 @@ bool IconViewPopup::init(IconType type, bool custom) {
 
     if (custom) {
         if (auto icons = more_icons::getIcons(type)) {
-            auto end = icons->data() + icons->size();
-            for (auto info = icons->data(); info != end; info++) {
+            for (auto& info : *icons) {
                 auto iconMenu = CCMenu::create();
-                auto lazyIcon = LazyIcon::create(type, 0, info, {}, [this, info, type] {
+                auto lazyIcon = LazyIcon::create(type, 0, &info, {});
+                CCMenuItemExt::assignCallback<LazyIcon>(lazyIcon, [this, info = &info, type](auto) {
                     ViewIconPopup::create(type, 0, info)->show();
                 });
                 lazyIcon->setPosition({ 15.0f, 30.0f });
@@ -65,7 +65,8 @@ bool IconViewPopup::init(IconType type, bool custom) {
         auto count = gameManager->countForType(type);
         for (int i = 1; i <= count; i++) {
             auto iconMenu = CCMenu::create();
-            auto lazyIcon = LazyIcon::create(type, i, nullptr, {}, [this, i, type] {
+            auto lazyIcon = LazyIcon::create(type, i, nullptr, {});
+            CCMenuItemExt::assignCallback<LazyIcon>(lazyIcon, [this, i, type](auto) {
                 ViewIconPopup::create(type, i, nullptr)->show();
             });
             lazyIcon->setPosition({ 15.0f, 30.0f });
