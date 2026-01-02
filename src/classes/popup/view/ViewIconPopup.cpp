@@ -55,7 +55,7 @@ bool ViewIconPopup::init(IconType type, int id, IconInfo* info) {
 
     if (type <= IconType::Jetpack) {
         auto isRobot = type == IconType::Robot || type == IconType::Spider;
-        std::span<const std::initializer_list<std::string_view>> suffixes;
+        std::span<std::initializer_list<std::string_view> const> suffixes;
         if (isRobot) suffixes = robotSuffixes;
         else if (type == IconType::Ufo) suffixes = ufoSuffixes;
         else suffixes = cubeSuffixes;
@@ -75,14 +75,14 @@ bool ViewIconPopup::init(IconType type, int id, IconInfo* info) {
             container->setAnchorPoint({ 0.5f, 0.5f });
             container->setContentSize({ 350.0f, 30.0f });
             container->setID(isRobot ? fmt::format("frame-container{}", (*subSuffixes.begin()).substr(0, 3)) : "frame-container_01");
+            m_mainLayer->addChild(container);
 
             for (auto& suffix : subSuffixes) {
                 if (auto spriteFrame = Icons::getFrame("{}{}.png", prefix, suffix)) {
                     auto sprite = CCSprite::createWithSpriteFrame(spriteFrame);
-                    auto& size = sprite->getContentSize();
-                    sprite->setPosition(size / 2.0f);
+                    sprite->setPosition({ 15.0f, 15.0f });
                     auto node = CCNode::create();
-                    node->setContentSize(size);
+                    node->setContentSize({ 30.0f, 30.0f });
                     node->setAnchorPoint({ 0.5f, 0.5f });
                     node->setID(fmt::format("frame-node{}", isRobot ? suffix.substr(3) : suffix));
                     node->addChild(sprite);
@@ -90,32 +90,11 @@ bool ViewIconPopup::init(IconType type, int id, IconInfo* info) {
                 }
             }
 
-            auto gap = 0.0f;
-            if (i == 0) {
-                switch (container->getChildrenCount()) {
-                    case 2: gap = 100.0f; break;
-                    case 3: gap = 50.0f; break;
-                    case 4: gap = 20.0f; break;
-                    case 5: gap = 10.0f; break;
-                }
-            }
-            else gap = 20.0f;
-
-            container->setLayout(RowLayout::create()->setGap(gap));
-            container->updateLayout();
-
-            for (auto node : container->getChildrenExt()) {
-                auto height = container->getContentHeight() * node->getScale();
-                node->setContentSize({ height, height });
-                node->getChildByIndex(0)->setPosition({ height / 2.0f, height / 2.0f });
-            }
-
-            container->updateLayout();
-            m_mainLayer->addChild(container);
+            container->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Between));
         }
     }
     else if (type == IconType::Special) {
-        auto streak = CCSprite::create((info ? info->getTextureString() : MoreIcons::getTrailTexture(id)).c_str());
+        auto streak = CCSprite::create((info ? info->getTextureString() : fmt::format("streak_{:02}_001.png", id)).c_str());
         auto& trailInfo = info ? info->getSpecialInfo() : Defaults::getTrailInfo(id);
         if (trailInfo["blend"].asBool().unwrapOr(true)) streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
         streak->setPosition({ 175.0f, 50.0f });

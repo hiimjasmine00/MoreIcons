@@ -35,50 +35,60 @@ Result<std::filesystem::path> MoreIcons::createTrash() {
 }
 
 bool MoreIcons::dualSelected() {
-    auto sdi = separateDualIcons;
-    return sdi && sdi->getSavedValue("2pselected", false);
+    return separateDualIcons && separateDualIcons->getSavedValue("2pselected", false);
 }
 
 ccColor3B MoreIcons::vanillaColor1(bool dual) {
-    auto gameManager = Get::GameManager();
-    auto sdi = dual ? separateDualIcons : nullptr;
-    return gameManager->colorForIdx(sdi ? sdi->getSavedValue("color1", 0) : gameManager->m_playerColor);
+    return Constants::getColor(dual && separateDualIcons ? separateDualIcons->getSavedValue("color1", 0) : Get::GameManager()->m_playerColor);
 }
 
 ccColor3B MoreIcons::vanillaColor2(bool dual) {
-    auto gameManager = Get::GameManager();
-    auto sdi = dual ? separateDualIcons : nullptr;
-    return gameManager->colorForIdx(sdi ? sdi->getSavedValue("color2", 0) : gameManager->m_playerColor2);
+    return Constants::getColor(dual && separateDualIcons ? separateDualIcons->getSavedValue("color2", 0) : Get::GameManager()->m_playerColor2);
 }
 
 ccColor3B MoreIcons::vanillaColorGlow(bool dual) {
-    auto gameManager = Get::GameManager();
-    auto sdi = dual ? separateDualIcons : nullptr;
-    return gameManager->colorForIdx(sdi ? sdi->getSavedValue("colorglow", 0) : gameManager->m_playerGlowColor);
+    return Constants::getColor(dual && separateDualIcons ? separateDualIcons->getSavedValue("colorglow", 0) : Get::GameManager()->m_playerGlowColor);
 }
 
 bool MoreIcons::vanillaGlow(bool dual) {
-    auto sdi = dual ? separateDualIcons : nullptr;
-    return sdi ? sdi->getSavedValue("glow", false) : Get::GameManager()->m_playerGlow;
+    return dual && separateDualIcons ? separateDualIcons->getSavedValue("glow", false) : Get::GameManager()->m_playerGlow;
 }
 
 int MoreIcons::vanillaIcon(IconType type, bool dual) {
-    auto sdi = dual ? separateDualIcons : nullptr;
-    auto gameManager = sdi ? nullptr : Get::GameManager();
-    switch (type) {
-        case IconType::Cube: return sdi ? sdi->getSavedValue("cube", 1) : gameManager->m_playerFrame;
-        case IconType::Ship: return sdi ? sdi->getSavedValue("ship", 1) : gameManager->m_playerShip;
-        case IconType::Ball: return sdi ? sdi->getSavedValue("roll", 1) : gameManager->m_playerBall;
-        case IconType::Ufo: return sdi ? sdi->getSavedValue("bird", 1) : gameManager->m_playerBird;
-        case IconType::Wave: return sdi ? sdi->getSavedValue("dart", 1) : gameManager->m_playerDart;
-        case IconType::Robot: return sdi ? sdi->getSavedValue("robot", 1) : gameManager->m_playerRobot;
-        case IconType::Spider: return sdi ? sdi->getSavedValue("spider", 1) : gameManager->m_playerSpider;
-        case IconType::Swing: return sdi ? sdi->getSavedValue("swing", 1) : gameManager->m_playerSwing;
-        case IconType::Jetpack: return sdi ? sdi->getSavedValue("jetpack", 1) : gameManager->m_playerJetpack;
-        case IconType::DeathEffect: return sdi ? sdi->getSavedValue("death", 1) : gameManager->m_playerDeathEffect;
-        case IconType::Special: return sdi ? sdi->getSavedValue("trail", 1) : gameManager->m_playerStreak;
-        case IconType::ShipFire: return sdi ? sdi->getSavedValue("shiptrail", 1) : gameManager->m_playerShipFire;
-        default: return 0;
+    if (dual && separateDualIcons) {
+        switch (type) {
+            case IconType::Cube: return separateDualIcons->getSavedValue("cube", 1);
+            case IconType::Ship: return separateDualIcons->getSavedValue("ship", 1);
+            case IconType::Ball: return separateDualIcons->getSavedValue("roll", 1);
+            case IconType::Ufo: return separateDualIcons->getSavedValue("bird", 1);
+            case IconType::Wave: return separateDualIcons->getSavedValue("dart", 1);
+            case IconType::Robot: return separateDualIcons->getSavedValue("robot", 1);
+            case IconType::Spider: return separateDualIcons->getSavedValue("spider", 1);
+            case IconType::Swing: return separateDualIcons->getSavedValue("swing", 1);
+            case IconType::Jetpack: return separateDualIcons->getSavedValue("jetpack", 1);
+            case IconType::DeathEffect: return separateDualIcons->getSavedValue("death", 1);
+            case IconType::Special: return separateDualIcons->getSavedValue("trail", 1);
+            case IconType::ShipFire: return separateDualIcons->getSavedValue("shiptrail", 1);
+            default: return 0;
+        }
+    }
+    else {
+        auto gameManager = Get::GameManager();
+        switch (type) {
+            case IconType::Cube: return gameManager->m_playerFrame;
+            case IconType::Ship: return gameManager->m_playerShip;
+            case IconType::Ball: return gameManager->m_playerBall;
+            case IconType::Ufo: return gameManager->m_playerBird;
+            case IconType::Wave: return gameManager->m_playerDart;
+            case IconType::Robot: return gameManager->m_playerRobot;
+            case IconType::Spider: return gameManager->m_playerSpider;
+            case IconType::Swing: return gameManager->m_playerSwing;
+            case IconType::Jetpack: return gameManager->m_playerJetpack;
+            case IconType::DeathEffect: return gameManager->m_playerDeathEffect;
+            case IconType::Special: return gameManager->m_playerStreak;
+            case IconType::ShipFire: return gameManager->m_playerShipFire;
+            default: return 0;
+        }
     }
 }
 
@@ -87,9 +97,8 @@ void MoreIcons::updateGarage(GJGarageLayer* layer) {
     if (noLayer) layer = Get::Director()->getRunningScene()->getChildByType<GJGarageLayer>(0);
     if (!layer) return;
 
-    auto gameManager = Get::GameManager();
     auto player1 = layer->m_playerObject;
-    auto iconType1 = gameManager->m_playerIconType;
+    auto iconType1 = Get::GameManager()->m_playerIconType;
     if (noLayer) player1->updatePlayerFrame(vanillaIcon(iconType1, false), iconType1);
     more_icons::updateSimplePlayer(player1, iconType1, false);
 
@@ -161,19 +170,41 @@ std::string MoreIcons::getIconName(int id, IconType type) {
     }
 }
 
+std::filesystem::path MoreIcons::getIconPath(IconInfo* info, int id, IconType type) {
+    std::filesystem::path png;
+    std::filesystem::path plist;
+    getIconPaths(info, id, type, png, plist);
+    return png;
+}
+
+std::filesystem::path getFullPath(CCFileUtils* fileUtils, const char* filename) {
+    return Filesystem::strPath(std::string(fileUtils->fullPathForFilename(filename, false)));
+}
+
 void MoreIcons::getIconPaths(IconInfo* info, int id, IconType type, std::filesystem::path& png, std::filesystem::path& plist) {
     if (info) {
         png = info->getTexture();
         plist = info->getSheet();
+        return;
     }
-    else {
-        auto fileUtils = Get::FileUtils();
-        std::string sheetName = Get::GameManager()->sheetNameForIcon(id, (int)type);
-        png = Filesystem::strPath(std::string(fileUtils->fullPathForFilename(fmt::format("{}.png", sheetName).c_str(), false)));
-        plist = Filesystem::strPath(std::string(fileUtils->fullPathForFilename(fmt::format("{}.plist", sheetName).c_str(), false)));
-    }
-}
 
-std::string MoreIcons::getTrailTexture(int id) {
-    return Get::FileUtils()->fullPathForFilename(fmt::format("streak_{:02}_001.png", id).c_str(), false);
+    auto fileUtils = Get::FileUtils();
+
+    if (type == IconType::DeathEffect) {
+        png = getFullPath(fileUtils, fmt::format("PlayerExplosion_{:02}.png", id).c_str());
+        plist = getFullPath(fileUtils, fmt::format("PlayerExplosion_{:02}.plist", id).c_str());
+        return;
+    }
+    else if (type == IconType::Special) {
+        png = getFullPath(fileUtils, fmt::format("streak_{:02}_001.png", id).c_str());
+        return;
+    }
+    else if (type == IconType::ShipFire) {
+        png = getFullPath(fileUtils, fmt::format("shipfire{:02}_001.png", id).c_str());
+        return;
+    }
+
+    auto iconName = getIconName(id, type);
+    png = getFullPath(fileUtils, fmt::format("icons/{}.png", iconName).c_str());
+    plist = getFullPath(fileUtils, fmt::format("icons/{}.plist", iconName).c_str());
 }

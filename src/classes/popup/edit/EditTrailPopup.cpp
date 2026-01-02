@@ -51,8 +51,9 @@ bool EditTrailPopup::init(BasePopup* popup) {
     auto bottomMenu = CCMenu::create();
     bottomMenu->setPosition({ 175.0f, 30.0f });
     bottomMenu->setContentSize({ 350.0f, 30.0f });
-    bottomMenu->setLayout(RowLayout::create()->setGap(25.0f));
+    bottomMenu->ignoreAnchorPointForPosition(false);
     bottomMenu->setID("bottom-menu");
+    m_mainLayer->addChild(bottomMenu);
 
     auto pngButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("PNG", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
         m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
@@ -75,7 +76,7 @@ bool EditTrailPopup::init(BasePopup* popup) {
 
     auto presetButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
         IconPresetPopup::create(IconType::Special, {}, [this](int id, IconInfo* info) {
-            updateWithPath(info ? info->getTexture() : Filesystem::strPath(MoreIcons::getTrailTexture(id)));
+            updateWithPath(MoreIcons::getIconPath(info, id, IconType::Special));
         })->show();
     });
     presetButton->setID("preset-button");
@@ -100,8 +101,7 @@ bool EditTrailPopup::init(BasePopup* popup) {
     saveButton->setID("save-button");
     bottomMenu->addChild(saveButton);
 
-    bottomMenu->updateLayout();
-    m_mainLayer->addChild(bottomMenu);
+    bottomMenu->setLayout(RowLayout::create()->setGap(25.0f));
 
     handleTouchPriority(this);
 

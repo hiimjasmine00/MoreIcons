@@ -8,6 +8,7 @@
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#include <jasmine/array.hpp>
 #define GEODE_DEFINE_EVENT_EXPORTS
 #include <MoreIcons.hpp>
 #include <ranges>
@@ -248,7 +249,7 @@ void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
     auto newPngs = info->getAllTextures();
     for (size_t i = 0; i < newPngs.size(); i++) {
         auto& oldPng = oldPngs[i];
-        if (Ref texture = textureCache->textureForKey(oldPng.c_str())) {
+        if (Ref<CCTexture2D> texture = textureCache->textureForKey(oldPng.c_str())) {
             textureCache->removeTextureForKey(oldPng.c_str());
             textureCache->m_pTextures->setObject(texture, newPngs[i]);
         }
@@ -334,7 +335,7 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
     auto newPngs = info->getAllTextures();
     for (size_t i = 0; i < newPngs.size(); i++) {
         auto& oldPng = oldPngs[i];
-        if (Ref texture = textureCache->textureForKey(oldPng.c_str())) {
+        if (Ref<CCTexture2D> texture = textureCache->textureForKey(oldPng.c_str())) {
             textureCache->removeTextureForKey(oldPng.c_str());
             textureCache->m_pTextures->setObject(texture, newPngs[i]);
         }
@@ -344,7 +345,7 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
     if (!frameNames.empty()) {
         auto spriteFrameCache = Get::SpriteFrameCache();
         for (auto& frameName : frameNames) {
-            if (Ref spriteFrame = Icons::getFrame(frameName.c_str())) {
+            if (Ref<CCSpriteFrame> spriteFrame = Icons::getFrame(frameName.c_str())) {
                 spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
                 frameName = Load::getFrameName(std::move(frameName), newName, type);
                 spriteFrameCache->addSpriteFrame(spriteFrame, frameName.c_str());
@@ -511,25 +512,25 @@ void more_icons::updateRobotSprite(GJRobotSprite* sprite, std::string_view icon,
     paSprite->setBatchNode(nullptr);
     paSprite->setTexture(texture);
 
-    auto spriteParts = paSprite->m_spriteParts;
-    auto secondArray = sprite->m_secondArray;
-    auto glowArray = sprite->m_glowSprite->getChildren();
+    auto spriteParts = jasmine::array::toSpan<CCSprite>(paSprite->m_spriteParts);
+    auto secondArray = jasmine::array::toSpan<CCSprite>(sprite->m_secondArray);
+    auto glowArray = jasmine::array::toSpan<CCSprite>(sprite->m_glowSprite->getChildren());
     auto headSprite = sprite->m_headSprite;
     auto extraSprite = sprite->m_extraSprite;
 
-    for (int i = 0; i < spriteParts->count(); i++) {
-        auto spritePart = static_cast<CCSprite*>(spriteParts->objectAtIndex(i));
+    for (size_t i = 0; i < spriteParts.size(); i++) {
+        auto spritePart = spriteParts[i];
         auto tag = spritePart->getTag();
 
         spritePart->setBatchNode(nullptr);
         spritePart->setDisplayFrame(Icons::getFrame("{}_{:02}_001.png"_spr, icon, tag));
-        if (auto secondSprite = static_cast<CCSprite*>(secondArray->objectAtIndex(i))) {
+        if (auto secondSprite = secondArray[i]) {
             secondSprite->setBatchNode(nullptr);
             secondSprite->setDisplayFrame(Icons::getFrame("{}_{:02}_2_001.png"_spr, icon, tag));
             secondSprite->setPosition(spritePart->getContentSize() / 2.0f);
         }
 
-        if (auto glowChild = static_cast<CCSprite*>(glowArray->objectAtIndex(i))) {
+        if (auto glowChild = glowArray[i]) {
             glowChild->setBatchNode(nullptr);
             glowChild->setDisplayFrame(Icons::getFrame("{}_{:02}_glow_001.png"_spr, icon, tag));
         }
@@ -559,7 +560,7 @@ void more_icons::updatePlayerObject(PlayerObject* object, std::string_view icon,
     Icons::setName(object, icon);
 
     if (type == IconType::Robot) {
-        if (Ref robotSprite = object->m_robotSprite) {
+        if (Ref<GJRobotSprite> robotSprite = object->m_robotSprite) {
             robotSprite->removeFromParentAndCleanup(false);
             updateRobotSprite(robotSprite, icon, type);
             auto batchNode = object->m_robotBatchNode;
@@ -569,7 +570,7 @@ void more_icons::updatePlayerObject(PlayerObject* object, std::string_view icon,
         return;
     }
     else if (type == IconType::Spider) {
-        if (Ref spiderSprite = object->m_spiderSprite) {
+        if (Ref<GJSpiderSprite> spiderSprite = object->m_spiderSprite) {
             spiderSprite->removeFromParentAndCleanup(false);
             updateRobotSprite(spiderSprite, icon, type);
             auto batchNode = object->m_spiderBatchNode;

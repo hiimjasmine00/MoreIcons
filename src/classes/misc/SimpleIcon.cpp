@@ -81,10 +81,9 @@ CCSprite* spriteWithFrame(fmt::format_string<Args...> name, Args&&... args) {
 }
 
 bool SimpleIcon::init(IconType type, std::string_view name) {
-    if (!CCLayer::init()) return false;
+    if (!CCNode::init()) return false;
 
-    setContentSize({ 0.0f, 0.0f });
-    ignoreAnchorPointForPosition(false);
+    setAnchorPoint({ 0.5f, 0.5f });
 
     if (type != IconType::Robot && type != IconType::Spider) {
         auto yOffset = type == IconType::Ufo ? -7.0f : 0.0f;
@@ -237,7 +236,7 @@ bool SimpleIcon::init(IconType type, std::string_view name) {
     return true;
 }
 
-void SimpleIcon::updateComplexSprite(const std::vector<SpriteDefinition>& definitions) {
+void SimpleIcon::updateComplexSprite(std::span<SpriteDefinition const> definitions) {
     for (auto spritePart : m_spriteParts) {
         spritePart->setVisible(false);
     }
@@ -268,18 +267,24 @@ void SimpleIcon::update(float dt) {
     updateComplexSprite(m_definitions[fmodf(interval, 1.0f) * m_definitions.size()]);
 }
 
-const std::vector<CCSprite*>& SimpleIcon::getTargets(const std::string& suffix) {
+std::span<CCSprite* const> SimpleIcon::getTargets(const std::string& suffix) {
     return m_targets[suffix];
 }
 
-void SimpleIcon::setColors(const ccColor3B& primary, const ccColor3B& secondary, const ccColor3B& glow) {
+void SimpleIcon::setMainColor(const ccColor3B& color) {
     for (auto [sprite, factor] : m_mainColorSprites) {
-        sprite->setColor({ (uint8_t)(primary.r * factor), (uint8_t)(primary.g * factor), (uint8_t)(primary.b * factor) });
+        sprite->setColor({ (uint8_t)(color.r * factor), (uint8_t)(color.g * factor), (uint8_t)(color.b * factor) });
     }
+}
+
+void SimpleIcon::setSecondaryColor(const ccColor3B& color) {
     for (auto [sprite, factor] : m_secondaryColorSprites) {
-        sprite->setColor({ (uint8_t)(secondary.r * factor), (uint8_t)(secondary.g * factor), (uint8_t)(secondary.b * factor) });
+        sprite->setColor({ (uint8_t)(color.r * factor), (uint8_t)(color.g * factor), (uint8_t)(color.b * factor) });
     }
+}
+
+void SimpleIcon::setGlowColor(const ccColor3B& color) {
     for (auto sprite : m_glowColorSprites) {
-        sprite->setColor(glow);
+        sprite->setColor(color);
     }
 }

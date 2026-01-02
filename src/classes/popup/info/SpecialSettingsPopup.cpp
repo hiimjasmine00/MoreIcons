@@ -116,7 +116,6 @@ void SpecialSettingsPopup::addControl(
     container->setPosition({ 0.0f, 22.5f });
     container->setContentSize({ 170.0f, 30.0f });
     container->setAnchorPoint({ 0.5f, 0.5f });
-    container->setLayout(RowLayout::create()->setAutoScale(false));
     container->setID(fmt::format("{}-container", id));
     positioner->addChild(container);
 
@@ -143,11 +142,9 @@ void SpecialSettingsPopup::addControl(
     input->setID(fmt::format("{}-input", id));
     container->addChild(input);
 
-    container->updateLayout();
+    container->setLayout(RowLayout::create()->setAutoScale(false));
 
-    CCMenuItemExt::assignCallback<SliderThumb>(slider->m_touchLogic->m_thumb, [
-        this, def, decimals, exponent, input, min, max, &value
-    ](SliderThumb* sender) {
+    CCMenuItemExt::assignCallback<SliderThumb>(slider->getThumb(), [this, def, decimals, exponent, input, min, max, &value](SliderThumb* sender) {
         auto floatValue = (roundf(sender->getValue() * (max - min) + min) * exponent) / exponent;
         input->setString(fmt::format("{:.{}f}", floatValue, decimals));
         value = floatValue;

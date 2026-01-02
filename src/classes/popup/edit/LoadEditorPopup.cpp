@@ -38,8 +38,7 @@ bool LoadEditorPopup::init(IconType type, std23::move_only_function<void(const s
     auto contentLayer = scrollLayer->m_contentLayer;
     scrollLayer->setPosition({ 110.0f, 115.0f });
     scrollLayer->ignoreAnchorPointForPosition(false);
-    contentLayer->setLayout(ColumnLayout::create()->setAxisReverse(true)
-        ->setAxisAlignment(AxisAlignment::End)->setAutoGrowAxis(0.0f));
+    contentLayer->ignoreAnchorPointForPosition(false);
     scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(scrollLayer);
 
@@ -85,7 +84,7 @@ bool LoadEditorPopup::init(IconType type, std23::move_only_function<void(const s
         entryMenu->addChild(entryButton);
     }
 
-    contentLayer->updateLayout();
+    contentLayer->setLayout(ColumnLayout::create()->setAxisReverse(true)->setAxisAlignment(AxisAlignment::End)->setAutoGrowAxis(0.0f));
 
     contentLayer->setContentSize(contentLayer->getContentSize() + CCSize { 0.0f, 10.0f });
     for (auto child : contentLayer->getChildrenExt()) {

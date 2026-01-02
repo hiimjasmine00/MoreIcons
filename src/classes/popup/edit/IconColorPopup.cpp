@@ -1,7 +1,7 @@
 #include "IconColorPopup.hpp"
+#include "../../../utils/Constants.hpp"
 #include "../../../utils/Get.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
-#include <Geode/binding/GameManager.hpp>
 
 using namespace geode::prelude;
 
@@ -167,13 +167,12 @@ bool IconColorPopup::init(int selected, std23::move_only_function<void(int)> cal
     m_mainLayer->addChild(selectSprite);
 
     auto center = Get::Director()->getWinSize() / 2.0f;
-    auto gameManager = Get::GameManager();
     for (int i = 0; i < 144; i++) {
         auto colorIndex = colorForIndex(i);
         if (colorIndex < 0) continue;
         auto colorSprite = CCSprite::createWithSpriteFrameName("GJ_colorBtn_001.png");
         colorSprite->setScale(0.65f);
-        colorSprite->setColor(gameManager->colorForIdx(colorIndex));
+        colorSprite->setColor(Constants::getColor(colorIndex));
         auto colorButton = CCMenuItemExt::createSpriteExtra(colorSprite, [this, colorIndex, selectSprite](CCMenuItemSpriteExtra* sender) {
             selectSprite->setPosition(sender->getPosition());
             m_selected = colorIndex;

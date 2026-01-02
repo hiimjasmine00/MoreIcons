@@ -35,12 +35,11 @@ bool IconViewPopup::init(IconType type, bool custom) {
     scrollBackground->setID("scroll-background");
     m_mainLayer->addChild(scrollBackground);
 
-    auto gameManager = Get::GameManager();
     auto scrollLayer = ScrollLayer::create({ 400.0f, 240.0f });
     auto contentLayer = scrollLayer->m_contentLayer;
     scrollLayer->setPosition({ 215.0f, 135.0f });
     scrollLayer->ignoreAnchorPointForPosition(false);
-    contentLayer->setLayout(RowLayout::create()->setGap(Constants::getIconGap(type))->setGrowCrossAxis(true));
+    contentLayer->ignoreAnchorPointForPosition(false);
     scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(scrollLayer);
 
@@ -62,7 +61,7 @@ bool IconViewPopup::init(IconType type, bool custom) {
         }
     }
     else {
-        auto count = gameManager->countForType(type);
+        auto count = Get::GameManager()->countForType(type);
         for (int i = 1; i <= count; i++) {
             auto iconMenu = CCMenu::create();
             auto lazyIcon = LazyIcon::create(type, i, nullptr, {});
@@ -78,7 +77,7 @@ bool IconViewPopup::init(IconType type, bool custom) {
         }
     }
 
-    contentLayer->updateLayout();
+    contentLayer->setLayout(RowLayout::create()->setGap(Constants::getIconGap(type))->setGrowCrossAxis(true));
 
     contentLayer->setContentSize(contentLayer->getContentSize() + CCSize { 0.0f, 10.0f });
     for (auto child : contentLayer->getChildrenExt()) {

@@ -1,6 +1,7 @@
 #include <cocos2d.h>
 #include <Geode/Enums.hpp>
 #include <Geode/GeneratedPredeclare.hpp>
+#include <span>
 
 struct SpriteDefinition {
     cocos2d::CCPoint position;
@@ -11,7 +12,7 @@ struct SpriteDefinition {
     int tag;
 };
 
-class SimpleIcon : public cocos2d::CCLayer {
+class SimpleIcon : public cocos2d::CCNode {
 protected:
     std::vector<CCSpritePlus*> m_spriteParts;
     std::vector<std::vector<SpriteDefinition>> m_definitions;
@@ -26,12 +27,14 @@ protected:
     bool init(IconType type, std::string_view name);
     void createSimpleIcon(IconType type, std::string_view name);
     void createComplexIcon(IconType type, std::string_view name);
-    void updateComplexSprite(const std::vector<SpriteDefinition>& definitions);
+    void updateComplexSprite(std::span<SpriteDefinition const> definitions);
 public:
     static SimpleIcon* create(IconType type, std::string_view name);
 
-    const std::vector<cocos2d::CCSprite*>& getTargets(const std::string& suffix);
-    void setColors(const cocos2d::ccColor3B& primary, const cocos2d::ccColor3B& secondary, const cocos2d::ccColor3B& glow);
+    std::span<cocos2d::CCSprite* const> getTargets(const std::string& suffix);
+    void setMainColor(const cocos2d::ccColor3B& color);
+    void setSecondaryColor(const cocos2d::ccColor3B& color);
+    void setGlowColor(const cocos2d::ccColor3B& color);
 
     void update(float dt) override;
 };

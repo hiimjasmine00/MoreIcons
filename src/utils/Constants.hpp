@@ -1,3 +1,4 @@
+#include <ccTypes.h>
 #include <Geode/Enums.hpp>
 #include <Geode/loader/Types.hpp>
 
@@ -14,4 +15,5 @@ namespace Constants {
     #endif
     float getIconGap(IconType type);
     UnlockType getUnlockType(IconType type);
+    cocos2d::ccColor3B getColor(int index);
 }

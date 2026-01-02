@@ -12,6 +12,7 @@
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/GJGarageLayer.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
+#include <jasmine/array.hpp>
 #include <jasmine/button.hpp>
 #include <MoreIcons.hpp>
 #include <ranges>
@@ -169,7 +170,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             f->m_navMenu = CCMenu::create();
             f->m_navMenu->setPosition({ winSize.width / 2.0f, 15.0f });
             f->m_navMenu->setContentSize({ winSize.width - 60.0f, 20.0f });
-            f->m_navMenu->setLayout(RowLayout::create()->setGap(6.0f)->setAxisAlignment(AxisAlignment::Center));
+            f->m_navMenu->ignoreAnchorPointForPosition(false);
+            f->m_navMenu->setLayout(RowLayout::create()->setGap(6.0f)->setAxisAlignment(AxisAlignment::Center), false);
             f->m_navMenu->setID("navdot-menu"_spr);
             addChild(f->m_navMenu, 1);
         }
@@ -266,9 +268,11 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         }
         m_iconSelection->setVisible(false);
 
-        auto offFrame = Get::SpriteFrameCache()->spriteFrameByName("gj_navDotBtn_off_001.png");
-        for (auto navDot : m_navDotMenu->getChildrenExt<CCMenuItemSprite>()) {
-            static_cast<CCSprite*>(navDot->getNormalImage())->setDisplayFrame(offFrame);
+        if (auto navDots = m_navDotMenu->getChildren()) {
+            auto offFrame = Get::SpriteFrameCache()->spriteFrameByName("gj_navDotBtn_off_001.png");
+            for (auto navDot : jasmine::array::toSpan<CCMenuItemSprite>(navDots)) {
+                static_cast<CCSprite*>(navDot->getNormalImage())->setDisplayFrame(offFrame);
+            }
         }
 
         auto objs = CCArray::create();

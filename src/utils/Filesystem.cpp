@@ -135,8 +135,8 @@ std::filesystem::path Filesystem::parentPath(const std::filesystem::path& path) 
 }
 
 std::filesystem::path Filesystem::parentPath(std::filesystem::path&& path) {
-    auto parent = _parent_path(path);
-    return std::filesystem::path(std::move(getPathString(path)).substr(parent.data() - path.c_str(), parent.size()));
+    getPathString(path).resize(_parent_path(path).size());
+    return std::move(path);
 }
 
 std::filesystem::path Filesystem::withExt(const std::filesystem::path& path, Filesystem::PathView ext) {

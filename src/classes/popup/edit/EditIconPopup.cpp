@@ -14,10 +14,6 @@
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
-#include <Geode/binding/CCPartAnimSprite.hpp>
-#include <Geode/binding/CCSpritePart.hpp>
-#include <Geode/binding/GameManager.hpp>
-#include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/Slider.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
 #include <Geode/utils/file.hpp>
@@ -79,9 +75,6 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     m_pieceMenu->setPosition({ 270.0f, 222.0f });
     m_pieceMenu->setContentSize({ isRobot ? 260.0f : 330.0f, 45.0f });
     m_pieceMenu->ignoreAnchorPointForPosition(false);
-    auto layout = RowLayout::create()->setAxisAlignment(AxisAlignment::Even);
-    layout->ignoreInvisibleChildren(true);
-    m_pieceMenu->setLayout(layout);
     m_pieceMenu->setID("piece-menu");
     m_mainLayer->addChild(m_pieceMenu);
 
@@ -92,8 +85,6 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     m_mainLayer->addChild(m_player);
 
     if (isRobot) {
-        m_suffix = "_01_001";
-
         auto prevSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_01_001.png");
         prevSprite->setScale(0.8f);
         auto prevButton = CCMenuItemExt::createSpriteExtra(prevSprite, [this](auto) {
@@ -113,7 +104,7 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
         nextButton->setID("next-button");
         m_buttonMenu->addChild(nextButton);
 
-        addPieceButton("_01_001", 0);
+        addPieceButton("_01_001", 0, true);
         addPieceButton("_01_2_001", 0);
         addPieceButton("_01_glow_001", 0);
         addPieceButton("_01_extra_001", 0);
@@ -128,34 +119,34 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
         addPieceButton("_04_glow_001", 3);
     }
     else {
-        m_suffix = "_001";
-
-        addPieceButton("_001", 0);
+        addPieceButton("_001", 0, true);
         addPieceButton("_2_001", 0);
         if (type == IconType::Ufo) addPieceButton("_3_001", 0);
         addPieceButton("_glow_001", 0);
         addPieceButton("_extra_001", 0);
     }
 
-    m_pieceMenu->updateLayout();
+    auto layout = RowLayout::create()->setAxisAlignment(AxisAlignment::Even);
+    layout->ignoreInvisibleChildren(true);
+    m_pieceMenu->setLayout(layout);
 
-    auto colorMenu = CCMenu::create();
-    colorMenu->setPosition({ 33.0f, 110.0f });
-    colorMenu->setContentSize({ 30.0f, 100.0f });
-    colorMenu->setLayout(ColumnLayout::create()->setGap(10.0f)->setAxisReverse(true));
-    colorMenu->setID("color-menu");
-    m_mainLayer->addChild(colorMenu);
+    m_colorMenu = CCMenu::create();
+    m_colorMenu->setPosition({ 33.0f, 110.0f });
+    m_colorMenu->setContentSize({ 30.0f, 100.0f });
+    m_colorMenu->ignoreAnchorPointForPosition(false);
+    m_colorMenu->setID("color-menu");
+    m_mainLayer->addChild(m_colorMenu);
 
-    m_mainColorSprite = addColorButton(m_state.mainColor, colorMenu, "1", "main-color-button");
-    m_secondaryColorSprite = addColorButton(m_state.secondaryColor, colorMenu, "2", "secondary-color-button");
-    m_glowColorSprite = addColorButton(m_state.glowColor, colorMenu, "G", "glow-color-button");
+    m_mainColorSprite = addColorButton(m_state.mainColor, "1", "main-color-button");
+    m_secondaryColorSprite = addColorButton(m_state.secondaryColor, "2", "secondary-color-button");
+    m_glowColorSprite = addColorButton(m_state.glowColor, "G", "glow-color-button");
 
-    colorMenu->updateLayout();
+    m_colorMenu->setLayout(ColumnLayout::create()->setGap(10.0f)->setAxisReverse(true));
 
     auto saveMenu = CCMenu::create();
     saveMenu->setPosition({ 69.0f, 110.0f });
     saveMenu->setContentSize({ 30.0f, 100.0f });
-    saveMenu->setLayout(ColumnLayout::create()->setGap(10.0f)->setAxisReverse(true));
+    saveMenu->ignoreAnchorPointForPosition(false);
     saveMenu->setID("save-menu");
     m_mainLayer->addChild(saveMenu);
 
@@ -201,11 +192,10 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     saveStateButton->setID("save-state-button");
     saveMenu->addChild(saveStateButton);
 
-    saveMenu->updateLayout();
+    saveMenu->setLayout(ColumnLayout::create()->setGap(10.0f)->setAxisReverse(true));
 
     m_selectSprite = CCSprite::createWithSpriteFrameName("GJ_select_001.png");
     m_selectSprite->setPosition(m_mainLayer->convertToNodeSpace(m_pieceMenu->convertToWorldSpace(m_pieceMenu->getChildByIndex(0)->getPosition())));
-    m_selectSprite->setTag(0);
     m_selectSprite->setID("select-sprite");
     m_mainLayer->addChild(m_selectSprite);
 
@@ -220,7 +210,6 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     pieceButtonMenu->setPosition({ 270.0f, 60.0f });
     pieceButtonMenu->setContentSize({ 330.0f, 20.0f });
     pieceButtonMenu->ignoreAnchorPointForPosition(false);
-    pieceButtonMenu->setLayout(RowLayout::create()->setGap(30.0f));
     pieceButtonMenu->setID("piece-button-menu");
     m_mainLayer->addChild(pieceButtonMenu);
 
@@ -279,36 +268,33 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     pieceClearButton->setID("piece-clear-button");
     pieceButtonMenu->addChild(pieceClearButton);
 
-    pieceButtonMenu->updateLayout();
+    pieceButtonMenu->setLayout(RowLayout::create()->setGap(30.0f));
 
     auto iconButtonMenu = CCMenu::create();
     iconButtonMenu->setPosition({ 225.0f, 30.0f });
     iconButtonMenu->setContentSize({ 450.0f, 30.0f });
     iconButtonMenu->ignoreAnchorPointForPosition(false);
-    iconButtonMenu->setLayout(RowLayout::create()->setGap(30.0f));
     iconButtonMenu->setID("icon-button-menu");
     m_mainLayer->addChild(iconButtonMenu);
 
-    auto pngSprite = ButtonSprite::create("PNG", "goldFont.fnt", "GJ_button_05.png", 0.8f);
-    auto plistSprite = ButtonSprite::create("Plist", "goldFont.fnt", "GJ_button_05.png", 0.8f);
-
-    auto pngButton = CCMenuItemExt::createSpriteExtra(pngSprite, [this, pngSprite, plistSprite](auto) {
-        m_listener.bind([this, pngSprite, plistSprite](Task<Result<std::filesystem::path>>::Event* event) {
+    m_pngSprite = ButtonSprite::create("PNG", "goldFont.fnt", "GJ_button_05.png", 0.8f);
+    auto pngButton = CCMenuItemExt::createSpriteExtra(m_pngSprite, [this](auto) {
+        m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
             auto res = event->getValue();
             if (res && res->isErr()) return Notify::error("Failed to import PNG file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
             m_selectedPNG = res->unwrap();
             if (m_selectedPlist.empty()) {
-                pngSprite->updateBGImage("GJ_button_03.png");
-                plistSprite->m_BGSprite->runAction(CCRepeat::create(CCSequence::createWithTwoActions(
+                m_pngSprite->updateBGImage("GJ_button_03.png");
+                m_plistSprite->m_BGSprite->runAction(CCRepeat::create(CCSequence::createWithTwoActions(
                     CCEaseIn::create(CCTintTo::create(0.4f, 127, 255, 127), 2.0f),
                     CCEaseOut::create(CCTintTo::create(0.4f, 255, 255, 255), 2.0f)
                 ), 2));
                 m_hasChanged = true;
             }
             else {
-                plistSprite->updateBGImage("GJ_button_05.png");
+                m_plistSprite->updateBGImage("GJ_button_05.png");
                 updateWithSelectedFiles();
             }
         });
@@ -323,23 +309,24 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     pngButton->setID("png-button");
     iconButtonMenu->addChild(pngButton);
 
-    auto plistButton = CCMenuItemExt::createSpriteExtra(plistSprite, [this, pngSprite, plistSprite](auto) {
-        m_listener.bind([this, pngSprite, plistSprite](Task<Result<std::filesystem::path>>::Event* event) {
+    m_plistSprite = ButtonSprite::create("Plist", "goldFont.fnt", "GJ_button_05.png", 0.8f);
+    auto plistButton = CCMenuItemExt::createSpriteExtra(m_plistSprite, [this](auto) {
+        m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
             auto res = event->getValue();
             if (res && res->isErr()) return Notify::error("Failed to import Plist file: {}", res->unwrapErr());
             if (!res || !res->isOk()) return;
 
             m_selectedPlist = res->unwrap();
             if (m_selectedPNG.empty()) {
-                plistSprite->updateBGImage("GJ_button_03.png");
-                pngSprite->m_BGSprite->runAction(CCRepeat::create(CCSequence::createWithTwoActions(
+                m_plistSprite->updateBGImage("GJ_button_03.png");
+                m_pngSprite->m_BGSprite->runAction(CCRepeat::create(CCSequence::createWithTwoActions(
                     CCEaseIn::create(CCTintTo::create(0.4f, 127, 255, 127), 2.0f),
                     CCEaseOut::create(CCTintTo::create(0.4f, 255, 255, 255), 2.0f)
                 ), 2));
                 m_hasChanged = true;
             }
             else {
-                pngSprite->updateBGImage("GJ_button_05.png");
+                m_pngSprite->updateBGImage("GJ_button_05.png");
                 updateWithSelectedFiles();
             }
         });
@@ -369,7 +356,7 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     saveButton->setID("save-button");
     iconButtonMenu->addChild(saveButton);
 
-    iconButtonMenu->updateLayout();
+    iconButtonMenu->setLayout(RowLayout::create()->setGap(30.0f));
 
     handleTouchPriority(this);
 
@@ -377,7 +364,7 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
 }
 
 void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::string_view id, int offset) {
-    auto def = *(&m_definition->offsetX + offset);
+    auto def = m_definition[offset];
     auto min = offset == 0 || offset == 1 ? -20.0f : offset == 4 || offset == 5 ? -10.0f : 0.0f;
     auto max = offset == 0 || offset == 1 ? 20.0f : offset == 4 || offset == 5 ? 10.0f : 360.0f;
     auto decimals = offset != 2 && offset != 3;
@@ -394,7 +381,7 @@ void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::st
     m_sliders[offset] = slider;
 
     CCMenuItemExt::assignCallback<SliderThumb>(slider->getThumb(), [this, min, div, decimals, id, input, offset](SliderThumb* sender) {
-        auto& value = *(&m_definition->offsetX + offset);
+        auto& value = m_definition[offset];
         value = sender->getValue() * div + min;
         value = decimals ? roundf(value * 10.0f) / 10.0f : roundf(value);
         input->setString(decimals ? fmt::format("{:.1f}", value) : fmt::format("{:.0f}", value));
@@ -405,7 +392,6 @@ void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::st
     menu->setPosition(pos + CCPoint { 0.0f, 10.0f });
     menu->setContentSize({ 150.0f, 30.0f });
     menu->ignoreAnchorPointForPosition(false);
-    menu->setLayout(RowLayout::create()->setAutoScale(false));
     menu->setID(fmt::format("{}-menu", id));
     m_mainLayer->addChild(menu);
 
@@ -420,7 +406,7 @@ void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::st
     input->setCommonFilter(decimals ? CommonFilter::Float : CommonFilter::Uint);
     input->setMaxCharCount(decimals ? 5 : 3);
     input->setCallback([this, min, max, div, slider, offset](const std::string& str) {
-        auto& value = *(&m_definition->offsetX + offset);
+        auto& value = m_definition[offset];
         jasmine::convert::to(str, value);
         value = std::clamp(value, min, max);
         slider->setValue((value - min) / div);
@@ -433,7 +419,7 @@ void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::st
     auto resetButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.4f, [
         this, def, slider, input, sliderValue, inputString = std::move(inputString), offset
     ](auto) {
-        auto& value = *(&m_definition->offsetX + offset);
+        auto& value = m_definition[offset];
         value = def;
         slider->setValue(sliderValue);
         input->setString(inputString);
@@ -442,53 +428,52 @@ void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::st
     resetButton->setID(fmt::format("reset-{}-button", id));
     menu->addChild(resetButton);
 
-    menu->updateLayout();
+    menu->setLayout(RowLayout::create()->setAutoScale(false));
 }
 
 void EditIconPopup::updateControls() {
-    auto offsetX = m_definition->offsetX;
+    auto offsetX = m_definition[0];
     m_sliders[0]->setValue((offsetX + 20.0f) / 40.0f);
     m_inputs[0]->setString(fmt::format("{:.1f}", offsetX));
 
-    auto offsetY = m_definition->offsetY;
+    auto offsetY = m_definition[1];
     m_sliders[1]->setValue((offsetY + 20.0f) / 40.0f);
     m_inputs[1]->setString(fmt::format("{:.1f}", offsetY));
 
-    auto rotationX = m_definition->rotationX;
+    auto rotationX = m_definition[2];
     m_sliders[2]->setValue(rotationX / 360.0f);
     m_inputs[2]->setString(fmt::format("{:.0f}", rotationX));
 
-    auto rotationY = m_definition->rotationY;
+    auto rotationY = m_definition[3];
     m_sliders[3]->setValue(rotationY / 360.0f);
     m_inputs[3]->setString(fmt::format("{:.0f}", rotationY));
 
-    auto scaleX = m_definition->scaleX;
+    auto scaleX = m_definition[4];
     m_sliders[4]->setValue((scaleX + 10.0f) / 20.0f);
     m_inputs[4]->setString(fmt::format("{:.1f}", scaleX));
 
-    auto scaleY = m_definition->scaleY;
+    auto scaleY = m_definition[5];
     m_sliders[5]->setValue((scaleY + 10.0f) / 20.0f);
     m_inputs[5]->setString(fmt::format("{:.1f}", scaleY));
 }
 
-void EditIconPopup::addPieceButton(const std::string& suffix, int page) {
-    auto definitionP = &m_state.definitions[suffix];
-    auto targetsP = &m_player->getTargets(suffix);
-    if (m_suffix == suffix) {
-        m_definition = definitionP;
-        m_targetsArray = targetsP;
+void EditIconPopup::addPieceButton(const std::string& suffix, int page, bool select) {
+    if (select) {
+        m_suffix = suffix;
+        m_definition = &m_state.definitions[suffix].offsetX;
+        m_targetsArray = m_player->getTargets(suffix);
     }
 
     auto pieceFrame = Icons::getFrame("{}{}.png", MoreIcons::getIconName(1, m_iconType), suffix);
     if (pieceFrame) m_frames.emplace(suffix, pieceFrame);
     else pieceFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
     auto pieceSprite = CCSprite::createWithSpriteFrame(pieceFrame);
-    auto pieceButton = CCMenuItemExt::createSpriteExtra(pieceSprite, [this, suffix, page, definitionP, targetsP](CCMenuItemSpriteExtra* sender) {
+    auto pieceButton = CCMenuItemExt::createSpriteExtra(pieceSprite, [this, suffix, page](CCMenuItemSpriteExtra* sender) {
         m_suffix = suffix;
-        m_definition = definitionP;
-        m_targetsArray = targetsP;
+        m_definition = &m_state.definitions[suffix].offsetX;
+        m_targetsArray = m_player->getTargets(suffix);
         updateControls();
-        m_selectSprite->setTag(page);
+        m_selectedPage = page;
         m_selectSprite->setVisible(true);
         m_selectSprite->setPosition(m_mainLayer->convertToNodeSpace(m_pieceMenu->convertToWorldSpace(sender->getPosition())));
     });
@@ -503,14 +488,13 @@ void EditIconPopup::addPieceButton(const std::string& suffix, int page) {
     m_pieces.emplace(suffix, pieceSprite);
 }
 
-CCSprite* EditIconPopup::addColorButton(int& index, CCMenu* menu, const char* text, std::string&& id) {
+CCSprite* EditIconPopup::addColorButton(int& index, const char* text, std::string&& id) {
     auto sprite = CCSprite::createWithSpriteFrameName("player_special_01_001.png");
     sprite->setScale(0.85f);
     sprite->setCascadeColorEnabled(true);
     auto label = CCLabelBMFont::create(text, "bigFont.fnt");
     label->setScale(0.45f);
     label->setPosition(sprite->getContentSize() / 2.0f);
-    sprite->setColor(Get::GameManager()->colorForIdx(index));
     sprite->addChild(label);
     auto button = CCMenuItemExt::createSpriteExtra(sprite, [this, &index](auto) {
         IconColorPopup::create(index, [this, &index](int newIndex) {
@@ -519,23 +503,22 @@ CCSprite* EditIconPopup::addColorButton(int& index, CCMenu* menu, const char* te
         })->show();
     });
     button->setID(std::move(id));
-    menu->addChild(button);
+    m_colorMenu->addChild(button);
     return sprite;
 }
 
 void EditIconPopup::updateColors() {
-    auto gameManager = Get::GameManager();
-
-    auto mainColor = gameManager->colorForIdx(m_state.mainColor);
+    auto mainColor = Constants::getColor(m_state.mainColor);
     m_mainColorSprite->setColor(mainColor);
+    m_player->setMainColor(mainColor);
 
-    auto secondaryColor = gameManager->colorForIdx(m_state.secondaryColor);
+    auto secondaryColor = Constants::getColor(m_state.secondaryColor);
     m_secondaryColorSprite->setColor(secondaryColor);
+    m_player->setSecondaryColor(secondaryColor);
 
-    auto glowColor = gameManager->colorForIdx(m_state.glowColor);
+    auto glowColor = Constants::getColor(m_state.glowColor);
     m_glowColorSprite->setColor(glowColor);
-
-    m_player->setColors(mainColor, secondaryColor, glowColor);
+    m_player->setGlowColor(glowColor);
 }
 
 bool EditIconPopup::updateWithSelectedFiles(bool useSuffix) {
@@ -606,7 +589,7 @@ void EditIconPopup::goToPage(int page) {
 
     auto count = m_pages.size();
     m_page = ((page % count) + count) % count;
-    m_selectSprite->setVisible(m_selectSprite->getTag() == m_page);
+    m_selectSprite->setVisible(m_selectedPage == m_page);
 
     for (auto sprite : m_pages[m_page]) {
         sprite->setVisible(true);
@@ -616,15 +599,15 @@ void EditIconPopup::goToPage(int page) {
 }
 
 void EditIconPopup::updateTargets() {
-    if (!m_targetsArray || !m_definition) return;
+    if (!m_definition) return;
 
-    for (auto target : *m_targetsArray) {
-        target->setPositionX(m_definition->offsetX);
-        target->setPositionY(m_definition->offsetY);
-        target->setRotationX(m_definition->rotationX);
-        target->setRotationY(m_definition->rotationY);
-        target->setScaleX(m_definition->scaleX);
-        target->setScaleY(m_definition->scaleY);
+    for (auto target : m_targetsArray) {
+        target->setPositionX(m_definition[0]);
+        target->setPositionY(m_definition[1]);
+        target->setRotationX(m_definition[2]);
+        target->setRotationY(m_definition[3]);
+        target->setScaleX(m_definition[4]);
+        target->setScaleY(m_definition[5]);
     }
 
     m_hasChanged = true;

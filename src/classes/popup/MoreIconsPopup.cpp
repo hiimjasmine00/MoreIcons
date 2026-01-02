@@ -34,12 +34,12 @@ bool MoreIconsPopup::init() {
     setTitle(fmt::format("{} {}", metadata.getName(), metadata.getVersion().toNonVString()), "goldFont.fnt", 0.7f, 17.0f);
     m_title->setID("more-icons-title");
 
-    auto gamemodesNode = CCNode::create();
-    gamemodesNode->setPosition({ 230.0f, 135.0f });
-    gamemodesNode->setContentSize({ 440.0f, 245.0f });
-    gamemodesNode->setAnchorPoint({ 0.5f, 0.5f });
-    gamemodesNode->setLayout(RowLayout::create()->setGap(5.0f)->setGrowCrossAxis(true));
-    gamemodesNode->setID("gamemodes-node");
+    m_gamemodesNode = CCNode::create();
+    m_gamemodesNode->setPosition({ 230.0f, 135.0f });
+    m_gamemodesNode->setContentSize({ 440.0f, 245.0f });
+    m_gamemodesNode->setAnchorPoint({ 0.5f, 0.5f });
+    m_gamemodesNode->setID("gamemodes-node");
+    m_mainLayer->addChild(m_gamemodesNode);
 
     m_dual = MoreIcons::dualSelected();
     m_color1 = MoreIcons::vanillaColor1(m_dual);
@@ -47,21 +47,20 @@ bool MoreIconsPopup::init() {
     m_colorGlow = MoreIcons::vanillaColorGlow(m_dual);
     m_glow = MoreIcons::vanillaGlow(m_dual);
 
-    createMenu(gamemodesNode, IconType::Cube);
-    createMenu(gamemodesNode, IconType::Ship);
-    createMenu(gamemodesNode, IconType::Ball);
-    createMenu(gamemodesNode, IconType::Ufo);
-    createMenu(gamemodesNode, IconType::Wave);
-    createMenu(gamemodesNode, IconType::Robot);
-    createMenu(gamemodesNode, IconType::Spider);
-    createMenu(gamemodesNode, IconType::Swing);
-    createMenu(gamemodesNode, IconType::Jetpack);
-    createMenu(gamemodesNode, IconType::DeathEffect);
-    createMenu(gamemodesNode, IconType::Special);
-    createMenu(gamemodesNode, IconType::ShipFire);
+    createMenu(IconType::Cube);
+    createMenu(IconType::Ship);
+    createMenu(IconType::Ball);
+    createMenu(IconType::Ufo);
+    createMenu(IconType::Wave);
+    createMenu(IconType::Robot);
+    createMenu(IconType::Spider);
+    createMenu(IconType::Swing);
+    createMenu(IconType::Jetpack);
+    createMenu(IconType::DeathEffect);
+    createMenu(IconType::Special);
+    createMenu(IconType::ShipFire);
 
-    gamemodesNode->updateLayout();
-    m_mainLayer->addChild(gamemodesNode);
+    m_gamemodesNode->setLayout(RowLayout::create()->setGap(5.0f)->setGrowCrossAxis(true));
 
     auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [](auto) {
         if (auto res = MoreIcons::createTrash()) file::openFolder(res.unwrap());
@@ -76,12 +75,13 @@ bool MoreIconsPopup::init() {
     return true;
 }
 
-void MoreIconsPopup::createMenu(CCNode* gamemodesNode, IconType type) {
+void MoreIconsPopup::createMenu(IconType type) {
     auto gamemodeMenu = CCMenu::create();
     gamemodeMenu->setPosition({ 0.0f, 0.0f });
     gamemodeMenu->setContentSize({ 70.0f, 120.0f });
     gamemodeMenu->ignoreAnchorPointForPosition(false);
     gamemodeMenu->setID(fmt::format("{}-menu", Constants::getPluralLowercase(type)));
+    m_gamemodesNode->addChild(gamemodeMenu);
 
     auto background = CCScale9Sprite::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
     background->setPosition({ 35.0f, 60.0f });
@@ -196,6 +196,4 @@ void MoreIconsPopup::createMenu(CCNode* gamemodesNode, IconType type) {
     folderButton->setPosition({ 54.0f, 15.0f });
     folderButton->setID("folder-button");
     gamemodeMenu->addChild(folderButton);
-
-    gamemodesNode->addChild(gamemodeMenu);
 }

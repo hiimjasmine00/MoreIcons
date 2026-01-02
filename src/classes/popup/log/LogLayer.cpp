@@ -34,8 +34,7 @@ bool LogLayer::init(IconType type) {
     auto contentLayer = scrollLayer->m_contentLayer;
     scrollLayer->setPosition({ 215.0f, 135.0f });
     scrollLayer->ignoreAnchorPointForPosition(false);
-    contentLayer->setLayout(ColumnLayout::create()->setAxisReverse(true)
-        ->setAxisAlignment(AxisAlignment::End)->setAutoGrowAxis(0.0f)->setGap(0.0f));
+    contentLayer->ignoreAnchorPointForPosition(false);
     scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(scrollLayer);
 
@@ -47,7 +46,7 @@ bool LogLayer::init(IconType type) {
         }
     }
 
-    contentLayer->updateLayout();
+    contentLayer->setLayout(ColumnLayout::create()->setAxisReverse(true)->setAxisAlignment(AxisAlignment::End)->setAutoGrowAxis(0.0f)->setGap(0.0f));
     scrollLayer->scrollToTop();
 
     auto scrollable = contentLayer->getContentHeight() > scrollLayer->getContentHeight();

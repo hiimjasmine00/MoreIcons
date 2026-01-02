@@ -17,7 +17,7 @@ namespace MoreIcons {
     std::string getIconName(int id, IconType type);
     void getIconPaths(IconInfo* info, int id, IconType type, std::filesystem::path& png, std::filesystem::path& plist);
     std::filesystem::path getIconStem(std::string_view name, IconType type);
-    std::string getTrailTexture(int id);
+    std::filesystem::path getIconPath(IconInfo* info, int id, IconType type);
     void updateGarage(GJGarageLayer* layer = nullptr);
     cocos2d::ccColor3B vanillaColor1(bool dual);
     cocos2d::ccColor3B vanillaColor2(bool dual);

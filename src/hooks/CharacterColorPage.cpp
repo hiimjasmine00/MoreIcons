@@ -1,6 +1,7 @@
 #include "../MoreIcons.hpp"
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/CharacterColorPage.hpp>
+#include <jasmine/array.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
@@ -15,8 +16,9 @@ class $modify(MICharacterColorPage, CharacterColorPage) {
         if (!CharacterColorPage::init()) return false;
 
         auto dual = MoreIcons::dualSelected();
-        for (int i = 0; i < m_playerObjects->count(); i++) {
-            more_icons::updateSimplePlayer(static_cast<SimplePlayer*>(m_playerObjects->objectAtIndex(i)), (IconType)i, dual);
+        auto playerObjects = jasmine::array::toSpan<SimplePlayer>(m_playerObjects);
+        for (size_t i = 0; i < playerObjects.size(); i++) {
+            more_icons::updateSimplePlayer(playerObjects[i], (IconType)i, dual);
         }
 
         return true;
