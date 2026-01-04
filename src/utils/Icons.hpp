@@ -8,19 +8,10 @@
 #define CONFIG_PATH std::string_view("config/" GEODE_MOD_ID, sizeof(GEODE_MOD_ID) + 6)
 #endif
 
-struct IconPack {
-    std::string name;
-    std::string id;
-    std::filesystem::path path;
-    bool vanilla;
-    bool zipped;
-};
-
 namespace Icons {
     extern std::map<IconType, std::vector<IconInfo>> icons;
     extern std::map<int, std::map<IconType, std::string>> requestedIcons;
     extern std::map<std::pair<std::string, IconType>, int> loadedIcons;
-    extern std::vector<IconPack> packs;
     extern bool traditionalPacks;
     extern bool preloadIcons;
 
@@ -31,6 +22,7 @@ namespace Icons {
     }
 
     cocos2d::CCTexture2D* createAndAddFrames(IconInfo* info);
+    void finishLoading();
     #ifdef GEODE_IS_MOBILE
     std::filesystem::path getUhdResourcesDir();
     #endif

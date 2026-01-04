@@ -1,4 +1,5 @@
 #include "IconEditorState.hpp"
+#include "../../../utils/Json.hpp"
 #include <matjson/std.hpp>
 
 using namespace geode;
@@ -8,12 +9,12 @@ Result<FrameDefinition> matjson::Serialize<FrameDefinition>::fromJson(const matj
     if (!value.isObject()) Err("Expected object");
 
     FrameDefinition def;
-    def.offsetX = value["offset-x"].asDouble().unwrapOr(0.0);
-    def.offsetY = value["offset-y"].asDouble().unwrapOr(0.0);
-    def.rotationX = value["rotation-x"].asDouble().unwrapOr(0.0);
-    def.rotationY = value["rotation-y"].asDouble().unwrapOr(0.0);
-    def.scaleX = value["scale-x"].asDouble().unwrapOr(1.0);
-    def.scaleY = value["scale-y"].asDouble().unwrapOr(1.0);
+    def.offsetX = Json::get(value, "offset-x", 0.0f);
+    def.offsetY = Json::get(value, "offset-y", 0.0f);
+    def.rotationX = Json::get(value, "rotation-x", 0.0f);
+    def.rotationY = Json::get(value, "rotation-y", 0.0f);
+    def.scaleX = Json::get(value, "scale-x", 1.0f);
+    def.scaleY = Json::get(value, "scale-y", 1.0f);
     return Ok(def);
 }
 
@@ -32,10 +33,10 @@ Result<IconEditorState> matjson::Serialize<IconEditorState>::fromJson(const matj
     if (!value.isObject()) Err("Expected object");
 
     IconEditorState state;
-    state.definitions = value["definitions"].as<std::unordered_map<std::string, FrameDefinition>>().unwrapOrDefault();
-    state.mainColor = value["main-color"].asInt().unwrapOr(12);
-    state.secondaryColor = value["secondary-color"].asInt().unwrapOr(12);
-    state.glowColor = value["glow-color"].asInt().unwrapOr(12);
+    state.definitions = Json::get<std::unordered_map<std::string, FrameDefinition>>(value, "definitions");
+    state.mainColor = Json::get(value, "main-color", 12);
+    state.secondaryColor = Json::get(value, "secondary-color", 12);
+    state.glowColor = Json::get(value, "glow-color", 12);
     return Ok(std::move(state));
 }
 

@@ -71,7 +71,7 @@ class $modify(MILoadingLayer, LoadingLayer) {
                 break;
             case 12:
                 Icons::loadIcons(IconType::ShipFire);
-                Icons::packs.clear();
+                Icons::finishLoading();
                 if (smallLabel2) smallLabel2->setString("");
                 break;
             default:

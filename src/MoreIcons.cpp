@@ -3,6 +3,7 @@
 #include "utils/Filesystem.hpp"
 #include "utils/Get.hpp"
 #include "utils/Icons.hpp"
+#include "utils/Json.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
@@ -113,7 +114,7 @@ void MoreIcons::updateGarage(GJGarageLayer* layer) {
 }
 
 void MoreIcons::blendStreak(CCMotionStreak* streak, IconInfo* info) {
-    if (info->getSpecialInfo()["blend"].asBool().unwrapOr(true)) streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
+    if (Json::get(info->getSpecialInfo(), "blend", true)) streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
     else streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA });
 }
 

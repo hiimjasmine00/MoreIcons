@@ -2,6 +2,7 @@
 #include "../utils/Defaults.hpp"
 #include "../utils/Get.hpp"
 #include "../utils/Icons.hpp"
+#include "../utils/Json.hpp"
 #include <Geode/binding/CCCircleWave.hpp>
 #include <Geode/binding/ExplodeItemNode.hpp>
 #include <Geode/binding/GameManager.hpp>
@@ -135,10 +136,10 @@ class $modify(MIPlayerObject, PlayerObject) {
 
         if (auto info = getIconInfo(IconType::Special)) {
             auto& trailInfo = info->getSpecialInfo();
-            auto tint = trailInfo["tint"].asBool().unwrapOr(false);
-            auto show = trailInfo["show"].asBool().unwrapOr(false);
-            float fade = trailInfo["fade"].asDouble().unwrapOr(0.3);
-            float stroke = trailInfo["stroke"].asDouble().unwrapOr(14.0);
+            auto tint = Json::get(trailInfo, "tint", false);
+            auto show = Json::get(trailInfo, "show", false);
+            auto fade = Json::get(trailInfo, "fade", 0.3f);
+            auto stroke = Json::get(trailInfo, "stroke", 14.0f);
 
             m_streakStrokeWidth = stroke;
             m_disableStreakTint = !tint;
@@ -163,8 +164,8 @@ class $modify(MIPlayerObject, PlayerObject) {
 
         if (auto info = getIconInfo(IconType::ShipFire)) {
             auto& fireInfo = info->getSpecialInfo();
-            float fade = fireInfo["fade"].asDouble().unwrapOr(0.1);
-            float stroke = fireInfo["stroke"].asDouble().unwrapOr(20.0);
+            auto fade = Json::get(fireInfo, "fade", 0.1f);
+            auto stroke = Json::get(fireInfo, "stroke", 20.0f);
             auto texture = Get::TextureCache()->addImage(info->getTextureString().c_str(), false);
             if (m_shipStreak) {
                 m_shipStreak->updateFade(fade);
@@ -207,7 +208,7 @@ class $modify(MIPlayerObject, PlayerObject) {
         auto& fireInfo = info->getSpecialInfo();
         m_shipStreak->setPosition(
             m_shipStreak->getParent()->convertToNodeSpace(m_mainLayer->convertToWorldSpace(m_vehicleSprite->getPosition() + CCPoint {
-                (float)fireInfo["x"].asDouble().unwrapOr(-8.0) * reverseMod(), (float)fireInfo["y"].asDouble().unwrapOr(-3.0)
+                Json::get(fireInfo, "x", -8.0f) * reverseMod(), Json::get(fireInfo, "y", -3.0f)
             }))
         );
     }
@@ -220,13 +221,13 @@ class $modify(MIPlayerObject, PlayerObject) {
         if (auto info = getIconInfo(IconType::ShipFire)) {
             auto texture = info->getTextureString();
             auto fireCount = info->getFireCount();
-            float interval = info->getSpecialInfo()["interval"].asDouble().unwrapOr(0.05);
+            auto interval = Json::get(info->getSpecialInfo(), "interval", 0.05f);
             texture.replace(texture.size() - 7, 3, fmt::format("{:03}", (int)(m_totalTime / interval) % fireCount + 1));
             m_shipStreak->setTexture(Get::TextureCache()->addImage(texture.c_str(), false));
         }
         else if (Icons::traditionalPacks) {
             auto fireCount = Defaults::getShipFireCount((int)m_shipStreakType);
-            float interval = std::max(Defaults::getShipFireInfo((int)m_shipStreakType)["interval"].asDouble().unwrapOr(0.05), 0.001);
+            auto interval = std::max(Json::get(Defaults::getShipFireInfo((int)m_shipStreakType), "interval", 0.05f), 0.001f);
             m_shipStreak->setTexture(Get::TextureCache()->addImage(Icons::vanillaTexturePath(
                 fmt::format("shipfire{:02}_{:03}.png", (int)m_shipStreakType, (int)(m_totalTime / interval) % fireCount + 1), true
             ).c_str(), false));
@@ -246,8 +247,8 @@ class $modify(MIPlayerObject, PlayerObject) {
         else if (m_playerSpeed == 1.3f) factor *= 1.05f;
 
         auto& fireInfo = info->getSpecialInfo();
-        m_shipStreak->updateFade((float)fireInfo["fade"].asDouble().unwrapOr(0.1) * factor);
-        m_shipStreak->setStroke((float)fireInfo["stroke"].asDouble().unwrapOr(20.0) * factor);
+        m_shipStreak->updateFade(Json::get(fireInfo, "fade", 0.1f) * factor);
+        m_shipStreak->setStroke(Json::get(fireInfo, "stroke", 20.0f) * factor);
     }
 
     void togglePlayerScale(bool enable, bool noEffects) {
@@ -273,11 +274,11 @@ class $modify(MIPlayerObject, PlayerObject) {
         fadeOut->setTag(4);
         runAction(fadeOut);
 
-        float scale = deathInfo["scale"].asDouble().unwrapOr(1.0);
-        float scaleVar = deathInfo["scale-variance"].asDouble().unwrapOr(0.0);
-        float rotation = deathInfo["rotation"].asDouble().unwrapOr(0.0);
-        float rotationVar = deathInfo["rotation-variance"].asDouble().unwrapOr(0.0);
-        auto blend = deathInfo["blend"].asBool().unwrapOr(false);
+        auto scale = Json::get(deathInfo, "scale", 1.0f);
+        auto scaleVar = Json::get(deathInfo, "scale-variance", 0.0f);
+        auto rotation = Json::get(deathInfo, "rotation", 0.0f);
+        auto rotationVar = Json::get(deathInfo, "rotation-variance", 0.0f);
+        auto blend = Json::get(deathInfo, "blend", false);
 
         auto& frameNames = info->getFrameNames();
         auto effect = CCSprite::createWithSpriteFrameName(frameNames[0].c_str());
@@ -293,20 +294,19 @@ class $modify(MIPlayerObject, PlayerObject) {
             frames->addObject(spriteFrameCache->spriteFrameByName(it->c_str()));
         }
 
-        float frameDelay = deathInfo["frame-delay"].asDouble().unwrapOr(0.05);
-        float frameDelayVariance = deathInfo["frame-delay-variance"].asDouble().unwrapOr(0.0);
+        auto frameDelay = Json::get(deathInfo, "frame-delay", 0.05f);
+        auto frameDelayVariance = Json::get(deathInfo, "frame-delay-variance", 0.0f);
 
         auto delay = (float)jasmine::random::get(-frameDelayVariance, frameDelayVariance) + frameDelay;
 
         effect->runAction(CCSequence::createWithTwoActions(
-            CCAnimate::create(CCAnimation::createWithSpriteFrames(frames, delay)),
-            CCCallFunc::create(effect, callfunc_selector(CCNode::removeMeAndCleanup))
+            CCAnimate::create(CCAnimation::createWithSpriteFrames(frames, delay)), CCRemoveSelf::create()
         ));
 
-        if (deathInfo["fade"].asBool().unwrapOr(true)) {
+        if (Json::get(deathInfo, "fade", true)) {
             effect->runAction(CCSequence::createWithTwoActions(
-                CCDelayTime::create(deathInfo["fade-delay-multiplier"].asDouble().unwrapOr(6.0) * delay),
-                CCFadeOut::create(deathInfo["fade-time-multiplier"].asDouble().unwrapOr(6.0) * delay)
+                CCDelayTime::create(Json::get(deathInfo, "fade-delay-multiplier", 6.0f) * delay),
+                CCFadeOut::create(Json::get(deathInfo, "fade-time-multiplier", 6.0f) * delay)
             ));
         }
 
@@ -324,12 +324,12 @@ class $modify(MIPlayerObject, PlayerObject) {
         particles->resetSystem();
         m_parentLayer->addChild(particles, 99);
 
-        auto circleUseScale = deathInfo["circle-use-scale"].asBool().unwrapOr(false);
-        auto circleUseDelay = deathInfo["circle-use-delay"].asBool().unwrapOr(false);
+        auto circleUseScale = Json::get(deathInfo, "circle-use-scale", false);
+        auto circleUseDelay = Json::get(deathInfo, "circle-use-delay", false);
         auto circleFactor = circleUseScale ? effectScale : vehicleSize;
-        auto circleStartRadius = deathInfo["circle-start-radius"].asDouble().unwrapOr(10.0) * circleFactor;
-        auto circleEndRadius = deathInfo["circle-end-radius"].asDouble().unwrapOr(110.0) * circleFactor;
-        auto circleDuration = deathInfo["circle-duration"].asDouble().unwrapOr(0.6);
+        auto circleStartRadius = Json::get(deathInfo, "circle-start-radius", 10.0f) * circleFactor;
+        auto circleEndRadius = Json::get(deathInfo, "circle-end-radius", 110.0f) * circleFactor;
+        auto circleDuration = Json::get(deathInfo, "circle-duration", 0.6f);
         if (circleUseDelay) circleDuration *= delay;
 
         auto circle = CCCircleWave::create(circleStartRadius, circleEndRadius, circleDuration, false);
@@ -340,12 +340,12 @@ class $modify(MIPlayerObject, PlayerObject) {
         circle->m_opacityMod = 1.0f;
         m_parentLayer->addChild(circle, 1000);
 
-        auto outlineUseScale = deathInfo["outline-use-scale"].asBool().unwrapOr(false);
-        auto outlineUseDelay = deathInfo["outline-use-delay"].asBool().unwrapOr(false);
+        auto outlineUseScale = Json::get(deathInfo, "outline-use-scale", false);
+        auto outlineUseDelay = Json::get(deathInfo, "outline-use-delay", false);
         auto outlineFactor = outlineUseScale ? effectScale : vehicleSize;
-        auto outlineStartRadius = deathInfo["outline-start-radius"].asDouble().unwrapOr(10.0) * outlineFactor;
-        auto outlineEndRadius = deathInfo["outline-end-radius"].asDouble().unwrapOr(115.0) * outlineFactor;
-        auto outlineDuration = deathInfo["outline-duration"].asDouble().unwrapOr(0.4);
+        auto outlineStartRadius = Json::get(deathInfo, "outline-start-radius", 10.0f) * outlineFactor;
+        auto outlineEndRadius = Json::get(deathInfo, "outline-end-radius", 115.0f) * outlineFactor;
+        auto outlineDuration = Json::get(deathInfo, "outline-duration", 0.4f);
         if (outlineUseDelay) outlineDuration *= delay;
 
         auto outline = CCCircleWave::create(outlineStartRadius, outlineEndRadius, outlineDuration, false);

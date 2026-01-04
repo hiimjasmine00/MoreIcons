@@ -347,7 +347,7 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
         for (auto& frameName : frameNames) {
             if (Ref<CCSpriteFrame> spriteFrame = Icons::getFrame(frameName.c_str())) {
                 spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
-                frameName = Load::getFrameName(std::move(frameName), newName, type);
+                Load::fixFrameName(frameName, newName, type);
                 spriteFrameCache->addSpriteFrame(spriteFrame, frameName.c_str());
             }
         }
@@ -411,28 +411,29 @@ void more_icons::updateIcon(IconInfo* info) {
     auto& frameNames = const_cast<std::vector<std::string>&>(info->getFrameNames());
     for (auto it = frameNames.begin(); it != frameNames.end();) {
         auto& frameName = *it;
-        if (frames.contains(frameName)) ++it;
+        if (auto frameIt = frames.find(frameName); frameIt != frames.end()) {
+            if (auto spriteFrame = Icons::getFrame(frameName.c_str())) {
+                auto frame = frameIt->second.data();
+                spriteFrame->m_obOffset = frame->m_obOffset;
+                spriteFrame->m_obOriginalSize = frame->m_obOriginalSize;
+                spriteFrame->m_obRectInPixels = frame->m_obRectInPixels;
+                spriteFrame->m_bRotated = frame->m_bRotated;
+                spriteFrame->m_obRect = frame->m_obRect;
+                spriteFrame->m_obOffsetInPixels = frame->m_obOffsetInPixels;
+                spriteFrame->m_obOriginalSizeInPixels = frame->m_obOriginalSizeInPixels;
+            }
+            frames.erase(frameIt);
+            ++it;
+        }
         else {
             spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
             it = frameNames.erase(it);
         }
     }
 
-    for (auto& [frameName, frameRef] : frames) {
-        auto frame = frameRef.data();
-        if (auto spriteFrame = Icons::getFrame(frameName.c_str())) {
-            spriteFrame->m_obOffset = frame->m_obOffset;
-            spriteFrame->m_obOriginalSize = frame->m_obOriginalSize;
-            spriteFrame->m_obRectInPixels = frame->m_obRectInPixels;
-            spriteFrame->m_bRotated = frame->m_bRotated;
-            spriteFrame->m_obRect = frame->m_obRect;
-            spriteFrame->m_obOffsetInPixels = frame->m_obOffsetInPixels;
-            spriteFrame->m_obOriginalSizeInPixels = frame->m_obOriginalSizeInPixels;
-        }
-        else {
-            spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
-            frameNames.push_back(frameName);
-        }
+    for (auto& [frameName, frame] : frames) {
+        spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
+        frameNames.push_back(frameName);
     }
 }
 

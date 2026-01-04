@@ -4,24 +4,25 @@
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Defaults.hpp"
 #include "../../../utils/Icons.hpp"
+#include "../../../utils/Json.hpp"
 #include <jasmine/mod.hpp>
 #include <span>
 
 using namespace geode::prelude;
 using namespace jasmine::mod;
 
-static std::initializer_list<std::initializer_list<std::string_view>> robotSuffixes = {
+std::initializer_list<std::initializer_list<std::string_view>> robotSuffixes = {
     { "_01_001", "_01_2_001", "_01_glow_001", "_01_extra_001" },
     { "_02_001", "_02_2_001", "_02_glow_001" },
     { "_03_001", "_03_2_001", "_03_glow_001" },
     { "_04_001", "_04_2_001", "_04_glow_001" }
 };
 
-static std::initializer_list<std::initializer_list<std::string_view>> ufoSuffixes = {
+std::initializer_list<std::initializer_list<std::string_view>> ufoSuffixes = {
     { "_001", "_2_001", "_3_001", "_glow_001", "_extra_001" }
 };
 
-static std::initializer_list<std::initializer_list<std::string_view>> cubeSuffixes = {
+std::initializer_list<std::initializer_list<std::string_view>> cubeSuffixes = {
     { "_001", "_2_001", "_glow_001", "_extra_001" }
 };
 
@@ -90,19 +91,19 @@ bool ViewIconPopup::init(IconType type, int id, IconInfo* info) {
                 }
             }
 
-            container->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Between));
+            container->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Even));
         }
     }
     else if (type == IconType::Special) {
         auto streak = CCSprite::create((info ? info->getTextureString() : fmt::format("streak_{:02}_001.png", id)).c_str());
         auto& trailInfo = info ? info->getSpecialInfo() : Defaults::getTrailInfo(id);
-        if (trailInfo["blend"].asBool().unwrapOr(true)) streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
+        if (Json::get(trailInfo, "blend", true)) streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
         streak->setPosition({ 175.0f, 50.0f });
         streak->setRotation(-90.0f);
         auto& size = streak->getContentSize();
-        streak->setScaleX((float)trailInfo["stroke"].asDouble().unwrapOr(14.0) / size.width);
+        streak->setScaleX(Json::get(trailInfo, "stroke", 14.0f) / size.width);
         streak->setScaleY(320.0f / size.height);
-        if (trailInfo["tint"].asBool().unwrapOr(false)) {
+        if (Json::get(trailInfo, "tint", false)) {
             streak->setColor(MoreIcons::vanillaColor2(MoreIcons::dualSelected()));
         }
         streak->setID("streak-preview");

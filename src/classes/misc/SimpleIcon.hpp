@@ -31,7 +31,7 @@ protected:
 public:
     static SimpleIcon* create(IconType type, std::string_view name);
 
-    std::span<cocos2d::CCSprite* const> getTargets(const std::string& suffix);
+    std::span<cocos2d::CCSprite*> getTargets(const std::string& suffix);
     void setMainColor(const cocos2d::ccColor3B& color);
     void setSecondaryColor(const cocos2d::ccColor3B& color);
     void setGlowColor(const cocos2d::ccColor3B& color);

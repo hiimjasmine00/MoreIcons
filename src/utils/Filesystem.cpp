@@ -16,7 +16,7 @@ namespace filesystem {
         #ifdef GEODE_IS_WINDOWS
         if (!right.empty() && (right.size() < 2 || !_Is_drive_prefix(right.data())) && !_Is_slash(right[0])) {
             auto needsSlash = !left.empty() && (left.size() != 2 || !_Is_drive_prefix(left.data())) && !_Is_slash(left.back());
-            return const_cast<wstring&>(left).resize_and_overwrite(left.size() + right.size() + (needsSlash ? 1 : 0), [
+            return left.resize_and_overwrite(left.size() + right.size() + (needsSlash ? 1 : 0), [
                 &left, right, needsSlash
             ](wchar_t* dest, size_t size) {
                 dest += left.size();
@@ -135,7 +135,7 @@ std::filesystem::path Filesystem::parentPath(const std::filesystem::path& path) 
 }
 
 std::filesystem::path Filesystem::parentPath(std::filesystem::path&& path) {
-    getPathString(path).resize(_parent_path(path).size());
+    getPathString(path).erase(_parent_path(path).size());
     return std::move(path);
 }
 

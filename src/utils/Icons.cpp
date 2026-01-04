@@ -3,6 +3,7 @@
 #include "Defaults.hpp"
 #include "Filesystem.hpp"
 #include "Get.hpp"
+#include "Json.hpp"
 #include "Load.hpp"
 #include "Log.hpp"
 #include "../classes/misc/ThreadPool.hpp"
@@ -30,7 +31,6 @@ std::map<IconType, std::vector<IconInfo>> Icons::icons = {
 };
 std::map<int, std::map<IconType, std::string>> Icons::requestedIcons;
 std::map<std::pair<std::string, IconType>, int> Icons::loadedIcons;
-std::vector<IconPack> Icons::packs;
 bool Icons::traditionalPacks = true;
 bool Icons::preloadIcons = false;
 
@@ -38,9 +38,9 @@ void Icons::loadSettings() {
     auto logLevel = jasmine::setting::get<std::string>("log-level");
     auto mod = Mod::get();
     if (!mod->setSavedValue("migrated-log-level", true)) {
-        const auto& data = mod->getSavedSettingsData();
-        if (!data["info-logs"].asBool().unwrapOr(true)) logLevel->setValue("Warning");
-        else if (!data["debug-logs"].asBool().unwrapOr(true)) logLevel->setValue("Info");
+        auto& data = mod->getSavedSettingsData();
+        if (!Json::get(data, "info-logs", true)) logLevel->setValue("Warning");
+        else if (!Json::get(data, "debug-logs", true)) logLevel->setValue("Info");
         else logLevel->setValue("Debug");
     }
 
@@ -66,10 +66,8 @@ void migrateTrails(const std::filesystem::path& path) {
 
     log::info("Beginning trail migration in {}", path);
 
-    auto& saveContainer = Mod::get()->getSaveContainer();
-    if (!saveContainer.contains("migrated-trails")) saveContainer.set("migrated-trails", matjson::Value::array());
-
-    auto& migratedTrails = saveContainer["migrated-trails"];
+    auto& migratedTrails = Mod::get()->getSaveContainer()["migrated-trails"];
+    if (!migratedTrails.isArray()) migratedTrails = matjson::Value::array();
 
     Filesystem::iterate(path, std::filesystem::file_type::regular, [&migratedTrails](const std::filesystem::path& path) {
         auto filename = Filesystem::filenameView(path);
@@ -98,11 +96,19 @@ void migrateTrails(const std::filesystem::path& path) {
     log::info("Finished trail migration in {}", path);
 }
 
+struct IconPack {
+    std::string name;
+    std::string id;
+    std::filesystem::path path;
+    bool vanilla;
+    bool zipped;
+};
+
+std::vector<IconPack> packs;
 float factor = 0.0f;
 
 void Icons::loadPacks() {
     factor = Get::Director()->getContentScaleFactor();
-    packs.clear();
     packs.emplace_back(std::string("More Icons", 10), std::string(), dirs::getGeodeDir(), false, false);
     migrateTrails(std::move(Mod::get()->getConfigDir().make_preferred()) / L("trail"));
 
@@ -547,9 +553,12 @@ Result<ImageResult> createFrames(IconInfo* info) {
     return Load::createFrames(info->getTexture(), info->getSheet(), info->getName(), info->getType());
 }
 
-CCTexture2D* addFrames(const ImageResult& image, IconInfo* info) {
+CCTexture2D* addFrames(ImageResult& image, IconInfo* info) {
     return Load::addFrames(image, const_cast<std::vector<std::string>&>(info->getFrameNames()));
 }
+
+std::vector<std::pair<ImageResult, IconInfo*>> images;
+std::mutex imageMutex;
 
 void Icons::loadIcons(IconType type) {
     Log::currentType = type;
@@ -645,17 +654,16 @@ void Icons::loadIcons(IconType type) {
     if (!preloadIcons) return;
 
     auto& iconsVec = icons[type];
-    auto end = iconsVec.data() + iconsVec.size();
+    if (iconsVec.empty()) return;
+
     auto size = iconsVec.size();
     log::info("Pre-loading {} {} textures", size, name);
 
-    std::vector<std::pair<ImageResult, IconInfo*>> images;
     images.reserve(size);
-    std::mutex imageMutex;
 
     auto& threadPool = ThreadPool::get();
-    for (auto info = iconsVec.data(); info != end; info++) {
-        threadPool.pushTask([info, &images, &imageMutex] {
+    for (auto& info : iconsVec) {
+        threadPool.pushTask([info = &info] {
             if (auto res = createFrames(info)) {
                 std::unique_lock lock(imageMutex);
 
@@ -668,13 +676,17 @@ void Icons::loadIcons(IconType type) {
 
     std::unique_lock lock(imageMutex);
 
-    while (!images.empty()) {
-        auto& [image, info] = images.front();
-        addFrames(image, info);
-        images.erase(images.begin());
+    for (auto it = images.begin(); it != images.end(); it = images.erase(it)) {
+        addFrames(it->first, it->second);
     }
 
     log::info("Finished pre-loading {} {} textures", size, name);
+}
+
+void Icons::finishLoading() {
+    factor = 0.0f;
+    packs.clear();
+    images.clear();
 }
 
 CCTexture2D* Icons::createAndAddFrames(IconInfo* info) {
