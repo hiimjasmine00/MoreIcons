@@ -1,4 +1,6 @@
 #include "SpecialSettingsPopup.hpp"
+#include "SpecialControlData.hpp"
+#include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
@@ -32,6 +34,8 @@ bool SpecialSettingsPopup::init(IconInfo* info) {
     m_title->setID("special-settings-title");
 
     m_settings = info->getSpecialInfo();
+    m_info = info;
+    m_iconType = type;
 
     if (type == IconType::DeathEffect) {
         addControl("scale", "Scale:", { 65.0f, 225.0f }, 0.7f, 0.0f, 2.0f, 1.0f, 2);
@@ -73,15 +77,7 @@ bool SpecialSettingsPopup::init(IconInfo* info) {
         addToggle("blend", "Additive\nBlending", { 280.0f, 60.0f }, 1.0f, true);
     }
 
-    auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", 0.8f), [this, info](auto) {
-        if (auto res = file::writeToJson(info->getJSON(), m_settings); res.isErr()) {
-            Notify::error("Failed to save info: {}", res.unwrapErr());
-        }
-        else {
-            info->setSpecialInfo(std::move(m_settings));
-            onClose(nullptr);
-        }
-    });
+    auto saveButton = CCMenuItemSpriteExtra::create(ButtonSprite::create("Save", 0.8f), this, menu_selector(SpecialSettingsPopup::onSave));
     saveButton->setPosition({ m_size.width / 2.0f, 25.0f });
     saveButton->setID("save-button");
     m_buttonMenu->addChild(saveButton);
@@ -91,13 +87,22 @@ bool SpecialSettingsPopup::init(IconInfo* info) {
     return true;
 }
 
+void SpecialSettingsPopup::onSave(CCObject* sender) {
+    if (auto res = file::writeToJson(m_info->getJSON(), m_settings); res.isErr()) {
+        Notify::error("Failed to save info: {}", res.unwrapErr());
+    }
+    else {
+        m_info->setSpecialInfo(std::move(m_settings));
+        close();
+    }
+}
+
 void SpecialSettingsPopup::addControl(
     std::string_view id, const char* text, const CCPoint& position, float scale, float min, float max, float def, int decimals
 ) {
     auto& value = m_settings[id];
     if (!value.isNumber()) value = def;
     auto initial = value.as<float>().unwrapOr(def);
-    auto factor = max - min;
 
     auto positioner = CCNode::create();
     positioner->setPosition(position);
@@ -106,9 +111,9 @@ void SpecialSettingsPopup::addControl(
     positioner->setID(fmt::format("{}-positioner", id));
     m_mainLayer->addChild(positioner);
 
-    auto slider = Slider::create(nullptr, nullptr, 0.8f);
+    auto slider = Slider::create(this, menu_selector(SpecialSettingsPopup::sliderChanged), 0.8f);
     slider->setPosition({ 0.0f, 0.0f });
-    slider->setValue((initial - min) / factor);
+    slider->setValue((initial - min) / (max - min));
     slider->setID(fmt::format("{}-slider", id));
     positioner->addChild(slider);
 
@@ -131,24 +136,50 @@ void SpecialSettingsPopup::addControl(
     input->setScale(0.6f);
     input->setString(fmt::format("{:.{}f}", initial, decimals));
     input->setFilter(std::string(min < 0.0f ? "-.0123456789" : ".0123456789", min < 0.0f ? 12 : 11));
-    input->setMaxCharCount(fmt::to_string(max).size() + decimals + (min < 0.0f ? 2 : 1));
-    input->setCallback([this, def, exponent, min, max, slider, &value](const std::string& str) {
-        auto floatValue = value.as<float>().unwrapOr(def);
-        jasmine::convert::to(str, floatValue);
-        floatValue = std::clamp(roundf(floatValue * exponent) / exponent, min, max);
-        slider->setValue((floatValue - min) / (max - min));
-        value = floatValue;
-    });
+    input->setMaxCharCount(log10f(std::max(floorf(max), 1.0f)) + decimals + (min < 0.0f ? 2 : 1));
+    input->setDelegate(this);
     input->setID(fmt::format("{}-input", id));
     container->addChild(input);
 
     container->setLayout(RowLayout::create()->setAutoScale(false));
 
-    CCMenuItemExt::assignCallback<SliderThumb>(slider->getThumb(), [this, def, decimals, exponent, input, min, max, &value](SliderThumb* sender) {
-        auto floatValue = (roundf(sender->getValue() * (max - min) + min) * exponent) / exponent;
-        input->setString(fmt::format("{:.{}f}", floatValue, decimals));
-        value = floatValue;
-    });
+    auto controlData = SpecialControlData::create(value, min, max, def, decimals, exponent);
+    auto thumb = slider->getThumb();
+    thumb->setUserObject("control-data", controlData);
+    thumb->setUserObject("input-node", input);
+    auto node = input->getInputNode();
+    node->setUserObject("control-data", controlData);
+    node->setUserObject("slider-node", slider);
+}
+
+void SpecialSettingsPopup::sliderChanged(CCObject* sender) {
+    auto thumb = static_cast<SliderThumb*>(sender);
+    auto controlData = static_cast<SpecialControlData*>(thumb->getUserObject("control-data"));
+    auto& value = *controlData->value;
+    auto min = controlData->min;
+    auto max = controlData->max;
+    auto def = controlData->def;
+    auto decimals = controlData->decimals;
+    auto exponent = controlData->exponent;
+
+    auto floatValue = roundf(thumb->getValue() * (max - min) + min) * exponent / exponent;
+    static_cast<TextInput*>(thumb->getUserObject("input-node"))->setString(fmt::format("{:.{}f}", floatValue, decimals));
+    value = floatValue;
+}
+
+void SpecialSettingsPopup::textChanged(CCTextInputNode* input) {
+    auto controlData = static_cast<SpecialControlData*>(input->getUserObject("control-data"));
+    auto& value = *controlData->value;
+    auto min = controlData->min;
+    auto max = controlData->max;
+    auto def = controlData->def;
+    auto exponent = controlData->exponent;
+
+    auto floatValue = value.as<float>().unwrapOr(def);
+    jasmine::convert::to(MoreIcons::getText(input), floatValue);
+    floatValue = std::clamp(roundf(floatValue * exponent) / exponent, min, max);
+    static_cast<Slider*>(input->getUserObject("slider-node"))->setValue((floatValue - min) / (max - min));
+    value = floatValue;
 }
 
 void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, const CCPoint& position, float scale, bool def) {
@@ -164,11 +195,14 @@ void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, con
     positioner->setID(fmt::format("{}-positioner", id));
     m_mainLayer->addChild(positioner);
 
-    auto toggle = CCMenuItemExt::createTogglerWithStandardSprites(0.8f, [this, def, &value](auto) {
-        value = !value.asBool().unwrapOr(def);
-    });
+    auto offSprite = CCSprite::createWithSpriteFrameName("GJ_checkOff_001.png");
+    offSprite->setScale(0.8f);
+    auto onSprite = CCSprite::createWithSpriteFrameName("GJ_checkOn_001.png");
+    onSprite->setScale(0.8f);
+    auto toggle = CCMenuItemToggler::create(onSprite, offSprite, this, menu_selector(SpecialSettingsPopup::onToggle));
     toggle->setPosition({ 0.0f, 0.0f });
     toggle->toggle(value.asBool().unwrapOr(def));
+    toggle->setUserObject("setting-value", ObjWrapper<matjson::Value*>::create(&value));
     toggle->setID(fmt::format("{}-toggle", id));
     positioner->addChild(toggle);
 
@@ -180,10 +214,34 @@ void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, con
     positioner->addChild(toggleLabel);
 }
 
+void SpecialSettingsPopup::onToggle(CCObject* sender) {
+    auto toggle = static_cast<CCMenuItemToggler*>(sender);
+    *static_cast<ObjWrapper<matjson::Value*>*>(toggle->getUserObject("setting-value"))->getValue() = !toggle->m_toggled;
+}
+
 void SpecialSettingsPopup::addLabel(std::string&& id, const char* text, const CCPoint& position) {
     auto label = CCLabelBMFont::create(text, "goldFont.fnt");
     label->setPosition(position);
     label->setScale(0.7f);
     label->setID(std::move(id));
     m_mainLayer->addChild(label);
+}
+
+void SpecialSettingsPopup::onClose(CCObject* sender) {
+    if (m_settings == m_info->getSpecialInfo()) return close();
+
+    auto type = m_iconType;
+    FLAlertLayer::create(
+        this,
+        fmt::format("Exit {} Settings Editor", Constants::getSingularUppercase(type)).c_str(),
+        fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} settings editor</c>?\n<cr>All unsaved changes will be lost!</c>",
+            Constants::getSingularLowercase(type)),
+        "No",
+        "Yes",
+        350.0f
+    )->show();
+}
+
+void SpecialSettingsPopup::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
+    if (btn2) close();
 }

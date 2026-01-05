@@ -62,10 +62,9 @@ bool MoreIconsPopup::init() {
 
     m_gamemodesNode->setLayout(RowLayout::create()->setGap(5.0f)->setGrowCrossAxis(true));
 
-    auto trashButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [](auto) {
-        if (auto res = MoreIcons::createTrash()) file::openFolder(res.unwrap());
-        else Notify::error(res.unwrapErr());
-    });
+    auto trashSprite = CCSprite::createWithSpriteFrameName("GJ_trashBtn_001.png");
+    trashSprite->setScale(0.8f);
+    auto trashButton = CCMenuItemSpriteExtra::create(trashSprite, this, menu_selector(MoreIconsPopup::onTrash));
     trashButton->setPosition({ 455.0f, 5.0f });
     trashButton->setID("trash-button");
     m_buttonMenu->addChild(trashButton);
@@ -73,6 +72,11 @@ bool MoreIconsPopup::init() {
     handleTouchPriority(this);
 
     return true;
+}
+
+void MoreIconsPopup::onTrash(CCObject* sender) {
+    if (auto res = MoreIcons::createTrash()) file::openFolder(res.unwrap());
+    else Notify::error(res.unwrapErr());
 }
 
 void MoreIconsPopup::createMenu(IconType type) {
@@ -152,48 +156,64 @@ void MoreIconsPopup::createMenu(IconType type) {
 
     auto vanillaLabel = CCLabelBMFont::create(fmt::format("Vanilla: {}", Get::GameManager()->countForType(type)).c_str(), "goldFont.fnt");
     vanillaLabel->limitLabelWidth(65.0f, 0.4f, 0.0f);
-    auto vanillaButton = CCMenuItemExt::createSpriteExtra(vanillaLabel, [type](auto) {
-        IconViewPopup::create(type, false)->show();
-    });
+    auto vanillaButton = CCMenuItemSpriteExtra::create(vanillaLabel, this, menu_selector(MoreIconsPopup::onVanilla));
     vanillaButton->setPosition({ 35.0f, 62.0f });
+    vanillaButton->setTag((int)type);
     vanillaButton->setID("vanilla-button");
     gamemodeMenu->addChild(vanillaButton);
 
     auto customLabel = CCLabelBMFont::create(fmt::format("Custom: {}", more_icons::getIconCount(type)).c_str(), "goldFont.fnt");
     customLabel->limitLabelWidth(65.0f, 0.4f, 0.0f);
-    auto customButton = CCMenuItemExt::createSpriteExtra(customLabel, [type](auto) {
-        IconViewPopup::create(type, true)->show();
-    });
+    auto customButton = CCMenuItemSpriteExtra::create(customLabel, this, menu_selector(MoreIconsPopup::onCustom));
     customButton->setPosition({ 35.0f, 49.0f });
+    customButton->setTag((int)type);
     customButton->setID("custom-button");
     gamemodeMenu->addChild(customButton);
 
     auto logLabel = CCLabelBMFont::create(fmt::format("Logs: {}", logsSize).c_str(), "goldFont.fnt");
     logLabel->limitLabelWidth(65.0f, 0.4f, 0.0f);
-    auto logButton = CCMenuItemExt::createSpriteExtra(logLabel, [type](auto) {
-        LogLayer::create(type)->show();
-    });
+    auto logButton = CCMenuItemSpriteExtra::create(logLabel, this, menu_selector(MoreIconsPopup::onLogs));
     logButton->setPosition({ 35.0f, 36.0f });
+    logButton->setTag((int)type);
     logButton->setID("log-button");
     gamemodeMenu->addChild(logButton);
 
     auto addSprite = ButtonSprite::create("Add", "goldFont.fnt", "GJ_button_05.png", 0.8f);
     addSprite->setScale(0.6f);
-    auto addButton = CCMenuItemExt::createSpriteExtra(addSprite, [this, type](auto) {
-        if (type <= IconType::Jetpack) EditIconPopup::create(this, type)->show();
-        else if (type == IconType::Special) EditTrailPopup::create(this)->show();
-    });
+    auto addButton = CCMenuItemSpriteExtra::create(addSprite, this, menu_selector(MoreIconsPopup::onAdd));
     addButton->setPosition({ 24.0f, 15.0f });
+    addButton->setTag((int)type);
     addButton->setID("add-button");
     gamemodeMenu->addChild(addButton);
 
     auto folderSprite = ButtonSprite::create(
         CCSprite::createWithSpriteFrameName("folderIcon_001.png"), 0, false, 0.0f, "GJ_button_05.png", 0.7f);
     folderSprite->setScale(0.45f);
-    auto folderButton = CCMenuItemExt::createSpriteExtra(folderSprite, [directory = MoreIcons::getIconDir(type)](auto) {
-        file::openFolder(directory);
-    });
+    auto folderButton = CCMenuItemSpriteExtra::create(folderSprite, this, menu_selector(MoreIconsPopup::onFolder));
     folderButton->setPosition({ 54.0f, 15.0f });
+    folderButton->setTag((int)type);
     folderButton->setID("folder-button");
     gamemodeMenu->addChild(folderButton);
+}
+
+void MoreIconsPopup::onVanilla(CCObject* sender) {
+    IconViewPopup::create((IconType)sender->getTag(), false)->show();
+}
+
+void MoreIconsPopup::onCustom(CCObject* sender) {
+    IconViewPopup::create((IconType)sender->getTag(), true)->show();
+}
+
+void MoreIconsPopup::onLogs(CCObject* sender) {
+    LogLayer::create((IconType)sender->getTag())->show();
+}
+
+void MoreIconsPopup::onAdd(CCObject* sender) {
+    auto type = (IconType)sender->getTag();
+    if (type <= IconType::Jetpack) EditIconPopup::create(this, type)->show();
+    else if (type == IconType::Special) EditTrailPopup::create(this)->show();
+}
+
+void MoreIconsPopup::onFolder(CCObject* sender) {
+    file::openFolder(MoreIcons::getIconDir((IconType)sender->getTag()));
 }

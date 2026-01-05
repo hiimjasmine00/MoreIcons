@@ -35,6 +35,7 @@ public:
     void setMainColor(const cocos2d::ccColor3B& color);
     void setSecondaryColor(const cocos2d::ccColor3B& color);
     void setGlowColor(const cocos2d::ccColor3B& color);
+    void setGlow(bool glow);
 
     void update(float dt) override;
 };

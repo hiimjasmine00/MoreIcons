@@ -3,9 +3,14 @@
 
 class LogCell : public cocos2d::CCLayer {
 protected:
+    const char* m_name;
+    std::string m_message;
+
     bool init(std::string_view name, std::string_view message, geode::Severity severity, bool light);
 public:
     static LogCell* create(std::string_view name, std::string_view message, geode::Severity severity, bool light);
+
+    void onClick(cocos2d::CCObject* sender);
 
     void draw() override;
 };

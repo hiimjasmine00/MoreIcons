@@ -46,10 +46,9 @@ bool IconPresetPopup::init(IconType type, std::string_view suffix, std23::move_o
     auto count = Get::GameManager()->countForType(type);
     for (int i = 1; i <= count; i++) {
         auto iconMenu = CCMenu::create();
-        auto lazyIcon = LazyIcon::create(type, i, nullptr, suffix);
-        CCMenuItemExt::assignCallback<LazyIcon>(lazyIcon, [this, i](auto) {
+        auto lazyIcon = LazyIcon::create(type, i, nullptr, suffix, [this, i] {
             if (m_callback) m_callback(i, nullptr);
-            onClose(nullptr);
+            close();
         });
         lazyIcon->setPosition({ 15.0f, 30.0f });
         iconMenu->setContentSize({ 30.0f, 30.0f });
@@ -62,10 +61,9 @@ bool IconPresetPopup::init(IconType type, std::string_view suffix, std23::move_o
     if (auto icons = more_icons::getIcons(type)) {
         for (auto& info : *icons) {
             auto iconMenu = CCMenu::create();
-            auto lazyIcon = LazyIcon::create(type, 0, &info, suffix);
-            CCMenuItemExt::assignCallback<LazyIcon>(lazyIcon, [this, info = &info](auto) {
+            auto lazyIcon = LazyIcon::create(type, 0, &info, suffix, [this, info = &info] {
                 if (m_callback) m_callback(0, info);
-                onClose(nullptr);
+                close();
             });
             lazyIcon->setPosition({ 15.0f, 30.0f });
             iconMenu->setContentSize({ 30.0f, 30.0f });

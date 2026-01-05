@@ -299,3 +299,9 @@ void SimpleIcon::setGlowColor(const ccColor3B& color) {
         sprite->setColor(color);
     }
 }
+
+void SimpleIcon::setGlow(bool glow) {
+    for (auto sprite : m_glowColorSprites) {
+        sprite->setOpacity(glow ? 255 : 0);
+    }
+}

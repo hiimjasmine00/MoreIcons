@@ -22,7 +22,7 @@ void BasePopup::close() {
 }
 
 void BasePopup::keyBackClicked() {
-    this->close();
+    onClose(nullptr);
 }
 
 void BasePopup::keyDown(enumKeyCodes key) {

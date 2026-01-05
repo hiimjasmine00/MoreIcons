@@ -35,7 +35,7 @@ bool SaveEditorPopup::init(
 
     m_callback = std::move(callback);
     m_iconType = type;
-    m_state = state;
+    m_state = &state;
     m_frames = &frames;
 
     m_nameInput = TextInput::create(300.0f, "State Name");
@@ -45,25 +45,9 @@ bool SaveEditorPopup::init(
     m_nameInput->setID("name-input");
     m_mainLayer->addChild(m_nameInput);
 
-    auto saveSprite = ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f);
-    auto saveButton = CCMenuItemExt::createSpriteExtra(saveSprite, [this](auto) {
-        auto stateName = m_nameInput->getString();
-        if (stateName.empty()) return Notify::info("Please enter a name.");
-
-        auto directory = MoreIcons::getEditorDir(m_iconType) / Filesystem::strWide(stateName);
-        if (Filesystem::doesExist(directory)) {
-            createQuickPopup(
-                "Existing State",
-                fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", stateName),
-                "No",
-                "Yes",
-                [this, directory = std::move(directory)](auto, bool btn2) {
-                    if (btn2) saveEditor(directory);
-                }
-            );
-        }
-        else saveEditor(directory);
-    });
+    auto saveButton = CCMenuItemSpriteExtra::create(
+        ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f), this, menu_selector(SaveEditorPopup::onSave)
+    );
     saveButton->setPosition({ 175.0f, 30.0f });
     saveButton->setID("save-button");
     m_buttonMenu->addChild(saveButton);
@@ -73,14 +57,34 @@ bool SaveEditorPopup::init(
     return true;
 }
 
-void SaveEditorPopup::saveEditor(const std::filesystem::path& directory) {
-    if (!Filesystem::doesExist(directory)) {
-        if (auto res = file::createDirectoryAll(directory); res.isErr()) {
+void SaveEditorPopup::onSave(CCObject* sender) {
+    auto stateName = MoreIcons::getText(m_nameInput);
+    if (stateName.empty()) return Notify::info("Please enter a name.");
+
+    m_pendingPath = MoreIcons::getEditorDir(m_iconType) / Filesystem::strWide(stateName);
+    if (Filesystem::doesExist(m_pendingPath)) {
+        auto alert = FLAlertLayer::create(
+            this,
+            "Existing State",
+            fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", stateName),
+            "No",
+            "Yes",
+            350.0f
+        );
+        alert->setTag(0);
+        alert->show();
+    }
+    else saveEditor();
+}
+
+void SaveEditorPopup::saveEditor() {
+    if (!Filesystem::doesExist(m_pendingPath)) {
+        if (auto res = file::createDirectoryAll(m_pendingPath); res.isErr()) {
             return Notify::error(res.unwrapErr());
         }
     }
 
-    if (auto res = file::writeToJson(directory / L("state.json"), m_state); res.isErr()) {
+    if (auto res = file::writeToJson(m_pendingPath / L("state.json"), *m_state); res.isErr()) {
         return Notify::error("Failed to save state: {}", res.unwrapErr());
     }
 
@@ -93,27 +97,38 @@ void SaveEditorPopup::saveEditor(const std::filesystem::path& directory) {
         sprite->release();
     }
 
-    if (auto res = ImageRenderer::save(packer, directory / L("icon.png"), directory / L("icon.plist"), "icon.png"); res.isErr()) {
+    if (auto res = ImageRenderer::save(packer, m_pendingPath / L("icon.png"), m_pendingPath / L("icon.plist"), "icon.png"); res.isErr()) {
         return Notify::error(res.unwrapErr());
     }
 
-    m_callback();
-    Popup::onClose(nullptr);
+    auto notif = fmt::format("{} saved!", MoreIcons::getText(m_nameInput));
 
-    Notify::success("{} saved!", m_nameInput->getString());
+    m_callback();
+    close();
+
+    Notify::success(notif);
 }
 
 void SaveEditorPopup::onClose(CCObject* sender) {
-    if (m_nameInput->getString().empty()) return Popup::onClose(sender);
+    if (MoreIcons::getText(m_nameInput).empty()) return close();
 
     auto type = m_iconType;
-    createQuickPopup(
+    auto alert = FLAlertLayer::create(
+        this,
         fmt::format("Exit {} Editor Saver", Constants::getSingularUppercase(type)).c_str(),
         fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} editor saver</c>?", Constants::getSingularLowercase(type)),
         "No",
         "Yes",
-        [this](auto, bool btn2) {
-            if (btn2) Popup::onClose(m_closeBtn);
-        }
+        350.0f
     );
+    alert->setTag(1);
+    alert->show();
+}
+
+void SaveEditorPopup::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
+    if (!btn2) return;
+    switch (layer->getTag()) {
+        case 0: saveEditor(); break;
+        case 1: close(); break;
+    }
 }

@@ -10,8 +10,13 @@ protected:
     bool m_dual;
 
     bool init() override;
-
+    void onTrash(cocos2d::CCObject* sender);
     void createMenu(IconType type);
+    void onVanilla(cocos2d::CCObject* sender);
+    void onCustom(cocos2d::CCObject* sender);
+    void onLogs(cocos2d::CCObject* sender);
+    void onAdd(cocos2d::CCObject* sender);
+    void onFolder(cocos2d::CCObject* sender);
 public:
     static MoreIconsPopup* create();
 };

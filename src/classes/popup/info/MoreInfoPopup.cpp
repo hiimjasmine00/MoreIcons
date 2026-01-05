@@ -122,7 +122,7 @@ bool moveSheet(Filesystem::PathView name, Filesystem::PathView from, Filesystem:
     return true;
 }
 
-void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash) {
+void MoreInfoPopup::moveIcon(bool trash) {
     auto type = m_info->getType();
 
     auto& texture = m_info->getTexture();
@@ -131,58 +131,49 @@ void MoreInfoPopup::moveIcon(const std::filesystem::path& directory, bool trash)
     auto stem = Filesystem::strWide(shortName);
     if (type >= IconType::DeathEffect) {
         if (trash) {
-            if (auto res = Filesystem::renameFile(parentDir, directory / Filesystem::filenameView(parentDir)); res.isErr()) {
+            if (auto res = Filesystem::renameFile(parentDir, m_pendingPath / Filesystem::filenameView(parentDir)); res.isErr()) {
                 return Notify::error(res.unwrapErr());
             }
         }
         else {
-            if (auto res = file::createDirectoryAll(directory); res.isErr()) {
-                return Notify::error(res.unwrapErr());
-            }
-
             if (type == IconType::ShipFire) {
-                if (auto res = Filesystem::renameFile(texture, directory / L("fire_001.png")); res.isErr()) {
+                if (auto res = Filesystem::renameFile(texture, m_pendingPath / L("fire_001.png")); res.isErr()) {
                     return Notify::error(res.unwrapErr());
                 }
             }
             else if (type == IconType::Special) {
-                if (auto res = Filesystem::renameFile(texture, directory / L("trail.png")); res.isErr()) {
+                if (auto res = Filesystem::renameFile(texture, m_pendingPath / L("trail.png")); res.isErr()) {
                     return Notify::error(res.unwrapErr());
                 }
             }
             else if (type == IconType::DeathEffect) {
-                if (!moveSheet(stem, (std::move(parentDir) / stem).native(), (directory / L("effect")).native(), {}, false)) return;
+                if (!moveSheet(stem, (std::move(parentDir) / stem).native(), (m_pendingPath / L("effect")).native(), {}, false)) return;
             }
 
             auto iconStem = Mod::get()->getResourcesDir() / fmt::format(L("{}{:02}"), Constants::getFolderName(type), m_info->getSpecialID());
 
-            if (auto res = copyFile(fmt::format(L("{}-uhd.png"), iconStem), directory / L("icon-uhd.png")); res.isErr()) {
+            if (auto res = copyFile(fmt::format(L("{}-uhd.png"), iconStem), m_pendingPath / L("icon-uhd.png")); res.isErr()) {
                 return Notify::error(res.unwrapErr());
             }
 
-            if (auto res = copyFile(fmt::format(L("{}-hd.png"), iconStem), directory / L("icon-hd.png")); res.isErr()) {
+            if (auto res = copyFile(fmt::format(L("{}-hd.png"), iconStem), m_pendingPath / L("icon-hd.png")); res.isErr()) {
                 return Notify::error(res.unwrapErr());
             }
 
-            if (auto res = copyFile(fmt::format(L("{}.png"), iconStem), directory / L("icon.png")); res.isErr()) {
+            if (auto res = copyFile(fmt::format(L("{}.png"), iconStem), m_pendingPath / L("icon.png")); res.isErr()) {
                 return Notify::error(res.unwrapErr());
             }
         }
     }
     else if (type <= IconType::Jetpack) {
-        if (!moveSheet(stem, (std::move(parentDir) / stem).native(), (directory / stem).native(), L("icons"), trash)) return;
+        if (!moveSheet(stem, (std::move(parentDir) / stem).native(), (m_pendingPath / stem).native(), L("icons"), trash)) return;
     }
 
-    auto name = shortName;
-    onClose(nullptr);
-    if (trash) {
-        more_icons::removeIcon(m_info);
-        Notify::success("{} trashed!", name);
-    }
-    else {
-        more_icons::moveIcon(m_info, directory);
-        Notify::success("{} moved!", name);
-    }
+    auto notif = trash ? fmt::format("{} trashed!", shortName) : fmt::format("{} moved!", shortName);
+    if (trash) more_icons::removeIcon(m_info);
+    else more_icons::moveIcon(m_info, m_pendingPath);
+    close();
+    Notify::success(notif);
     MoreIcons::updateGarage();
 }
 
@@ -229,28 +220,10 @@ bool MoreInfoPopup::init(IconInfo* info) {
     }
 
     if (type <= IconType::Jetpack) {
-        auto itemIcon = GJItemIcon::createBrowserItem(Constants::getUnlockType(type), 1);
-        itemIcon->setScale(hasPack ? 1.1f : 1.25f);
+        m_icon = SimpleIcon::create(type, info->getName());
+        m_icon->setScale(hasPack ? 1.1f : 1.25f);
 
-        auto player = static_cast<SimplePlayer*>(itemIcon->m_player);
-        more_icons::updateSimplePlayer(player, info->getName(), type);
-
-        auto dual = MoreIcons::dualSelected();
-        auto color1 = MoreIcons::vanillaColor1(dual);
-        auto color2 = MoreIcons::vanillaColor2(dual);
-        auto colorGlow = MoreIcons::vanillaColorGlow(dual);
-        auto glow = MoreIcons::vanillaGlow(dual);
-        player->enableCustomGlowColor(colorGlow);
-
-        auto iconButton = CCMenuItemExt::createSpriteExtra(itemIcon, [this, color1, color2, glow](CCMenuItemSpriteExtra* sender) {
-            m_toggled = !m_toggled;
-
-            auto player = static_cast<SimplePlayer*>(static_cast<GJItemIcon*>(sender->getNormalImage())->m_player);
-            player->m_firstLayer->setColor(m_toggled ? color1 : ccColor3B { 175, 175, 175 });
-            player->m_secondLayer->setColor(m_toggled ? color2 : ccColor3B { 255, 255, 255 });
-            player->m_hasGlowOutline = m_toggled && glow;
-            player->updateColors();
-        });
+        auto iconButton = CCMenuItemSpriteExtra::create(m_icon, this, menu_selector(MoreInfoPopup::onIcon));
         iconButton->setPosition({ 150.0f, hasPack ? 165.0f : 171.0f });
         iconButton->setID("icon-button");
         m_buttonMenu->addChild(iconButton);
@@ -263,9 +236,9 @@ bool MoreInfoPopup::init(IconInfo* info) {
         m_mainLayer->addChild(sprite);
 
         if (info->getSpecialID() == 0) {
-            auto settingsButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_optionsBtn_001.png", 0.7f, [info](auto) {
-                SpecialSettingsPopup::create(info)->show();
-            });
+            auto settingsSprite = CCSprite::createWithSpriteFrameName("GJ_optionsBtn_001.png");
+            settingsSprite->setScale(0.7f);
+            auto settingsButton = CCMenuItemSpriteExtra::create(settingsSprite, this, menu_selector(MoreInfoPopup::onSettings));
             settingsButton->setPosition({ 25.0f, 25.0f });
             settingsButton->setID("settings-button");
             m_buttonMenu->addChild(settingsButton);
@@ -275,59 +248,24 @@ bool MoreInfoPopup::init(IconInfo* info) {
     CCMenuItemSpriteExtra* operationButton = nullptr;
 
     if (info->isVanilla() && !info->isZipped()) {
-        operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_updateBtn_001.png", 0.7f, [this, type](auto) {
-            auto& shortName = m_info->getShortName();
-            auto lower = Constants::getSingularLowercase(type);
-
-            fmt::memory_buffer message;
-            fmt::format_to(std::back_inserter(message),
-                "Are you sure you want to <cy>convert</c> <cj>{}</c> into a <cl>More Icons</c> <cg>{}</c>?", shortName, lower);
-
-            auto dir = Filesystem::parentPath(m_info->getTexture());
-            if (type <= IconType::Jetpack) dir = Filesystem::parentPath(std::move(dir));
-            dir = std::move(dir) / CONFIG_PATH / Constants::getFolderName(type);
-            if (type >= IconType::DeathEffect) {
-                dir = std::move(dir) / Filesystem::strWide(shortName);
-                if (Filesystem::doesExist(dir)) {
-                    fmt::format_to(std::back_inserter(message), "\n<cr>This will overwrite the existing custom {}!</c>", lower);
-                }
-            }
-
-            createQuickPopup(fmt::format("Convert {}", Constants::getSingularUppercase(type)).c_str(), fmt::to_string(message), "No", "Yes", [
-                this, dir = std::move(dir)
-            ](auto, bool btn2) {
-                if (!btn2) return;
-
-                if (auto res = file::createDirectoryAll(dir)) moveIcon(dir, false);
-                else Notify::error(res.unwrapErr());
-            });
-        });
+        auto convertSprite = CCSprite::createWithSpriteFrameName("GJ_updateBtn_001.png");
+        convertSprite->setScale(0.7f);
+        operationButton = CCMenuItemSpriteExtra::create(convertSprite, this, menu_selector(MoreInfoPopup::onConvert));
         operationButton->setID("move-button");
     }
     else if (!info->isZipped()) {
         m_title->setPosition({ 140.0f, m_size.height - 16.0f });
 
-        auto editButton = CCMenuItemExt::createSpriteExtraWithFilename("MI_pencil_001.png"_spr, 0.7f, [this, info](auto) {
-            IconNamePopup::create(this, info)->show();
-        });
+        auto editSprite = CCSprite::create("MI_pencil_001.png"_spr);
+        editSprite->setScale(0.7f);
+        auto editButton = CCMenuItemSpriteExtra::create(editSprite, this, menu_selector(MoreInfoPopup::onRename));
         editButton->setPosition(m_title->getPosition() + CCPoint { m_title->getScaledContentWidth() / 2.0f + 10.0f, 0.0f });
         editButton->setID("edit-button");
         m_buttonMenu->addChild(editButton);
 
-        operationButton = CCMenuItemExt::createSpriteExtraWithFrameName("GJ_trashBtn_001.png", 0.8f, [this, type](auto) {
-            createQuickPopup(
-                fmt::format("Trash {}", Constants::getSingularUppercase(type)).c_str(),
-                fmt::format("Are you sure you want to <cr>trash</c> this <cg>{}</c>?", Constants::getSingularLowercase(type)),
-                "No",
-                "Yes",
-                [this](auto, bool btn2) {
-                    if (!btn2) return;
-
-                    if (auto res = MoreIcons::createTrash()) moveIcon(res.unwrap(), true);
-                    else Notify::error(res.unwrapErr());
-                }
-            );
-        });
+        auto trashSprite = CCSprite::createWithSpriteFrameName("GJ_trashBtn_001.png");
+        trashSprite->setScale(0.7f);
+        operationButton = CCMenuItemSpriteExtra::create(trashSprite, this, menu_selector(MoreInfoPopup::onTrash));
         operationButton->setID("trash-button");
     }
 
@@ -336,9 +274,7 @@ bool MoreInfoPopup::init(IconInfo* info) {
         m_buttonMenu->addChild(operationButton);
     }
 
-    auto okButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("OK"), [this](auto) {
-        onClose(nullptr);
-    });
+    auto okButton = CCMenuItemSpriteExtra::create(ButtonSprite::create("OK"), this, menu_selector(MoreInfoPopup::onClose));
     okButton->setPosition({ 150.0f, 25.0f });
     okButton->setID("ok-button");
     m_buttonMenu->addChild(okButton);
@@ -346,4 +282,87 @@ bool MoreInfoPopup::init(IconInfo* info) {
     handleTouchPriority(this);
 
     return true;
+}
+
+void MoreInfoPopup::onIcon(CCObject* sender) {
+    m_toggled = !m_toggled;
+
+    auto dual = MoreIcons::dualSelected();
+    m_icon->setMainColor(m_toggled ? MoreIcons::vanillaColor1(dual) : ccColor3B { 255, 255, 255 });
+    m_icon->setSecondaryColor(m_toggled ? MoreIcons::vanillaColor2(dual) : ccColor3B { 255, 255, 255 });
+    m_icon->setGlowColor(m_toggled ? MoreIcons::vanillaColorGlow(dual) : ccColor3B { 255, 255, 255 });
+    m_icon->setGlow(!m_toggled || MoreIcons::vanillaGlow(dual));
+}
+
+void MoreInfoPopup::onSettings(CCObject* sender) {
+    SpecialSettingsPopup::create(m_info)->show();
+}
+
+void MoreInfoPopup::onConvert(CCObject* sender) {
+    auto type = m_info->getType();
+    auto& shortName = m_info->getShortName();
+    auto lower = Constants::getSingularLowercase(type);
+
+    fmt::memory_buffer message;
+    fmt::format_to(std::back_inserter(message),
+        "Are you sure you want to <cy>convert</c> <cj>{}</c> into a <cl>More Icons</c> <cg>{}</c>?", shortName, lower);
+
+    auto dir = Filesystem::parentPath(m_info->getTexture());
+    if (type <= IconType::Jetpack) dir = Filesystem::parentPath(std::move(dir));
+    dir = std::move(dir) / CONFIG_PATH / Constants::getFolderName(type);
+    if (type >= IconType::DeathEffect) {
+        dir = std::move(dir) / Filesystem::strWide(shortName);
+        if (Filesystem::doesExist(dir)) {
+            fmt::format_to(std::back_inserter(message), "\n<cr>This will overwrite the existing custom {}!</c>", lower);
+        }
+    }
+
+    m_pendingPath = std::move(dir);
+    auto alert = FLAlertLayer::create(
+        this,
+        fmt::format("Convert {}", Constants::getSingularUppercase(type)).c_str(),
+        fmt::to_string(message),
+        "No",
+        "Yes",
+        350.0f
+    );
+    alert->setTag(0);
+    alert->show();
+}
+
+void MoreInfoPopup::onRename(CCObject* sender) {
+    IconNamePopup::create(this, m_info)->show();
+}
+
+void MoreInfoPopup::onTrash(CCObject* sender) {
+    auto type = m_info->getType();
+    auto alert = FLAlertLayer::create(
+        this,
+        fmt::format("Trash {}", Constants::getSingularUppercase(type)).c_str(),
+        fmt::format("Are you sure you want to <cr>trash</c> this <cg>{}</c>?", Constants::getSingularLowercase(type)),
+        "No",
+        "Yes",
+        350.0f
+    );
+    alert->setTag(1);
+    alert->show();
+}
+
+void MoreInfoPopup::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
+    if (!btn2) return;
+    switch (layer->getTag()) {
+        case 0: {
+            if (auto res = file::createDirectoryAll(m_pendingPath)) {
+                moveIcon(false);
+            }
+            else Notify::error(res.unwrapErr());
+        }
+        case 1: {
+            if (auto res = MoreIcons::createTrash()) {
+                m_pendingPath = std::move(res).unwrap();
+                moveIcon(true);
+            }
+            else Notify::error(res.unwrapErr());
+        }
+    }
 }

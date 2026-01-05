@@ -4,6 +4,9 @@
 #include <Geode/Result.hpp>
 
 class IconInfo;
+namespace geode {
+    class TextInput;
+}
 
 namespace MoreIcons {
     extern geode::Mod* separateDualIcons;
@@ -18,6 +21,8 @@ namespace MoreIcons {
     void getIconPaths(IconInfo* info, int id, IconType type, std::filesystem::path& png, std::filesystem::path& plist);
     std::filesystem::path getIconStem(std::string_view name, IconType type);
     std::filesystem::path getIconPath(IconInfo* info, int id, IconType type);
+    std::string_view getText(CCTextInputNode* input);
+    std::string_view getText(geode::TextInput* input);
     void updateGarage(GJGarageLayer* layer = nullptr);
     cocos2d::ccColor3B vanillaColor1(bool dual);
     cocos2d::ccColor3B vanillaColor2(bool dual);

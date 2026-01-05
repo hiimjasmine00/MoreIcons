@@ -1,17 +1,19 @@
 #include "IconEditorState.hpp"
 #include "../BasePopup.hpp"
 #include "../../misc/SimpleIcon.hpp"
+#include <Geode/binding/FLAlertLayerProtocol.hpp>
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/Task.hpp>
 #include <span>
 
-class EditIconPopup : public BasePopup {
+class EditIconPopup : public BasePopup, public FLAlertLayerProtocol, public TextInputDelegate {
 protected:
     BasePopup* m_parentPopup;
     geode::EventListener<geode::Task<geode::Result<std::filesystem::path>>> m_listener;
     std::filesystem::path m_selectedPNG;
     std::filesystem::path m_selectedPlist;
     std::vector<std::vector<cocos2d::CCNode*>> m_pages;
+    std::vector<std::string> m_required;
     std::unordered_map<std::string, cocos2d::CCSprite*> m_pieces;
     std::unordered_map<std::string, geode::Ref<cocos2d::CCSpriteFrame>> m_frames;
     SimpleIcon* m_player;
@@ -35,18 +37,34 @@ protected:
     bool m_hasChanged = false;
 
     bool init(BasePopup* popup, IconType type);
+    void onPrevPage(cocos2d::CCObject* sender);
+    void onNextPage(cocos2d::CCObject* sender);
+    void onLoadState(cocos2d::CCObject* sender);
+    void onSaveState(cocos2d::CCObject* sender);
+    void onPieceImport(cocos2d::CCObject* sender);
+    void onPiecePreset(cocos2d::CCObject* sender);
+    void onPieceClear(cocos2d::CCObject* sender);
+    void onPNG(cocos2d::CCObject* sender);
+    void onPlist(cocos2d::CCObject* sender);
+    void onPreset(cocos2d::CCObject* sender);
+    void onSave(cocos2d::CCObject* sender);
     void createControls(const cocos2d::CCPoint& pos, const char* text, std::string_view id, int offset);
+    void sliderChanged(cocos2d::CCObject* sender);
+    void textChanged(CCTextInputNode* input) override;
+    void onReset(cocos2d::CCObject* sender);
     void updateControl(int offset, float value, bool slider, bool input, bool definition);
     void updateControls();
-    void selectPiece(const std::string& suffix, int page, const cocos2d::CCPoint& position);
-    CCMenuItemSpriteExtra* addPieceButton(const std::string& suffix, int page);
+    CCMenuItemSpriteExtra* addPieceButton(const std::string& suffix, int page, bool required = true);
+    void onSelectPiece(cocos2d::CCObject* sender);
     cocos2d::CCSprite* addColorButton(int type, const char* text, std::string&& id);
+    void onColor(cocos2d::CCObject* sender);
     void updateColor(int type, int index);
     bool updateWithSelectedFiles(bool useSuffix = false);
     void updatePieces();
     void goToPage(int page);
     void updateTargets();
     void onClose(cocos2d::CCObject* sender) override;
+    void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override;
 public:
     static EditIconPopup* create(BasePopup* popup, IconType type);
 };

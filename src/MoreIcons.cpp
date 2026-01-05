@@ -7,6 +7,7 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/ui/TextInput.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
@@ -208,4 +209,12 @@ void MoreIcons::getIconPaths(IconInfo* info, int id, IconType type, std::filesys
     auto iconName = getIconName(id, type);
     png = getFullPath(fileUtils, fmt::format("icons/{}.png", iconName).c_str());
     plist = getFullPath(fileUtils, fmt::format("icons/{}.plist", iconName).c_str());
+}
+
+std::string_view MoreIcons::getText(CCTextInputNode* input) {
+    return *input->m_textField->m_pInputText;
+}
+
+std::string_view MoreIcons::getText(geode::TextInput* input) {
+    return getText(input->getInputNode());
 }

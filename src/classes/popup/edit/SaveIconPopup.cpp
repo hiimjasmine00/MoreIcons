@@ -11,7 +11,6 @@
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
-using namespace std::string_literals;
 
 SaveIconPopup* SaveIconPopup::create(
     BasePopup* popup1, BasePopup* popup2, IconType type,
@@ -49,32 +48,9 @@ bool SaveIconPopup::init(
     m_nameInput->setID("name-input");
     m_mainLayer->addChild(m_nameInput);
 
-    auto saveSprite = ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f);
-    auto saveButton = CCMenuItemExt::createSpriteExtra(saveSprite, [this](auto) {
-        auto iconName = m_nameInput->getString();
-        if (iconName.empty()) return Notify::info("Please enter a name.");
-
-        auto stem = std::move(const_cast<std::filesystem::path::string_type&>(MoreIcons::getIconStem(iconName, m_iconType).native()));
-        if (
-            Filesystem::doesExist(fmt::format(L("{}-uhd.plist"), stem)) ||
-            Filesystem::doesExist(fmt::format(L("{}-hd.plist"), stem)) ||
-            Filesystem::doesExist(fmt::format(L("{}.plist"), stem)) ||
-            Filesystem::doesExist(fmt::format(L("{}-uhd.png"), stem)) ||
-            Filesystem::doesExist(fmt::format(L("{}-hd.png"), stem)) ||
-            Filesystem::doesExist(fmt::format(L("{}.png"), stem))
-        ) {
-            createQuickPopup(
-                "Existing Icon",
-                fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
-                "No",
-                "Yes",
-                [this, stem = std::move(stem)](auto, bool btn2) {
-                    if (btn2) saveIcon(stem);
-                }
-            );
-        }
-        else saveIcon(stem);
-    });
+    auto saveButton = CCMenuItemSpriteExtra::create(
+        ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f), this, menu_selector(SaveIconPopup::onSave)
+    );
     saveButton->setPosition({ 175.0f, 30.0f });
     saveButton->setID("save-button");
     m_buttonMenu->addChild(saveButton);
@@ -84,31 +60,45 @@ bool SaveIconPopup::init(
     return true;
 }
 
-bool SaveIconPopup::checkFrame(const std::string& suffix) {
-    auto ret = m_frames->contains(suffix);
-    if (!ret) Notify::info("Missing {}{}.", m_nameInput->getString(), suffix);
-    return ret;
+void SaveIconPopup::onSave(CCObject* sender) {
+    auto iconName = MoreIcons::getText(m_nameInput);
+    if (iconName.empty()) return Notify::info("Please enter a name.");
+
+    auto stem = std::move(const_cast<std::filesystem::path::string_type&>(MoreIcons::getIconStem(iconName, m_iconType).native()));
+    m_pngs[0] = fmt::format(L("{}-uhd.png"), stem);
+    m_pngs[1] = fmt::format(L("{}-hd.png"), stem);
+    m_pngs[2] = fmt::format(L("{}.png"), stem);
+    m_plists[0] = fmt::format(L("{}-uhd.plist"), stem);
+    m_plists[1] = fmt::format(L("{}-hd.plist"), stem);
+    m_plists[2] = fmt::format(L("{}.plist"), stem);
+    if (std::ranges::any_of(m_plists, [](const std::filesystem::path& path) {
+        return Filesystem::doesExist(path);
+    }) || std::ranges::any_of(m_pngs, [](const std::filesystem::path& path) {
+        return Filesystem::doesExist(path);
+    })) {
+        auto alert = FLAlertLayer::create(
+            this,
+            "Existing Icon",
+            fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
+            "No",
+            "Yes",
+            350.0f
+        );
+        alert->setTag(0);
+        alert->show();
+    }
+    else saveIcon();
 }
 
-void SaveIconPopup::saveIcon(Filesystem::PathView stem) {
-    auto type = m_iconType;
-    if (type == IconType::Robot || type == IconType::Spider) {
-        if (!checkFrame("_01_001"s) || !checkFrame("_01_2_001"s) || !checkFrame("_01_glow_001"s)) return;
-        if (!checkFrame("_02_001"s) || !checkFrame("_02_2_001"s) || !checkFrame("_02_glow_001"s)) return;
-        if (!checkFrame("_03_001"s) || !checkFrame("_03_2_001"s) || !checkFrame("_03_glow_001"s)) return;
-        if (!checkFrame("_04_001"s) || !checkFrame("_04_2_001"s) || !checkFrame("_04_glow_001"s)) return;
-    }
-    else {
-        if (!checkFrame("_001"s)) return;
-        if (!checkFrame("_2_001"s)) return;
-        if (type == IconType::Ufo && !checkFrame("_3_001"s)) return;
-        if (!checkFrame("_glow_001"s)) return;
-    }
-
-    auto name = m_nameInput->getString();
+void SaveIconPopup::saveIcon() {
+    auto name = MoreIcons::getText(m_nameInput);
 
     std::array<texpack::Packer, 3> packers = {};
     auto scaleFactor = Get::Director()->getContentScaleFactor();
+    int index;
+    if (scaleFactor >= 4.0f) index = 0;
+    else if (scaleFactor >= 2.0f) index = 1;
+    else index = 2;
     std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
     for (auto& [frameName, frameRef] : *m_frames) {
         auto it = m_definitions->find(frameName);
@@ -138,66 +128,58 @@ void SaveIconPopup::saveIcon(Filesystem::PathView stem) {
         }
     }
 
-    std::filesystem::path selectedPNG;
-    std::filesystem::path selectedPlist;
-
-    std::filesystem::path uhdPng = fmt::format(L("{}-uhd.png"), stem);
-    std::filesystem::path uhdPlist = fmt::format(L("{}-uhd.plist"), stem);
-    if (auto res = ImageRenderer::save(packers[0], uhdPng, uhdPlist, fmt::format("icons/{}-uhd.png", name)); res.isErr()) {
+    if (auto res = ImageRenderer::save(packers[0], m_pngs[0], m_plists[0], fmt::format("icons/{}-uhd.png", name)); res.isErr()) {
         return Notify::error("Failed to save UHD icon: {}", res.unwrapErr());
     }
-    if (scales[0] == 1.0f) {
-        selectedPNG = std::move(uhdPng);
-        selectedPlist = std::move(uhdPlist);
-    }
 
-    std::filesystem::path hdPng = fmt::format(L("{}-hd.png"), stem);
-    std::filesystem::path hdPlist = fmt::format(L("{}-hd.plist"), stem);
-    if (auto res = ImageRenderer::save(packers[1], hdPng, hdPlist, fmt::format("icons/{}-hd.png", name)); res.isErr()) {
+    if (auto res = ImageRenderer::save(packers[1], m_pngs[1], m_plists[1], fmt::format("icons/{}-hd.png", name)); res.isErr()) {
         return Notify::error("Failed to save HD icon: {}", res.unwrapErr());
     }
-    if (scales[1] == 1.0f) {
-        selectedPNG = std::move(hdPng);
-        selectedPlist = std::move(hdPlist);
-    }
 
-    std::filesystem::path sdPng = fmt::format(L("{}.png"), stem);
-    std::filesystem::path sdPlist = fmt::format(L("{}.plist"), stem);
-    if (auto res = ImageRenderer::save(packers[2], sdPng, sdPlist, fmt::format("icons/{}.png", name)); res.isErr()) {
+    if (auto res = ImageRenderer::save(packers[2], m_pngs[2], m_plists[2], fmt::format("icons/{}.png", name)); res.isErr()) {
         return Notify::error("Failed to save SD icon: {}", res.unwrapErr());
     }
-    if (scales[2] == 1.0f) {
-        selectedPNG = std::move(sdPng);
-        selectedPlist = std::move(sdPlist);
-    }
 
+    auto type = m_iconType;
     if (auto icon = more_icons::getIcon(name, type)) {
         more_icons::updateIcon(icon);
     }
     else {
-        icon = more_icons::addIcon(name, name, type, std::move(selectedPNG), std::move(selectedPlist), Get::Director()->getLoadedTextureQuality());
+        icon = more_icons::addIcon(std::string(name), std::string(name), type,
+            std::move(m_pngs[index]), std::move(m_plists[index]), Get::Director()->getLoadedTextureQuality());
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }
 
-    m_parentPopup1->close();
-    m_parentPopup2->close();
-    Popup::onClose(nullptr);
+    auto notif = fmt::format("{} saved!", name);
 
-    Notify::success("{} saved!", name);
+    close();
+    m_parentPopup2->close();
+    m_parentPopup1->close();
+
+    Notify::success(notif);
     MoreIcons::updateGarage();
 }
 
 void SaveIconPopup::onClose(CCObject* sender) {
-    if (m_nameInput->getString().empty()) return Popup::onClose(sender);
+    if (MoreIcons::getText(m_nameInput).empty()) return close();
 
     auto type = m_iconType;
-    createQuickPopup(
+    auto alert = FLAlertLayer::create(
+        this,
         fmt::format("Exit {} Saver", Constants::getSingularUppercase(type)).c_str(),
         fmt::format("Are you sure you want to <cy>exit</c> the <cg>{} saver</c>?", Constants::getSingularLowercase(type)),
         "No",
         "Yes",
-        [this](auto, bool btn2) {
-            if (btn2) Popup::onClose(m_closeBtn);
-        }
+        350.0f
     );
+    alert->setTag(1);
+    alert->show();
+}
+
+void SaveIconPopup::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
+    if (!btn2) return;
+    switch (layer->getTag()) {
+        case 0: saveIcon(); break;
+        case 1: close(); break;
+    }
 }

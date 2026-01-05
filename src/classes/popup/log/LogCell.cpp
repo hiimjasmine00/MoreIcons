@@ -23,6 +23,8 @@ bool LogCell::init(std::string_view name, std::string_view message, Severity sev
     ignoreAnchorPointForPosition(false);
     setContentSize({ 400.0f, 30.0f });
 
+    m_name = name.data();
+
     auto bg = CCLayerColor::create({ 0, 0, 0, 255 }, 400.0f, 70.0f);
     bg->setPosition({ 200.0f, 15.0f });
     bg->setContentSize({ 400.0f, 30.0f });
@@ -37,35 +39,37 @@ bool LogCell::init(std::string_view name, std::string_view message, Severity sev
     infoIcon->setID("info-icon");
     addChild(infoIcon);
 
-    auto nameLabel = CCLabelBMFont::create(name.data(), "bigFont.fnt");
+    auto nameLabel = CCLabelBMFont::create(m_name, "bigFont.fnt");
     nameLabel->setPosition({ 35.0f, 15.0f });
     nameLabel->setAnchorPoint({ 0.0f, 0.5f });
     nameLabel->limitLabelWidth(300.0f, 0.4f, 0.0f);
     nameLabel->setID("name-label");
     addChild(nameLabel);
 
-    std::string text;
     switch (severity) {
-        case Severity::Debug: text = fmt::format("<cg>DEBUG:</c> {}", message); break;
-        case Severity::Info: text = fmt::format("<cj>INFO:</c> {}", message); break;
-        case Severity::Warning: text = fmt::format("<cy>WARNING:</c> {}", message); break;
-        case Severity::Error: text = fmt::format("<cr>ERROR:</c> {}", message); break;
-        default: text = message; break;
+        case Severity::Debug: m_message = fmt::format("<cg>DEBUG:</c> {}", message); break;
+        case Severity::Info: m_message = fmt::format("<cj>INFO:</c> {}", message); break;
+        case Severity::Warning: m_message = fmt::format("<cy>WARNING:</c> {}", message); break;
+        case Severity::Error: m_message = fmt::format("<cr>ERROR:</c> {}", message); break;
+        default: m_message = message; break;
     }
 
-    auto viewSprite = ButtonSprite::create("View", "bigFont.fnt", "GJ_button_05.png", 0.8f);
-    viewSprite->setScale(0.5f);
-    auto viewButton = CCMenuItemExt::createSpriteExtra(viewSprite, [name, text = std::move(text)](auto) {
-        FLAlertLayer::create(name.data(), text, "OK")->show();
-    });
-    viewButton->setID("view-button");
-
-    auto buttonMenu = CCMenu::createWithItem(viewButton);
+    auto buttonMenu = CCMenu::create();
     buttonMenu->setPosition({ 370.0f, 15.0f });
     buttonMenu->setID("button-menu");
     addChild(buttonMenu);
 
+    auto viewSprite = ButtonSprite::create("View", "bigFont.fnt", "GJ_button_05.png", 0.8f);
+    viewSprite->setScale(0.5f);
+    auto viewButton = CCMenuItemSpriteExtra::create(viewSprite, this, menu_selector(LogCell::onClick));
+    viewButton->setID("view-button");
+    buttonMenu->addChild(viewButton);
+
     return true;
+}
+
+void LogCell::onClick(CCObject* sender) {
+    FLAlertLayer::create(m_name, m_message, "OK")->show();
 }
 
 void LogCell::draw() {

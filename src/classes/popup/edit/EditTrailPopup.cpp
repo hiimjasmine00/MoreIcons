@@ -55,49 +55,21 @@ bool EditTrailPopup::init(BasePopup* popup) {
     bottomMenu->setID("bottom-menu");
     m_mainLayer->addChild(bottomMenu);
 
-    auto pngButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("PNG", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
-        m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
-            auto res = event->getValue();
-            if (res && res->isErr()) return Notify::error("Failed to import PNG file: {}", res->unwrapErr());
-            if (!res || !res->isOk()) return;
-
-            updateWithPath(res->unwrap());
-        });
-
-        m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
-            .filters = {{
-                .description = "PNG files",
-                .files = { "*.png" }
-            }}
-        }));
-    });
+    auto pngButton = CCMenuItemSpriteExtra::create(
+        ButtonSprite::create("PNG", "goldFont.fnt", "GJ_button_05.png"), this, menu_selector(EditTrailPopup::onPNG)
+    );
     pngButton->setID("png-button");
     bottomMenu->addChild(pngButton);
 
-    auto presetButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
-        IconPresetPopup::create(IconType::Special, {}, [this](int id, IconInfo* info) {
-            updateWithPath(MoreIcons::getIconPath(info, id, IconType::Special));
-        })->show();
-    });
+    auto presetButton = CCMenuItemSpriteExtra::create(
+        ButtonSprite::create("Preset", "goldFont.fnt", "GJ_button_05.png"), this, menu_selector(EditTrailPopup::onPreset)
+    );
     presetButton->setID("preset-button");
     bottomMenu->addChild(presetButton);
 
-    auto saveButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png"), [this](auto) {
-        auto iconName = m_nameInput->getString();
-        if (iconName.empty()) return Notify::info("Please enter a name.");
-
-        auto path = MoreIcons::getIconStem(fmt::format("{}.png", iconName), IconType::Special);
-        if (Filesystem::doesExist(path)) createQuickPopup(
-            "Existing Trail",
-            fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
-            "No",
-            "Yes",
-            [this, path = std::move(path)](auto, bool btn2) mutable {
-                if (btn2) saveTrail(std::move(path));
-            }
-        );
-        else saveTrail(std::move(path));
-    });
+    auto saveButton = CCMenuItemSpriteExtra::create(
+        ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png"), this, menu_selector(EditTrailPopup::onSave)
+    );
     saveButton->setID("save-button");
     bottomMenu->addChild(saveButton);
 
@@ -108,6 +80,49 @@ bool EditTrailPopup::init(BasePopup* popup) {
     return true;
 }
 
+void EditTrailPopup::onPNG(CCObject* sender) {
+    m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
+        auto res = event->getValue();
+        if (res && res->isErr()) return Notify::error("Failed to import PNG file: {}", res->unwrapErr());
+        if (!res || !res->isOk()) return;
+
+        updateWithPath(res->unwrap());
+    });
+
+    m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
+        .filters = {{
+            .description = "PNG files",
+            .files = { "*.png" }
+        }}
+    }));
+}
+
+void EditTrailPopup::onPreset(CCObject* sender) {
+    IconPresetPopup::create(IconType::Special, {}, [this](int id, IconInfo* info) {
+        updateWithPath(MoreIcons::getIconPath(info, id, IconType::Special));
+    })->show();
+}
+
+void EditTrailPopup::onSave(CCObject* sender) {
+    auto iconName = MoreIcons::getText(m_nameInput);
+    if (iconName.empty()) return Notify::info("Please enter a name.");
+
+    m_pendingPath = MoreIcons::getIconStem(fmt::format("{}.png", iconName), IconType::Special);
+    if (Filesystem::doesExist(m_pendingPath)) {
+        auto alert = FLAlertLayer::create(
+            this,
+            "Existing Trail",
+            fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
+            "No",
+            "Yes",
+            350.0f
+        );
+        alert->setTag(0);
+        alert->show();
+    }
+    else saveTrail();
+}
+
 void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
     if (auto textureRes = Load::createTexture(path); textureRes.isOk()) {
         m_streak->setTexture(textureRes.unwrap());
@@ -116,7 +131,7 @@ void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
     else if (textureRes.isErr()) Notify::error(textureRes.unwrapErr());
 }
 
-void EditTrailPopup::saveTrail(std::filesystem::path&& path) {
+void EditTrailPopup::saveTrail() {
     auto sprite = CCSprite::createWithTexture(m_streak->getTexture());
     sprite->setAnchorPoint({ 0.0f, 0.0f });
     sprite->setBlendFunc({ GL_ONE, GL_ZERO });
@@ -126,41 +141,52 @@ void EditTrailPopup::saveTrail(std::filesystem::path&& path) {
     if (imageRes.isErr()) {
         return Notify::error("Failed to encode image: {}", imageRes.unwrapErr());
     }
-    if (auto res = file::writeBinary(path, imageRes.unwrap()); res.isErr()) {
+    if (auto res = file::writeBinary(m_pendingPath, imageRes.unwrap()); res.isErr()) {
         return Notify::error("Failed to save image: {}", res.unwrapErr());
     }
 
-    auto name = m_nameInput->getString();
+    auto name = MoreIcons::getText(m_nameInput);
 
     if (auto icon = more_icons::getIcon(name, IconType::Special)) {
         more_icons::updateIcon(icon);
     }
     else {
-        auto jsonPath = Filesystem::withExt(path, L(".json"));
+        auto jsonPath = Filesystem::withExt(m_pendingPath, L(".json"));
         (void)file::writeString(jsonPath, "{}");
         icon = more_icons::addTrail(
-            name, name, std::move(path), std::move(jsonPath), {},
-            {}, "More Icons", 0, Defaults::getTrailInfo(0), false, false
+            std::string(name), std::string(name), std::move(m_pendingPath), std::move(jsonPath),
+            {}, {}, "More Icons", 0, Defaults::getTrailInfo(0), false, false
         );
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }
 
-    m_parentPopup->close();
-    Popup::onClose(nullptr);
+    auto notif = fmt::format("{} saved!", name);
 
-    Notify::success("{} saved!", name);
+    close();
+    m_parentPopup->close();
+
+    Notify::success(notif);
     MoreIcons::updateGarage();
 }
 
 void EditTrailPopup::onClose(CCObject* sender) {
-    if (!m_hasChanged && (!m_nameInput || m_nameInput->getString().empty())) return Popup::onClose(sender);
-    createQuickPopup(
+    if (!m_hasChanged && MoreIcons::getText(m_nameInput).empty()) return close();
+    auto alert = FLAlertLayer::create(
+        this,
         "Exit Trail Editor",
         "Are you sure you want to <cy>exit</c> the <cg>trail editor</c>?\n<cr>All unsaved changes will be lost!</c>",
         "No",
         "Yes",
-        [this, sender](auto, bool btn2) {
-            if (btn2) Popup::onClose(sender);
-        }
+        350.0f
     );
+    alert->setTag(1);
+    alert->show();
+}
+
+void EditTrailPopup::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
+    if (!btn2) return;
+    switch (layer->getTag()) {
+        case 0: saveTrail(); break;
+        case 1: close(); break;
+    }
 }

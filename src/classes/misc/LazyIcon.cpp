@@ -14,9 +14,9 @@
 using namespace geode::prelude;
 using namespace jasmine::mod;
 
-LazyIcon* LazyIcon::create(IconType type, int id, IconInfo* info, std::string_view suffix) {
+LazyIcon* LazyIcon::create(IconType type, int id, IconInfo* info, std::string_view suffix, std23::move_only_function<void()> callback) {
     auto ret = new LazyIcon();
-    if (ret->init(type, id, info, suffix)) {
+    if (ret->init(type, id, info, suffix, std::move(callback))) {
         ret->autorelease();
         return ret;
     }
@@ -24,10 +24,11 @@ LazyIcon* LazyIcon::create(IconType type, int id, IconInfo* info, std::string_vi
     return nullptr;
 }
 
-bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suffix) {
+bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suffix, std23::move_only_function<void()> callback) {
     setAnchorPoint({ 0.5f, 0.5f });
     setContentSize({ 30.0f, 30.0f });
 
+    m_callback = std::move(callback);
     m_type = type;
     m_info = info;
     m_name = info ? fmt::format("{}"_spr, info->getName()) : MoreIcons::getIconName(id, type);
@@ -92,7 +93,8 @@ void LazyIcon::setNormalImage(CCNode* image) {
 
 void LazyIcon::activate() {
     CCMenuItemSpriteExtra::activate();
-    if (!m_pListener || !m_pfnSelector) FLAlertLayer::create("Error", m_error, "OK")->show();
+    if (m_error.empty()) m_callback();
+    else FLAlertLayer::create("Error", m_error, "OK")->show();
 }
 
 void LazyIcon::visit() {
@@ -116,7 +118,6 @@ void LazyIcon::visit() {
                 }
                 else if (image.isErr()) {
                     self->m_error = std::move(image).unwrapErr();
-                    self->setTarget(nullptr, nullptr);
                     log::error("{}: {}", self->m_name, self->m_error);
                 }
                 self->createIcon();

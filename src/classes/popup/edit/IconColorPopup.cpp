@@ -161,10 +161,10 @@ bool IconColorPopup::init(int selected, std23::move_only_function<void(int)> cal
     m_original = selected;
     m_callback = std::move(callback);
 
-    auto selectSprite = CCSprite::createWithSpriteFrameName("GJ_select_001.png");
-    selectSprite->setScale(0.7f);
-    selectSprite->setID("select-sprite");
-    m_mainLayer->addChild(selectSprite);
+    m_selectSprite = CCSprite::createWithSpriteFrameName("GJ_select_001.png");
+    m_selectSprite->setScale(0.7f);
+    m_selectSprite->setID("select-sprite");
+    m_mainLayer->addChild(m_selectSprite);
 
     auto center = Get::Director()->getWinSize() / 2.0f;
     for (int i = 0; i < 144; i++) {
@@ -173,23 +173,20 @@ bool IconColorPopup::init(int selected, std23::move_only_function<void(int)> cal
         auto colorSprite = CCSprite::createWithSpriteFrameName("GJ_colorBtn_001.png");
         colorSprite->setScale(0.65f);
         colorSprite->setColor(Constants::getColor(colorIndex));
-        auto colorButton = CCMenuItemExt::createSpriteExtra(colorSprite, [this, colorIndex, selectSprite](CCMenuItemSpriteExtra* sender) {
-            selectSprite->setPosition(sender->getPosition());
-            m_selected = colorIndex;
-        });
+        auto colorButton = CCMenuItemSpriteExtra::create(colorSprite, this, menu_selector(IconColorPopup::onColor));
         auto offset = offsetForIndex(i) * 12.0f;
         colorButton->setPosition(m_buttonMenu->convertToNodeSpace(center + offset + CCPoint {
             (i % 18) * 24.0f - 198.0f, 89.0f - floorf(i / 18.0f) * 24.0f
         }));
+        colorButton->setTag(colorIndex);
         colorButton->setID(fmt::to_string(colorIndex));
         m_buttonMenu->addChild(colorButton);
-        if (colorIndex == selected) selectSprite->setPosition(colorButton->getPosition());
+        if (colorIndex == selected) m_selectSprite->setPosition(colorButton->getPosition());
     }
 
-    auto confirmButton = CCMenuItemExt::createSpriteExtra(ButtonSprite::create("Confirm", "goldFont.fnt", "GJ_button_05.png", 0.8f), [this](auto) {
-        m_callback(m_selected);
-        Popup::onClose(nullptr);
-    });
+    auto confirmButton = CCMenuItemSpriteExtra::create(
+        ButtonSprite::create("Confirm", "goldFont.fnt", "GJ_button_05.png", 0.8f), this, menu_selector(IconColorPopup::onConfirm)
+    );
     confirmButton->setPosition({ 225.0f, 25.0f });
     confirmButton->setID("confirm-button");
     m_buttonMenu->addChild(confirmButton);
@@ -199,17 +196,29 @@ bool IconColorPopup::init(int selected, std23::move_only_function<void(int)> cal
     return true;
 }
 
+void IconColorPopup::onColor(CCObject* sender) {
+    m_selectSprite->setPosition(static_cast<CCNode*>(sender)->getPosition());
+    m_selected = sender->getTag();
+}
+
+void IconColorPopup::onConfirm(CCObject* sender) {
+    m_callback(m_selected);
+    close();
+}
+
 void IconColorPopup::onClose(CCObject* sender) {
-    if (m_selected != m_original) {
-        createQuickPopup(
-            "Exit Color Selector",
-            "Are you sure you want to <cy>exit</c> the <cg>color selector</c>?",
-            "No",
-            "Yes",
-            [this](auto, bool btn2) {
-                if (btn2) Popup::onClose(nullptr);
-            }
-        );
-    }
-    else Popup::onClose(sender);
+    if (m_selected == m_original) return close();
+
+    FLAlertLayer::create(
+        this,
+        "Exit Color Selector",
+        "Are you sure you want to <cy>exit</c> the <cg>color selector</c>?",
+        "No",
+        "Yes",
+        350.0f
+    )->show();
+}
+
+void IconColorPopup::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
+    if (btn2) close();
 }

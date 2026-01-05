@@ -72,13 +72,11 @@ bool LoadEditorPopup::init(IconType type, std23::move_only_function<void(const s
         entryMenu->setID(fmt::format("{}-menu", filename));
         contentLayer->addChild(entryMenu);
 
-        auto entryButton = CCMenuItemExt::createSpriteExtra(
+        auto entryButton = CCMenuItemSpriteExtra::create(
             ButtonSprite::create(filename.c_str(), 174, 0, 1.0f, false, "goldFont.fnt", "GJ_button_05.png", 0.0f),
-            [this, path = std::move(path)](CCMenuItemSpriteExtra* sender) {
-                m_callback(path, sender->getID());
-                onClose(nullptr);
-            }
+            this, menu_selector(LoadEditorPopup::onEntry)
         );
+        entryButton->setUserObject("entry-path", ObjWrapper<std::filesystem::path>::create(std::move(path)));
         entryButton->setPosition({ 100.0f, 20.0f });
         entryButton->setID(std::move(filename));
         entryMenu->addChild(entryButton);
@@ -107,4 +105,10 @@ bool LoadEditorPopup::init(IconType type, std23::move_only_function<void(const s
     handleTouchPriority(this);
 
     return true;
+}
+
+void LoadEditorPopup::onEntry(CCObject* sender) {
+    auto node = static_cast<CCNode*>(sender);
+    m_callback(static_cast<ObjWrapper<std::filesystem::path>*>(node->getUserObject("entry-path"))->getValue(), node->getID());
+    close();
 }
