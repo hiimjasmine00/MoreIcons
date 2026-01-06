@@ -1,5 +1,5 @@
 #include "../BasePopup.hpp"
-#include <Geode/binding/FlALertLayerProtocol.hpp>
+#include <Geode/binding/FLAlertLayerProtocol.hpp>
 #include <Geode/ui/TextInput.hpp>
 
 class IconInfo;
