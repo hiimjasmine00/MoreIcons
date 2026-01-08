@@ -279,7 +279,8 @@ void SimpleIcon::update(float dt) {
 }
 
 std::span<CCSprite*> SimpleIcon::getTargets(const std::string& suffix) {
-    return m_targets[suffix];
+    auto it = m_targets.find(suffix);
+    return it != m_targets.end() ? std::span<CCSprite*>(it->second) : std::span<CCSprite*>();
 }
 
 void SimpleIcon::setMainColor(const ccColor3B& color) {

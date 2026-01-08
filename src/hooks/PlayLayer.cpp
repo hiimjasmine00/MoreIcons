@@ -10,19 +10,11 @@ using namespace geode::prelude;
 class $modify(MIPlayLayer, PlayLayer) {
     struct Fields {
         ~Fields() {
-            auto textureCache = Get::TextureCache();
-            auto spriteFrameCache = Get::SpriteFrameCache();
-            if (auto info = more_icons::getIcon(IconType::DeathEffect, false)) {
-                for (auto& frameName : info->getFrameNames()) {
-                    spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
-                }
-                textureCache->removeTextureForKey(info->getTextureString().c_str());
+            if (auto info = more_icons::activeIcon(IconType::DeathEffect, false)) {
+                Icons::uncacheIcon(info);
             }
-            if (auto info = more_icons::getIcon(IconType::DeathEffect, true)) {
-                for (auto& frameName : info->getFrameNames()) {
-                    spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
-                }
-                textureCache->removeTextureForKey(info->getTextureString().c_str());
+            if (auto info = more_icons::activeIcon(IconType::DeathEffect, true)) {
+                Icons::uncacheIcon(info);
             }
         }
     };
@@ -54,13 +46,13 @@ class $modify(MIPlayLayer, PlayLayer) {
             }
         }
 
-        if (auto info = more_icons::getIcon(IconType::DeathEffect, false)) {
-            m_fields.self();
+        m_fields.self();
+
+        if (auto info = more_icons::activeIcon(IconType::DeathEffect, false)) {
             Icons::createAndAddFrames(info);
         }
 
-        if (auto info = more_icons::getIcon(IconType::DeathEffect, true)) {
-            m_fields.self();
+        if (auto info = more_icons::activeIcon(IconType::DeathEffect, true)) {
             Icons::createAndAddFrames(info);
         }
     }

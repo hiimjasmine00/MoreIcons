@@ -7,6 +7,7 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/loader/Mod.hpp>
 #include <Geode/ui/TextInput.hpp>
 #include <MoreIcons.hpp>
 
@@ -41,15 +42,18 @@ bool MoreIcons::dualSelected() {
 }
 
 ccColor3B MoreIcons::vanillaColor1(bool dual) {
-    return Constants::getColor(dual && separateDualIcons ? separateDualIcons->getSavedValue("color1", 0) : Get::GameManager()->m_playerColor);
+    return Constants::getColor(
+        dual && separateDualIcons ? separateDualIcons->getSavedValue("color1", 0) : Get::GameManager()->m_playerColor);
 }
 
 ccColor3B MoreIcons::vanillaColor2(bool dual) {
-    return Constants::getColor(dual && separateDualIcons ? separateDualIcons->getSavedValue("color2", 0) : Get::GameManager()->m_playerColor2);
+    return Constants::getColor(
+        dual && separateDualIcons ? separateDualIcons->getSavedValue("color2", 0) : Get::GameManager()->m_playerColor2);
 }
 
 ccColor3B MoreIcons::vanillaColorGlow(bool dual) {
-    return Constants::getColor(dual && separateDualIcons ? separateDualIcons->getSavedValue("colorglow", 0) : Get::GameManager()->m_playerGlowColor);
+    return Constants::getColor(
+        dual && separateDualIcons ? separateDualIcons->getSavedValue("colorglow", 0) : Get::GameManager()->m_playerGlowColor);
 }
 
 bool MoreIcons::vanillaGlow(bool dual) {
@@ -106,7 +110,7 @@ void MoreIcons::updateGarage(GJGarageLayer* layer) {
 
     if (separateDualIcons) {
         auto player2 = static_cast<SimplePlayer*>(layer->getChildByID("player2-icon"));
-        auto iconType2 = (IconType)separateDualIcons->getSavedValue("lastmode", 0);
+        auto iconType2 = separateDualIcons->getSavedValue("lastmode", IconType::Cube);
         if (noLayer) player2->updatePlayerFrame(vanillaIcon(iconType2, true), iconType2);
         more_icons::updateSimplePlayer(player2, iconType2, true);
     }
@@ -217,4 +221,25 @@ std::string_view MoreIcons::getText(CCTextInputNode* input) {
 
 std::string_view MoreIcons::getText(geode::TextInput* input) {
     return getText(input->getInputNode());
+}
+
+void MoreIcons::loadFromSave(IconType type) {
+    auto saveContainer = Mod::get()->getSaveContainer();
+    auto& mainIcon = saveContainer[more_icons::saveKey(type, false)];
+    if (auto str = mainIcon.asString()) {
+        more_icons::setIcon(more_icons::getIcon(str.unwrap(), type), type, false);
+    }
+    else {
+        mainIcon = std::string();
+    }
+
+    if (separateDualIcons) {
+        auto& dualIcon = saveContainer[more_icons::saveKey(type, true)];
+        if (auto str = dualIcon.asString()) {
+            more_icons::setIcon(more_icons::getIcon(str.unwrap(), type), type, true);
+        }
+        else {
+            dualIcon = std::string();
+        }
+    }
 }

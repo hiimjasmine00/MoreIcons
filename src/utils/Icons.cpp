@@ -8,6 +8,7 @@
 #include "Log.hpp"
 #include "../classes/misc/ThreadPool.hpp"
 #include <Geode/loader/Dirs.hpp>
+#include <Geode/loader/Mod.hpp>
 #include <geode.texture-loader/include/TextureLoader.hpp>
 #include <jasmine/convert.hpp>
 #include <jasmine/setting.hpp>
@@ -15,22 +16,8 @@
 
 using namespace geode::prelude;
 
-std::map<IconType, std::vector<IconInfo>> Icons::icons = {
-    { IconType::Cube, {} },
-    { IconType::Ship, {} },
-    { IconType::Ball, {} },
-    { IconType::Ufo, {} },
-    { IconType::Wave, {} },
-    { IconType::Robot, {} },
-    { IconType::Spider, {} },
-    { IconType::Swing, {} },
-    { IconType::Jetpack, {} },
-    { IconType::DeathEffect, {} },
-    { IconType::Special, {} },
-    { IconType::ShipFire, {} }
-};
-std::map<int, std::map<IconType, std::string>> Icons::requestedIcons;
-std::map<std::pair<std::string, IconType>, int> Icons::loadedIcons;
+std::map<int, std::map<IconType, IconInfo*>> Icons::requestedIcons;
+std::unordered_map<IconInfo*, int> Icons::loadedIcons;
 bool Icons::traditionalPacks = true;
 bool Icons::preloadIcons = false;
 
@@ -58,7 +45,7 @@ std::pair<Filesystem::PathView, Filesystem::PathView> splitPath(const std::files
     auto filename = Filesystem::filenameView(path);
     filename.remove_suffix(removeCount);
     auto& str = path.native();
-    return std::make_pair(Filesystem::PathView(str.data(), str.size() - filename.size() - removeCount), filename);
+    return { Filesystem::PathView(str.data(), str.size() - filename.size() - removeCount), filename };
 }
 
 void migrateTrails(const std::filesystem::path& path) {
@@ -176,7 +163,7 @@ Result<> checkPath(const std::filesystem::path& path) {
 
 #ifdef GEODE_IS_MOBILE
 std::filesystem::path Icons::getUhdResourcesDir() {
-    return dirs::getModConfigDir() / L("weebify.high-graphics-android") / L(GEODE_GD_VERSION_STRING);
+    return dirs::getModConfigDir() / L("weebify.high-graphics-android/" GEODE_GD_VERSION_STRING);
 }
 
 std::filesystem::path vanillaTexturePath(std::string_view path, bool skipSuffix) {
@@ -188,15 +175,13 @@ std::filesystem::path vanillaTexturePath(Filesystem::PathView path, bool skipSuf
 }
 #endif
 
-#ifdef GEODE_IS_WINDOWS
 std::string Icons::vanillaTexturePath(std::string_view path, bool skipSuffix) {
+    #ifdef GEODE_IS_WINDOWS
     return string::pathToString(::vanillaTexturePath(Filesystem::strWide(path), skipSuffix));
-}
-#else
-std::string Icons::vanillaTexturePath(Filesystem::PathView path, bool skipSuffix) {
+    #else
     return ::vanillaTexturePath(path, skipSuffix);
+    #endif
 }
-#endif
 
 void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
     auto [parent, stem] = splitPath(path, 6);
@@ -653,16 +638,16 @@ void Icons::loadIcons(IconType type) {
 
     if (!preloadIcons) return;
 
-    auto& iconsVec = icons[type];
-    if (iconsVec.empty()) return;
+    auto icons = more_icons::getIcons(type);
+    if (!icons || icons->empty()) return;
 
-    auto size = iconsVec.size();
+    auto size = icons->size();
     log::info("Pre-loading {} {} textures", size, name);
 
     images.reserve(size);
 
     auto& threadPool = ThreadPool::get();
-    for (auto& info : iconsVec) {
+    for (auto& info : *icons) {
         threadPool.pushTask([info = &info] {
             if (auto res = createFrames(info)) {
                 std::unique_lock lock(imageMutex);
@@ -705,22 +690,20 @@ CCSpriteFrame* Icons::getFrame(const char* name) {
     return spriteFrame;
 }
 
-void Icons::setName(CCNode* node, std::string_view name) {
-    auto str = static_cast<CCString*>(node->getUserObject("name"_spr));
-    if (!str) {
-        str = new CCString();
-        str->autorelease();
-        node->setUserObject("name"_spr, str);
-    }
-
-    if (name.empty()) {
-        str->m_sString.clear();
+void Icons::setIcon(CCNode* node, IconInfo* info) {
+    if (auto obj = static_cast<ObjWrapper<IconInfo*>*>(node->getUserObject("name"_spr))) {
+        obj->getValue() = info;
     }
     else {
-        #ifdef GEODE_IS_ANDROID
-        str->m_sString = name.data();
-        #else
-        str->m_sString = name;
-        #endif
+        node->setUserObject("name"_spr, ObjWrapper<IconInfo*>::create(info));
     }
+}
+
+void Icons::uncacheIcon(IconInfo* info) {
+    auto spriteFrameCache = Get::SpriteFrameCache();
+    auto& frameNames = const_cast<std::vector<std::string>&>(info->getFrameNames());
+    for (auto it = frameNames.begin(); it != frameNames.end(); it = frameNames.erase(it)) {
+        spriteFrameCache->removeSpriteFrameByName(it->c_str());
+    }
+    Get::TextureCache()->removeTextureForKey(info->getTextureString().c_str());
 }

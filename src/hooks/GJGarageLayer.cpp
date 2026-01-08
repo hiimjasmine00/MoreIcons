@@ -15,7 +15,6 @@
 #include <jasmine/array.hpp>
 #include <jasmine/button.hpp>
 #include <MoreIcons.hpp>
-#include <ranges>
 
 using namespace geode::prelude;
 using namespace jasmine::button;
@@ -24,7 +23,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     struct Fields {
         ListButtonBar* m_pageBar = nullptr;
         CCMenu* m_navMenu = nullptr;
-        std::string m_selectedIcon;
+        IconInfo* m_selectedIcon = nullptr;
         bool m_initialized = false;
     };
 
@@ -62,7 +61,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             auto miSprite = CircleButtonSprite::createWithSprite("MI_moreIcons_001.png"_spr, 1.0f, CircleBaseColor::Gray, CircleBaseSize::Small);
             if (!Log::logs.empty()) {
                 Severity severity = Severity::Debug;
-                for (auto& logs : std::views::values(Log::logs)) {
+                for (auto& [type, logs] : Log::logs) {
                     if (logs[0].severity > severity) severity = logs[0].severity;
                 }
                 auto severitySprite = CCSprite::createWithSpriteFrameName(Constants::getSeverityFrame(severity));
@@ -92,7 +91,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto icons = more_icons::getIcons(type);
         if (!icons) return m_iconPages[type];
 
-        auto info = more_icons::getIcon(type, dual);
+        auto info = more_icons::activeIcon(type, dual);
         return info ? (Get::GameManager()->countForType(type) + 35) / 36 + (info - icons->data()) / 36 : m_iconPages[type];
     }
 
@@ -107,15 +106,16 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         if (!Get::GameManager()->isIconUnlocked(sender->getTag(), btn->m_iconType)) return;
 
+        auto f = m_fields.self();
         if (btn->m_iconType == IconType::ShipFire) {
             m_cursor2->setOpacity(255);
-            m_fields->m_selectedIcon.clear();
-            more_icons::setIcon({}, dual ? (IconType)MoreIcons::separateDualIcons->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
+            f->m_selectedIcon = nullptr;
+            more_icons::setIcon(nullptr, dual ? MoreIcons::separateDualIcons->getSavedValue("lasttype", IconType::Cube) : m_selectedIconType, dual);
         }
         else {
             m_cursor1->setOpacity(255);
-            m_fields->m_selectedIcon.clear();
-            more_icons::setIcon({}, dual ? (IconType)MoreIcons::separateDualIcons->getSavedValue("lasttype", 0) : m_selectedIconType, dual);
+            f->m_selectedIcon = nullptr;
+            more_icons::setIcon(nullptr, dual ? MoreIcons::separateDualIcons->getSavedValue("lasttype", IconType::Cube) : m_selectedIconType, dual);
         }
     }
 
@@ -153,7 +153,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         more_icons::updateSimplePlayer(m_playerObject, Get::GameManager()->m_playerIconType, false);
         more_icons::updateSimplePlayer(static_cast<SimplePlayer*>(getChildByID("player2-icon")),
-            (IconType)MoreIcons::separateDualIcons->getSavedValue("lastmode", 0), true);
+            MoreIcons::separateDualIcons->getSavedValue("lastmode", IconType::Cube), true);
         selectTab(m_iconType);
     }
 
@@ -280,7 +280,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         CCMenuItemSpriteExtra* current2 = nullptr;
         auto dual = MoreIcons::dualSelected();
         auto active = more_icons::activeIcon(type, dual);
-        auto active2 = type == IconType::Special ? more_icons::activeIcon(IconType::ShipFire, dual) : std::string();
+        auto active2 = type == IconType::Special ? more_icons::activeIcon(IconType::ShipFire, dual) : nullptr;
 
         std::span<IconInfo*> infoPage(infoView.data() + index, std::min<size_t>(36, size - index));
 
@@ -288,39 +288,38 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             auto unlockType = Constants::getUnlockType(type);
             auto hasAnimProf = Loader::get()->isModLoaded("thesillydoggo.animatedprofiles");
             for (size_t i = 0; i < infoPage.size(); i++) {
-                auto& name = infoPage[i]->getName();
+                auto info = infoPage[i];
                 auto itemIcon = GJItemIcon::createBrowserItem(unlockType, 1);
                 itemIcon->setScale(GJItemIcon::scaleForType(unlockType));
                 auto simplePlayer = static_cast<SimplePlayer*>(itemIcon->m_player);
-                more_icons::updateSimplePlayer(simplePlayer, name, type);
+                more_icons::updateSimplePlayer(simplePlayer, info);
                 if (hasAnimProf) {
                     if (auto robotSprite = simplePlayer->m_robotSprite) robotSprite->runAnimation("idle01");
                     if (auto spiderSprite = simplePlayer->m_spiderSprite) spiderSprite->runAnimation("idle01");
                 }
                 auto iconButton = CCMenuItemSpriteExtra::create(itemIcon, this, menu_selector(GJGarageLayer::onSelect));
-                Icons::setName(iconButton, name);
+                Icons::setIcon(iconButton, info);
                 iconButton->setContentSize({ 30.0f, 30.0f });
                 itemIcon->setPosition({ 15.0f, 15.0f });
                 iconButton->setTag(i + 1);
                 iconButton->m_iconType = type;
                 objs->addObject(iconButton);
-                if (name == active) current = iconButton;
+                if (info == active) current = iconButton;
             }
         }
         else if (type >= IconType::DeathEffect) {
             for (size_t i = 0; i < infoPage.size(); i++) {
                 auto info = infoPage[i];
                 auto infoType = info->getType();
-                auto& name = info->getName();
                 auto sprite = MoreIcons::customIcon(info);
                 sprite->setScale(0.8f);
                 auto iconButton = CCMenuItemSpriteExtra::create(sprite, this, menu_selector(GJGarageLayer::onSelect));
-                Icons::setName(iconButton, name);
+                Icons::setIcon(iconButton, info);
                 iconButton->setTag(i + 1);
                 iconButton->m_iconType = infoType;
                 objs->addObject(iconButton);
-                if (name == active) current = iconButton;
-                if (infoType == IconType::ShipFire && name == active2) current2 = iconButton;
+                if (info == active) current = iconButton;
+                if (infoType == IconType::ShipFire && info == active2) current2 = iconButton;
             }
         }
 
@@ -345,9 +344,9 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     }
 
     void onCustomSelect(CCMenuItemSpriteExtra* sender) {
-        auto& selectedIcon = m_fields->m_selectedIcon;
+        auto f = m_fields.self();
         auto dual = MoreIcons::dualSelected();
-        auto name = more_icons::getIconName(sender);
+        auto info = more_icons::getNodeInfo(sender);
         auto type = sender->m_iconType;
         auto isIcon = type <= IconType::Jetpack;
 
@@ -364,24 +363,27 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         if (isIcon) {
             auto player = dual ? static_cast<SimplePlayer*>(getChildByID("player2-icon")) : m_playerObject;
             player->updateColors();
-            more_icons::updateSimplePlayer(player, name, type);
+            more_icons::updateSimplePlayer(player, info);
             player->setScale(type == IconType::Jetpack ? 1.5f : 1.6f);
         }
 
-        if (name == selectedIcon && type == (dual ? (IconType)MoreIcons::separateDualIcons->getSavedValue("lasttype", 0) : m_selectedIconType)) {
-            if (auto popup = more_icons::createInfoPopup(name, type)) popup->show();
+        if (info == f->m_selectedIcon) {
+            auto selectedType = dual ? MoreIcons::separateDualIcons->getSavedValue("lasttype", IconType::Cube) : m_selectedIconType;
+            if (type == selectedType) {
+                if (auto popup = more_icons::createInfoPopup(info)) popup->show();
+            }
         }
 
         if (dual) {
-            if (isIcon) MoreIcons::separateDualIcons->setSavedValue("lastmode", (int)type);
-            MoreIcons::separateDualIcons->setSavedValue("lasttype", (int)type);
+            if (isIcon) MoreIcons::separateDualIcons->setSavedValue("lastmode", type);
+            MoreIcons::separateDualIcons->setSavedValue("lasttype", type);
         }
         else {
             if (isIcon) Get::GameManager()->m_playerIconType = type;
             m_selectedIconType = type;
         }
 
-        selectedIcon = name;
-        more_icons::setIcon(std::move(name), type, dual);
+        f->m_selectedIcon = info;
+        more_icons::setIcon(info, type, dual);
     }
 };

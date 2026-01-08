@@ -11,6 +11,7 @@
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/loader/Mod.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
@@ -110,7 +111,7 @@ void MoreIconsPopup::createMenu(IconType type) {
         gamemodeMenu->addChild(icon);
     }
     else if (type >= IconType::DeathEffect) {
-        auto info = more_icons::getIcon(type, m_dual);
+        auto info = more_icons::activeIcon(type, m_dual);
         auto sprite = info ? MoreIcons::customIcon(info) : CCSprite::createWithSpriteFrameName(
             type == IconType::DeathEffect ? fmt::format("explosionIcon_{:02}_001.png", id).c_str() :
             type == IconType::Special ? fmt::format("player_special_{:02}_001.png", id).c_str() :

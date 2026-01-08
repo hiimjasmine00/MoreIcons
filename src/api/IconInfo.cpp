@@ -23,15 +23,16 @@ std::string IconInfo::getTextureString() const {
 }
 
 std::vector<std::string> IconInfo::getAllTextures() const {
-    std::vector<std::string> textures;
-    if (m_impl->m_type == IconType::ShipFire) {
-        auto texture = getTextureString();
-        for (int i = 1; i <= m_impl->m_fireCount; i++) {
-            texture.replace(texture.size() - 7, 3, fmt::format("{:03}", i));
-            textures.push_back(texture);
-        }
+    if (m_impl->m_type != IconType::ShipFire) {
+        return { getTextureString() };
     }
-    else textures.push_back(getTextureString());
+
+    std::vector<std::string> textures;
+    auto texture = getTextureString();
+    for (int i = 1; i <= m_impl->m_fireCount; i++) {
+        texture.replace(texture.size() - 7, 3, fmt::format("{:03}", i));
+        textures.push_back(texture);
+    }
     return textures;
 }
 

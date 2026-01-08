@@ -9,6 +9,7 @@
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
+#include <Geode/utils/file.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;

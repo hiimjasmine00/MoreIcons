@@ -5,7 +5,6 @@
 #include <jasmine/hook.hpp>
 #include <jasmine/setting.hpp>
 #include <MoreIcons.hpp>
-#include <ranges>
 
 using namespace geode::prelude;
 
@@ -25,7 +24,7 @@ class $modify(MIGameManager, GameManager) {
         Get::fileUtils = nullptr;
         Get::spriteFrameCache = nullptr;
         Get::textureCache = nullptr;
-        std::ranges::for_each(std::views::values(Icons::icons), &std::vector<IconInfo>::clear);
+        more_icons::clearAllIcons();
         Icons::requestedIcons.clear();
         Icons::loadedIcons.clear();
         Log::logs.clear();
@@ -62,10 +61,9 @@ class $modify(MIGameManager, GameManager) {
         }
 
         if (auto foundRequests = Icons::requestedIcons.find(requestID); foundRequests != Icons::requestedIcons.end()) {
-            auto iconType = (IconType)type;
             auto& iconRequests = foundRequests->second;
-            if (auto found = iconRequests.find(iconType); found != iconRequests.end()) {
-                more_icons::unloadIcon(found->second, iconType, requestID);
+            if (auto found = iconRequests.find((IconType)type); found != iconRequests.end()) {
+                more_icons::unloadIcon(found->second, requestID);
             }
         }
 

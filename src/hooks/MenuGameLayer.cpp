@@ -38,31 +38,32 @@ class $modify(MIMenuGameLayer, MenuGameLayer) {
     void resetPlayer() {
         MenuGameLayer::resetPlayer();
 
-        auto type = more_icons::getIconType(m_playerObject);
+        auto object = m_playerObject;
+        auto type = more_icons::getIconType(object);
         auto gameManager = Get::GameManager();
 
         if (auto icons = more_icons::getIcons(type)) {
             auto iconCount = gameManager->countForType(type);
             int icon = round(jasmine::random::get(1, iconCount + icons->size()));
 
-            if (icon > iconCount) more_icons::updatePlayerObject(m_playerObject, (*icons)[icon - iconCount - 1].getName(), type);
-            else if (m_playerObject->m_isShip) m_playerObject->updatePlayerShipFrame(icon);
-            else if (m_playerObject->m_isBall) m_playerObject->updatePlayerRollFrame(icon);
-            else if (m_playerObject->m_isBird) m_playerObject->updatePlayerBirdFrame(icon);
-            else if (m_playerObject->m_isDart) m_playerObject->updatePlayerDartFrame(icon);
-            else if (m_playerObject->m_isRobot) m_playerObject->updatePlayerRobotFrame(icon);
-            else if (m_playerObject->m_isSpider) m_playerObject->updatePlayerSpiderFrame(icon);
-            else if (m_playerObject->m_isSwing) m_playerObject->updatePlayerSwingFrame(icon);
-            else m_playerObject->updatePlayerFrame(icon);
+            if (icon > iconCount) more_icons::updatePlayerObject(object, icons->data() + (icon - iconCount - 1));
+            else if (object->m_isShip) object->updatePlayerShipFrame(icon);
+            else if (object->m_isBall) object->updatePlayerRollFrame(icon);
+            else if (object->m_isBird) object->updatePlayerBirdFrame(icon);
+            else if (object->m_isDart) object->updatePlayerDartFrame(icon);
+            else if (object->m_isRobot) object->updatePlayerRobotFrame(icon);
+            else if (object->m_isSpider) object->updatePlayerSpiderFrame(icon);
+            else if (object->m_isSwing) object->updatePlayerSwingFrame(icon);
+            else object->updatePlayerFrame(icon);
         }
 
-        if (m_playerObject->m_isShip || m_playerObject->m_isBird) {
+        if (object->m_isShip || object->m_isBird) {
             if (auto cubes = more_icons::getIcons(IconType::Cube)) {
                 auto cubeCount = gameManager->countForType(IconType::Cube);
                 int cube = round(jasmine::random::get(1, cubeCount + cubes->size()));
 
-                if (cube > cubeCount) more_icons::updatePlayerObject(m_playerObject, (*cubes)[cube - cubeCount - 1].getName(), IconType::Cube);
-                else m_playerObject->updatePlayerFrame(cube);
+                if (cube > cubeCount) more_icons::updatePlayerObject(object, cubes->data() + (cube - cubeCount - 1));
+                else object->updatePlayerFrame(cube);
             }
         }
     }

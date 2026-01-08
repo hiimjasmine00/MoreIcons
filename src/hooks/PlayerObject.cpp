@@ -26,16 +26,16 @@ class $modify(MIPlayerObject, PlayerObject) {
         return m_gameLayer && (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this);
     }
 
-    std::string activeIcon(IconType type) {
+    IconInfo* getIconInfo(IconType type) {
         if (isPlayer1()) return more_icons::activeIcon(type, false);
         else if (isPlayer2()) return more_icons::activeIcon(type, true);
-        else return std::string();
+        else return nullptr;
     }
 
     void updateIcon(IconType type) {
-        auto icon = activeIcon(type);
-        if (!icon.empty()) more_icons::updatePlayerObject(this, icon, type);
-        else Icons::setName(this, {});
+        auto icon = getIconInfo(type);
+        if (icon) more_icons::updatePlayerObject(this, icon);
+        else Icons::setIcon(this, nullptr);
     }
 
     bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool playLayer) {
@@ -52,7 +52,7 @@ class $modify(MIPlayerObject, PlayerObject) {
     void updateIcon(int frame, IconType type, void(PlayerObject::*func)(int)) {
         if (frame == 0 || (!isPlayer1() && !isPlayer2())) {
             (this->*func)(frame);
-            return Icons::setName(this, {});
+            return Icons::setIcon(this, nullptr);
         }
 
         int* loadedIcon = nullptr;
@@ -60,7 +60,7 @@ class $modify(MIPlayerObject, PlayerObject) {
             if (auto foundRequests = Icons::requestedIcons.find(m_iconRequestID); foundRequests != Icons::requestedIcons.end()) {
                 auto& iconRequests = foundRequests->second;
                 if (auto found = iconRequests.find(type); found != iconRequests.end()) {
-                    loadedIcon = &Icons::loadedIcons[{ found->second, type }];
+                    loadedIcon = &Icons::loadedIcons[found->second];
                 }
             }
         }
@@ -112,8 +112,8 @@ class $modify(MIPlayerObject, PlayerObject) {
         PlayerObject::toggleRobotMode(enable, noEffects);
 
         if (!isRobot && m_isRobot) {
-            auto iconName = activeIcon(IconType::Robot);
-            if (!iconName.empty()) m_iconSprite->setDisplayFrame(Icons::getFrame("{}_01_001.png"_spr, iconName));
+            auto icon = getIconInfo(IconType::Robot);
+            if (icon) m_iconSprite->setDisplayFrame(Icons::getFrame("{}_01_001.png"_spr, icon->getName()));
         }
     }
 
@@ -122,13 +122,9 @@ class $modify(MIPlayerObject, PlayerObject) {
         PlayerObject::toggleSpiderMode(enable, noEffects);
 
         if (!isSpider && m_isSpider) {
-            auto iconName = activeIcon(IconType::Spider);
-            if (!iconName.empty()) m_iconSprite->setDisplayFrame(Icons::getFrame("{}_01_001.png"_spr, iconName));
+            auto icon = getIconInfo(IconType::Spider);
+            if (icon) m_iconSprite->setDisplayFrame(Icons::getFrame("{}_01_001.png"_spr, icon->getName()));
         }
-    }
-
-    IconInfo* getIconInfo(IconType type) {
-        return more_icons::getIcon(activeIcon(type), type);
     }
 
     void setupStreak() {
@@ -150,10 +146,10 @@ class $modify(MIPlayerObject, PlayerObject) {
             m_regularTrail->setTexture(Get::TextureCache()->addImage(info->getTextureString().c_str(), false));
             if (info->getSpecialID() == 6) m_regularTrail->enableRepeatMode(0.1f);
             MoreIcons::blendStreak(m_regularTrail, info);
-            Icons::setName(m_regularTrail, info->getName());
+            Icons::setIcon(m_regularTrail, info);
         }
         else {
-            Icons::setName(m_regularTrail, {});
+            Icons::setIcon(m_regularTrail, nullptr);
             if (Icons::traditionalPacks && (!Loader::get()->isModLoaded("acaruso.pride") || m_playerStreak != 2)) {
                 m_regularTrail->setTexture(Get::TextureCache()->addImage(Icons::vanillaTexturePath(
                     fmt::format("streak_{:02}_001.png", m_playerStreak), true
@@ -179,10 +175,10 @@ class $modify(MIPlayerObject, PlayerObject) {
                 m_parentLayer->addChild(m_shipStreak, -3);
             }
             MoreIcons::blendStreak(m_shipStreak, info);
-            Icons::setName(m_shipStreak, info->getName());
+            Icons::setIcon(m_shipStreak, info);
         }
         else if (m_shipStreak) {
-            Icons::setName(m_shipStreak, {});
+            Icons::setIcon(m_shipStreak, nullptr);
             if (Icons::traditionalPacks) {
                 m_shipStreak->setTexture(Get::TextureCache()->addImage(Icons::vanillaTexturePath(
                     fmt::format("shipfire{:02}_001.png", (int)m_shipStreakType), true

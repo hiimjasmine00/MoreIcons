@@ -12,6 +12,7 @@
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/binding/TextArea.hpp>
 #include <Geode/loader/Dirs.hpp>
+#include <Geode/loader/Mod.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;

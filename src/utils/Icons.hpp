@@ -9,9 +9,8 @@
 #endif
 
 namespace Icons {
-    extern std::map<IconType, std::vector<IconInfo>> icons;
-    extern std::map<int, std::map<IconType, std::string>> requestedIcons;
-    extern std::map<std::pair<std::string, IconType>, int> loadedIcons;
+    extern std::map<int, std::map<IconType, IconInfo*>> requestedIcons;
+    extern std::unordered_map<IconInfo*, int> loadedIcons;
     extern bool traditionalPacks;
     extern bool preloadIcons;
 
@@ -29,6 +28,7 @@ namespace Icons {
     void loadIcons(IconType type);
     void loadPacks();
     void loadSettings();
-    void setName(cocos2d::CCNode* node, std::string_view name);
+    void setIcon(cocos2d::CCNode* node, IconInfo* info);
+    void uncacheIcon(IconInfo* info);
     std::string vanillaTexturePath(std::string_view path, bool skipSuffix);
 }

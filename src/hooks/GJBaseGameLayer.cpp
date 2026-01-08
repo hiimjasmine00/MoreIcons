@@ -27,8 +27,8 @@ class $modify(MIBaseGameLayer, GJBaseGameLayer) {
 
         if (blend) return;
 
-        if (auto info = more_icons::getIcon(IconType::Special, false)) MoreIcons::blendStreak(m_player1->m_regularTrail, info);
-        if (auto info = more_icons::getIcon(IconType::Special, true)) MoreIcons::blendStreak(m_player2->m_regularTrail, info);
+        if (auto info = more_icons::activeIcon(IconType::Special, false)) MoreIcons::blendStreak(m_player1->m_regularTrail, info);
+        if (auto info = more_icons::activeIcon(IconType::Special, true)) MoreIcons::blendStreak(m_player2->m_regularTrail, info);
     }
     #endif
 };

@@ -7,6 +7,7 @@
 #include "../../../utils/Icons.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
+#include <algorithm>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <MoreIcons.hpp>
 
