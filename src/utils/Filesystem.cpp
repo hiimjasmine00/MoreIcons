@@ -95,15 +95,7 @@ std::string Filesystem::strNarrow(std::wstring_view wstr) {
     if (count != 0) WideCharToMultiByte(CP_UTF8, 0, wstr.data(), -1, &str[0], count, nullptr, nullptr);
     return str;
 }
-#else
-std::filesystem::path Filesystem::strPath(std::string&& path) {
-    return std::filesystem::path(std::move(path));
-}
 #endif
-
-std::filesystem::path Filesystem::strPath(std::string_view path) {
-    return std::filesystem::path(std::filesystem::path::string_type(strWide(path)));
-}
 
 #ifdef GEODE_IS_WINDOWS
 #define PRIVATE_WRAPPER(func) \

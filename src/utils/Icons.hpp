@@ -8,9 +8,14 @@
 #define CONFIG_PATH std::string_view("config/" GEODE_MOD_ID, sizeof(GEODE_MOD_ID) + 6)
 #endif
 
+namespace geode {
+    class Hook;
+}
+
 namespace Icons {
     extern std::map<int, std::map<IconType, IconInfo*>> requestedIcons;
     extern std::unordered_map<IconInfo*, int> loadedIcons;
+    extern std::vector<geode::Hook*> hooks;
     extern bool traditionalPacks;
     extern bool preloadIcons;
 
@@ -30,5 +35,5 @@ namespace Icons {
     void loadSettings();
     void setIcon(cocos2d::CCNode* node, IconInfo* info);
     void uncacheIcon(IconInfo* info);
-    std::string vanillaTexturePath(std::string_view path, bool skipSuffix);
+    std::filesystem::path vanillaTexturePath(std::basic_string_view<std::filesystem::path::value_type> path, bool skipSuffix);
 }

@@ -50,10 +50,6 @@ namespace Filesystem {
     }
     std::string_view filenameFormat(const std::filesystem::path& path);
     #endif
-    std::filesystem::path strPath(std::string_view path);
-    #ifndef GEODE_IS_WINDOWS
-    std::filesystem::path strPath(std::string&& path);
-    #endif
     PathView filenameView(const std::filesystem::path& path);
     std::filesystem::path parentPath(const std::filesystem::path& path);
     std::filesystem::path parentPath(std::filesystem::path&& path);

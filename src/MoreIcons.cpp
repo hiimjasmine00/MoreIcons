@@ -184,7 +184,11 @@ std::filesystem::path MoreIcons::getIconPath(IconInfo* info, int id, IconType ty
 }
 
 std::filesystem::path getFullPath(CCFileUtils* fileUtils, const char* filename) {
-    return Filesystem::strPath(std::string(fileUtils->fullPathForFilename(filename, false)));
+    #ifdef GEODE_IS_WINDOWS
+    return std::filesystem::path(Filesystem::strWide(fileUtils->fullPathForFilename(filename, false)));
+    #else
+    return std::filesystem::path(std::string(fileUtils->fullPathForFilename(filename, false)));
+    #endif
 }
 
 void MoreIcons::getIconPaths(IconInfo* info, int id, IconType type, std::filesystem::path& png, std::filesystem::path& plist) {

@@ -9,11 +9,22 @@
 using namespace geode::prelude;
 
 class $modify(MIGameManager, GameManager) {
-    inline static Hook* sheetHook = nullptr;
-
     static void onModify(ModifyBase<ModifyDerive<MIGameManager, GameManager>>& self) {
         (void)self.setHookPriority("GameManager::loadIcon", Priority::Replace);
-        sheetHook = jasmine::hook::get(self.m_hooks, "GameManager::sheetNameForIcon", jasmine::setting::getValue<bool>("traditional-packs"));
+        if (auto hook = jasmine::hook::get(self.m_hooks, "GameManager::sheetNameForIcon", false)) {
+            if (auto globed = Loader::get()->getInstalledMod("dankmeme.globed2")) {
+                if (globed->isEnabled()) {
+                    hook->setAutoEnable(jasmine::setting::getValue<bool>("traditional-packs"));
+                    Icons::hooks.push_back(hook);
+                }
+                else if (globed->shouldLoad()) {
+                    new EventListener([hook](ModStateEvent* e) {
+                        jasmine::hook::toggle(hook, Icons::traditionalPacks);
+                        Icons::hooks.push_back(hook);
+                    }, ModStateFilter(globed, ModEventType::Loaded));
+                }
+            }
+        }
     }
 
     void reloadAllStep2() {
@@ -29,36 +40,20 @@ class $modify(MIGameManager, GameManager) {
         Icons::loadedIcons.clear();
         Log::logs.clear();
         Icons::loadSettings();
-        jasmine::hook::toggle(sheetHook, Icons::traditionalPacks);
+        for (auto hook : Icons::hooks) {
+            jasmine::hook::toggle(hook, Icons::traditionalPacks);
+        }
     }
 
     gd::string sheetNameForIcon(int id, int type) {
         auto ret = GameManager::sheetNameForIcon(id, type);
-        if (ret.empty() || !Icons::traditionalPacks || id < 1) return ret;
-        return Icons::vanillaTexturePath(ret, false);
+        if (ret.empty() || id < 1) return ret;
+        return Get::FileUtils()->fullPathForFilename(ret.c_str(), false);
     }
 
     CCTexture2D* loadIcon(int id, int type, int requestID) {
-        std::string sheetName = GameManager::sheetNameForIcon(id, type);
-        if (sheetName.empty()) return nullptr;
-
-        CCTexture2D* texture = nullptr;
-        auto iconKey = keyForIcon(id, type);
-
-        auto pngName = fmt::format("{}.png", sheetName);
-        auto textureCache = Get::TextureCache();
-        if (m_iconLoadCounts[iconKey] < 1) {
-            texture = textureCache->addImage(pngName.c_str(), false);
-            Get::SpriteFrameCache()->addSpriteFramesWithFile(fmt::format("{}.plist", sheetName).c_str(), texture);
-        }
-        else texture = textureCache->textureForKey(pngName.c_str());
-
-        auto loadedIcon = m_iconRequests[requestID][type];
-        if (loadedIcon != id) {
-            m_iconLoadCounts[iconKey]++;
-            if (loadedIcon > 0) unloadIcon(loadedIcon, type, requestID);
-            m_iconRequests[requestID][type] = id;
-        }
+        auto texture = GameManager::loadIcon(id, type, requestID);
+        if (!texture) return nullptr;
 
         if (auto foundRequests = Icons::requestedIcons.find(requestID); foundRequests != Icons::requestedIcons.end()) {
             auto& iconRequests = foundRequests->second;

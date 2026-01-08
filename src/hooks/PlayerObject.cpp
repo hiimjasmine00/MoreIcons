@@ -150,12 +150,6 @@ class $modify(MIPlayerObject, PlayerObject) {
         }
         else {
             Icons::setIcon(m_regularTrail, nullptr);
-            if (Icons::traditionalPacks && (!Loader::get()->isModLoaded("acaruso.pride") || m_playerStreak != 2)) {
-                m_regularTrail->setTexture(Get::TextureCache()->addImage(Icons::vanillaTexturePath(
-                    fmt::format("streak_{:02}_001.png", m_playerStreak), true
-                ).c_str(), false));
-                if (m_playerStreak == 6) m_regularTrail->enableRepeatMode(0.1f);
-            }
         }
 
         if (auto info = getIconInfo(IconType::ShipFire)) {
@@ -179,11 +173,6 @@ class $modify(MIPlayerObject, PlayerObject) {
         }
         else if (m_shipStreak) {
             Icons::setIcon(m_shipStreak, nullptr);
-            if (Icons::traditionalPacks) {
-                m_shipStreak->setTexture(Get::TextureCache()->addImage(Icons::vanillaTexturePath(
-                    fmt::format("shipfire{:02}_001.png", (int)m_shipStreakType), true
-                ).c_str(), false));
-            }
         }
     }
 
@@ -220,13 +209,6 @@ class $modify(MIPlayerObject, PlayerObject) {
             auto interval = Json::get(info->getSpecialInfo(), "interval", 0.05f);
             texture.replace(texture.size() - 7, 3, fmt::format("{:03}", (int)(m_totalTime / interval) % fireCount + 1));
             m_shipStreak->setTexture(Get::TextureCache()->addImage(texture.c_str(), false));
-        }
-        else if (Icons::traditionalPacks) {
-            auto fireCount = Defaults::getShipFireCount((int)m_shipStreakType);
-            auto interval = std::max(Json::get(Defaults::getShipFireInfo((int)m_shipStreakType), "interval", 0.05f), 0.001f);
-            m_shipStreak->setTexture(Get::TextureCache()->addImage(Icons::vanillaTexturePath(
-                fmt::format("shipfire{:02}_{:03}.png", (int)m_shipStreakType, (int)(m_totalTime / interval) % fireCount + 1), true
-            ).c_str(), false));
         }
     }
 

@@ -18,6 +18,7 @@ using namespace geode::prelude;
 
 std::map<int, std::map<IconType, IconInfo*>> Icons::requestedIcons;
 std::unordered_map<IconInfo*, int> Icons::loadedIcons;
+std::vector<Hook*> Icons::hooks;
 bool Icons::traditionalPacks = true;
 bool Icons::preloadIcons = false;
 
@@ -166,22 +167,14 @@ std::filesystem::path Icons::getUhdResourcesDir() {
     return dirs::getModConfigDir() / L("weebify.high-graphics-android/" GEODE_GD_VERSION_STRING);
 }
 
-std::filesystem::path vanillaTexturePath(std::string_view path, bool skipSuffix) {
+std::filesystem::path Icons::vanillaTexturePath(std::string_view path, bool skipSuffix) {
     return (!skipSuffix && Get::Director()->getContentScaleFactor() >= 4.0f ? Icons::getUhdResourcesDir() : dirs::getResourcesDir()) / path;
 }
 #else
-std::filesystem::path vanillaTexturePath(Filesystem::PathView path, bool skipSuffix) {
+std::filesystem::path Icons::vanillaTexturePath(Filesystem::PathView path, bool skipSuffix) {
     return dirs::getResourcesDir() / path;
 }
 #endif
-
-std::string Icons::vanillaTexturePath(std::string_view path, bool skipSuffix) {
-    #ifdef GEODE_IS_WINDOWS
-    return string::pathToString(::vanillaTexturePath(Filesystem::strWide(path), skipSuffix));
-    #else
-    return ::vanillaTexturePath(path, skipSuffix);
-    #endif
-}
 
 void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
     auto [parent, stem] = splitPath(path, 6);
@@ -260,7 +253,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     auto vanillaPath = !Filesystem::doesExist(plistPath);
     if (vanillaPath) {
         auto filename = Filesystem::filenameView(path);
-        plistPath = vanillaTexturePath(Filesystem::PathView(filename.data() - 6, filename.size() + 6), false);
+        plistPath = Icons::vanillaTexturePath(Filesystem::PathView(filename.data() - 6, filename.size() + 6), false);
     }
 
     std::string name;
@@ -423,7 +416,7 @@ void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& p
 
     auto plistPath = Filesystem::withExt(path, L(".plist"));
     auto vanillaPath = !Filesystem::doesExist(plistPath);
-    if (vanillaPath) plistPath = vanillaTexturePath(Filesystem::filenameView(plistPath), false);
+    if (vanillaPath) plistPath = Icons::vanillaTexturePath(Filesystem::filenameView(plistPath), false);
 
     std::string name;
     std::string shortName;
