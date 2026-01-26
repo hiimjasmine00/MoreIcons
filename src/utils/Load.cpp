@@ -69,7 +69,7 @@ struct ApkEntry {
 
 struct ApkFile {
     void* zipFile = nullptr;
-    std::unordered_map<std::string, ApkEntry> fileList;
+    StringMap<ApkEntry> fileList;
 };
 
 thread_local ApkFile* apkFile = [] {
@@ -223,10 +223,10 @@ Result<matjson::Value> Load::readPlist(const std::filesystem::path& path) {
     return Ok(std::move(json));
 }
 
-Result<std::unordered_map<std::string, Ref<CCSpriteFrame>>> Load::createFrames(
+Result<StringMap<Ref<CCSpriteFrame>>> Load::createFrames(
     const std::filesystem::path& path, CCTexture2D* texture, std::string_view name, IconType type, std::string_view target, bool fixNames
 ) {
-    std::unordered_map<std::string, Ref<CCSpriteFrame>> frames;
+    StringMap<Ref<CCSpriteFrame>> frames;
     if (path.empty()) return Ok(std::move(frames));
 
     GEODE_UNWRAP_INTO(const auto json, readPlist(path));

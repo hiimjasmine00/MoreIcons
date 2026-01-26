@@ -1,6 +1,5 @@
 #pragma once
-#include <matjson.hpp>
-#include <unordered_map>
+#include <Geode/utils/StringMap.hpp>
 
 struct FrameDefinition {
     float offsetX = 0.0f;
@@ -18,7 +17,7 @@ struct matjson::Serialize<FrameDefinition> {
 };
 
 struct IconEditorState {
-    std::unordered_map<std::string, FrameDefinition> definitions;
+    geode::utils::StringMap<FrameDefinition> definitions;
     int mainColor = 12;
     int secondaryColor = 12;
     int glowColor = 12;

@@ -13,9 +13,9 @@ protected:
     std::filesystem::path m_selectedPNG;
     std::filesystem::path m_selectedPlist;
     std::vector<std::vector<cocos2d::CCNode*>> m_pages;
-    std::vector<std::string> m_required;
-    std::unordered_map<std::string, cocos2d::CCSprite*> m_pieces;
-    std::unordered_map<std::string, geode::Ref<cocos2d::CCSpriteFrame>> m_frames;
+    std::vector<std::string_view> m_required;
+    geode::utils::StringMap<cocos2d::CCSprite*> m_pieces;
+    geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>> m_frames;
     SimpleIcon* m_player;
     std::array<Slider*, 6> m_sliders;
     std::array<geode::TextInput*, 6> m_inputs;
@@ -54,7 +54,7 @@ protected:
     void onReset(cocos2d::CCObject* sender);
     void updateControl(int offset, float value, bool slider, bool input, bool definition);
     void updateControls();
-    CCMenuItemSpriteExtra* addPieceButton(const std::string& suffix, int page, bool required = true);
+    CCMenuItemSpriteExtra* addPieceButton(std::string_view suffix, int page, bool required = true);
     void onSelectPiece(cocos2d::CCObject* sender);
     cocos2d::CCSprite* addColorButton(int type, const char* text, std::string&& id);
     void onColor(cocos2d::CCObject* sender);

@@ -191,7 +191,7 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
         addChild(partNode);
         m_spriteParts.push_back(partNode);
 
-        auto& prefix = partNode->getID();
+        auto prefix = partNode->getID();
 
         auto primarySprite = spriteWithFrame("{}{}.png", name, texture);
         primarySprite->setColor(spriteColor);
@@ -278,7 +278,7 @@ void SimpleIcon::update(float dt) {
     updateComplexSprite(m_definitions[fmodf(interval, 1.0f) * m_definitions.size()]);
 }
 
-std::span<CCSprite*> SimpleIcon::getTargets(const std::string& suffix) {
+std::span<CCSprite*> SimpleIcon::getTargets(std::string_view suffix) {
     auto it = m_targets.find(suffix);
     return it != m_targets.end() ? std::span<CCSprite*>(it->second) : std::span<CCSprite*>();
 }

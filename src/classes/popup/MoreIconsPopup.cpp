@@ -29,7 +29,7 @@ MoreIconsPopup* MoreIconsPopup::create() {
 bool MoreIconsPopup::init() {
     if (!BasePopup::init(460.0f, 290.0f, "geode.loader/GE_square02.png")) return false;
 
-    auto& metadata = Mod::get()->getMetadataRef();
+    auto& metadata = Mod::get()->getMetadata();
 
     setID("MoreIconsPopup");
     setTitle(fmt::format("{} {}", metadata.getName(), metadata.getVersion().toNonVString()), "goldFont.fnt", 0.7f, 17.0f);

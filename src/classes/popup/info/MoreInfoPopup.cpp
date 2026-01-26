@@ -13,6 +13,7 @@
 #include <Geode/binding/TextArea.hpp>
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <Geode/utils/StringBuffer.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
@@ -304,9 +305,8 @@ void MoreInfoPopup::onConvert(CCObject* sender) {
     auto& shortName = m_info->getShortName();
     auto lower = Constants::getSingularLowercase(type);
 
-    fmt::memory_buffer message;
-    fmt::format_to(std::back_inserter(message),
-        "Are you sure you want to <cy>convert</c> <cj>{}</c> into a <cl>More Icons</c> <cg>{}</c>?", shortName, lower);
+    StringBuffer message;
+    message.append("Are you sure you want to <cy>convert</c> <cj>{}</c> into a <cl>More Icons</c> <cg>{}</c>?", shortName, lower);
 
     auto dir = Filesystem::parentPath(m_info->getTexture());
     if (type <= IconType::Jetpack) dir = Filesystem::parentPath(std::move(dir));
@@ -314,7 +314,7 @@ void MoreInfoPopup::onConvert(CCObject* sender) {
     if (type >= IconType::DeathEffect) {
         dir = std::move(dir) / Filesystem::strWide(shortName);
         if (Filesystem::doesExist(dir)) {
-            fmt::format_to(std::back_inserter(message), "\n<cr>This will overwrite the existing custom {}!</c>", lower);
+            message.append("\n<cr>This will overwrite the existing custom {}!</c>", lower);
         }
     }
 
@@ -322,7 +322,7 @@ void MoreInfoPopup::onConvert(CCObject* sender) {
     auto alert = FLAlertLayer::create(
         this,
         fmt::format("Convert {}", Constants::getSingularUppercase(type)).c_str(),
-        fmt::to_string(message),
+        message.str(),
         "No",
         "Yes",
         350.0f

@@ -1,6 +1,8 @@
 #include "ThreadPool.hpp"
 #include <algorithm>
 
+using namespace geode;
+
 ThreadPool& ThreadPool::get() {
     static ThreadPool instance;
     return instance;
@@ -12,7 +14,7 @@ ThreadPool::ThreadPool() {
     m_threadsBusy = std::make_unique<std::atomic_bool[]>(m_threadsMax);
 }
 
-void ThreadPool::pushTask(std23::move_only_function<void()> task) {
+void ThreadPool::pushTask(Function<void()> task) {
     std::unique_lock lock(m_mutex);
 
     if (std::all_of(m_threadsBusy.get(), m_threadsBusy.get() + m_threadsInit, std::identity())) {
@@ -27,7 +29,7 @@ void ThreadPool::threadFunc(size_t idx) {
     while (!m_requestedStop) {
         m_threadsBusy[idx] = false;
 
-        std23::move_only_function<void()> task;
+        Function<void()> task;
 
         {
             std::unique_lock lock(m_mutex);

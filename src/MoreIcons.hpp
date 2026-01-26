@@ -33,8 +33,8 @@ namespace MoreIcons {
     void getIconPaths(IconInfo* info, int id, IconType type, std::filesystem::path& png, std::filesystem::path& plist);
     std::filesystem::path getIconStem(std::string_view name, IconType type);
     std::filesystem::path getIconPath(IconInfo* info, int id, IconType type);
-    std::string_view getText(CCTextInputNode* input);
-    std::string_view getText(geode::TextInput* input);
+    geode::ZStringView getText(CCTextInputNode* input);
+    geode::ZStringView getText(geode::TextInput* input);
     void loadFromSave(IconType type);
     void updateGarage(GJGarageLayer* layer = nullptr);
     cocos2d::ccColor3B vanillaColor1(bool dual);

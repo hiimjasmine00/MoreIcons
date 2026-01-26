@@ -3,14 +3,14 @@
 
 using namespace geode::prelude;
 
-void Notify::error(const std::string& message) {
-    Notification::create(message, NotificationIcon::Error)->show();
+void Notify::error(ZStringView message) {
+    Notification::create(message.c_str(), NotificationIcon::Error)->show();
 }
 
-void Notify::info(const std::string& message) {
-    Notification::create(message, NotificationIcon::Info)->show();
+void Notify::info(ZStringView message) {
+    Notification::create(message.c_str(), NotificationIcon::Info)->show();
 }
 
-void Notify::success(const std::string& message) {
-    Notification::create(message, NotificationIcon::Success)->show();
+void Notify::success(ZStringView message) {
+    Notification::create(message.c_str(), NotificationIcon::Success)->show();
 }

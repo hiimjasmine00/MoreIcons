@@ -1,5 +1,5 @@
+#include <Geode/utils/function.hpp>
 #include <queue>
-#include <std23/move_only_function.h>
 #include <thread>
 #include <mutex>
 
@@ -9,7 +9,7 @@ private:
     size_t m_threadsMax = 0;
     size_t m_tasksBusy = 0;
     std::mutex m_mutex;
-    std::queue<std23::move_only_function<void()>> m_tasks;
+    std::queue<geode::Function<void()>> m_tasks;
     std::unique_ptr<std::thread[]> m_threads;
     std::unique_ptr<std::atomic_bool[]> m_threadsBusy;
     std::condition_variable m_condvar;
@@ -26,7 +26,7 @@ public:
     ThreadPool(ThreadPool&&) = delete;
     ThreadPool& operator=(ThreadPool&&) = delete;
 
-    void pushTask(std23::move_only_function<void()> task);
+    void pushTask(geode::Function<void()> task);
     void wait();
 
     ~ThreadPool();

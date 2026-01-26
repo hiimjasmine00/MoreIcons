@@ -14,7 +14,7 @@
 using namespace geode::prelude;
 using namespace jasmine::mod;
 
-LazyIcon* LazyIcon::create(IconType type, int id, IconInfo* info, std::string_view suffix, std23::move_only_function<void()> callback) {
+LazyIcon* LazyIcon::create(IconType type, int id, IconInfo* info, std::string_view suffix, Function<void()> callback) {
     auto ret = new LazyIcon();
     if (ret->init(type, id, info, suffix, std::move(callback))) {
         ret->autorelease();
@@ -24,7 +24,7 @@ LazyIcon* LazyIcon::create(IconType type, int id, IconInfo* info, std::string_vi
     return nullptr;
 }
 
-bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suffix, std23::move_only_function<void()> callback) {
+bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suffix, Function<void()> callback) {
     setAnchorPoint({ 0.5f, 0.5f });
     setContentSize({ 30.0f, 30.0f });
 
@@ -66,7 +66,7 @@ void LazyIcon::createIcon() {
     setEnabled(true);
     if (m_error.empty()) {
         if (!m_frameName.empty()) {
-            auto spriteFrame = Icons::getFrame(m_frameName.c_str());
+            auto spriteFrame = Icons::getFrame(m_frameName);
             if (!spriteFrame) spriteFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
             setNormalImage(CCSprite::createWithSpriteFrame(spriteFrame));
         }
@@ -106,7 +106,7 @@ void LazyIcon::visit() {
 
     ThreadPool::get().pushTask([
         selfref = WeakRef(this), texture = m_texture, sheet = m_sheet,
-        name = m_info ? m_info->getName() : std::string(), type = m_type, frameName = m_frameName
+        name = m_info ? m_info->getName() : std::string_view(), type = m_type, frameName = m_frameName
     ] {
         auto image = Load::createFrames(texture, sheet, name, type, frameName);
         queueInMainThread([selfref = std::move(selfref), image = std::move(image)] mutable {

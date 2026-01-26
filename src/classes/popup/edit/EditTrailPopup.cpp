@@ -155,8 +155,7 @@ void EditTrailPopup::saveTrail() {
         auto jsonPath = Filesystem::withExt(m_pendingPath, L(".json"));
         (void)file::writeString(jsonPath, "{}");
         icon = more_icons::addTrail(
-            std::string(name), std::string(name), std::move(m_pendingPath), std::move(jsonPath),
-            {}, {}, "More Icons", 0, Defaults::getTrailInfo(0), false, false
+            name, name, std::move(m_pendingPath), std::move(jsonPath), {}, {}, "More Icons", 0, Defaults::getTrailInfo(0), false, false
         );
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }

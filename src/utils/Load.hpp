@@ -1,10 +1,11 @@
 #include <Geode/utils/cocos.hpp>
+#include <Geode/utils/StringMap.hpp>
 
 struct ImageResult {
     std::string name;
     std::vector<uint8_t> data;
     geode::Ref<cocos2d::CCTexture2D> texture;
-    std::unordered_map<std::string, geode::Ref<cocos2d::CCSpriteFrame>> frames;
+    geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>> frames;
     uint32_t width;
     uint32_t height;
 
@@ -12,19 +13,13 @@ struct ImageResult {
         std::string&& name,
         std::vector<uint8_t>&& data,
         geode::Ref<cocos2d::CCTexture2D>&& texture,
-        std::unordered_map<std::string, geode::Ref<cocos2d::CCSpriteFrame>>&& frames,
+        geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>>&& frames,
         uint32_t width,
         uint32_t height
     ) : name(std::move(name)), data(std::move(data)), texture(std::move(texture)), frames(std::move(frames)), width(width), height(height) {}
 
-    ImageResult(const ImageResult& result) :
-        name(result.name),
-        data(result.data),
-        texture(result.texture),
-        frames(result.frames),
-        width(result.width),
-        height(result.height) {}
-    ImageResult(ImageResult&& result) noexcept :
+    ImageResult(const ImageResult& result) = delete;
+    ImageResult(ImageResult&& result) :
         name(std::move(result.name)),
         data(std::move(result.data)),
         texture(std::move(result.texture)),
@@ -32,16 +27,8 @@ struct ImageResult {
         width(result.width),
         height(result.height) {}
 
-    ImageResult& operator=(const ImageResult& result) {
-        name = result.name;
-        data = result.data;
-        texture = result.texture;
-        frames = result.frames;
-        width = result.width;
-        height = result.height;
-        return *this;
-    }
-    ImageResult& operator=(ImageResult&& result) noexcept {
+    ImageResult& operator=(const ImageResult& result) = delete;
+    ImageResult& operator=(ImageResult&& result) {
         name = std::move(result.name);
         data = std::move(result.data);
         texture = std::move(result.texture);
@@ -64,7 +51,7 @@ namespace Load {
         const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type,
         std::string_view target = {}, bool premultiply = true
     );
-    geode::Result<std::unordered_map<std::string, geode::Ref<cocos2d::CCSpriteFrame>>> createFrames(
+    geode::Result<geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>>> createFrames(
         const std::filesystem::path& path, cocos2d::CCTexture2D* texture, std::string_view name, IconType type,
         std::string_view target = {}, bool fixNames = true
     );

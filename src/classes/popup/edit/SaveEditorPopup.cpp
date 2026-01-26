@@ -11,8 +11,7 @@
 using namespace geode::prelude;
 
 SaveEditorPopup* SaveEditorPopup::create(
-    IconType type, const IconEditorState& state,
-    const std::unordered_map<std::string, Ref<CCSpriteFrame>>& frames, std23::move_only_function<void()> callback
+    IconType type, const IconEditorState& state, const StringMap<Ref<CCSpriteFrame>>& frames, Function<void()> callback
 ) {
     auto ret = new SaveEditorPopup();
     if (ret->init(type, state, frames, std::move(callback))) {
@@ -24,8 +23,7 @@ SaveEditorPopup* SaveEditorPopup::create(
 }
 
 bool SaveEditorPopup::init(
-    IconType type, const IconEditorState& state,
-    const std::unordered_map<std::string, Ref<CCSpriteFrame>>& frames, std23::move_only_function<void()> callback
+    IconType type, const IconEditorState& state, const StringMap<Ref<CCSpriteFrame>>& frames, Function<void()> callback
 ) {
     if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png")) return false;
 

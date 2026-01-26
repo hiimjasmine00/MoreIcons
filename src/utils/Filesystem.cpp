@@ -1,6 +1,6 @@
 #include "Filesystem.hpp"
 #ifdef GEODE_IS_WINDOWS
-#include <Windows.h>
+#include <Geode/utils/string.hpp>
 #endif
 
 using namespace geode;
@@ -82,18 +82,12 @@ bool Filesystem::doesExist(const std::filesystem::path& path) {
 }
 
 #ifdef GEODE_IS_WINDOWS
-std::wstring Filesystem::strWide(std::string_view path) {
-    auto count = MultiByteToWideChar(CP_UTF8, 0, path.data(), path.size(), nullptr, 0);
-    std::wstring str(count, L'\0');
-    if (count != 0) MultiByteToWideChar(CP_UTF8, 0, path.data(), path.size(), &str[0], count);
-    return str;
+std::wstring Filesystem::strWide(std::string_view str) {
+    return utils::string::utf8ToWide(str);
 }
 
-std::string Filesystem::strNarrow(std::wstring_view wstr) {
-    auto count = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr.size(), nullptr, 0, nullptr, nullptr);
-    std::string str(count, '\0');
-    if (count != 0) WideCharToMultiByte(CP_UTF8, 0, wstr.data(), -1, &str[0], count, nullptr, nullptr);
-    return str;
+std::string Filesystem::strNarrow(std::wstring_view str) {
+    return utils::string::wideToUtf8(str);
 }
 #endif
 
@@ -161,7 +155,7 @@ Result<> Filesystem::renameFile(const std::filesystem::path& from, const std::fi
 }
 
 void Filesystem::iterate(
-    const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<void(const std::filesystem::path&)> func
+    const std::filesystem::path& path, std::filesystem::file_type type, FunctionRef<void(const std::filesystem::path&)> func
 ) {
     std::error_code code;
     std::filesystem::directory_iterator it(path, code);

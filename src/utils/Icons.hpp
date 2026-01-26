@@ -19,10 +19,10 @@ namespace Icons {
     extern bool traditionalPacks;
     extern bool preloadIcons;
 
-    cocos2d::CCSpriteFrame* getFrame(const char* name);
+    cocos2d::CCSpriteFrame* getFrame(geode::ZStringView name);
     template <typename... Args>
     cocos2d::CCSpriteFrame* getFrame(fmt::format_string<Args...> name, Args&&... args) {
-        return getFrame(fmt::format(name, std::forward<Args>(args)...).c_str());
+        return getFrame(fmt::format(name, std::forward<Args>(args)...));
     }
 
     cocos2d::CCTexture2D* createAndAddFrames(IconInfo* info);

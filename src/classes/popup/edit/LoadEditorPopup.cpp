@@ -9,7 +9,7 @@
 
 using namespace geode::prelude;
 
-LoadEditorPopup* LoadEditorPopup::create(IconType type, std23::move_only_function<void(const std::filesystem::path&, std::string_view)> callback) {
+LoadEditorPopup* LoadEditorPopup::create(IconType type, Function<void(const std::filesystem::path&, std::string_view)> callback) {
     auto ret = new LoadEditorPopup();
     if (ret->init(type, std::move(callback))) {
         ret->autorelease();
@@ -19,7 +19,7 @@ LoadEditorPopup* LoadEditorPopup::create(IconType type, std23::move_only_functio
     return nullptr;
 }
 
-bool LoadEditorPopup::init(IconType type, std23::move_only_function<void(const std::filesystem::path&, std::string_view)> callback) {
+bool LoadEditorPopup::init(IconType type, Function<void(const std::filesystem::path&, std::string_view)> callback) {
     if (!BasePopup::init(230.0f, 250.0f, "geode.loader/GE_square03.png")) return false;
 
     setID("LoadEditorPopup");

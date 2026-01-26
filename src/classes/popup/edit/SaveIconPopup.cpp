@@ -14,11 +14,10 @@
 using namespace geode::prelude;
 
 SaveIconPopup* SaveIconPopup::create(
-    BasePopup* popup1, BasePopup* popup2, IconType type,
-    const std::unordered_map<std::string, FrameDefinition>& definitions, const std::unordered_map<std::string, Ref<CCSpriteFrame>>& frames
+    BasePopup* popup1, BasePopup* popup2, IconType type, const IconEditorState& state, const StringMap<Ref<CCSpriteFrame>>& frames
 ) {
     auto ret = new SaveIconPopup();
-    if (ret->init(popup1, popup2, type, definitions, frames)) {
+    if (ret->init(popup1, popup2, type, state, frames)) {
         ret->autorelease();
         return ret;
     }
@@ -27,8 +26,7 @@ SaveIconPopup* SaveIconPopup::create(
 }
 
 bool SaveIconPopup::init(
-    BasePopup* popup1, BasePopup* popup2, IconType type,
-    const std::unordered_map<std::string, FrameDefinition>& definitions, const std::unordered_map<std::string, Ref<CCSpriteFrame>>& frames
+    BasePopup* popup1, BasePopup* popup2, IconType type, const IconEditorState& state, const StringMap<Ref<CCSpriteFrame>>& frames
 ) {
     if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png")) return false;
 
@@ -39,7 +37,7 @@ bool SaveIconPopup::init(
     m_parentPopup1 = popup1;
     m_parentPopup2 = popup2;
     m_iconType = type;
-    m_definitions = &definitions;
+    m_state = &state;
     m_frames = &frames;
 
     m_nameInput = TextInput::create(300.0f, "Icon Name");
@@ -101,9 +99,10 @@ void SaveIconPopup::saveIcon() {
     else if (scaleFactor >= 2.0f) index = 1;
     else index = 2;
     std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
+    auto& definitions = m_state->definitions;
     for (auto& [frameName, frameRef] : *m_frames) {
-        auto it = m_definitions->find(frameName);
-        if (it == m_definitions->end()) continue;
+        auto it = definitions.find(frameName);
+        if (it == definitions.end()) continue;
 
         auto& definition = it->second;
         auto joinedName = fmt::format("{}{}.png", name, frameName);
@@ -146,7 +145,7 @@ void SaveIconPopup::saveIcon() {
         more_icons::updateIcon(icon);
     }
     else {
-        icon = more_icons::addIcon(std::string(name), std::string(name), type,
+        icon = more_icons::addIcon(name, name, type,
             std::move(m_pngs[index]), std::move(m_plists[index]), Get::Director()->getLoadedTextureQuality());
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }

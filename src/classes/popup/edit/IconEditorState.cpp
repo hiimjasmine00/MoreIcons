@@ -33,7 +33,8 @@ Result<IconEditorState> matjson::Serialize<IconEditorState>::fromJson(const matj
     if (!value.isObject()) Err("Expected object");
 
     IconEditorState state;
-    state.definitions = Json::get<std::unordered_map<std::string, FrameDefinition>>(value, "definitions");
+    auto definitions = Json::get<std::unordered_map<std::string, FrameDefinition>>(value, "definitions");
+    state.definitions = geode::utils::StringMap<FrameDefinition>(definitions.begin(), definitions.end());
     state.mainColor = Json::get(value, "main-color", 12);
     state.secondaryColor = Json::get(value, "secondary-color", 12);
     state.glowColor = Json::get(value, "glow-color", 12);
@@ -42,7 +43,7 @@ Result<IconEditorState> matjson::Serialize<IconEditorState>::fromJson(const matj
 
 matjson::Value matjson::Serialize<IconEditorState>::toJson(const IconEditorState& state) {
     return makeObject({
-        { "definitions"s, matjson::Value(state.definitions) },
+        { "definitions"s, matjson::Value(std::unordered_map<std::string, FrameDefinition>(state.definitions.begin(), state.definitions.end())) },
         { "main-color"s, matjson::Value(state.mainColor) },
         { "secondary-color"s, matjson::Value(state.secondaryColor) },
         { "glow-color"s, matjson::Value(state.glowColor) },

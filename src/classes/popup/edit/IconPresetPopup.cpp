@@ -10,7 +10,7 @@
 
 using namespace geode::prelude;
 
-IconPresetPopup* IconPresetPopup::create(IconType type, std::string_view suffix, std23::move_only_function<void(int, IconInfo*)> callback) {
+IconPresetPopup* IconPresetPopup::create(IconType type, std::string_view suffix, Function<void(int, IconInfo*)> callback) {
     auto ret = new IconPresetPopup();
     if (ret->init(type, suffix, std::move(callback))) {
         ret->autorelease();
@@ -20,7 +20,7 @@ IconPresetPopup* IconPresetPopup::create(IconType type, std::string_view suffix,
     return nullptr;
 }
 
-bool IconPresetPopup::init(IconType type, std::string_view suffix, std23::move_only_function<void(int, IconInfo*)> callback) {
+bool IconPresetPopup::init(IconType type, std::string_view suffix, Function<void(int, IconInfo*)> callback) {
     if (!BasePopup::init(440.0f, 290.0f, "geode.loader/GE_square03.png")) return false;
 
     setID("IconPresetPopup");

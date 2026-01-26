@@ -1,13 +1,12 @@
 #include "../BasePopup.hpp"
-#include <std23/move_only_function.h>
 
 class IconInfo;
 
 class IconPresetPopup : public BasePopup {
 protected:
-    std23::move_only_function<void(int, IconInfo*)> m_callback;
+    geode::Function<void(int, IconInfo*)> m_callback;
 
-    bool init(IconType, std::string_view, std23::move_only_function<void(int, IconInfo*)>);
+    bool init(IconType, std::string_view, geode::Function<void(int, IconInfo*)>);
 public:
-    static IconPresetPopup* create(IconType, std::string_view, std23::move_only_function<void(int, IconInfo*)>);
+    static IconPresetPopup* create(IconType, std::string_view, geode::Function<void(int, IconInfo*)>);
 };

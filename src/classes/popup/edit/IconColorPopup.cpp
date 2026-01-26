@@ -5,7 +5,7 @@
 
 using namespace geode::prelude;
 
-IconColorPopup* IconColorPopup::create(int selected, std23::move_only_function<void(int)> callback) {
+IconColorPopup* IconColorPopup::create(int selected, Function<void(int)> callback) {
     auto ret = new IconColorPopup();
     if (ret->init(selected, std::move(callback))) {
         ret->autorelease();
@@ -150,7 +150,7 @@ CCPoint offsetForIndex(int index) {
     return { x, y };
 }
 
-bool IconColorPopup::init(int selected, std23::move_only_function<void(int)> callback) {
+bool IconColorPopup::init(int selected, Function<void(int)> callback) {
     if (!BasePopup::init(450.0f, 270.0f, "geode.loader/GE_square03.png")) return false;
 
     setID("IconColorPopup");

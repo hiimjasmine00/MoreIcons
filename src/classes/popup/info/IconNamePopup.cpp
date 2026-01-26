@@ -5,6 +5,7 @@
 #include "../../../utils/Filesystem.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
+#include <Geode/utils/StringBuffer.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
@@ -56,8 +57,8 @@ void IconNamePopup::onConfirm(CCObject* sender) {
     std::string_view old = m_info->getShortName();
     if (name == old) return Notify::info("Name is already set to {}.", name);
 
-    fmt::memory_buffer message;
-    fmt::format_to(std::back_inserter(message), "Are you sure you want to rename <cy>{}</c> to <cy>{}</c>?", old, name);
+    StringBuffer message;
+    message.append("Are you sure you want to rename <cy>{}</c> to <cy>{}</c>?", old, name);
 
     auto parent = Filesystem::parentPath(m_info->getTexture());
     auto type = m_iconType;
@@ -68,11 +69,11 @@ void IconNamePopup::onConfirm(CCObject* sender) {
 
     m_pendingPaths.clear();
 
-    fmt::memory_buffer files;
+    StringBuffer files;
     if (type >= IconType::DeathEffect) {
         if (Filesystem::doesExist(stemOld)) {
             if (Filesystem::doesExist(stemNew)) {
-                fmt::format_to(std::back_inserter(files), "\n<cg>{}</c>", old);
+                files.append("\n<cg>{}</c>", old);
             }
             m_pendingPaths.emplace_back(std::move(stemOld), std::move(stemNew));
         }
@@ -82,7 +83,7 @@ void IconNamePopup::onConfirm(CCObject* sender) {
         if (Filesystem::doesExist(uhdPng)) {
             std::filesystem::path newPath = fmt::format(L("{}-uhd.png"), stemNew);
             if (Filesystem::doesExist(newPath)) {
-                fmt::format_to(std::back_inserter(files), "\n<cg>{}-uhd.png</c>", old);
+                files.append("\n<cg>{}-uhd.png</c>", old);
             }
             m_pendingPaths.emplace_back(std::move(uhdPng), std::move(newPath));
         }
@@ -91,7 +92,7 @@ void IconNamePopup::onConfirm(CCObject* sender) {
         if (Filesystem::doesExist(hdPng)) {
             std::filesystem::path newPath = fmt::format(L("{}-hd.png"), stemNew);
             if (Filesystem::doesExist(newPath)) {
-                fmt::format_to(std::back_inserter(files), "\n<cg>{}-hd.png</c>", old);
+                files.append("\n<cg>{}-hd.png</c>", old);
             }
             m_pendingPaths.emplace_back(std::move(hdPng), std::move(newPath));
         }
@@ -100,7 +101,7 @@ void IconNamePopup::onConfirm(CCObject* sender) {
         if (Filesystem::doesExist(png)) {
             std::filesystem::path newPath = fmt::format(L("{}.png"), stemNew);
             if (Filesystem::doesExist(newPath)) {
-                fmt::format_to(std::back_inserter(files), "\n<cg>{}.png</c>", old);
+                files.append("\n<cg>{}.png</c>", old);
             }
             m_pendingPaths.emplace_back(std::move(png), std::move(newPath));
         }
@@ -109,7 +110,7 @@ void IconNamePopup::onConfirm(CCObject* sender) {
         if (Filesystem::doesExist(uhdPlist)) {
             std::filesystem::path newPath = fmt::format(L("{}-uhd.plist"), stemNew);
             if (Filesystem::doesExist(newPath)) {
-                fmt::format_to(std::back_inserter(files), "\n<cg>{}-uhd.plist</c>", old);
+                files.append("\n<cg>{}-uhd.plist</c>", old);
             }
             m_pendingPaths.emplace_back(std::move(uhdPlist), std::move(newPath));
         }
@@ -118,7 +119,7 @@ void IconNamePopup::onConfirm(CCObject* sender) {
         if (Filesystem::doesExist(hdPlist)) {
             std::filesystem::path newPath = fmt::format(L("{}-hd.plist"), stemNew);
             if (Filesystem::doesExist(newPath)) {
-                fmt::format_to(std::back_inserter(files), "\n<cg>{}-hd.plist</c>", old);
+                files.append("\n<cg>{}-hd.plist</c>", old);
             }
             m_pendingPaths.emplace_back(std::move(hdPlist), std::move(newPath));
         }
@@ -127,21 +128,20 @@ void IconNamePopup::onConfirm(CCObject* sender) {
         if (Filesystem::doesExist(plist)) {
             std::filesystem::path newPath = fmt::format(L("{}.plist"), stemNew);
             if (Filesystem::doesExist(newPath)) {
-                fmt::format_to(std::back_inserter(files), "\n<cg>{}.plist</c>", old);
+                files.append("\n<cg>{}.plist</c>", old);
             }
             m_pendingPaths.emplace_back(std::move(plist), std::move(newPath));
         }
     }
 
     if (files.size() > 0) {
-        fmt::format_to(std::back_inserter(message),
-            "\n<cr>This will overwrite the following files:</c>{}\n<cr>These cannot be restored!</c>", fmt::to_string(files));
+        message.append("\n<cr>This will overwrite the following files:</c>{}\n<cr>These cannot be restored!</c>", files);
     }
 
     auto alert = FLAlertLayer::create(
         this,
         fmt::format("Rename {}", Constants::getSingularUppercase(type)).c_str(),
-        fmt::to_string(message),
+        message.str(),
         "No",
         "Yes",
         350.0f
@@ -178,7 +178,7 @@ void IconNamePopup::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
 
             auto name = MoreIcons::getText(m_nameInput);
             auto notif = fmt::format("{} renamed to {}!", m_info->getShortName(), name);
-            more_icons::renameIcon(m_info, std::string(name));
+            more_icons::renameIcon(m_info, name);
 
             close();
             m_parentPopup->close();

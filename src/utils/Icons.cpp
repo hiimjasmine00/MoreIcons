@@ -677,8 +677,8 @@ CCTexture2D* Icons::createAndAddFrames(IconInfo* info) {
     return nullptr;
 }
 
-CCSpriteFrame* Icons::getFrame(const char* name) {
-    auto spriteFrame = Get::SpriteFrameCache()->spriteFrameByName(name);
+CCSpriteFrame* Icons::getFrame(ZStringView name) {
+    auto spriteFrame = Get::SpriteFrameCache()->spriteFrameByName(name.c_str());
     if (!spriteFrame || spriteFrame->getTag() == 105871529) spriteFrame = nullptr;
     return spriteFrame;
 }

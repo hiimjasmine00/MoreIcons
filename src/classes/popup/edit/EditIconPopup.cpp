@@ -76,7 +76,6 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     m_pieceMenu->setContentSize({ isRobot ? 260.0f : 330.0f, 45.0f });
     m_pieceMenu->ignoreAnchorPointForPosition(false);
     m_pieceMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Even), false);
-    m_pieceMenu->getLayout()->ignoreInvisibleChildren(true);
     m_pieceMenu->setID("piece-menu");
     m_mainLayer->addChild(m_pieceMenu);
 
@@ -402,7 +401,7 @@ void EditIconPopup::onSave(CCObject* sender) {
         if (!m_frames.contains(required)) return Notify::info("Missing icon{}.", required);
     }
 
-    SaveIconPopup::create(m_parentPopup, this, m_iconType, m_state.definitions, m_frames)->show();
+    SaveIconPopup::create(m_parentPopup, this, m_iconType, m_state, m_frames)->show();
 }
 
 void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::string_view id, int offset) {
@@ -519,7 +518,7 @@ void EditIconPopup::updateControls() {
     updateControl(5, m_definition->scaleY, true, true, true);
 }
 
-CCMenuItemSpriteExtra* EditIconPopup::addPieceButton(const std::string& suffix, int page, bool required) {
+CCMenuItemSpriteExtra* EditIconPopup::addPieceButton(std::string_view suffix, int page, bool required) {
     auto pieceFrame = Icons::getFrame("{}{}.png", MoreIcons::getIconName(1, m_iconType), suffix);
     if (pieceFrame) m_frames.emplace(suffix, pieceFrame);
     else pieceFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
@@ -527,7 +526,7 @@ CCMenuItemSpriteExtra* EditIconPopup::addPieceButton(const std::string& suffix, 
     auto pieceButton = CCMenuItemSpriteExtra::create(pieceSprite, this, menu_selector(EditIconPopup::onSelectPiece));
     pieceSprite->setPosition({ 15.0f, 15.0f });
     pieceButton->setContentSize({ 30.0f, 30.0f });
-    pieceButton->setUserObject("piece-suffix", ObjWrapper<std::string>::create(suffix));
+    pieceButton->setUserObject("piece-suffix", ObjWrapper<std::string_view>::create(suffix));
     pieceButton->setID(fmt::format("piece{}", suffix));
     m_pieceMenu->addChild(pieceButton);
 
@@ -539,11 +538,14 @@ CCMenuItemSpriteExtra* EditIconPopup::addPieceButton(const std::string& suffix, 
 
 void EditIconPopup::onSelectPiece(CCObject* sender) {
     auto node = static_cast<CCNode*>(sender);
-    auto suffix = static_cast<ObjWrapper<std::string>*>(node->getUserObject("piece-suffix"))->getValue();
+    auto suffix = static_cast<ObjWrapper<std::string_view>*>(node->getUserObject("piece-suffix"))->getValue();
     if (m_suffix == suffix) return;
 
+    auto it = m_state.definitions.find(suffix);
+    if (it == m_state.definitions.end()) return;
+
     m_suffix = suffix;
-    m_definition = &m_state.definitions[suffix];
+    m_definition = &it->second;
     m_targets = m_player->getTargets(suffix);
     updateControls();
 

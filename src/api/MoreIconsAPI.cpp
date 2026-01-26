@@ -387,7 +387,7 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
     if (!frameNames.empty()) {
         auto spriteFrameCache = Get::SpriteFrameCache();
         for (auto& frameName : frameNames) {
-            if (Ref<CCSpriteFrame> spriteFrame = Icons::getFrame(frameName.c_str())) {
+            if (Ref<CCSpriteFrame> spriteFrame = Icons::getFrame(frameName)) {
                 spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
                 Load::fixFrameName(frameName, newName, type);
                 spriteFrameCache->addSpriteFrame(spriteFrame, frameName.c_str());
@@ -438,7 +438,7 @@ void more_icons::updateIcon(IconInfo* info) {
     for (auto it = frameNames.begin(); it != frameNames.end();) {
         auto& frameName = *it;
         if (auto frameIt = frames.find(frameName); frameIt != frames.end()) {
-            if (auto spriteFrame = Icons::getFrame(frameName.c_str())) {
+            if (auto spriteFrame = Icons::getFrame(frameName)) {
                 auto frame = frameIt->second.data();
                 spriteFrame->m_obOffset = frame->m_obOffset;
                 spriteFrame->m_obOriginalSize = frame->m_obOriginalSize;

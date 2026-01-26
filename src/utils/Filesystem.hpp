@@ -5,7 +5,7 @@
 #include <fmt/xchar.h>
 #endif
 #include <Geode/Result.hpp>
-#include <std23/function_ref.h>
+#include <Geode/utils/function.hpp>
 
 #ifdef GEODE_IS_WINDOWS
 #define L(x) std::wstring_view(L##x, sizeof(x) - 1)
@@ -55,7 +55,7 @@ namespace Filesystem {
     std::filesystem::path parentPath(std::filesystem::path&& path);
     std::filesystem::path withExt(const std::filesystem::path& path, PathView ext);
     geode::Result<> renameFile(const std::filesystem::path& from, const std::filesystem::path& to);
-    void iterate(const std::filesystem::path& path, std::filesystem::file_type type, std23::function_ref<void(const std::filesystem::path&)> func);
+    void iterate(const std::filesystem::path& path, std::filesystem::file_type type, geode::FunctionRef<void(const std::filesystem::path&)> func);
 }
 
 template <typename Char>

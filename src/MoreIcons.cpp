@@ -219,11 +219,11 @@ void MoreIcons::getIconPaths(IconInfo* info, int id, IconType type, std::filesys
     plist = getFullPath(fileUtils, fmt::format("icons/{}.plist", iconName).c_str());
 }
 
-std::string_view MoreIcons::getText(CCTextInputNode* input) {
+ZStringView MoreIcons::getText(CCTextInputNode* input) {
     return *input->m_textField->m_pInputText;
 }
 
-std::string_view MoreIcons::getText(geode::TextInput* input) {
+ZStringView MoreIcons::getText(TextInput* input) {
     return getText(input->getInputNode());
 }
 
