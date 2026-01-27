@@ -4,13 +4,13 @@
 using namespace geode::prelude;
 
 void Notify::error(ZStringView message) {
-    Notification::create(message.c_str(), NotificationIcon::Error)->show();
+    Notification::create(message, NotificationIcon::Error)->show();
 }
 
 void Notify::info(ZStringView message) {
-    Notification::create(message.c_str(), NotificationIcon::Info)->show();
+    Notification::create(message, NotificationIcon::Info)->show();
 }
 
 void Notify::success(ZStringView message) {
-    Notification::create(message.c_str(), NotificationIcon::Success)->show();
+    Notification::create(message, NotificationIcon::Success)->show();
 }
