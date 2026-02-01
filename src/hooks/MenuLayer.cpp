@@ -16,10 +16,10 @@ class $modify(MIMenuLayer, MenuLayer) {
                     ModifyBase<ModifyDerive<MIMenuLayer, MenuLayer>>::setHookPriorityAfterPost(hook, iconProfile);
                 }
                 else if (iconProfile->shouldLoad()) {
-                    new EventListener([hook](ModStateEvent* e) {
-                        ModifyBase<ModifyDerive<MIMenuLayer, MenuLayer>>::setHookPriorityAfterPost(hook, e->getMod());
+                    ModStateEvent(ModEventType::Loaded, iconProfile).listen([hook, iconProfile] {
+                        ModifyBase<ModifyDerive<MIMenuLayer, MenuLayer>>::setHookPriorityAfterPost(hook, iconProfile);
                         jasmine::hook::toggle(hook, true);
-                    }, ModStateFilter(iconProfile, ModEventType::Loaded));
+                    }).leak();
                 }
             }
         }

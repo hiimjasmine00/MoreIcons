@@ -5,6 +5,7 @@
 
 class IconInfo;
 namespace geode {
+    class Mod;
     class TextInput;
 }
 

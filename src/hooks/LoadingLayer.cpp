@@ -92,8 +92,8 @@ class $modify(MILoadingLayer, LoadingLayer) {
         }
 
         f->m_iconLoadStep++;
-        queueInMainThread([this] {
-            loadAssets();
-        });
+        runAction(CCSequence::createWithTwoActions(
+            CCDelayTime::create(0.01f), CCCallFunc::create(this, callfunc_selector(MILoadingLayer::loadAssets))
+        ));
     }
 };

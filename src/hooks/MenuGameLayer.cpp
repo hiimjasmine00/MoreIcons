@@ -16,10 +16,10 @@ class $modify(MIMenuGameLayer, MenuGameLayer) {
                 hook->setAutoEnable(false);
             }
             else {
-                new EventListener([hook](ModStateEvent*) {
+                ModStateEvent(ModEventType::Loaded, knownPlayers).listen([hook] {
                     jasmine::hook::toggle(hook, false);
                     return ListenerResult::Propagate;
-                }, ModStateFilter(knownPlayers, ModEventType::Loaded));
+                }).leak();
             }
         }
         if (auto pityIcons = loader->getInstalledMod("kittenchilly.pity_title_screen_secret_icons")) {
@@ -27,10 +27,10 @@ class $modify(MIMenuGameLayer, MenuGameLayer) {
                 hook->setAutoEnable(false);
             }
             else {
-                new EventListener([hook](ModStateEvent*) {
+                ModStateEvent(ModEventType::Loaded, pityIcons).listen([hook] {
                     jasmine::hook::toggle(hook, false);
                     return ListenerResult::Propagate;
-                }, ModStateFilter(pityIcons, ModEventType::Loaded));
+                }).leak();
             }
         }
     }

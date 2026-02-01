@@ -6,10 +6,9 @@
 #include "Json.hpp"
 #include "Load.hpp"
 #include "Log.hpp"
-#include "../classes/misc/ThreadPool.hpp"
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>
-#include <geode.texture-loader/include/TextureLoader.hpp>
+//#include <geode.texture-loader/include/TextureLoader.hpp>
 #include <jasmine/convert.hpp>
 #include <jasmine/setting.hpp>
 #include <MoreIcons.hpp>
@@ -100,7 +99,7 @@ void Icons::loadPacks() {
     packs.emplace_back(std::string("More Icons", 10), std::string(), dirs::getGeodeDir(), false, false);
     migrateTrails(std::move(Mod::get()->getConfigDir().make_preferred()) / L("trail"));
 
-    for (auto& pack : texture_loader::getAppliedPacks()) {
+    /*for (auto& pack : texture_loader::getAppliedPacks()) {
         auto& name = pack.name;
         auto& id = pack.id;
         auto& resourcesPath = pack.resourcesPath;
@@ -142,7 +141,7 @@ void Icons::loadPacks() {
             packs.emplace_back(name, id, resourcesPath, false, zipped);
             migrateTrails(std::move(configPath) / L("trail"));
         }
-    }
+    }*/
 }
 
 #ifdef GEODE_IS_WINDOWS
@@ -639,18 +638,32 @@ void Icons::loadIcons(IconType type) {
 
     images.reserve(size);
 
-    auto& threadPool = ThreadPool::get();
+    auto& runtime = async::runtime();
+    std::vector<arc::BlockingTaskHandle<void>> tasks;
     for (auto& info : *icons) {
-        threadPool.pushTask([info = &info] {
+        tasks.push_back(runtime.spawnBlocking<void>([info = &info] {
             if (auto res = createFrames(info)) {
                 std::unique_lock lock(imageMutex);
 
                 images.emplace_back(std::move(res).unwrap(), info);
             }
             else log::error("{}: {}", info->getName(), res.unwrapErr());
-        });
+        }));
     }
-    threadPool.wait();
+
+    for (auto& task : tasks) {
+        arc::CondvarWaker cvw;
+        auto waker = cvw.waker();
+
+        arc::Context cx(&waker, nullptr);
+
+        while (true) {
+            auto result = task.poll(cx);
+            if (result) break;
+
+            cvw.wait();
+        }
+    }
 
     std::unique_lock lock(imageMutex);
 

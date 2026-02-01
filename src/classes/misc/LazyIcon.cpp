@@ -1,6 +1,5 @@
 #include "LazyIcon.hpp"
 #include "SimpleIcon.hpp"
-#include "ThreadPool.hpp"
 #include "../../MoreIcons.hpp"
 #include "../../utils/Filesystem.hpp"
 #include "../../utils/Get.hpp"
@@ -9,6 +8,7 @@
 #include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/loader/Loader.hpp>
+#include <Geode/utils/async.hpp>
 #include <jasmine/mod.hpp>
 
 using namespace geode::prelude;
@@ -104,7 +104,7 @@ void LazyIcon::visit() {
 
     m_visited = true;
 
-    ThreadPool::get().pushTask([
+    async::runtime().spawnBlocking<void>([
         selfref = WeakRef(this), texture = m_texture, sheet = m_sheet,
         name = m_info ? m_info->getName() : std::string_view(), type = m_type, frameName = m_frameName
     ] {

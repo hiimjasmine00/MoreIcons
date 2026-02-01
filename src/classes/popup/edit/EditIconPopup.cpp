@@ -289,24 +289,23 @@ void EditIconPopup::onSaveState(CCObject* sender) {
 }
 
 void EditIconPopup::onPieceImport(CCObject* sender) {
-    m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
-        auto res = event->getValue();
-        if (res && res->isErr()) return Notify::error("Failed to import PNG file: {}", res->unwrapErr());
-        if (!res || !res->isOk()) return;
+    m_listener.spawn(file::pick(file::PickMode::OpenFile, {
+        .filters = {{
+            .description = "PNG files",
+            .files = { "*.png" }
+        }}
+    }), [this](Result<std::optional<std::filesystem::path>> res) {
+        if (res.isErr()) return Notify::error("Failed to import PNG file: {}", res.unwrapErr());
 
-        if (auto textureRes = Load::createTexture(res->unwrap())) {
+        auto path = std::move(res).unwrap();
+        if (!path.has_value()) return;
+
+        if (auto textureRes = Load::createTexture(path.value())) {
             m_frames[m_suffix] = frameWithTexture(textureRes.unwrap());
             updatePieces();
         }
         else if (textureRes.isErr()) return Notify::error(textureRes.unwrapErr());
     });
-
-    m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
-        .filters = {{
-            .description = "PNG files",
-            .files = { "*.png" }
-        }}
-    }));
 }
 
 void EditIconPopup::onPiecePreset(CCObject* sender) {
@@ -332,12 +331,18 @@ void EditIconPopup::onPieceClear(CCObject* sender) {
 }
 
 void EditIconPopup::onPNG(CCObject* sender) {
-    m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
-        auto res = event->getValue();
-        if (res && res->isErr()) return Notify::error("Failed to import PNG file: {}", res->unwrapErr());
-        if (!res || !res->isOk()) return;
+    m_listener.spawn(file::pick(file::PickMode::OpenFile, {
+        .filters = {{
+            .description = "PNG files",
+            .files = { "*.png" }
+        }}
+    }), [this](Result<std::optional<std::filesystem::path>> res) {
+        if (res.isErr()) return Notify::error("Failed to import PNG file: {}", res.unwrapErr());
 
-        m_selectedPNG = res->unwrap();
+        auto path = std::move(res).unwrap();
+        if (!path.has_value()) return;
+
+        m_selectedPNG = std::move(path).value();
         if (m_selectedPlist.empty()) {
             m_pngSprite->updateBGImage("GJ_button_03.png");
             m_plistSprite->m_BGSprite->runAction(CCRepeat::create(CCSequence::createWithTwoActions(
@@ -351,22 +356,21 @@ void EditIconPopup::onPNG(CCObject* sender) {
             updateWithSelectedFiles();
         }
     });
-
-    m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
-        .filters = {{
-            .description = "PNG files",
-            .files = { "*.png" }
-        }}
-    }));
 }
 
 void EditIconPopup::onPlist(CCObject* sender) {
-    m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
-        auto res = event->getValue();
-        if (res && res->isErr()) return Notify::error("Failed to import Plist file: {}", res->unwrapErr());
-        if (!res || !res->isOk()) return;
+    m_listener.spawn(file::pick(file::PickMode::OpenFile, {
+        .filters = {{
+            .description = "Plist files",
+            .files = { "*.plist" }
+        }}
+    }), [this](Result<std::optional<std::filesystem::path>> res) {
+        if (res.isErr()) return Notify::error("Failed to import Plist file: {}", res.unwrapErr());
 
-        m_selectedPlist = res->unwrap();
+        auto path = std::move(res).unwrap();
+        if (!path.has_value()) return;
+
+        m_selectedPlist = std::move(path).value();
         if (m_selectedPNG.empty()) {
             m_plistSprite->updateBGImage("GJ_button_03.png");
             m_pngSprite->m_BGSprite->runAction(CCRepeat::create(CCSequence::createWithTwoActions(
@@ -380,13 +384,6 @@ void EditIconPopup::onPlist(CCObject* sender) {
             updateWithSelectedFiles();
         }
     });
-
-    m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
-        .filters = {{
-            .description = "Plist files",
-            .files = { "*.plist" }
-        }}
-    }));
 }
 
 void EditIconPopup::onPreset(CCObject* sender) {

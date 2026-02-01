@@ -1,11 +1,11 @@
 #include "../BasePopup.hpp"
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
 #include <Geode/ui/TextInput.hpp>
-#include <Geode/utils/Task.hpp>
+#include <Geode/utils/async.hpp>
 
 class EditTrailPopup : public BasePopup, public FLAlertLayerProtocol {
 protected:
-    geode::EventListener<geode::Task<geode::Result<std::filesystem::path>>> m_listener;
+    geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
     std::filesystem::path m_pendingPath;
     BasePopup* m_parentPopup;
     cocos2d::CCSprite* m_streak;

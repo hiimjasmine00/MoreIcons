@@ -82,20 +82,19 @@ bool EditTrailPopup::init(BasePopup* popup) {
 }
 
 void EditTrailPopup::onPNG(CCObject* sender) {
-    m_listener.bind([this](Task<Result<std::filesystem::path>>::Event* event) {
-        auto res = event->getValue();
-        if (res && res->isErr()) return Notify::error("Failed to import PNG file: {}", res->unwrapErr());
-        if (!res || !res->isOk()) return;
-
-        updateWithPath(res->unwrap());
-    });
-
-    m_listener.setFilter(file::pick(file::PickMode::OpenFile, {
+    m_listener.spawn(file::pick(file::PickMode::OpenFile, {
         .filters = {{
             .description = "PNG files",
             .files = { "*.png" }
         }}
-    }));
+    }), [this](Result<std::optional<std::filesystem::path>> res) {
+        if (res.isErr()) return Notify::error("Failed to import PNG file: {}", res.unwrapErr());
+
+        auto path = std::move(res).unwrap();
+        if (!path.has_value()) return;
+
+        updateWithPath(path.value());
+    });
 }
 
 void EditTrailPopup::onPreset(CCObject* sender) {

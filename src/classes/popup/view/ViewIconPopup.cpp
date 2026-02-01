@@ -6,7 +6,6 @@
 #include "../../../utils/Icons.hpp"
 #include "../../../utils/Json.hpp"
 #include <jasmine/mod.hpp>
-#include <span>
 
 using namespace geode::prelude;
 using namespace jasmine::mod;

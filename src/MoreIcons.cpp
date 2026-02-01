@@ -22,9 +22,9 @@ $on_mod(Loaded) {
             MoreIcons::separateDualIcons = separateDualIcons;
         }
         else if (separateDualIcons->shouldLoad()) {
-            new EventListener([](ModStateEvent* e) {
-                MoreIcons::separateDualIcons = e->getMod();
-            }, ModStateFilter(separateDualIcons, ModEventType::Loaded));
+            ModStateEvent(ModEventType::Loaded, separateDualIcons).listen([separateDualIcons] {
+                MoreIcons::separateDualIcons = separateDualIcons;
+            }).leak();
         }
     }
 }

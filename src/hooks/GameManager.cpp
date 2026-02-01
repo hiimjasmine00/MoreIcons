@@ -18,10 +18,10 @@ class $modify(MIGameManager, GameManager) {
                     Icons::hooks.push_back(hook);
                 }
                 else if (globed->shouldLoad()) {
-                    new EventListener([hook](ModStateEvent* e) {
+                    ModStateEvent(ModEventType::Loaded, globed).listen([hook] {
                         jasmine::hook::toggle(hook, Icons::traditionalPacks);
                         Icons::hooks.push_back(hook);
-                    }, ModStateFilter(globed, ModEventType::Loaded));
+                    }).leak();
                 }
             }
         }

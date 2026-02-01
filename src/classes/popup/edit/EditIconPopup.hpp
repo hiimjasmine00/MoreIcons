@@ -3,13 +3,12 @@
 #include "../../misc/SimpleIcon.hpp"
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
 #include <Geode/ui/TextInput.hpp>
-#include <Geode/utils/Task.hpp>
-#include <span>
+#include <Geode/utils/async.hpp>
 
 class EditIconPopup : public BasePopup, public FLAlertLayerProtocol, public TextInputDelegate {
 protected:
     BasePopup* m_parentPopup;
-    geode::EventListener<geode::Task<geode::Result<std::filesystem::path>>> m_listener;
+    geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
     std::filesystem::path m_selectedPNG;
     std::filesystem::path m_selectedPlist;
     std::vector<std::vector<cocos2d::CCNode*>> m_pages;
