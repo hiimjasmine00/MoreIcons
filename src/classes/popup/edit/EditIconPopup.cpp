@@ -288,6 +288,21 @@ void EditIconPopup::onSaveState(CCObject* sender) {
     })->show();
 }
 
+void EditIconPopup::addFrame(std::string_view key, Ref<CCSpriteFrame>&& frame) {
+    if (auto it = m_frames.find(key); it != m_frames.end()) {
+        it->second = std::move(frame);
+    }
+    else {
+        m_frames.emplace(std::string(key), std::move(frame));
+    }
+}
+
+void EditIconPopup::eraseFrame(std::string_view key) {
+    if (auto it = m_frames.find(key); it != m_frames.end()) {
+        m_frames.erase(it);
+    }
+}
+
 void EditIconPopup::onPieceImport(CCObject* sender) {
     m_listener.spawn(file::pick(file::PickMode::OpenFile, {
         .filters = {{
@@ -301,7 +316,7 @@ void EditIconPopup::onPieceImport(CCObject* sender) {
         if (!path.has_value()) return;
 
         if (auto textureRes = Load::createTexture(path.value())) {
-            m_frames[m_suffix] = frameWithTexture(textureRes.unwrap());
+            addFrame(m_suffix, frameWithTexture(textureRes.unwrap()));
             updatePieces();
         }
         else if (textureRes.isErr()) return Notify::error(textureRes.unwrapErr());
@@ -317,7 +332,7 @@ void EditIconPopup::onPiecePreset(CCObject* sender) {
 
 void EditIconPopup::onPieceClear(CCObject* sender) {
     if (m_suffix.ends_with("_extra_001")) {
-        m_frames.erase(m_suffix);
+        eraseFrame(m_suffix);
     }
     else {
         auto emptyFrame = Icons::getFrame("emptyFrame.png"_spr);
@@ -325,7 +340,7 @@ void EditIconPopup::onPieceClear(CCObject* sender) {
             emptyFrame = frameWithTexture(Load::createTexture(nullptr, 0, 0));
             Get::SpriteFrameCache()->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
         }
-        m_frames[m_suffix] = emptyFrame;
+        addFrame(m_suffix, emptyFrame);
     }
     updatePieces();
 }
@@ -435,7 +450,7 @@ void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::st
     menu->addChild(input);
     m_inputs[offset] = input;
 
-    auto resetSprite = CCSprite::createWithSpriteFrameName("GJ_resetBtn_001.png");
+    auto resetSprite = CCSprite::createWithSpriteFrameName("GJ_updateBtn_001.png");
     resetSprite->setScale(0.4f);
     auto resetButton = CCMenuItemSpriteExtra::create(resetSprite, this, menu_selector(EditIconPopup::onReset));
     resetButton->setTag(offset);
@@ -516,6 +531,8 @@ void EditIconPopup::updateControls() {
 }
 
 CCMenuItemSpriteExtra* EditIconPopup::addPieceButton(std::string_view suffix, int page, bool required) {
+    m_state.definitions.emplace(suffix, FrameDefinition());
+
     auto pieceFrame = Icons::getFrame("{}{}.png", MoreIcons::getIconName(1, m_iconType), suffix);
     if (pieceFrame) m_frames.emplace(suffix, pieceFrame);
     else pieceFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
@@ -548,7 +565,7 @@ void EditIconPopup::onSelectPiece(CCObject* sender) {
 
     m_selectedPage = m_page;
     m_selectSprite->setVisible(true);
-    m_selectSprite->setPosition(m_mainLayer->convertToNodeSpace(node->getPosition()));
+    m_selectSprite->setPosition(m_mainLayer->convertToNodeSpace(m_pieceMenu->convertToWorldSpace(node->getPosition())));
 }
 
 CCSprite* EditIconPopup::addColorButton(int type, const char* text, std::string&& id) {
@@ -607,10 +624,10 @@ bool EditIconPopup::updateWithSelectedFiles(bool useSuffix) {
 
         if (useSuffix) {
             if (auto it = image.frames.find(m_suffix); it != image.frames.end()) {
-                m_frames[m_suffix] = std::move(it->second);
+                addFrame(m_suffix, std::move(it->second));
             }
             else {
-                m_frames.erase(m_suffix);
+                eraseFrame(m_suffix);
             }
         }
         else {
@@ -625,8 +642,8 @@ bool EditIconPopup::updateWithSelectedFiles(bool useSuffix) {
                     it = m_frames.erase(it);
                 }
             }
-            for (auto& pair : image.frames) {
-                m_frames.insert(std::move(pair));
+            for (auto it = image.frames.begin(); it != image.frames.end(); it = image.frames.erase(it)) {
+                m_frames.insert(std::move(*it));
             }
         }
 

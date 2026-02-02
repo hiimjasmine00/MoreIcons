@@ -652,17 +652,7 @@ void Icons::loadIcons(IconType type) {
     }
 
     for (auto& task : tasks) {
-        arc::CondvarWaker cvw;
-        auto waker = cvw.waker();
-
-        arc::Context cx(&waker, nullptr);
-
-        while (true) {
-            auto result = task.poll(cx);
-            if (result) break;
-
-            cvw.wait();
-        }
+        task.blockOn();
     }
 
     std::unique_lock lock(imageMutex);

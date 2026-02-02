@@ -33,7 +33,7 @@ Result<IconEditorState> matjson::Serialize<IconEditorState>::fromJson(const matj
     if (!value.isObject()) Err("Expected object");
 
     IconEditorState state;
-    state.definitions = Json::get<geode::utils::StringMap<FrameDefinition>>(value, "definitions");
+    state.definitions = Json::get<utils::StringMap<FrameDefinition>>(value, "definitions");
     state.mainColor = Json::get(value, "main-color", 12);
     state.secondaryColor = Json::get(value, "secondary-color", 12);
     state.glowColor = Json::get(value, "glow-color", 12);
