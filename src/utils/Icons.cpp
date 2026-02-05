@@ -638,10 +638,10 @@ void Icons::loadIcons(IconType type) {
 
     images.reserve(size);
 
-    auto& runtime = async::runtime();
+    auto& rt = runtime();
     std::vector<arc::BlockingTaskHandle<void>> tasks;
     for (auto& info : *icons) {
-        tasks.push_back(runtime.spawnBlocking<void>([info = &info] {
+        tasks.push_back(rt.spawnBlocking<void>([info = &info] {
             if (auto res = createFrames(info)) {
                 std::unique_lock lock(imageMutex);
 

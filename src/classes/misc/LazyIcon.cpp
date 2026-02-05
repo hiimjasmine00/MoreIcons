@@ -104,7 +104,7 @@ void LazyIcon::visit() {
 
     m_visited = true;
 
-    async::runtime().spawnBlocking<void>([
+    runtime().spawnBlocking<void>([
         selfref = WeakRef(this), texture = m_texture, sheet = m_sheet,
         name = m_info ? m_info->getName() : std::string_view(), type = m_type, frameName = m_frameName
     ] {
