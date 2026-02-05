@@ -5,8 +5,8 @@ order: 2
 
 # Changing the Current Icon
 ```cpp
-// Include the MoreIconsV2.hpp header
-#include <hiimjustin000.more_icons/include/MoreIconsV2.hpp>
+// Include the MoreIcons.hpp header
+#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
 
 // Change the current icon
 std::string oldIcon = more_icons::setIcon("my_custom_icon", IconType::Cube);

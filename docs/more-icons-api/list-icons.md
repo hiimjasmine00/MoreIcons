@@ -5,8 +5,8 @@ order: 3
 
 # Listing the Loaded Icons
 ```cpp
-// Include the MoreIconsV2.hpp header
-#include <hiimjustin000.more_icons/include/MoreIconsV2.hpp>
+// Include the MoreIcons.hpp header
+#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
 
 // List all loaded icons
 std::map<std::string, std::vector<IconInfo>>& icons = more_icons::getAllIcons();

@@ -1,4 +1,9 @@
 # More Icons Changelog
+## v2.0.0 (2026-02-04)
+- Ported to Geometry Dash v2.208 / Geode SDK v5.0.0
+- Added custom death effect and ship fire support
+- Renamed `MoreIconsV2.hpp` to `MoreIcons.hpp` and made it the main API header
+
 ## v1.16.2 (2025-12-08)
 - Fixed a bug where some icons with weird offsets would be cut off when exported (I don't know asc095's in-game name but thanks for reporting!)
 - Fixed a bug where the icon viewer would not show the icon pieces (I LITERALLY forgot to fix this :sob:)

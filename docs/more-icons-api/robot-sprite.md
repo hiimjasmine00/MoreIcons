@@ -5,8 +5,8 @@ order: 9
 
 # Changing a GJRobotSprite's Icon
 ```cpp
-// Include the MoreIconsV2.hpp header
-#include <hiimjustin000.more_icons/include/MoreIconsV2.hpp>
+// Include the MoreIcons.hpp header
+#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
 
 // Change the icon of a GJRobotSprite to the current icon (Determined icon type)
 more_icons::updateRobotSprite(robot);

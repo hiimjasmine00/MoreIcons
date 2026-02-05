@@ -5,8 +5,8 @@ order: 6
 
 # Loading a Custom Icon
 ```cpp
-// Include the MoreIconsV2.hpp header
-#include <hiimjustin000.more_icons/include/MoreIconsV2.hpp>
+// Include the MoreIcons.hpp header
+#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
 
 // Get the next request ID (Preferably one per object)
 int requestID = GameManager::get()->getIconRequestID();

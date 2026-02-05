@@ -5,8 +5,8 @@ order: 1
 
 # Getting the Current Icon
 ```cpp
-// Include the MoreIconsV2.hpp header
-#include <hiimjustin000.more_icons/include/MoreIconsV2.hpp>
+// Include the MoreIcons.hpp header
+#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
 
 // Get the current icon
 std::string icon = more_icons::activeIcon(IconType::Cube);

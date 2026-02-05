@@ -5,8 +5,8 @@ order: 4
 
 # Getting an Icon's Information
 ```cpp
-// Include the MoreIconsV2.hpp header
-#include <hiimjustin000.more_icons/include/MoreIconsV2.hpp>
+// Include the MoreIcons.hpp header
+#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
 
 // Get the current icon's information
 IconInfo* icon = more_icons::getIcon(IconType::Cube);

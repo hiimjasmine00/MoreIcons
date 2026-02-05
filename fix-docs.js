@@ -5,7 +5,7 @@ const files = fs.readdirSync(process.cwd(), { recursive: true }).filter(x => x.e
 for (const file of files) {
     const content = fs.readFileSync(file, "utf8");
     fs.writeFileSync(file, content
-        .replace(/&lt;MoreIconsV2\.hpp>/g, "&lt;hiimjustin000.more_icons/include/MoreIconsV2.hpp>")
+        .replace(/&lt;MoreIcons\.hpp>/g, "&lt;hiimjustin000.more_icons/include/MoreIcons.hpp>")
         .replace(/&lt;IconInfo\.hpp>/g, "&lt;hiimjustin000.more_icons/include/IconInfo.hpp>")
         .replace(/&lt;TrailInfo\.hpp>/g, "&lt;hiimjustin000.more_icons/include/TrailInfo.hpp>")
         .replace(/(\/classes\/[^'"]+)/g, "https://docs.geode-sdk.org$1")

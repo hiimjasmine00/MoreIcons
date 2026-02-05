@@ -5,8 +5,8 @@ order: 8
 
 # Changing a SimplePlayer's Icon
 ```cpp
-// Include the MoreIconsV2.hpp header
-#include <hiimjustin000.more_icons/include/MoreIconsV2.hpp>
+// Include the MoreIcons.hpp header
+#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
 
 // Change the icon of a SimplePlayer to the current icon
 more_icons::updateSimplePlayer(player, IconType::Cube);
