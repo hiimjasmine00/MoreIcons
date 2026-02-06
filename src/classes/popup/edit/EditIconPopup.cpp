@@ -49,22 +49,21 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
 
     auto isRobot = type == IconType::Robot || type == IconType::Spider;
 
-    auto iconBackground = CCScale9Sprite::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
+    auto iconBackground = NineSlice::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
     iconBackground->setPosition({ 51.0f, 205.0f });
     iconBackground->setContentSize({ 80.0f, 80.0f });
     iconBackground->setOpacity(105);
     iconBackground->setID("icon-background");
     m_mainLayer->addChild(iconBackground);
 
-    auto piecesBackground = CCScale9Sprite::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
+    auto piecesBackground = NineSlice::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
     piecesBackground->setPosition({ 270.0f, 222.0f });
-    piecesBackground->setContentSize({ isRobot ? 260.0f / 0.84375f : 330.0f / 0.84375f, 160.0f / 3.0f });
-    piecesBackground->setScale(0.84375f);
+    piecesBackground->setContentSize({ isRobot ? 260.0f : 330.0f, 45.0f });
     piecesBackground->setOpacity(105);
     piecesBackground->setID("pieces-background");
     m_mainLayer->addChild(piecesBackground);
 
-    auto controlBackground = CCScale9Sprite::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
+    auto controlBackground = NineSlice::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
     controlBackground->setPosition({ 270.0f, 122.0f });
     controlBackground->setContentSize({ 345.0f, 150.0f });
     controlBackground->setOpacity(50);

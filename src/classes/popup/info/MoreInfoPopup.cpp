@@ -189,7 +189,7 @@ bool MoreInfoPopup::init(IconInfo* info) {
 
     m_info = info;
 
-    auto descBackground = CCScale9Sprite::create("GJ_square01.png", { 0.0f, 0.0f, 80.0f, 80.0f });
+    auto descBackground = NineSlice::create("GJ_square01.png", { 0.0f, 0.0f, 80.0f, 80.0f });
     descBackground->setPosition({ 150.0f, 93.0f });
     descBackground->setContentSize({ 260.0f, 90.0f });
     descBackground->setColor({ 0, 0, 0 });

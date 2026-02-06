@@ -88,7 +88,7 @@ void MoreIconsPopup::createMenu(IconType type) {
     gamemodeMenu->setID(fmt::format("{}-menu", Constants::getPluralLowercase(type)));
     m_gamemodesNode->addChild(gamemodeMenu);
 
-    auto background = CCScale9Sprite::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
+    auto background = NineSlice::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
     background->setPosition({ 35.0f, 60.0f });
     background->setContentSize({ 70.0f, 120.0f });
     background->setOpacity(105);
