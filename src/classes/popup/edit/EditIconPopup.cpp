@@ -106,6 +106,7 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
         m_pages[1].reserve(3);
         m_pages[2].reserve(3);
         m_pages[3].reserve(3);
+        m_required.reserve(12);
 
         selected = addPieceButton("_01_001", 0);
         addPieceButton("_01_2_001", 0);
@@ -123,7 +124,8 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     }
     else {
         m_pages.resize(1);
-        m_pages[0].reserve(5);
+        m_pages[0].reserve(type == IconType::Ufo ? 5 : 4);
+        m_required.reserve(type == IconType::Ufo ? 4 : 3);
 
         selected = addPieceButton("_001", 0);
         addPieceButton("_2_001", 0);
