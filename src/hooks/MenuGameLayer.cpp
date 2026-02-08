@@ -12,10 +12,10 @@ class $modify(MIMenuGameLayer, MenuGameLayer) {
         auto loader = Loader::get();
         auto hook = jasmine::hook::get(self.m_hooks, "MenuGameLayer::resetPlayer", true);
         if (auto knownPlayers = loader->getInstalledMod("iandyhd3.known_players")) {
-            if (knownPlayers->isEnabled()) {
+            if (knownPlayers->isLoaded()) {
                 hook->setAutoEnable(false);
             }
-            else {
+            else if (knownPlayers->shouldLoad()) {
                 ModStateEvent(ModEventType::Loaded, knownPlayers).listen([hook] {
                     jasmine::hook::toggle(hook, false);
                     return ListenerResult::Propagate;
@@ -23,10 +23,10 @@ class $modify(MIMenuGameLayer, MenuGameLayer) {
             }
         }
         if (auto pityIcons = loader->getInstalledMod("kittenchilly.pity_title_screen_secret_icons")) {
-            if (pityIcons->isEnabled()) {
+            if (pityIcons->isLoaded()) {
                 hook->setAutoEnable(false);
             }
-            else {
+            else if (pityIcons->shouldLoad()) {
                 ModStateEvent(ModEventType::Loaded, pityIcons).listen([hook] {
                     jasmine::hook::toggle(hook, false);
                     return ListenerResult::Propagate;

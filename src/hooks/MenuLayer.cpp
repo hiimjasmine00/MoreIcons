@@ -11,7 +11,7 @@ class $modify(MIMenuLayer, MenuLayer) {
     static void onModify(ModifyBase<ModifyDerive<MIMenuLayer, MenuLayer>>& self) {
         if (auto hook = jasmine::hook::get(self.m_hooks, "MenuLayer::init", false)) {
             if (auto iconProfile = Loader::get()->getInstalledMod("capeling.icon_profile")) {
-                if (iconProfile->isEnabled()) {
+                if (iconProfile->isLoaded()) {
                     hook->setAutoEnable(true);
                     ModifyBase<ModifyDerive<MIMenuLayer, MenuLayer>>::setHookPriorityAfterPost(hook, iconProfile);
                 }

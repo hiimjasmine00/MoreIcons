@@ -18,7 +18,7 @@ Mod* MoreIcons::separateDualIcons = nullptr;
 $on_mod(Loaded) {
     Icons::loadSettings();
     if (auto separateDualIcons = Loader::get()->getInstalledMod("weebify.separate_dual_icons")) {
-        if (separateDualIcons->isEnabled()) {
+        if (separateDualIcons->isLoaded()) {
             MoreIcons::separateDualIcons = separateDualIcons;
         }
         else if (separateDualIcons->shouldLoad()) {

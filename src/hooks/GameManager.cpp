@@ -13,7 +13,7 @@ class $modify(MIGameManager, GameManager) {
         (void)self.setHookPriority("GameManager::loadIcon", Priority::Replace);
         if (auto hook = jasmine::hook::get(self.m_hooks, "GameManager::sheetNameForIcon", false)) {
             if (auto globed = Loader::get()->getInstalledMod("dankmeme.globed2")) {
-                if (globed->isEnabled()) {
+                if (globed->isLoaded()) {
                     hook->setAutoEnable(jasmine::setting::getValue<bool>("traditional-packs"));
                     Icons::hooks.push_back(hook);
                 }
