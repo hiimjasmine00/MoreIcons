@@ -17,7 +17,6 @@
 #include <Geode/binding/Slider.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
 #include <Geode/utils/file.hpp>
-#include <jasmine/convert.hpp>
 #include <jasmine/mod.hpp>
 
 using namespace geode::prelude;
@@ -289,17 +288,17 @@ void EditIconPopup::onSaveState(CCObject* sender) {
     })->show();
 }
 
-void EditIconPopup::addFrame(std::string_view key, Ref<CCSpriteFrame>&& frame) {
-    if (auto it = m_frames.find(key); it != m_frames.end()) {
+void EditIconPopup::addFrame(Ref<CCSpriteFrame>&& frame) {
+    if (auto it = m_frames.find(m_suffix); it != m_frames.end()) {
         it->second = std::move(frame);
     }
     else {
-        m_frames.emplace(std::string(key), std::move(frame));
+        m_frames.emplace(std::string(m_suffix), std::move(frame));
     }
 }
 
-void EditIconPopup::eraseFrame(std::string_view key) {
-    if (auto it = m_frames.find(key); it != m_frames.end()) {
+void EditIconPopup::eraseFrame() {
+    if (auto it = m_frames.find(m_suffix); it != m_frames.end()) {
         m_frames.erase(it);
     }
 }
@@ -317,7 +316,7 @@ void EditIconPopup::onPieceImport(CCObject* sender) {
         if (!path.has_value()) return;
 
         if (auto textureRes = Load::createTexture(path.value())) {
-            addFrame(m_suffix, frameWithTexture(textureRes.unwrap()));
+            addFrame(frameWithTexture(textureRes.unwrap()));
             updatePieces();
         }
         else if (textureRes.isErr()) return Notify::error(textureRes.unwrapErr());
@@ -333,7 +332,7 @@ void EditIconPopup::onPiecePreset(CCObject* sender) {
 
 void EditIconPopup::onPieceClear(CCObject* sender) {
     if (m_suffix.ends_with("_extra_001")) {
-        eraseFrame(m_suffix);
+        eraseFrame();
     }
     else {
         auto emptyFrame = Icons::getFrame("emptyFrame.png"_spr);
@@ -341,7 +340,7 @@ void EditIconPopup::onPieceClear(CCObject* sender) {
             emptyFrame = frameWithTexture(Load::createTexture(nullptr, 0, 0));
             Get::SpriteFrameCache()->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
         }
-        addFrame(m_suffix, emptyFrame);
+        addFrame(emptyFrame);
     }
     updatePieces();
 }
@@ -470,8 +469,8 @@ void EditIconPopup::sliderChanged(CCObject* sender) {
 }
 
 void EditIconPopup::textChanged(CCTextInputNode* input) {
-    auto value = jasmine::convert::get<float>(MoreIcons::getText(input));
-    updateControl(input->getTag(), value.value_or(0.0f), true, false, value.has_value());
+    auto value = numFromString<float>(MoreIcons::getText(input));
+    updateControl(input->getTag(), value.unwrapOrDefault(), true, false, value.isOk());
     updateTargets();
 }
 
@@ -625,10 +624,10 @@ bool EditIconPopup::updateWithSelectedFiles(bool useSuffix) {
 
         if (useSuffix) {
             if (auto it = image.frames.find(m_suffix); it != image.frames.end()) {
-                addFrame(m_suffix, std::move(it->second));
+                addFrame(std::move(it->second));
             }
             else {
-                eraseFrame(m_suffix);
+                eraseFrame();
             }
         }
         else {

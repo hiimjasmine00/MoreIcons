@@ -6,7 +6,6 @@
 #include <Geode/binding/CCSpritePlus.hpp>
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Log.hpp>
-#include <jasmine/convert.hpp>
 
 using namespace geode::prelude;
 
@@ -64,9 +63,9 @@ std::vector<SpriteDefinition> parseDefinition(const matjson::Value& definition) 
         def.position = CCPointFromString(Json::get<std::string>(value, "position").c_str());
         def.scale = CCPointFromString(Json::get<std::string>(value, "scale").c_str());
         def.flipped = CCPointFromString(Json::get<std::string>(value, "flipped").c_str());
-        def.rotation = jasmine::convert::getOr<float>(Json::get<std::string>(value, "rotation"));
-        def.zValue = jasmine::convert::getOr<int>(Json::get<std::string>(value, "zValue"));
-        def.tag = jasmine::convert::getOr<int>(Json::get<std::string>(value, "tag"));
+        def.rotation = numFromString<float>(Json::get<std::string>(value, "rotation")).unwrapOrDefault();
+        def.zValue = numFromString<int>(Json::get<std::string>(value, "zValue")).unwrapOrDefault();
+        def.tag = numFromString<int>(Json::get<std::string>(value, "tag")).unwrapOrDefault();
     }
     return definitions;
 }
@@ -233,8 +232,8 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
         updateComplexSprite(parseDefinition(container[singleFrame]));
     }
     else {
-        auto frames = jasmine::convert::getOr<int>(Json::get<std::string>(animation, "frames"));
-        m_divisor = std::max(0.01f, jasmine::convert::getOr<float>(Json::get<std::string>(animation, "delay")) * frames);
+        auto frames = numFromString<int>(Json::get<std::string>(animation, "frames")).unwrapOrDefault();
+        m_divisor = std::max(0.01f, numFromString<float>(Json::get<std::string>(animation, "delay")).unwrapOrDefault() * frames);
         auto prefix = fmt::format("{}_{}_", key, anim);
         m_definitions.reserve(frames);
         for (int i = 1; i <= frames; i++) {

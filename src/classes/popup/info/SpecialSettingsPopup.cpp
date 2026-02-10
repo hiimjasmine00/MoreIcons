@@ -8,7 +8,6 @@
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/file.hpp>
 #include <IconInfo.hpp>
-#include <jasmine/convert.hpp>
 
 using namespace geode::prelude;
 
@@ -175,8 +174,13 @@ void SpecialSettingsPopup::textChanged(CCTextInputNode* input) {
     auto def = controlData->def;
     auto exponent = controlData->exponent;
 
-    auto floatValue = value.as<float>().unwrapOr(def);
-    jasmine::convert::to(MoreIcons::getText(input), floatValue);
+    auto floatValue = def;
+    if (auto res = numFromString<float>(MoreIcons::getText(input))) {
+        floatValue = res.unwrap();
+    }
+    else {
+        floatValue = value.as<float>().unwrapOr(def);
+    }
     floatValue = std::clamp(roundf(floatValue * exponent) / exponent, min, max);
     static_cast<Slider*>(input->getUserObject("slider-node"))->setValue((floatValue - min) / (max - min));
     value = floatValue;

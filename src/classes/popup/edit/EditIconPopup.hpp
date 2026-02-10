@@ -40,8 +40,8 @@ protected:
     void onNextPage(cocos2d::CCObject* sender);
     void onLoadState(cocos2d::CCObject* sender);
     void onSaveState(cocos2d::CCObject* sender);
-    void addFrame(std::string_view key, geode::Ref<cocos2d::CCSpriteFrame>&& frame);
-    void eraseFrame(std::string_view key);
+    void addFrame(geode::Ref<cocos2d::CCSpriteFrame>&& frame);
+    void eraseFrame();
     void onPieceImport(cocos2d::CCObject* sender);
     void onPiecePreset(cocos2d::CCObject* sender);
     void onPieceClear(cocos2d::CCObject* sender);

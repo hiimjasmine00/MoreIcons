@@ -12,7 +12,6 @@
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/GJGarageLayer.hpp>
 #include <Geode/ui/BasedButtonSprite.hpp>
-#include <jasmine/array.hpp>
 #include <jasmine/button.hpp>
 #include <MoreIcons.hpp>
 
@@ -97,7 +96,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
     void onSelect(CCObject* sender) {
         auto btn = static_cast<CCMenuItemSpriteExtra*>(sender);
-        if (btn->getUserObject("name"_spr)) return onCustomSelect(btn);
+        if (btn->getUserObject("info"_spr)) return onCustomSelect(btn);
 
         auto dual = MoreIcons::dualSelected();
         if (more_icons::hasIcon(m_iconType, dual)) m_iconID = 0;
@@ -270,7 +269,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         if (auto navDots = m_navDotMenu->getChildren()) {
             auto offFrame = Get::SpriteFrameCache()->spriteFrameByName("gj_navDotBtn_off_001.png");
-            for (auto navDot : jasmine::array::toSpan<CCMenuItemSprite>(navDots)) {
+            for (auto navDot : navDots->asExt<CCMenuItemSprite>()) {
                 static_cast<CCSprite*>(navDot->getNormalImage())->setDisplayFrame(offFrame);
             }
         }

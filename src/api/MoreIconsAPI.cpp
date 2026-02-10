@@ -10,7 +10,6 @@
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/loader/Mod.hpp>
-#include <jasmine/array.hpp>
 #define GEODE_DEFINE_EVENT_EXPORTS
 #include <MoreIcons.hpp>
 #include <ranges>
@@ -542,9 +541,9 @@ void more_icons::updateRobotSprite(GJRobotSprite* sprite, IconInfo* info) {
     paSprite->setBatchNode(nullptr);
     paSprite->setTexture(texture);
 
-    auto spriteParts = jasmine::array::toSpan<CCSprite>(paSprite->m_spriteParts);
-    auto secondArray = jasmine::array::toSpan<CCSprite>(sprite->m_secondArray);
-    auto glowArray = jasmine::array::toSpan<CCSprite>(sprite->m_glowSprite->getChildren());
+    auto spriteParts = CCArrayExt<CCSprite>(paSprite->m_spriteParts);
+    auto secondArray = CCArrayExt<CCSprite>(sprite->m_secondArray);
+    auto glowArray = CCArrayExt<CCSprite>(sprite->m_glowSprite->getChildren());
     auto headSprite = sprite->m_headSprite;
     auto extraSprite = sprite->m_extraSprite;
     auto& icon = info->getName();

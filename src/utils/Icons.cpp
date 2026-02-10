@@ -9,7 +9,6 @@
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>
 //#include <geode.texture-loader/include/TextureLoader.hpp>
-#include <jasmine/convert.hpp>
 #include <jasmine/setting.hpp>
 #include <MoreIcons.hpp>
 
@@ -344,7 +343,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
         return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
     }
 
-    auto trailID = jasmine::convert::getOr<int>(std::string_view(shortName.data() + 7, shortName.size() - 11));
+    auto trailID = numFromString<int>(std::string_view(shortName.data() + 7, shortName.size() - 11)).unwrapOrDefault();
     if (trailID == 0) trailID = -1;
 
     auto icon = more_icons::addTrail(
@@ -452,7 +451,7 @@ void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& p
     auto doesntExist = vanillaPath && !Load::doesExist(plistPath);
     if (doesntExist) return Log::error(std::move(name), fmt::format("Plist file not found (Last attempt: {})", plistPath));
 
-    auto effectID = jasmine::convert::getOr<int>(std::string_view(shortName.data() + 16, shortName.size() - 16));
+    auto effectID = numFromString<int>(std::string_view(shortName.data() + 16, shortName.size() - 16)).unwrapOrDefault();
     if (effectID == 0) effectID = -1;
     else effectID++;
 
@@ -507,7 +506,7 @@ void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack
     auto shortName = std::string(Filesystem::strNarrow(filename));
     auto name = fmt::format("{}:{}", pack.id, shortName);
 
-    auto fireID = jasmine::convert::getOr<int>(std::string_view(shortName.data() + 12, shortName.size() - 12));
+    auto fireID = numFromString<int>(std::string_view(shortName.data() + 12, shortName.size() - 12)).unwrapOrDefault();
     if (fireID == 0) fireID = -1;
 
     auto fireCount = Defaults::getShipFireCount(fireID);
@@ -687,11 +686,11 @@ CCSpriteFrame* Icons::getFrame(ZStringView name) {
 }
 
 void Icons::setIcon(CCNode* node, IconInfo* info) {
-    if (auto obj = static_cast<ObjWrapper<IconInfo*>*>(node->getUserObject("name"_spr))) {
+    if (auto obj = static_cast<ObjWrapper<IconInfo*>*>(node->getUserObject("info"_spr))) {
         obj->getValue() = info;
     }
     else {
-        node->setUserObject("name"_spr, ObjWrapper<IconInfo*>::create(info));
+        node->setUserObject("info"_spr, ObjWrapper<IconInfo*>::create(info));
     }
 }
 
