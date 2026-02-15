@@ -1,5 +1,5 @@
 # More Icons Changelog
-## v2.0.0 (2026-02-10)
+## v2.0.0 (2026-02-14)
 - Ported to Geometry Dash v2.208 / Geode SDK v5.0.0
 - Added custom death effect and ship fire support
 - Renamed `MoreIconsV2.hpp` to `MoreIcons.hpp` and made it the main API header
