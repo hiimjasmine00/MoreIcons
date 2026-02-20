@@ -1,5 +1,5 @@
 {
-    "geode": "5.0.0-beta.1",
+    "geode": "5.0.0-beta.3",
     "gd": {
         "android": "2.2081",
         "win": "2.2081",
@@ -12,7 +12,11 @@
     "developer": "hiimjasmine00",
     "description": "Custom icons without the hassle.",
     "dependencies": {
-        "geode.node-ids": ">=v1.17.0"
+        "geode.node-ids": ">=v1.17.0",
+        "geode.texture-loader": {
+            "version": ">=v1.9.0",
+            "required": false
+        }
     },
     "resources": {
         "sprites": [

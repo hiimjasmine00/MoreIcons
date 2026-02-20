@@ -8,7 +8,7 @@
 #include "Log.hpp"
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Mod.hpp>
-//#include <geode.texture-loader/include/TextureLoader.hpp>
+#include <geode.texture-loader/include/TextureLoader.hpp>
 #include <jasmine/setting.hpp>
 #include <MoreIcons.hpp>
 
@@ -98,7 +98,7 @@ void Icons::loadPacks() {
     packs.emplace_back(std::string("More Icons", 10), std::string(), dirs::getGeodeDir(), false, false);
     migrateTrails(std::move(Mod::get()->getConfigDir().make_preferred()) / L("trail"));
 
-    /*for (auto& pack : texture_loader::getAppliedPacks()) {
+    for (auto& pack : texture_loader::getAppliedPacks()) {
         auto& name = pack.name;
         auto& id = pack.id;
         auto& resourcesPath = pack.resourcesPath;
@@ -140,7 +140,7 @@ void Icons::loadPacks() {
             packs.emplace_back(name, id, resourcesPath, false, zipped);
             migrateTrails(std::move(configPath) / L("trail"));
         }
-    }*/
+    }
 }
 
 #ifdef GEODE_IS_WINDOWS
@@ -250,8 +250,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     auto plistPath = Filesystem::withExt(path, L(".plist"));
     auto vanillaPath = !Filesystem::doesExist(plistPath);
     if (vanillaPath) {
-        auto filename = Filesystem::filenameView(path);
-        plistPath = Icons::vanillaTexturePath(Filesystem::PathView(filename.data() - 6, filename.size() + 6), false);
+        plistPath = Icons::vanillaTexturePath(fmt::format(L("{}.plist"), Filesystem::PathView(stem.data() - 6, stem.size() + 6)), false);
     }
 
     std::string name;

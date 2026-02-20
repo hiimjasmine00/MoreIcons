@@ -17,7 +17,6 @@ jobs:
           os: ubuntu-latest
           target: Win64
           build-config: RelWithDebInfo
-          ccache-variant: sccache
 
         - name: macOS
           os: macos-latest
@@ -29,12 +28,10 @@ jobs:
         - name: Android32
           os: ubuntu-latest
           target: Android32
-          ccache-variant: sccache
 
         - name: Android64
           os: ubuntu-latest
           target: Android64
-          ccache-variant: sccache
 
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
@@ -42,11 +39,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: hiimjasmine00/download-geode-dependency@main
+        with:
+          repository: geode-sdk/textureldr
+          workflow: build.yml
+          branch: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Build the mod
         uses: hiimjasmine00/build-geode-mod@xwin
         with:
           build-config: ${{ matrix.config.build-config || 'Release' }}
-          ccache-variant: ${{ matrix.config.ccache-variant || '' }}
           export-pdb: true
           export-symbols: true
           combine: true
