@@ -1,4 +1,3 @@
-#include <pugixml.hpp>
 #include "Load.hpp"
 #include "Get.hpp"
 #include "Json.hpp"
@@ -7,6 +6,7 @@
 #endif
 #include <Geode/utils/file.hpp>
 #include <jasmine/mod.hpp>
+#include <pugixml.hpp>
 #include <texpack.hpp>
 
 using namespace geode::prelude;

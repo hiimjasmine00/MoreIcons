@@ -19,8 +19,7 @@ add_library(${PROJECT_NAME} SHARED ${SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 
 if (PROJECT_IS_TOP_LEVEL)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE MORE_ICONS_EXPORTING)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE FMT_CPP_LIB_FILESYSTEM=0)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE MORE_ICONS_EXPORTING FMT_CPP_LIB_FILESYSTEM=0)
 endif()
 
 if (NOT DEFINED ENV{GEODE_SDK})
@@ -29,6 +28,7 @@ else()
     message(STATUS "Found Geode: $ENV{GEODE_SDK}")
 endif()
 
+set(GEODE_NO_PUGIXML_HEADER ON)
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
 CPMAddPackage("gh:zeux/pugixml@1.15")
