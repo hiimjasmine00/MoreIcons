@@ -222,7 +222,7 @@ bool MoreInfoPopup::init(IconInfo* info) {
     }
 
     if (type <= IconType::Jetpack) {
-        m_icon = SimpleIcon::create(type, info->getName());
+        m_icon = SimpleIcon::create(type, fmt::format("{}"_spr, info->getName()));
         m_icon->setScale(hasPack ? 1.1f : 1.25f);
 
         auto iconButton = CCMenuItemSpriteExtra::create(m_icon, this, menu_selector(MoreInfoPopup::onIcon));

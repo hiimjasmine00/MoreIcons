@@ -21,7 +21,7 @@ IconPresetPopup* IconPresetPopup::create(IconType type, std::string_view suffix,
 }
 
 bool IconPresetPopup::init(IconType type, std::string_view suffix, Function<void(int, IconInfo*)> callback) {
-    if (!BasePopup::init(440.0f, 290.0f, "geode.loader/GE_square03.png")) return false;
+    if (!BasePopup::init(440.0f, 290.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("IconPresetPopup");
     setTitle(fmt::format("{} Presets", Constants::getSingularUppercase(type)));

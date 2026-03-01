@@ -28,7 +28,7 @@ SaveIconPopup* SaveIconPopup::create(
 bool SaveIconPopup::init(
     BasePopup* popup1, BasePopup* popup2, IconType type, const IconEditorState& state, const StringMap<Ref<CCSpriteFrame>>& frames
 ) {
-    if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png")) return false;
+    if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("SaveIconPopup");
     setTitle(fmt::format("Save {}", Constants::getSingularUppercase(type)));

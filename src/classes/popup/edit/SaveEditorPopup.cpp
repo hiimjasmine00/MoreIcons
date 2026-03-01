@@ -25,7 +25,7 @@ SaveEditorPopup* SaveEditorPopup::create(
 bool SaveEditorPopup::init(
     IconType type, const IconEditorState& state, const StringMap<Ref<CCSpriteFrame>>& frames, Function<void()> callback
 ) {
-    if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png")) return false;
+    if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("SaveEditorPopup");
     setTitle(fmt::format("Save {} Editor", Constants::getSingularUppercase(type)));

@@ -38,7 +38,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
     if (type >= IconType::DeathEffect) {
         m_visited = true;
         setEnabled(true);
-        setNormalImage(info ? MoreIcons::customIcon(info) : CCSprite::createWithSpriteFrameName(
+        setMainNode(info ? MoreIcons::customIcon(info) : CCSprite::createWithSpriteFrameName(
             type == IconType::DeathEffect ? fmt::format("explosionIcon_{:02}_001.png", id).c_str() :
             type == IconType::Special ? fmt::format("player_special_{:02}_001.png", id).c_str() :
             type == IconType::ShipFire ? fmt::format("shipfireIcon_{:02}_001.png", id).c_str() : "cc_2x2_white_image"
@@ -56,7 +56,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
         auto loadingSprite = CCSprite::create("loadingCircle.png");
         loadingSprite->setScale(0.4f);
         loadingSprite->runAction(CCRepeatForever::create(CCRotateBy::create(1.0f, 360.0f)));
-        setNormalImage(loadingSprite);
+        setMainNode(loadingSprite);
     }
 
     return true;
@@ -68,31 +68,49 @@ void LazyIcon::createIcon() {
         if (!m_frameName.empty()) {
             auto spriteFrame = Icons::getFrame(m_frameName);
             if (!spriteFrame) spriteFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
-            setNormalImage(CCSprite::createWithSpriteFrame(spriteFrame));
+            setMainNode(CCSprite::createWithSpriteFrame(spriteFrame));
         }
         else {
-            setNormalImage(SimpleIcon::create(m_type, m_name));
+            setMainNode(SimpleIcon::create(m_type, m_name));
         }
     }
     else {
-        setNormalImage(CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png"));
+        setMainNode(CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png"));
     }
 }
 
-void LazyIcon::setNormalImage(CCNode* image) {
-    if (m_pNormalImage) {
-        m_pNormalImage->removeFromParent();
+void LazyIcon::setMainNode(CCNode* image) {
+    if (m_mainNode) {
+        m_mainNode->removeFromParent();
     }
     if (image) {
         image->setPosition({ 15.0f, 15.0f });
         image->setTag(1);
         addChild(image);
     }
-    m_pNormalImage = image;
+    m_mainNode = image;
+}
+
+void LazyIcon::selected() {
+    CCMenuItem::selected();
+    stopActionByTag(0);
+    auto action = CCEaseBounceOut::create(CCScaleTo::create(0.3f, 1.26f));
+    action->setTag(0);
+    runAction(action);
+}
+
+void LazyIcon::unselected() {
+    CCMenuItem::unselected();
+    stopActionByTag(0);
+    auto action = CCEaseBounceOut::create(CCScaleTo::create(0.4f, 1.0f));
+    action->setTag(0);
+    runAction(action);
 }
 
 void LazyIcon::activate() {
-    CCMenuItemSpriteExtra::activate();
+    CCMenuItem::activate();
+    stopActionByTag(0);
+    setScale(1.0f);
     if (m_error.empty()) m_callback();
     else FLAlertLayer::create("Error", m_error, "OK")->show();
 }

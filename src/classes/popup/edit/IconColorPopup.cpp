@@ -151,7 +151,7 @@ CCPoint offsetForIndex(int index) {
 }
 
 bool IconColorPopup::init(int selected, Function<void(int)> callback) {
-    if (!BasePopup::init(450.0f, 270.0f, "geode.loader/GE_square03.png")) return false;
+    if (!BasePopup::init(450.0f, 270.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("IconColorPopup");
     setTitle("Select Preview Color");

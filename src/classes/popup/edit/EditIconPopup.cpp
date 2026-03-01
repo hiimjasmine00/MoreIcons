@@ -15,7 +15,6 @@
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/Slider.hpp>
-#include <Geode/ui/BasedButtonSprite.hpp>
 #include <Geode/utils/file.hpp>
 #include <jasmine/mod.hpp>
 
@@ -37,7 +36,7 @@ CCSpriteFrame* frameWithTexture(CCTexture2D* texture) {
 }
 
 bool EditIconPopup::init(BasePopup* popup, IconType type) {
-    if (!BasePopup::init(450.0f, 280.0f, "geode.loader/GE_square03.png")) return false;
+    if (!BasePopup::init(450.0f, 280.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("EditIconPopup");
     setTitle(fmt::format("{} Editor", Constants::getSingularUppercase(type)));

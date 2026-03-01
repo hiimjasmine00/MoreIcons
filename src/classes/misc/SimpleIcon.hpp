@@ -21,6 +21,7 @@ protected:
     std::vector<std::pair<cocos2d::CCSprite*, float>> m_mainColorSprites;
     std::vector<std::pair<cocos2d::CCSprite*, float>> m_secondaryColorSprites;
     std::vector<cocos2d::CCSprite*> m_glowColorSprites;
+    cocos2d::CCNode* m_mainLayer;
     float m_divisor;
     float m_elapsed;
     bool m_looped;

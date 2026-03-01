@@ -27,7 +27,7 @@ MoreIconsPopup* MoreIconsPopup::create() {
 }
 
 bool MoreIconsPopup::init() {
-    if (!BasePopup::init(460.0f, 290.0f, "geode.loader/GE_square02.png")) return false;
+    if (!BasePopup::init(460.0f, 290.0f, "geode.loader/GE_square02.png", CircleBaseColor::DarkPurple)) return false;
 
     auto& metadata = Mod::get()->getMetadata();
 

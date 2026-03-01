@@ -20,7 +20,7 @@ LoadEditorPopup* LoadEditorPopup::create(IconType type, Function<void(const std:
 }
 
 bool LoadEditorPopup::init(IconType type, Function<void(const std::filesystem::path&, std::string_view)> callback) {
-    if (!BasePopup::init(230.0f, 250.0f, "geode.loader/GE_square03.png")) return false;
+    if (!BasePopup::init(230.0f, 250.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("LoadEditorPopup");
     setTitle(fmt::format("Load {} Editor", Constants::getSingularUppercase(type)));

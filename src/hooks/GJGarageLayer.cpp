@@ -11,7 +11,6 @@
 #include <Geode/binding/ListButtonBar.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/modify/GJGarageLayer.hpp>
-#include <Geode/ui/BasedButtonSprite.hpp>
 #include <jasmine/button.hpp>
 #include <MoreIcons.hpp>
 

@@ -18,7 +18,7 @@ LogLayer* LogLayer::create(IconType type) {
 }
 
 bool LogLayer::init(IconType type) {
-    if (!BasePopup::init(440.0f, 290.0f, "geode.loader/GE_square03.png")) return false;
+    if (!BasePopup::init(440.0f, 290.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("LogLayer");
     setTitle(fmt::format("{} Logs", Constants::getSingularUppercase(type)));

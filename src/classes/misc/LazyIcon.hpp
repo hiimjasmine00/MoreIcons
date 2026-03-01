@@ -1,9 +1,11 @@
-#include <Geode/binding/CCMenuItemSpriteExtra.hpp>
+#include <cocos2d.h>
+#include <Geode/Enums.hpp>
 
 class IconInfo;
 
-class LazyIcon : public CCMenuItemSpriteExtra {
+class LazyIcon : public cocos2d::CCMenuItem {
 protected:
+    cocos2d::CCNode* m_mainNode;
     geode::Function<void()> m_callback;
     std::string m_name;
     std::string m_error;
@@ -18,11 +20,13 @@ protected:
 
     bool init(IconType type, int id, IconInfo* info, std::string_view suffix, geode::Function<void()> callback);
     void createIcon();
+    void setMainNode(CCNode* node);
 public:
     static LazyIcon* create(IconType type, int id, IconInfo* info, std::string_view suffix, geode::Function<void()> callback);
 
+    void selected() override;
+    void unselected() override;
     void activate() override;
-    void setNormalImage(CCNode* image) override;
     void visit() override;
 
     ~LazyIcon() override;

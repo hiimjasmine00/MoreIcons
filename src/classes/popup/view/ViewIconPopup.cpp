@@ -38,7 +38,7 @@ ViewIconPopup* ViewIconPopup::create(IconType type, int id, IconInfo* info) {
 bool ViewIconPopup::init(IconType type, int id, IconInfo* info) {
     if (!BasePopup::init(
         350.0f, type == IconType::Robot || type == IconType::Spider ? 200.0f : type <= IconType::Jetpack ? 170.0f : 120.0f,
-        "geode.loader/GE_square03.png"
+        "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple
     )) return false;
 
     setID("ViewIconPopup");

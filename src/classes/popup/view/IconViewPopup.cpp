@@ -22,7 +22,7 @@ IconViewPopup* IconViewPopup::create(IconType type, bool custom) {
 }
 
 bool IconViewPopup::init(IconType type, bool custom) {
-    if (!BasePopup::init(440.0f, 290.0f, "geode.loader/GE_square03.png")) return false;
+    if (!BasePopup::init(440.0f, 290.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("IconViewPopup");
     auto name = Constants::getPluralUppercase(type);

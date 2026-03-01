@@ -82,6 +82,13 @@ bool SimpleIcon::init(IconType type, std::string_view name) {
     if (!CCNode::init()) return false;
 
     setAnchorPoint({ 0.5f, 0.5f });
+    setContentSize({ 30.0f, 30.0f });
+
+    m_mainLayer = CCNode::create();
+    m_mainLayer->setPosition({ 15.0f, 15.0f });
+    m_mainLayer->setAnchorPoint({ 0.5f, 0.5f });
+    m_mainLayer->setID("main-layer");
+    addChild(m_mainLayer);
 
     if (type == IconType::Robot || type == IconType::Spider) {
         createComplexIcon(type, name);
@@ -101,7 +108,7 @@ void SimpleIcon::createSimpleIcon(IconType type, std::string_view name) {
     primarySprite->setPositionY(yOffset);
     primarySprite->setScale(scale);
     primarySprite->setID("sprite_001");
-    addChild(primarySprite, 0);
+    m_mainLayer->addChild(primarySprite, 0);
     m_targets["_001"].push_back(primarySprite);
     m_mainColorSprites.emplace_back(primarySprite, 1.0f);
 
@@ -109,7 +116,7 @@ void SimpleIcon::createSimpleIcon(IconType type, std::string_view name) {
     secondarySprite->setPositionY(yOffset);
     secondarySprite->setScale(scale);
     secondarySprite->setID("sprite_2_001");
-    addChild(secondarySprite, -1);
+    m_mainLayer->addChild(secondarySprite, -1);
     m_targets["_2_001"].push_back(secondarySprite);
     m_secondaryColorSprites.emplace_back(secondarySprite, 1.0f);
 
@@ -118,7 +125,7 @@ void SimpleIcon::createSimpleIcon(IconType type, std::string_view name) {
         tertiarySprite->setPositionY(yOffset);
         tertiarySprite->setScale(scale);
         tertiarySprite->setID("sprite_3_001");
-        addChild(tertiarySprite, -2);
+        m_mainLayer->addChild(tertiarySprite, -2);
         m_targets["_3_001"].push_back(tertiarySprite);
     }
 
@@ -126,7 +133,7 @@ void SimpleIcon::createSimpleIcon(IconType type, std::string_view name) {
     glowSprite->setPositionY(yOffset);
     glowSprite->setScale(scale);
     glowSprite->setID("sprite_glow_001");
-    addChild(glowSprite, -3);
+    m_mainLayer->addChild(glowSprite, -3);
     m_targets["_glow_001"].push_back(glowSprite);
     m_glowColorSprites.push_back(glowSprite);
 
@@ -134,7 +141,7 @@ void SimpleIcon::createSimpleIcon(IconType type, std::string_view name) {
     extraSprite->setPositionY(yOffset);
     extraSprite->setScale(scale);
     extraSprite->setID("sprite_extra_001");
-    addChild(extraSprite, 1);
+    m_mainLayer->addChild(extraSprite, 1);
     m_targets["_extra_001"].push_back(extraSprite);
 }
 
@@ -165,7 +172,7 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
     auto glowNode = CCNode::create();
     glowNode->setAnchorPoint({ 0.5f, 0.5f });
     glowNode->setID("glow-node");
-    addChild(glowNode, -1);
+    m_mainLayer->addChild(glowNode, -1);
 
     auto minSize = spider ? 13 : 12;
     for (size_t i = 0; i < usedTextures.size(); i++) {
@@ -187,7 +194,7 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
         partNode->m_propagateScaleChanges = true;
         partNode->m_propagateFlipChanges = true;
         partNode->setID(fmt::format("sprite_{}", i + 1));
-        addChild(partNode);
+        m_mainLayer->addChild(partNode);
         m_spriteParts.push_back(partNode);
 
         auto prefix = partNode->getID();
