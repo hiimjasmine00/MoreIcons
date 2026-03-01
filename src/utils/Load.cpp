@@ -21,15 +21,15 @@ void replaceOrErase(std::string& str, size_t offset, std::string_view name) {
     }
 }
 
-std::initializer_list<std::string_view> robotEndings = {
+constexpr std::initializer_list<std::string_view> robotEndings = {
     "_01_2", "_02_2", "_03_2", "_04_2", "_01_extra", "_01_glow", "_02_glow", "_03_glow", "_04_glow", "_01", "_02", "_03", "_04"
 };
 
-std::initializer_list<std::string_view> ufoEndings = {
+constexpr std::initializer_list<std::string_view> ufoEndings = {
     "_2", "_3", "_extra", "_glow"
 };
 
-std::initializer_list<std::string_view> cubeEndings = {
+constexpr std::initializer_list<std::string_view> cubeEndings = {
     "_2", "_extra", "_glow"
 };
 
@@ -85,7 +85,7 @@ thread_local ApkFile* apkFile = [] {
     apkFile->zipFile = zipFile;
 
     unz_file_info64 fileInfo;
-    char filename[257];
+    char filename[257] = { '\0' };
 
     auto& fileList = apkFile->fileList;
     auto res = unzGoToFirstFile64(zipFile, &fileInfo, filename, 256);
@@ -99,7 +99,7 @@ thread_local ApkFile* apkFile = [] {
 
     if (res != 0) {
         if (filename[0] == '\0') log::error("Failed to iterate over APK file entries");
-        else log::error("APK file iteration prematurely aborted after {}", filename);
+        else log::error("APK file iteration prematurely aborted after {}", static_cast<const char*>(filename));
     }
 
     return apkFile;
@@ -223,6 +223,79 @@ Result<matjson::Value> Load::readPlist(const std::filesystem::path& path) {
     return Ok(std::move(json));
 }
 
+std::optional<std::pair<std::string_view, std::string_view>> splitWithForm(std::string_view str) {
+    if (str.empty()) return std::nullopt;
+
+    auto left = str.find('{');
+    auto right = str.find('}');
+    if (left == std::string_view::npos || right == std::string_view::npos || left > right) return std::nullopt;
+
+    auto pointStr = str.substr(left + 1, right - left - 1);
+    if (pointStr.empty()) return std::nullopt;
+
+    if (pointStr.contains('{') || pointStr.contains('}')) return std::nullopt;
+
+    std::string_view str1;
+    std::string_view str2;
+
+    auto end = pointStr.find(',');
+    if (end == std::string_view::npos) return std::nullopt;
+    str1 = pointStr.substr(0, end);
+    auto begin = end + 1;
+    end = pointStr.find(',', begin);
+    if (end != std::string_view::npos) return std::nullopt;
+    str2 = pointStr.substr(begin, pointStr.size() - begin);
+
+    if (str1.empty() || str2.empty()) return std::nullopt;
+
+    return std::make_pair(str1, str2);
+}
+
+CCRect rectFromString(std::string_view content) {
+    auto left = content.find('{');
+    auto right = content.rfind('}');
+    if (left == std::string_view::npos || right == std::string_view::npos) return {};
+
+    auto pointsStr = content.substr(left + 1, right - left - 1);
+    auto end = pointsStr.find('}');
+    if (end == std::string_view::npos) return {};
+    end = pointsStr.find(',', end);
+    if (end == std::string_view::npos) return {};
+
+    auto pointStr = pointsStr.substr(0, end);
+    auto sizeStr = pointsStr.substr(end + 1, pointsStr.size() - end - 1);
+
+    auto pointInfo = splitWithForm(pointStr);
+    if (!pointInfo.has_value()) return {};
+    auto sizeInfo = splitWithForm(sizeStr);
+    if (!sizeInfo.has_value()) return {};
+
+    return {
+        numFromString<float>(pointInfo->first).unwrapOrDefault(),
+        numFromString<float>(pointInfo->second).unwrapOrDefault(),
+        numFromString<float>(sizeInfo->first).unwrapOrDefault(),
+        numFromString<float>(sizeInfo->second).unwrapOrDefault()
+    };
+}
+
+CCPoint pointFromString(std::string_view content) {
+    auto strs = splitWithForm(content);
+    if (!strs.has_value()) return {};
+    return {
+        numFromString<float>(strs->first).unwrapOrDefault(),
+        numFromString<float>(strs->second).unwrapOrDefault()
+    };
+}
+
+CCSize sizeFromString(std::string_view content) {
+    auto strs = splitWithForm(content);
+    if (!strs.has_value()) return {};
+    return {
+        numFromString<float>(strs->first).unwrapOrDefault(),
+        numFromString<float>(strs->second).unwrapOrDefault()
+    };
+}
+
 Result<StringMap<Ref<CCSpriteFrame>>> Load::createFrames(
     const std::filesystem::path& path, CCTexture2D* texture, std::string_view name, IconType type, std::string_view target, bool fixNames
 ) {
@@ -262,19 +335,19 @@ Result<StringMap<Ref<CCSpriteFrame>>> Load::createFrames(
                 break;
             }
             case 1: case 2: {
-                rect = CCRectFromString(Json::get<std::string>(obj, "frame").c_str());
-                originalSize = CCSizeFromString(Json::get<std::string>(obj, "sourceSize").c_str());
-                offset = CCPointFromString(Json::get<std::string>(obj, "offset").c_str());
+                rect = rectFromString(Json::get<std::string>(obj, "frame"));
+                originalSize = sizeFromString(Json::get<std::string>(obj, "sourceSize"));
+                offset = pointFromString(Json::get<std::string>(obj, "offset"));
                 if (format == 2) {
                     rotated = Json::get<bool>(obj, "rotated");
                 }
                 break;
             }
             case 3: {
-                rect.origin = CCRectFromString(Json::get<std::string>(obj, "textureRect").c_str()).origin;
-                rect.size = CCSizeFromString(Json::get<std::string>(obj, "spriteSize").c_str());
-                offset = CCPointFromString(Json::get<std::string>(obj, "spriteOffset").c_str());
-                originalSize = CCSizeFromString(Json::get<std::string>(obj, "spriteSourceSize").c_str());
+                rect.origin = rectFromString(Json::get<std::string>(obj, "textureRect")).origin;
+                rect.size = sizeFromString(Json::get<std::string>(obj, "spriteSize"));
+                offset = pointFromString(Json::get<std::string>(obj, "spriteOffset"));
+                originalSize = sizeFromString(Json::get<std::string>(obj, "spriteSourceSize"));
                 rotated = Json::get<bool>(obj, "textureRotated");
                 break;
             }

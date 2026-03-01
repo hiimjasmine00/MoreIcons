@@ -10,7 +10,6 @@ using namespace geode::prelude;
 
 class $modify(MIGameManager, GameManager) {
     static void onModify(ModifyBase<ModifyDerive<MIGameManager, GameManager>>& self) {
-        (void)self.setHookPriority("GameManager::loadIcon", Priority::Replace);
         if (auto hook = jasmine::hook::get(self.m_hooks, "GameManager::sheetNameForIcon", false)) {
             if (auto globed = Loader::get()->getInstalledMod("dankmeme.globed2")) {
                 if (globed->isLoaded()) {

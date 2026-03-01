@@ -541,9 +541,9 @@ void more_icons::updateRobotSprite(GJRobotSprite* sprite, IconInfo* info) {
     paSprite->setBatchNode(nullptr);
     paSprite->setTexture(texture);
 
-    auto spriteParts = CCArrayExt<CCSprite>(paSprite->m_spriteParts);
-    auto secondArray = CCArrayExt<CCSprite>(sprite->m_secondArray);
-    auto glowArray = CCArrayExt<CCSprite>(sprite->m_glowSprite->getChildren());
+    auto spriteParts = paSprite->m_spriteParts->asExt<CCSprite>();
+    auto secondArray = sprite->m_secondArray->asExt<CCSprite>();
+    auto glowArray = sprite->m_glowSprite->getChildrenExt<CCSprite>();
     auto headSprite = sprite->m_headSprite;
     auto extraSprite = sprite->m_extraSprite;
     auto& icon = info->getName();

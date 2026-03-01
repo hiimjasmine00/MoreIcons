@@ -110,7 +110,7 @@ void MoreIcons::updateGarage(GJGarageLayer* layer) {
 
     if (separateDualIcons) {
         auto player2 = static_cast<SimplePlayer*>(layer->getChildByID("player2-icon"));
-        auto iconType2 = separateDualIcons->getSavedValue("lastmode", IconType::Cube);
+        auto iconType2 = (IconType)separateDualIcons->getSavedValue("lastmode", 0);
         if (noLayer) player2->updatePlayerFrame(vanillaIcon(iconType2, true), iconType2);
         more_icons::updateSimplePlayer(player2, iconType2, true);
     }
@@ -183,11 +183,11 @@ std::filesystem::path MoreIcons::getIconPath(IconInfo* info, int id, IconType ty
     return png;
 }
 
-std::filesystem::path getFullPath(CCFileUtils* fileUtils, const char* filename) {
+std::filesystem::path getFullPath(CCFileUtils* fileUtils, ZStringView filename) {
     #ifdef GEODE_IS_WINDOWS
-    return std::filesystem::path(Filesystem::strWide(fileUtils->fullPathForFilename(filename, false)));
+    return std::filesystem::path(Filesystem::strWide(fileUtils->fullPathForFilename(filename.c_str(), false)));
     #else
-    return std::filesystem::path(std::string(fileUtils->fullPathForFilename(filename, false)));
+    return std::filesystem::path(std::string(fileUtils->fullPathForFilename(filename.c_str(), false)));
     #endif
 }
 
@@ -201,22 +201,22 @@ void MoreIcons::getIconPaths(IconInfo* info, int id, IconType type, std::filesys
     auto fileUtils = Get::FileUtils();
 
     if (type == IconType::DeathEffect) {
-        png = getFullPath(fileUtils, fmt::format("PlayerExplosion_{:02}.png", id).c_str());
-        plist = getFullPath(fileUtils, fmt::format("PlayerExplosion_{:02}.plist", id).c_str());
+        png = getFullPath(fileUtils, fmt::format("PlayerExplosion_{:02}.png", id));
+        plist = getFullPath(fileUtils, fmt::format("PlayerExplosion_{:02}.plist", id));
         return;
     }
     else if (type == IconType::Special) {
-        png = getFullPath(fileUtils, fmt::format("streak_{:02}_001.png", id).c_str());
+        png = getFullPath(fileUtils, fmt::format("streak_{:02}_001.png", id));
         return;
     }
     else if (type == IconType::ShipFire) {
-        png = getFullPath(fileUtils, fmt::format("shipfire{:02}_001.png", id).c_str());
+        png = getFullPath(fileUtils, fmt::format("shipfire{:02}_001.png", id));
         return;
     }
 
     auto iconName = getIconName(id, type);
-    png = getFullPath(fileUtils, fmt::format("icons/{}.png", iconName).c_str());
-    plist = getFullPath(fileUtils, fmt::format("icons/{}.plist", iconName).c_str());
+    png = getFullPath(fileUtils, fmt::format("icons/{}.png", iconName));
+    plist = getFullPath(fileUtils, fmt::format("icons/{}.plist", iconName));
 }
 
 ZStringView MoreIcons::getText(CCTextInputNode* input) {

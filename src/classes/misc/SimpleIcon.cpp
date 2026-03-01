@@ -24,7 +24,7 @@ const matjson::Value definitions = [] {
 
     auto def = Load::readPlist(dirs::getResourcesDir() / L("objectDefinitions.plist"));
     if (def.isErr()) {
-        log::error("Failed to load objectDefinitions.plist: {}", def.unwrapErr());
+        log::error("objectDefinitions.plist: {}", def.unwrapErr());
         return json;
     }
 
@@ -42,7 +42,7 @@ const matjson::Value definitions = [] {
                 animDesc = std::move(desc).unwrap();
             }
             else {
-                log::error("Failed to load {}: {}", filename, desc.unwrapErr());
+                log::error("{}: {}", filename, desc.unwrapErr());
                 animDesc = matjson::Value();
             }
         }

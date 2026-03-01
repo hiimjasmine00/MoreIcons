@@ -15,6 +15,7 @@ using namespace geode::prelude;
 
 class $modify(MIPlayerObject, PlayerObject) {
     static void onModify(ModifyBase<ModifyDerive<MIPlayerObject, PlayerObject>>& self) {
+        (void)self.setHookPriorityAfterPre("PlayerObject::playDeathEffect", "weebify.separate_dual_icons");
         (void)self.setHookPriorityAfterPost("PlayerObject::setupStreak", "weebify.separate_dual_icons");
     }
 
@@ -349,7 +350,7 @@ class $modify(MIPlayerObject, PlayerObject) {
 
         auto explodeNode = ExplodeItemNode::create(renderTexture);
         explodeNode->setPosition(position);
-        auto playerColor4F = to4F(to4B(m_playerColor1));
+        ccColor4F playerColor4F = { m_playerColor1.r / 255.0f, m_playerColor1.g / 255.0f, m_playerColor1.b / 255.0f, 1.0f };
         float xVelocity = getCurrentXVelocity() * 0.72;
         int countX = jasmine::random::get(2.0, 4.0);
         int countY = jasmine::random::get(2.0, 4.0);

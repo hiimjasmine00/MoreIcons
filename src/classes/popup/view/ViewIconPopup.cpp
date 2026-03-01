@@ -10,18 +10,18 @@
 using namespace geode::prelude;
 using namespace jasmine::mod;
 
-std::initializer_list<std::initializer_list<std::string_view>> robotSuffixes = {
+constexpr std::initializer_list<std::initializer_list<std::string_view>> robotSuffixes = {
     { "_01_001", "_01_2_001", "_01_glow_001", "_01_extra_001" },
     { "_02_001", "_02_2_001", "_02_glow_001" },
     { "_03_001", "_03_2_001", "_03_glow_001" },
     { "_04_001", "_04_2_001", "_04_glow_001" }
 };
 
-std::initializer_list<std::initializer_list<std::string_view>> ufoSuffixes = {
+constexpr std::initializer_list<std::initializer_list<std::string_view>> ufoSuffixes = {
     { "_001", "_2_001", "_3_001", "_glow_001", "_extra_001" }
 };
 
-std::initializer_list<std::initializer_list<std::string_view>> cubeSuffixes = {
+constexpr std::initializer_list<std::initializer_list<std::string_view>> cubeSuffixes = {
     { "_001", "_2_001", "_glow_001", "_extra_001" }
 };
 

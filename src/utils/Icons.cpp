@@ -67,15 +67,15 @@ void migrateTrails(const std::filesystem::path& path) {
         auto directory = Filesystem::parentPath(path) / stem;
 
         if (auto res = file::createDirectoryAll(directory); res.isErr()) {
-            return log::error("Failed to create trail directory {}: {}", Filesystem::strNarrow(stem), res.unwrapErr());
+            return log::error("{}: {}", Filesystem::strNarrow(stem), res.unwrapErr());
         }
 
         if (auto res = Filesystem::renameFile(path, directory / L("trail.png")); res.isErr()) {
-            return log::error("Failed to move {}: {}", Filesystem::strNarrow(filename), res.unwrapErr());
+            return log::error("{}: {}", Filesystem::strNarrow(filename), res.unwrapErr());
         }
 
         if (auto res = Filesystem::renameFile(fmt::format(L("{}.json"), directory), directory / L("settings.json")); res.isErr()) {
-            return log::error("Failed to move {}.json: {}", Filesystem::strNarrow(stem), res.unwrapErr());
+            return log::error("{}.json: {}", Filesystem::strNarrow(stem), res.unwrapErr());
         }
     });
 
@@ -114,8 +114,7 @@ void Icons::loadPacks() {
             else {
                 std::error_code code;
                 std::filesystem::directory_iterator it(resourcesPath, code);
-                if (code) log::error("{}: Failed to create directory iterator: {}", resourcesPath, code.message());
-                else {
+                if (!code) {
                     for (; it != std::filesystem::end(it); it.increment(code)) {
                         std::error_code code;
                         if (it->status(code).type() != std::filesystem::file_type::regular) continue;
@@ -130,7 +129,6 @@ void Icons::loadPacks() {
                             break;
                         }
                     }
-                    if (code) log::error("{}: Failed to iterate over directory: {}", resourcesPath, code.message());
                 }
             }
         }

@@ -9,18 +9,6 @@ namespace geode {
     class TextInput;
 }
 
-template <>
-struct matjson::Serialize<IconType> {
-    static geode::Result<IconType> fromJson(const matjson::Value& val) {
-        return val.asInt().map([](intmax_t v) {
-            return (IconType)v;
-        });
-    }
-    static matjson::Value toJson(const IconType& val) {
-        return matjson::Value((intmax_t)val);
-    }
-};
-
 namespace MoreIcons {
     extern geode::Mod* separateDualIcons;
 

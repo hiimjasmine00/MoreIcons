@@ -116,6 +116,10 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         return dual ? (alt ? m_fields->m_cursor4 : m_fields->m_cursor3) : (alt ? m_cursor2 : m_cursor1);
     }
 
+    IconType getSelectedType(bool dual) {
+        return dual ? (IconType)MoreIcons::separateDualIcons->getSavedValue("lasttype", 0) : m_selectedIconType;
+    }
+
     void onSelect(CCObject* sender) {
         auto btn = static_cast<CCMenuItemSpriteExtra*>(sender);
         if (btn->getUserObject("info"_spr)) return onCustomSelect(btn);
@@ -129,15 +133,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         getCursor(btn->m_iconType == IconType::ShipFire, dual)->setOpacity(255);
 
-        auto f = m_fields.self();
-        if (btn->m_iconType == IconType::ShipFire) {
-            f->m_selectedIcon = nullptr;
-            more_icons::setIcon(nullptr, dual ? MoreIcons::separateDualIcons->getSavedValue("lasttype", IconType::Cube) : m_selectedIconType, dual);
-        }
-        else {
-            f->m_selectedIcon = nullptr;
-            more_icons::setIcon(nullptr, dual ? MoreIcons::separateDualIcons->getSavedValue("lasttype", IconType::Cube) : m_selectedIconType, dual);
-        }
+        m_fields->m_selectedIcon = nullptr;
+        more_icons::setIcon(nullptr, getSelectedType(dual), dual);
     }
 
     void newOn2PToggle(CCObject* sender) {
@@ -167,7 +164,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         swapDual(IconType::ShipFire);
 
         more_icons::updateSimplePlayer(m_playerObject, Get::GameManager()->m_playerIconType, false);
-        more_icons::updateSimplePlayer(m_fields->m_playerObject2, MoreIcons::separateDualIcons->getSavedValue("lastmode", IconType::Cube), true);
+        more_icons::updateSimplePlayer(m_fields->m_playerObject2, (IconType)MoreIcons::separateDualIcons->getSavedValue("lastmode", 0), true);
         selectTab(m_iconType);
     }
 
@@ -303,7 +300,6 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         CCMenuItemSpriteExtra* current2 = nullptr;
         CCMenuItemSpriteExtra* current3 = nullptr;
         CCMenuItemSpriteExtra* current4 = nullptr;
-        auto dual = MoreIcons::dualSelected();
         auto active = more_icons::activeIcon(type, false);
         auto active2 = type == IconType::Special ? more_icons::activeIcon(IconType::ShipFire, false) : nullptr;
         auto active3 = more_icons::activeIcon(type, true);
@@ -406,15 +402,14 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         }
 
         if (info == f->m_selectedIcon) {
-            auto selectedType = dual ? MoreIcons::separateDualIcons->getSavedValue("lasttype", IconType::Cube) : m_selectedIconType;
-            if (type == selectedType) {
+            if (type == getSelectedType(dual)) {
                 if (auto popup = more_icons::createInfoPopup(info)) popup->show();
             }
         }
 
         if (dual) {
-            if (isIcon) MoreIcons::separateDualIcons->setSavedValue("lastmode", type);
-            MoreIcons::separateDualIcons->setSavedValue("lasttype", type);
+            if (isIcon) MoreIcons::separateDualIcons->setSavedValue("lastmode", (int)type);
+            MoreIcons::separateDualIcons->setSavedValue("lasttype", (int)type);
         }
         else {
             if (isIcon) Get::GameManager()->m_playerIconType = type;
