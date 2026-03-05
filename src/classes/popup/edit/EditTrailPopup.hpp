@@ -1,6 +1,5 @@
 #include "../BasePopup.hpp"
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
-#include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/async.hpp>
 
 class EditTrailPopup : public BasePopup, public FLAlertLayerProtocol {
@@ -9,7 +8,7 @@ protected:
     std::filesystem::path m_pendingPath;
     BasePopup* m_parentPopup;
     cocos2d::CCSprite* m_streak;
-    geode::TextInput* m_nameInput;
+    CCTextInputNode* m_nameInput;
     bool m_hasChanged = false;
 
     bool init(BasePopup* popup);

@@ -1,5 +1,5 @@
 #include <cocos2d.h>
-#include <fmt/format.h>
+#include <Geode/loader/Types.hpp>
 #include <IconInfo.hpp>
 
 #ifdef GEODE_IS_WINDOWS
@@ -7,10 +7,6 @@
 #else
 #define CONFIG_PATH std::string_view("config/" GEODE_MOD_ID, sizeof(GEODE_MOD_ID) + 6)
 #endif
-
-namespace geode {
-    class Hook;
-}
 
 namespace Icons {
     extern std::map<int, std::map<IconType, IconInfo*>> requestedIcons;

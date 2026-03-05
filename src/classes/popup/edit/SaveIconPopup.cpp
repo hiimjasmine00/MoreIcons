@@ -9,6 +9,7 @@
 #include "../../../utils/Notify.hpp"
 #include <algorithm>
 #include <Geode/binding/ButtonSprite.hpp>
+#include <Geode/ui/TextInput.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
@@ -40,12 +41,14 @@ bool SaveIconPopup::init(
     m_state = &state;
     m_frames = &frames;
 
-    m_nameInput = TextInput::create(300.0f, "Icon Name");
-    m_nameInput->setPosition({ 175.0f, 70.0f });
-    m_nameInput->setFilter("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-. ");
-    m_nameInput->setMaxCharCount(100);
-    m_nameInput->setID("name-input");
-    m_mainLayer->addChild(m_nameInput);
+    auto nameInput = TextInput::create(300.0f, "Icon Name");
+    nameInput->setPosition({ 175.0f, 70.0f });
+    nameInput->setFilter("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-. ");
+    nameInput->setMaxCharCount(100);
+    nameInput->setID("name-input");
+    m_mainLayer->addChild(nameInput);
+
+    m_nameInput = nameInput->getInputNode();
 
     auto saveButton = CCMenuItemSpriteExtra::create(
         ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f), this, menu_selector(SaveIconPopup::onSave)

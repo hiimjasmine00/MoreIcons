@@ -5,7 +5,6 @@
 #if defined(MORE_ICONS_EVENTS) || defined(GEODE_DEFINE_EVENT_EXPORTS)
 #include <Geode/loader/Dispatch.hpp>
 #endif
-#include <Geode/utils/cocos.hpp>
 
 #if defined(MORE_ICONS_EVENTS) && !defined(GEODE_DEFINE_EVENT_EXPORTS)
 #define MI_EXP(fnPtr, callArgs, def) { \
@@ -248,8 +247,8 @@ namespace more_icons {
     /// @returns The icon info of the specified node, or nullptr if the icon info is not set.
     inline IconInfo* getNodeInfo(cocos2d::CCNode* node) {
         if (node) {
-            if (auto userObject = static_cast<geode::ObjWrapper<IconInfo*>*>(node->getUserObject("info"_mi))) {
-                return userObject->getValue();
+            if (auto userObject = node->getUserObject("info"_mi)) {
+                return *reinterpret_cast<IconInfo**>(reinterpret_cast<uintptr_t>(userObject + sizeof(cocos2d::CCObject)));
             }
         }
         return nullptr;

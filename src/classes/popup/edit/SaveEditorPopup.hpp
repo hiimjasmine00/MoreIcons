@@ -1,7 +1,6 @@
 #include "IconEditorState.hpp"
 #include "../BasePopup.hpp"
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
-#include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/StringMap.hpp>
 
 class SaveEditorPopup : public BasePopup, public FLAlertLayerProtocol {
@@ -10,7 +9,7 @@ protected:
     std::filesystem::path m_pendingPath;
     geode::Function<void()> m_callback;
     const geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>>* m_frames;
-    geode::TextInput* m_nameInput;
+    CCTextInputNode* m_nameInput;
     IconType m_iconType;
 
     bool init(

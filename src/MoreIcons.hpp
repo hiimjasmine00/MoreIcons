@@ -1,13 +1,9 @@
 #include <cocos2d.h>
 #include <Geode/Enums.hpp>
 #include <Geode/GeneratedPredeclare.hpp>
-#include <matjson.hpp>
+#include <Geode/loader/Types.hpp>
 
 class IconInfo;
-namespace geode {
-    class Mod;
-    class TextInput;
-}
 
 namespace MoreIcons {
     extern geode::Mod* separateDualIcons;
@@ -23,7 +19,6 @@ namespace MoreIcons {
     std::filesystem::path getIconStem(std::string_view name, IconType type);
     std::filesystem::path getIconPath(IconInfo* info, int id, IconType type);
     geode::ZStringView getText(CCTextInputNode* input);
-    geode::ZStringView getText(geode::TextInput* input);
     void loadFromSave(IconType type);
     void updateGarage(GJGarageLayer* layer = nullptr);
     cocos2d::ccColor3B vanillaColor1(bool dual);

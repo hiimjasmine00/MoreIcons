@@ -9,6 +9,7 @@
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
+#include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/file.hpp>
 #include <MoreIcons.hpp>
 
@@ -42,12 +43,14 @@ bool EditTrailPopup::init(BasePopup* popup) {
     m_streak->setID("streak-preview");
     m_mainLayer->addChild(m_streak);
 
-    m_nameInput = TextInput::create(300.0f, "Name");
-    m_nameInput->setPosition({ 175.0f, 75.0f });
-    m_nameInput->setFilter("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-. ");
-    m_nameInput->setMaxCharCount(100);
-    m_nameInput->setID("text-input");
-    m_mainLayer->addChild(m_nameInput);
+    auto nameInput = TextInput::create(300.0f, "Name");
+    nameInput->setPosition({ 175.0f, 75.0f });
+    nameInput->setFilter("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-. ");
+    nameInput->setMaxCharCount(100);
+    nameInput->setID("text-input");
+    m_mainLayer->addChild(nameInput);
+
+    m_nameInput = nameInput->getInputNode();
 
     auto bottomMenu = CCMenu::create();
     bottomMenu->setPosition({ 175.0f, 30.0f });

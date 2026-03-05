@@ -1,6 +1,5 @@
 #include "../BasePopup.hpp"
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
-#include <Geode/ui/TextInput.hpp>
 
 class IconInfo;
 class MoreInfoPopup;
@@ -9,7 +8,7 @@ class IconNamePopup : public BasePopup, public FLAlertLayerProtocol {
 protected:
     std::vector<std::pair<std::filesystem::path, std::filesystem::path>> m_pendingPaths;
     BasePopup* m_parentPopup;
-    geode::TextInput* m_nameInput;
+    CCTextInputNode* m_nameInput;
     IconInfo* m_info;
     IconType m_iconType;
 

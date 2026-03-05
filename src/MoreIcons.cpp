@@ -4,11 +4,11 @@
 #include "utils/Get.hpp"
 #include "utils/Icons.hpp"
 #include "utils/Json.hpp"
+#include <Geode/binding/CCTextInputNode.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/loader/Mod.hpp>
-#include <Geode/ui/TextInput.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
@@ -220,11 +220,7 @@ void MoreIcons::getIconPaths(IconInfo* info, int id, IconType type, std::filesys
 }
 
 ZStringView MoreIcons::getText(CCTextInputNode* input) {
-    return *input->m_textField->m_pInputText;
-}
-
-ZStringView MoreIcons::getText(TextInput* input) {
-    return getText(input->getInputNode());
+    return input->m_textField->getString();
 }
 
 void MoreIcons::loadFromSave(IconType type) {

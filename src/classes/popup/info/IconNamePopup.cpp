@@ -5,6 +5,7 @@
 #include "../../../utils/Filesystem.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
+#include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/StringBuffer.hpp>
 #include <MoreIcons.hpp>
 
@@ -32,13 +33,15 @@ bool IconNamePopup::init(MoreInfoPopup* popup, IconInfo* info) {
     m_info = info;
     m_iconType = type;
 
-    m_nameInput = TextInput::create(300.0f, "Name");
-    m_nameInput->setPosition({ 175.0f, 70.0f });
-    m_nameInput->setFilter("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-. ");
-    m_nameInput->setMaxCharCount(100);
-    m_nameInput->setString(info->getShortName());
-    m_nameInput->setID("name-input");
-    m_mainLayer->addChild(m_nameInput);
+    auto nameInput = TextInput::create(300.0f, "Name");
+    nameInput->setPosition({ 175.0f, 70.0f });
+    nameInput->setFilter("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-. ");
+    nameInput->setMaxCharCount(100);
+    nameInput->setString(info->getShortName());
+    nameInput->setID("name-input");
+    m_mainLayer->addChild(nameInput);
+
+    m_nameInput = nameInput->getInputNode();
 
     auto confirmButton = CCMenuItemSpriteExtra::create(ButtonSprite::create("Confirm", 0.8f), this, menu_selector(IconNamePopup::onConfirm));
     confirmButton->setPosition({ 175.0f, 30.0f });
