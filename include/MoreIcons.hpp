@@ -248,7 +248,7 @@ namespace more_icons {
     inline IconInfo* getNodeInfo(cocos2d::CCNode* node) {
         if (node) {
             if (auto userObject = node->getUserObject("info"_mi)) {
-                return *reinterpret_cast<IconInfo**>(reinterpret_cast<uintptr_t>(userObject + sizeof(cocos2d::CCObject)));
+                return *reinterpret_cast<IconInfo**>(reinterpret_cast<uintptr_t>(userObject) + sizeof(cocos2d::CCObject));
             }
         }
         return nullptr;

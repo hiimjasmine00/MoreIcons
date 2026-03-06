@@ -289,7 +289,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         if (auto navDots = m_navDotMenu->getChildren()) {
             auto offFrame = Get::SpriteFrameCache()->spriteFrameByName("gj_navDotBtn_off_001.png");
-            for (auto navDot : navDots->asExt<CCMenuItemSprite>()) {
+            for (auto navDot : CCArrayExt<CCMenuItemSprite, false>(navDots)) {
                 static_cast<CCSprite*>(navDot->getNormalImage())->setDisplayFrame(offFrame);
             }
         }

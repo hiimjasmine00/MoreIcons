@@ -85,7 +85,7 @@ bool LoadEditorPopup::init(IconType type, Function<void(const std::filesystem::p
     contentLayer->setLayout(ColumnLayout::create()->setAxisReverse(true)->setAxisAlignment(AxisAlignment::End)->setAutoGrowAxis(0.0f));
 
     contentLayer->setContentSize(contentLayer->getContentSize() + CCSize { 0.0f, 10.0f });
-    for (auto child : contentLayer->getChildrenExt()) {
+    for (auto child : CCArrayExt<CCNode, false>(contentLayer->getChildren())) {
         child->setPosition(child->getPosition() + CCPoint { 0.0f, 5.0f });
         child->setContentSize(child->getContentSize() + CCSize { 0.0f, 10.0f });
     }

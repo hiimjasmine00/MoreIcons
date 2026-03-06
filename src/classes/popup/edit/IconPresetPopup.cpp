@@ -77,7 +77,7 @@ bool IconPresetPopup::init(IconType type, std::string_view suffix, Function<void
     contentLayer->setLayout(RowLayout::create()->setGap(Constants::getIconGap(type))->setGrowCrossAxis(true));
 
     contentLayer->setContentSize(contentLayer->getContentSize() + CCSize { 0.0f, 10.0f });
-    for (auto child : contentLayer->getChildrenExt()) {
+    for (auto child : CCArrayExt<CCNode, false>(contentLayer->getChildren())) {
         child->setPosition(child->getPosition() + CCPoint { 0.0f, 5.0f });
         child->setContentSize(child->getContentSize() + CCSize { 0.0f, 30.0f });
     }

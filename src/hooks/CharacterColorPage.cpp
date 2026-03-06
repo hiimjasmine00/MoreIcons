@@ -15,7 +15,7 @@ class $modify(MICharacterColorPage, CharacterColorPage) {
         if (!CharacterColorPage::init()) return false;
 
         auto dual = MoreIcons::dualSelected();
-        auto playerObjects = m_playerObjects->asExt<SimplePlayer>();
+        auto playerObjects = CCArrayExt<SimplePlayer, false>(m_playerObjects);
         for (size_t i = 0; i < playerObjects.size(); i++) {
             more_icons::updateSimplePlayer(playerObjects[i], (IconType)i, dual);
         }

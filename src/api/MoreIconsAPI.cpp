@@ -541,9 +541,9 @@ void more_icons::updateRobotSprite(GJRobotSprite* sprite, IconInfo* info) {
     paSprite->setBatchNode(nullptr);
     paSprite->setTexture(texture);
 
-    auto spriteParts = paSprite->m_spriteParts->asExt<CCSprite>();
-    auto secondArray = sprite->m_secondArray->asExt<CCSprite>();
-    auto glowArray = sprite->m_glowSprite->getChildrenExt<CCSprite>();
+    auto spriteParts = CCArrayExt<CCSprite, false>(paSprite->m_spriteParts);
+    auto secondArray = CCArrayExt<CCSprite, false>(sprite->m_secondArray);
+    auto glowArray = CCArrayExt<CCSprite, false>(sprite->m_glowSprite->getChildren());
     auto headSprite = sprite->m_headSprite;
     auto extraSprite = sprite->m_extraSprite;
     auto& icon = info->getName();
@@ -593,22 +593,22 @@ void more_icons::updatePlayerObject(PlayerObject* object, IconInfo* info) {
     auto type = info->getType();
 
     if (type == IconType::Robot) {
-        if (Ref<GJRobotSprite> robotSprite = object->m_robotSprite) {
-            robotSprite->removeFromParentAndCleanup(false);
-            updateRobotSprite(robotSprite, info);
+        if (auto robotSprite = object->m_robotSprite) {
             auto batchNode = object->m_robotBatchNode;
+            batchNode->removeSpriteFromAtlas(robotSprite);
+            updateRobotSprite(robotSprite, info);
             batchNode->setTexture(robotSprite->getTexture());
-            batchNode->addChild(robotSprite);
+            batchNode->appendChild(robotSprite);
         }
         return;
     }
     else if (type == IconType::Spider) {
-        if (Ref<GJSpiderSprite> spiderSprite = object->m_spiderSprite) {
-            spiderSprite->removeFromParentAndCleanup(false);
-            updateRobotSprite(spiderSprite, info);
+        if (auto spiderSprite = object->m_spiderSprite) {
             auto batchNode = object->m_spiderBatchNode;
+            batchNode->removeSpriteFromAtlas(spiderSprite);
+            updateRobotSprite(spiderSprite, info);
             batchNode->setTexture(spiderSprite->getTexture());
-            batchNode->addChild(spiderSprite);
+            batchNode->appendChild(spiderSprite);
         }
         return;
     }
