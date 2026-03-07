@@ -38,7 +38,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     bool init() {
         if (!GJGarageLayer::init()) return false;
 
-        /*auto f = m_fields.self();
+        auto f = m_fields.self();
         if (MoreIcons::separateDualIcons) {
             m_cursor1->setCascadeOpacityEnabled(true);
             m_cursor2->setCascadeOpacityEnabled(true);
@@ -47,13 +47,15 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             f->m_cursor4 = static_cast<CCSprite*>(getChildByID("cursor-4"));
             f->m_cursor4->setCascadeOpacityEnabled(true);
             f->m_playerObject2 = static_cast<SimplePlayer*>(getChildByID("player2-icon"));
-        }*/
+        }
 
         m_fields->m_initialized = true;
 
         MoreIcons::updateGarage(this);
 
-        //f->m_cursor3->setOpacity(more_icons::hasIcon(IconType::Cube, true) && f->m_cursor3->isVisible() ? 127 : 255);
+        if (f->m_cursor3) {
+            f->m_cursor3->setOpacity(more_icons::hasIcon(IconType::Cube, true) && f->m_cursor3->isVisible() ? 127 : 255);
+        }
 
         if (more_icons::hasIcon(IconType::Cube, false)) setupCustomPage(findIconPage(IconType::Cube, false), IconType::Cube);
         else createNavMenu(m_iconPages[IconType::Cube], IconType::Cube);
