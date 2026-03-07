@@ -38,7 +38,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     bool init() {
         if (!GJGarageLayer::init()) return false;
 
-        auto f = m_fields.self();
+        /*auto f = m_fields.self();
         if (MoreIcons::separateDualIcons) {
             m_cursor1->setCascadeOpacityEnabled(true);
             m_cursor2->setCascadeOpacityEnabled(true);
@@ -47,13 +47,13 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             f->m_cursor4 = static_cast<CCSprite*>(getChildByID("cursor-4"));
             f->m_cursor4->setCascadeOpacityEnabled(true);
             f->m_playerObject2 = static_cast<SimplePlayer*>(getChildByID("player2-icon"));
-        }
+        }*/
 
-        f->m_initialized = true;
+        m_fields->m_initialized = true;
 
         MoreIcons::updateGarage(this);
 
-        f->m_cursor3->setOpacity(more_icons::hasIcon(IconType::Cube, true) && f->m_cursor3->isVisible() ? 127 : 255);
+        //f->m_cursor3->setOpacity(more_icons::hasIcon(IconType::Cube, true) && f->m_cursor3->isVisible() ? 127 : 255);
 
         if (more_icons::hasIcon(IconType::Cube, false)) setupCustomPage(findIconPage(IconType::Cube, false), IconType::Cube);
         else createNavMenu(m_iconPages[IconType::Cube], IconType::Cube);
@@ -234,13 +234,22 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             m_cursor2->setOpacity(more_icons::hasIcon(IconType::ShipFire, false) && m_cursor2->isVisible() ? 127 : 255);
         }
 
-        if (f->m_initialized) {
+        /*if (f->m_initialized) {
             f->m_cursor3->setOpacity(more_icons::hasIcon(type, true) && f->m_cursor3->isVisible() ? 127 : 255);
             if (type == IconType::Special) {
                 f->m_cursor4->setOpacity(more_icons::hasIcon(IconType::ShipFire, true) && f->m_cursor4->isVisible() ? 127 : 255);
             }
             setupCustomPage(page == -1 ? findIconPage(type, MoreIcons::dualSelected()) : page, type);
+        }*/
+
+        if (f->m_initialized && f->m_cursor3 && f->m_cursor4) {
+            f->m_cursor3->setOpacity(more_icons::hasIcon(type, true) && f->m_cursor3->isVisible() ? 127 : 255);
+            if (type == IconType::Special) {
+                f->m_cursor4->setOpacity(more_icons::hasIcon(IconType::ShipFire, true) && f->m_cursor4->isVisible() ? 127 : 255);
+            }
         }
+
+        setupCustomPage(page == -1 ? findIconPage(type, MoreIcons::dualSelected()) : page, type);
     }
 
     void onArrow(CCObject* sender) {
@@ -280,10 +289,14 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto f = m_fields.self();
 
         m_cursor1->setOpacity(255);
-        f->m_cursor3->setOpacity(255);
+        if (f->m_cursor3) {
+            f->m_cursor3->setOpacity(255);
+        }
         if (type == IconType::Special) {
             m_cursor2->setOpacity(255);
-            f->m_cursor4->setOpacity(255);
+            if (f->m_cursor4) {
+                f->m_cursor4->setOpacity(255);
+            }
         }
         m_iconSelection->setVisible(false);
 
@@ -363,14 +376,18 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         m_cursor1->setVisible(current != nullptr);
         if (current) m_cursor1->setPosition(current->getParent()->convertToWorldSpace(current->getPosition()));
-        f->m_cursor3->setVisible(current3 != nullptr);
-        if (current3) f->m_cursor3->setPosition(current3->getParent()->convertToWorldSpace(current3->getPosition()));
+        if (f->m_cursor3) {
+            f->m_cursor3->setVisible(current3 != nullptr);
+            if (current3) f->m_cursor3->setPosition(current3->getParent()->convertToWorldSpace(current3->getPosition()));
+        }
 
         if (type == IconType::Special) {
             m_cursor2->setVisible(current2 != nullptr);
             if (current2) m_cursor2->setPosition(current2->getParent()->convertToWorldSpace(current2->getPosition()));
-            f->m_cursor4->setVisible(current4 != nullptr);
-            if (current4) f->m_cursor4->setPosition(current4->getParent()->convertToWorldSpace(current4->getPosition()));
+            if (f->m_cursor4) {
+                f->m_cursor4->setVisible(current4 != nullptr);
+                if (current4) f->m_cursor4->setPosition(current4->getParent()->convertToWorldSpace(current4->getPosition()));
+            }
         }
     }
 
