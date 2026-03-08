@@ -7,14 +7,15 @@
 #endif
 #include <matjson.hpp>
 
+#define MI_EXPAND(suffix) std::string("hiimjustin000.more_icons/" suffix, sizeof("hiimjustin000.more_icons/" suffix) - 1)
 #if defined(MORE_ICONS_EVENTS)
 #define MI_EXPORT(fnPtr, callArgs, def) { \
-    static auto storage = geode::geode_internal::callEventExportListener(&fnPtr, "hiimjustin000.more_icons/" #fnPtr); \
+    static auto storage = geode::geode_internal::callEventExportListener(&fnPtr, MI_EXPAND(#fnPtr)); \
     if (!storage) return def; \
     return storage callArgs; \
 }
 #define MI_EXPORT_REF(fnPtr, callArgs) { \
-    static auto storage = geode::geode_internal::callEventExportListener(&fnPtr, "hiimjustin000.more_icons/" #fnPtr); \
+    static auto storage = geode::geode_internal::callEventExportListener(&fnPtr, MI_EXPAND(#fnPtr)); \
     if (!storage) { \
         static std::remove_reference_t<geode::utils::function::Return<decltype(&fnPtr)>> dummy; \
         return dummy; \
@@ -22,8 +23,8 @@
     return storage callArgs; \
 }
 #elif defined(GEODE_DEFINE_EVENT_EXPORTS)
-#define MI_EXPORT(fnPtr, callArgs, def) GEODE_EVENT_EXPORT_DEFINE(&fnPtr, callArgs, "hiimjustin000.more_icons/" #fnPtr)
-#define MI_EXPORT_REF(fnPtr, callArgs) GEODE_EVENT_EXPORT_DEFINE(&fnPtr, callArgs, "hiimjustin000.more_icons/" #fnPtr)
+#define MI_EXPORT(fnPtr, callArgs, def) GEODE_EVENT_EXPORT_DEFINE(&fnPtr, callArgs, MI_EXPAND(#fnPtr))
+#define MI_EXPORT_REF(fnPtr, callArgs) GEODE_EVENT_EXPORT_DEFINE(&fnPtr, callArgs, MI_EXPAND(#fnPtr))
 #else
 #define MI_EXPORT(fnPtr, callArgs, def)
 #define MI_EXPORT_REF(fnPtr, callArgs)
@@ -104,5 +105,6 @@ public:
     }
 };
 
+#undef MI_EXPAND
 #undef MI_EXPORT
 #undef MI_EXPORT_REF

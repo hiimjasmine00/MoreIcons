@@ -68,7 +68,7 @@ texpack::Image ImageRenderer::getImage(CCNode* node) {
         std::swap_ranges(data.begin() + y * width * 4, data.begin() + (y + 1) * width * 4, data.end() - (y + 1) * width * 4);
     }
 
-    return { data, width, height };
+    return { std::move(data), width, height };
 }
 
 Result<> ImageRenderer::save(texpack::Packer& packer, const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name) {

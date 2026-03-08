@@ -171,7 +171,7 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
 
     auto glowNode = CCNode::create();
     glowNode->setAnchorPoint({ 0.5f, 0.5f });
-    glowNode->setID("glow-node");
+    glowNode->setID(std::string("glow-node", 9));
     m_mainLayer->addChild(glowNode, -1);
 
     auto minSize = spider ? 13 : 12;
