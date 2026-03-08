@@ -236,14 +236,6 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             m_cursor2->setOpacity(more_icons::hasIcon(IconType::ShipFire, false) && m_cursor2->isVisible() ? 127 : 255);
         }
 
-        /*if (f->m_initialized) {
-            f->m_cursor3->setOpacity(more_icons::hasIcon(type, true) && f->m_cursor3->isVisible() ? 127 : 255);
-            if (type == IconType::Special) {
-                f->m_cursor4->setOpacity(more_icons::hasIcon(IconType::ShipFire, true) && f->m_cursor4->isVisible() ? 127 : 255);
-            }
-            setupCustomPage(page == -1 ? findIconPage(type, MoreIcons::dualSelected()) : page, type);
-        }*/
-
         if (f->m_initialized && f->m_cursor3 && f->m_cursor4) {
             f->m_cursor3->setOpacity(more_icons::hasIcon(type, true) && f->m_cursor3->isVisible() ? 127 : 255);
             if (type == IconType::Special) {
