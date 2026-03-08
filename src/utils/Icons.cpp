@@ -7,8 +7,8 @@
 #include "Load.hpp"
 #include "Log.hpp"
 #include <Geode/loader/Dirs.hpp>
+#include <Geode/loader/Dispatch.hpp>
 #include <Geode/loader/Mod.hpp>
-#include <geode.texture-loader/include/TextureLoader.hpp>
 #include <jasmine/setting.hpp>
 #include <MoreIcons.hpp>
 
@@ -92,6 +92,20 @@ struct IconPack {
 
 std::vector<IconPack> packs;
 float factor = 0.0f;
+
+namespace geode::texture_loader {
+    struct Pack {
+        std::string id;
+        std::string name;
+        VersionInfo version;
+        std::vector<std::string> authors;
+        std::filesystem::path path;
+        std::filesystem::path resourcesPath;
+    };
+
+    std::vector<Pack> getAppliedPacks()
+        GEODE_EVENT_EXPORT_CALL_NORES(&getAppliedPacks, (), std::string("geode.texture-loader/getAppliedPacks", 36));
+}
 
 void Icons::loadPacks() {
     factor = Get::Director()->getContentScaleFactor();

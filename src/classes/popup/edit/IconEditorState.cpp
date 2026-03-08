@@ -20,12 +20,12 @@ Result<FrameDefinition> matjson::Serialize<FrameDefinition>::fromJson(const matj
 
 matjson::Value matjson::Serialize<FrameDefinition>::toJson(const FrameDefinition& def) {
     return makeObject({
-        { "offset-x"s, matjson::Value(def.offsetX) },
-        { "offset-y"s, matjson::Value(def.offsetY) },
-        { "rotation-x"s, matjson::Value(def.rotationX) },
-        { "rotation-y"s, matjson::Value(def.rotationY) },
-        { "scale-x"s, matjson::Value(def.scaleX) },
-        { "scale-y"s, matjson::Value(def.scaleY) },
+        { "offset-x"s, Value(def.offsetX) },
+        { "offset-y"s, Value(def.offsetY) },
+        { "rotation-x"s, Value(def.rotationX) },
+        { "rotation-y"s, Value(def.rotationY) },
+        { "scale-x"s, Value(def.scaleX) },
+        { "scale-y"s, Value(def.scaleY) }
     });
 }
 
@@ -42,9 +42,9 @@ Result<IconEditorState> matjson::Serialize<IconEditorState>::fromJson(const matj
 
 matjson::Value matjson::Serialize<IconEditorState>::toJson(const IconEditorState& state) {
     return makeObject({
-        { "definitions"s, matjson::Value(state.definitions) },
-        { "main-color"s, matjson::Value(state.mainColor) },
-        { "secondary-color"s, matjson::Value(state.secondaryColor) },
-        { "glow-color"s, matjson::Value(state.glowColor) },
+        { "definitions"s, Value(state.definitions) },
+        { "main-color"s, Value(state.mainColor) },
+        { "secondary-color"s, Value(state.secondaryColor) },
+        { "glow-color"s, Value(state.glowColor) }
     });
 }
