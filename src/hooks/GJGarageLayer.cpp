@@ -49,7 +49,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             f->m_playerObject2 = static_cast<SimplePlayer*>(getChildByID("player2-icon"));
         }
 
-        m_fields->m_initialized = true;
+        f->m_initialized = true;
 
         MoreIcons::updateGarage(this);
 
