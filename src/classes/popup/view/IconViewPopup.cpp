@@ -60,7 +60,7 @@ bool IconViewPopup::init(IconType type, bool custom) {
         }
     }
     else {
-        auto count = Get::GameManager()->countForType(type);
+        auto count = Get::gameManager->countForType(type);
         for (int i = 1; i <= count; i++) {
             auto iconMenu = CCMenu::create();
             auto lazyIcon = LazyIcon::create(type, i, nullptr, {}, [this, i, type] {

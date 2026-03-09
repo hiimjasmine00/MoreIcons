@@ -108,7 +108,7 @@ IconInfo* more_icons::setIcon(IconInfo* info, IconType type, bool dual) {
 CCTexture2D* more_icons::loadIcon(IconInfo* info, int requestID) {
     if (!info) return nullptr;
 
-    auto texture = Get::TextureCache()->textureForKey(info->getTextureString().c_str());
+    auto texture = Get::textureCache->textureForKey(info->getTextureString().c_str());
     if (Icons::preloadIcons) return texture;
 
     auto& loadedIcon = Icons::loadedIcons[info];
@@ -263,7 +263,7 @@ void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
 
             info->setJSON(path / L("settings.json"));
 
-            auto factor = Get::Director()->getContentScaleFactor();
+            auto factor = Get::director->getContentScaleFactor();
             Filesystem::PathView icon;
             if (factor >= 4.0f) icon = L("icon-uhd.png");
             else if (factor >= 2.0f) icon = L("icon-hd.png");
@@ -288,13 +288,12 @@ void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
 
     info->setVanilla(false);
 
-    auto textureCache = Get::TextureCache();
     auto newPngs = info->getAllTextures();
     for (size_t i = 0; i < newPngs.size(); i++) {
         auto& oldPng = oldPngs[i];
-        if (Ref<CCTexture2D> texture = textureCache->textureForKey(oldPng.c_str())) {
-            textureCache->removeTextureForKey(oldPng.c_str());
-            textureCache->m_pTextures->setObject(texture, newPngs[i]);
+        if (Ref<CCTexture2D> texture = Get::textureCache->textureForKey(oldPng.c_str())) {
+            Get::textureCache->removeTextureForKey(oldPng.c_str());
+            Get::textureCache->m_pTextures->setObject(texture, newPngs[i]);
         }
     }
 }
@@ -302,12 +301,11 @@ void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
 void more_icons::removeIcon(IconInfo* info) {
     Icons::loadedIcons.erase(info);
 
-    auto spriteFrameCache = Get::SpriteFrameCache();
     for (auto& frame : info->getFrameNames()) {
-        spriteFrameCache->removeSpriteFrameByName(frame.c_str());
+        Get::spriteFrameCache->removeSpriteFrameByName(frame.c_str());
     }
     for (auto& textureString : info->getAllTextures()) {
-        Get::TextureCache()->removeTextureForKey(textureString.c_str());
+        Get::textureCache->removeTextureForKey(textureString.c_str());
     }
 
     auto type = info->getType();
@@ -371,25 +369,23 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
         }
     }
 
-    auto textureCache = Get::TextureCache();
     auto newPngs = info->getAllTextures();
     for (size_t i = 0; i < newPngs.size(); i++) {
         auto& oldPng = oldPngs[i];
-        if (Ref<CCTexture2D> texture = textureCache->textureForKey(oldPng.c_str())) {
-            textureCache->removeTextureForKey(oldPng.c_str());
-            textureCache->m_pTextures->setObject(texture, newPngs[i]);
+        if (Ref<CCTexture2D> texture = Get::textureCache->textureForKey(oldPng.c_str())) {
+            Get::textureCache->removeTextureForKey(oldPng.c_str());
+            Get::textureCache->m_pTextures->setObject(texture, newPngs[i]);
         }
     }
 
     auto& frameNames = const_cast<std::vector<std::string>&>(info->getFrameNames());
     auto& newName = info->getName();
     if (!frameNames.empty()) {
-        auto spriteFrameCache = Get::SpriteFrameCache();
         for (auto& frameName : frameNames) {
             if (Ref<CCSpriteFrame> spriteFrame = Icons::getFrame(frameName)) {
-                spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
+                Get::spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
                 Load::fixFrameName(frameName, newName, type);
-                spriteFrameCache->addSpriteFrame(spriteFrame, frameName.c_str());
+                Get::spriteFrameCache->addSpriteFrame(spriteFrame, frameName.c_str());
             }
         }
     }
@@ -410,7 +406,7 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
 void more_icons::updateIcon(IconInfo* info) {
     CCTexture2D* texture = nullptr;
     for (auto& textureString : info->getAllTextures()) {
-        texture = Get::TextureCache()->textureForKey(textureString.c_str());
+        texture = Get::textureCache->textureForKey(textureString.c_str());
         if (!texture) continue;
 
         auto binaryRes = file::readBinary(info->getTexture());
@@ -432,7 +428,6 @@ void more_icons::updateIcon(IconInfo* info) {
     auto frames = std::move(framesRes).unwrap();
     if (frames.empty()) return;
 
-    auto spriteFrameCache = Get::SpriteFrameCache();
     auto& frameNames = const_cast<std::vector<std::string>&>(info->getFrameNames());
     for (auto it = frameNames.begin(); it != frameNames.end();) {
         auto& frameName = *it;
@@ -451,13 +446,13 @@ void more_icons::updateIcon(IconInfo* info) {
             ++it;
         }
         else {
-            spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
+            Get::spriteFrameCache->removeSpriteFrameByName(frameName.c_str());
             it = frameNames.erase(it);
         }
     }
 
     for (auto& [frameName, frame] : frames) {
-        spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
+        Get::spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
         frameNames.push_back(frameName);
     }
 }

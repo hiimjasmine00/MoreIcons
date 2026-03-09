@@ -35,7 +35,7 @@ class $modify(MIMenuLayer, MenuLayer) {
         if (!profileButton) return true;
 
         more_icons::updateSimplePlayer(profileButton->getNormalImage()->getChildByType<SimplePlayer>(0),
-            Get::GameManager()->m_playerIconType, false);
+            Get::gameManager->m_playerIconType, false);
 
         return true;
     }

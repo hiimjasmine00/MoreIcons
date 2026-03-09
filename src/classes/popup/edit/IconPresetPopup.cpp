@@ -43,7 +43,7 @@ bool IconPresetPopup::init(IconType type, std::string_view suffix, Function<void
     scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(scrollLayer);
 
-    auto count = Get::GameManager()->countForType(type);
+    auto count = Get::gameManager->countForType(type);
     for (int i = 1; i <= count; i++) {
         auto iconMenu = CCMenu::create();
         auto lazyIcon = LazyIcon::create(type, i, nullptr, suffix, [this, i] {

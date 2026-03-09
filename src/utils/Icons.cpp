@@ -91,7 +91,6 @@ struct IconPack {
 };
 
 std::vector<IconPack> packs;
-float factor = 0.0f;
 
 namespace geode::texture_loader {
     struct Pack {
@@ -108,7 +107,6 @@ namespace geode::texture_loader {
 }
 
 void Icons::loadPacks() {
-    factor = Get::Director()->getContentScaleFactor();
     packs.emplace_back(std::string("More Icons", 10), std::string(), dirs::getGeodeDir(), false, false);
     migrateTrails(std::move(Mod::get()->getConfigDir().make_preferred()) / L("trail"));
 
@@ -178,7 +176,7 @@ std::filesystem::path Icons::getUhdResourcesDir() {
 }
 
 std::filesystem::path Icons::vanillaTexturePath(std::string_view path, bool skipSuffix) {
-    return (!skipSuffix && Get::Director()->getContentScaleFactor() >= 4.0f ? Icons::getUhdResourcesDir() : dirs::getResourcesDir()) / path;
+    return (!skipSuffix && Get::director->getContentScaleFactor() >= 4.0f ? Icons::getUhdResourcesDir() : dirs::getResourcesDir()) / path;
 }
 #else
 std::filesystem::path Icons::vanillaTexturePath(Filesystem::PathView path, bool skipSuffix) {
@@ -187,6 +185,7 @@ std::filesystem::path Icons::vanillaTexturePath(Filesystem::PathView path, bool 
 #endif
 
 void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
+    auto factor = Get::director->getContentScaleFactor();
     auto [parent, stem] = splitPath(path, 6);
 
     std::string name;
@@ -257,6 +256,7 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
 }
 
 void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
+    auto factor = Get::director->getContentScaleFactor();
     auto [parent, stem] = splitPath(path, 4);
 
     auto plistPath = Filesystem::withExt(path, L(".plist"));
@@ -308,6 +308,7 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
 }
 
 void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
+    auto factor = Get::director->getContentScaleFactor();
     auto shortName = std::string(Filesystem::strNarrow(Filesystem::filenameView(path)));
     auto name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
     auto texturePath = path / L("trail.png");
@@ -365,6 +366,7 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
 }
 
 void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
+    auto factor = Get::director->getContentScaleFactor();
     auto shortName = std::string(Filesystem::strNarrow(Filesystem::filenameView(path)));
     auto name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
     auto uhdPath = path / L("effect-uhd.plist");
@@ -421,6 +423,7 @@ void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
 }
 
 void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
+    auto factor = Get::director->getContentScaleFactor();
     auto [parent, stem] = splitPath(path, 4);
 
     auto plistPath = Filesystem::withExt(path, L(".plist"));
@@ -475,6 +478,7 @@ void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& p
 }
 
 void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
+    auto factor = Get::director->getContentScaleFactor();
     auto shortName = std::string(Filesystem::strNarrow(Filesystem::filenameView(path)));
     auto name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
@@ -675,7 +679,6 @@ void Icons::loadIcons(IconType type) {
 }
 
 void Icons::finishLoading() {
-    factor = 0.0f;
     packs.clear();
     images.clear();
 }
@@ -691,7 +694,7 @@ CCTexture2D* Icons::createAndAddFrames(IconInfo* info) {
 }
 
 CCSpriteFrame* Icons::getFrame(ZStringView name) {
-    auto spriteFrame = Get::SpriteFrameCache()->spriteFrameByName(name.c_str());
+    auto spriteFrame = Get::spriteFrameCache->spriteFrameByName(name.c_str());
     if (!spriteFrame || spriteFrame->getTag() == 105871529) spriteFrame = nullptr;
     return spriteFrame;
 }
@@ -706,10 +709,13 @@ void Icons::setIcon(CCNode* node, IconInfo* info) {
 }
 
 void Icons::uncacheIcon(IconInfo* info) {
-    auto spriteFrameCache = Get::SpriteFrameCache();
-    auto& frameNames = const_cast<std::vector<std::string>&>(info->getFrameNames());
-    for (auto it = frameNames.begin(); it != frameNames.end(); it = frameNames.erase(it)) {
-        spriteFrameCache->removeSpriteFrameByName(it->c_str());
+    if (Get::spriteFrameCache) {
+        auto& frameNames = const_cast<std::vector<std::string>&>(info->getFrameNames());
+        for (auto it = frameNames.begin(); it != frameNames.end(); it = frameNames.erase(it)) {
+            Get::spriteFrameCache->removeSpriteFrameByName(it->c_str());
+        }
     }
-    Get::TextureCache()->removeTextureForKey(info->getTextureString().c_str());
+    if (Get::textureCache) {
+        Get::textureCache->removeTextureForKey(info->getTextureString().c_str());
+    }
 }

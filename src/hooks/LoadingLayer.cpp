@@ -1,4 +1,5 @@
 #include "../MoreIcons.hpp"
+#include "../utils/Get.hpp"
 #include "../utils/Icons.hpp"
 #include <Geode/modify/LoadingLayer.hpp>
 
@@ -11,6 +12,15 @@ class $modify(MILoadingLayer, LoadingLayer) {
 
     static void onModify(ModifyBase<ModifyDerive<MILoadingLayer, LoadingLayer>>& self) {
         (void)self.setHookPriorityAfterPre("LoadingLayer::loadAssets", "geode.loader");
+    }
+
+    bool init(bool refresh) {
+        if (!LoadingLayer::init(refresh)) return false;
+
+        Get::spriteFrameCache = CCSpriteFrameCache::sharedSpriteFrameCache();
+        Get::textureCache = CCTextureCache::sharedTextureCache();
+
+        return true;
     }
 
     void loadAssets() {

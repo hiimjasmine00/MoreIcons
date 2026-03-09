@@ -175,7 +175,7 @@ void SpecialSettingsPopup::textChanged(CCTextInputNode* input) {
     auto exponent = controlData->exponent;
 
     auto floatValue = def;
-    if (auto res = numFromString<float>(MoreIcons::getText(input))) {
+    if (auto res = numFromString<float>(MoreIcons::getText(input->m_textField))) {
         floatValue = res.unwrap();
     }
     else {

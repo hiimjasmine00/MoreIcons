@@ -7,9 +7,14 @@ class IconInfo;
 
 namespace MoreIcons {
     extern geode::Mod* separateDualIcons;
+    extern geode::Mod* customGamemodeColors;
 
     void blendStreak(cocos2d::CCMotionStreak* streak, IconInfo* info);
     geode::Result<std::filesystem::path> createTrash();
+    cocos2d::ccColor3B currentColor1(IconType type, bool dual);
+    cocos2d::ccColor3B currentColor2(IconType type, bool dual);
+    cocos2d::ccColor3B currentColorGlow(IconType type, bool dual);
+    bool currentGlow(bool dual);
     cocos2d::CCSprite* customIcon(IconInfo* info);
     bool dualSelected();
     std::filesystem::path getEditorDir(IconType type);
@@ -18,12 +23,8 @@ namespace MoreIcons {
     void getIconPaths(IconInfo* info, int id, IconType type, std::filesystem::path& png, std::filesystem::path& plist);
     std::filesystem::path getIconStem(std::string_view name, IconType type);
     std::filesystem::path getIconPath(IconInfo* info, int id, IconType type);
-    geode::ZStringView getText(CCTextInputNode* input);
+    geode::ZStringView getText(cocos2d::CCTextFieldTTF* input);
     void loadFromSave(IconType type);
     void updateGarage(GJGarageLayer* layer = nullptr);
-    cocos2d::ccColor3B vanillaColor1(bool dual);
-    cocos2d::ccColor3B vanillaColor2(bool dual);
-    cocos2d::ccColor3B vanillaColorGlow(bool dual);
-    bool vanillaGlow(bool dual);
     int vanillaIcon(IconType type, bool dual);
 }

@@ -1,11 +1,15 @@
 # More Icons Changelog
 ## v2.0.0 (2026-03-16)
-- Ported to Geometry Dash v2.208 / Geode SDK v5.0.0
-- Added custom death effect and ship fire support
+- Ported to Geometry Dash v2.208 / Geode SDK v5.0.0 (You can all stop pestering me about this now :P)
+- Added custom death effect support ([#12](https://github.com/hiimjasmine00/MoreIcons/issues/12))
+- Added custom ship fire support
+- Revamped trail support, allowing for trails to have custom display icons ([#19](https://github.com/hiimjasmine00/MoreIcons/issues/19))
+- Added compatibility with the mod "Custom Gamemode Colors" by rooot
 - Renamed `MoreIconsV2.hpp` to `MoreIcons.hpp` and made it the main API header
+- Refactored `IconInfo.hpp` to use pointer-to-implementation
 
 ## v1.16.2 (2025-12-08)
-- Fixed a bug where some icons with weird offsets would be cut off when exported (I don't know asc095's in-game name but thanks for reporting!)
+- Fixed a bug where some icons with weird offsets would be cut off when exported (Reported by [ASCdash095](user:26477842))
 - Fixed a bug where the icon viewer would not show the icon pieces (I LITERALLY forgot to fix this :sob:)
 
 ## v1.16.1 (2025-12-08)

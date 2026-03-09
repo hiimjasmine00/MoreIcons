@@ -5,8 +5,7 @@
 using namespace geode::prelude;
 
 texpack::Image ImageRenderer::getImage(CCNode* node) {
-    auto director = Get::Director();
-    auto size = node->getScaledContentSize() * director->getContentScaleFactor();
+    auto size = node->getScaledContentSize() * Get::director->getContentScaleFactor();
     auto floatWidth = size.width;
     auto floatHeight = size.height;
     uint32_t width = floatWidth;
@@ -36,7 +35,7 @@ texpack::Image ImageRenderer::getImage(CCNode* node) {
 
     glViewport(0, 0, width, height);
 
-    auto winSize = director->getWinSizeInPixels();
+    auto winSize = Get::director->getWinSizeInPixels();
 
     kmMat4 orthoMatrix;
     kmMat4OrthographicProjection(&orthoMatrix, -floatWidth / winSize.width, floatWidth / winSize.width,
@@ -56,7 +55,7 @@ texpack::Image ImageRenderer::getImage(CCNode* node) {
     glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE, data.data());
 
     glBindFramebuffer(GL_FRAMEBUFFER, oldFBO);
-    director->setViewport();
+    Get::director->setViewport();
     kmGLMatrixMode(KM_GL_PROJECTION);
     kmGLPopMatrix();
     kmGLMatrixMode(KM_GL_MODELVIEW);

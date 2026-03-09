@@ -48,7 +48,7 @@ bool SaveIconPopup::init(
     nameInput->setID("name-input");
     m_mainLayer->addChild(nameInput);
 
-    m_nameInput = nameInput->getInputNode();
+    m_nameInput = nameInput->getInputNode()->m_textField;
 
     auto saveButton = CCMenuItemSpriteExtra::create(
         ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f), this, menu_selector(SaveIconPopup::onSave)
@@ -96,7 +96,7 @@ void SaveIconPopup::saveIcon() {
     auto name = MoreIcons::getText(m_nameInput);
 
     std::array<texpack::Packer, 3> packers = {};
-    auto scaleFactor = Get::Director()->getContentScaleFactor();
+    auto scaleFactor = Get::director->getContentScaleFactor();
     int index;
     if (scaleFactor >= 4.0f) index = 0;
     else if (scaleFactor >= 2.0f) index = 1;
@@ -149,7 +149,7 @@ void SaveIconPopup::saveIcon() {
     }
     else {
         icon = more_icons::addIcon(name, name, type,
-            std::move(m_pngs[index]), std::move(m_plists[index]), Get::Director()->getLoadedTextureQuality());
+            std::move(m_pngs[index]), std::move(m_plists[index]), Get::director->getLoadedTextureQuality());
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }
 

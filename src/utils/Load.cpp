@@ -369,17 +369,16 @@ Result<StringMap<Ref<CCSpriteFrame>>> Load::createFrames(
 CCTexture2D* Load::addFrames(ImageResult& image, std::vector<std::string>& frameNames) {
     if (auto texture = image.texture.data()) {
         initTexture(texture, image.data.data(), image.width, image.height);
-        Get::TextureCache()->m_pTextures->setObject(texture, image.name);
+        Get::textureCache->m_pTextures->setObject(texture, image.name);
     }
 
     if (image.frames.empty()) {
         frameNames.clear();
     }
     else {
-        auto spriteFrameCache = Get::SpriteFrameCache();
         for (auto it = frameNames.begin(); it != frameNames.end();) {
             if (auto frameIt = image.frames.find(*it); frameIt != image.frames.end()) {
-                spriteFrameCache->addSpriteFrame(frameIt->second, frameIt->first.c_str());
+                Get::spriteFrameCache->addSpriteFrame(frameIt->second, frameIt->first.c_str());
                 image.frames.erase(frameIt);
                 it++;
             }
@@ -390,7 +389,7 @@ CCTexture2D* Load::addFrames(ImageResult& image, std::vector<std::string>& frame
 
         frameNames.reserve(frameNames.size() + image.frames.size());
         for (auto it = image.frames.begin(); it != image.frames.end(); it = image.frames.erase(it)) {
-            spriteFrameCache->addSpriteFrame(it->second, it->first.c_str());
+            Get::spriteFrameCache->addSpriteFrame(it->second, it->first.c_str());
             frameNames.push_back(std::move(const_cast<std::string&>(it->first)));
         }
     }

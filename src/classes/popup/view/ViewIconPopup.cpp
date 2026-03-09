@@ -3,12 +3,13 @@
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Defaults.hpp"
+#include "../../../utils/Get.hpp"
 #include "../../../utils/Icons.hpp"
 #include "../../../utils/Json.hpp"
-#include <jasmine/mod.hpp>
+#include <Geode/binding/GameManager.hpp>
+#include <Geode/loader/Mod.hpp>
 
 using namespace geode::prelude;
-using namespace jasmine::mod;
 
 constexpr std::initializer_list<std::initializer_list<std::string_view>> robotSuffixes = {
     { "_01_001", "_01_2_001", "_01_glow_001", "_01_extra_001" },
@@ -103,7 +104,8 @@ bool ViewIconPopup::init(IconType type, int id, IconInfo* info) {
         streak->setScaleX(Json::get(trailInfo, "stroke", 14.0f) / size.width);
         streak->setScaleY(320.0f / size.height);
         if (Json::get(trailInfo, "tint", false)) {
-            streak->setColor(MoreIcons::vanillaColor2(MoreIcons::dualSelected()));
+            streak->setColor(Constants::getColor(MoreIcons::dualSelected() && MoreIcons::separateDualIcons
+                ? MoreIcons::separateDualIcons->getSavedValue("color2", 0) : Get::gameManager->m_playerColor2));
         }
         streak->setID("streak-preview");
         m_mainLayer->addChild(streak);
