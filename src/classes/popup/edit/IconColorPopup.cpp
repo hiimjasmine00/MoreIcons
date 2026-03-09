@@ -166,7 +166,7 @@ bool IconColorPopup::init(int selected, Function<void(int)> callback) {
     m_selectSprite->setID("select-sprite");
     m_mainLayer->addChild(m_selectSprite);
 
-    auto center = Get::Director()->getWinSize() / 2.0f;
+    auto center = Get::director->getWinSize() / 2.0f;
     for (int i = 0; i < 144; i++) {
         auto colorIndex = colorForIndex(i);
         if (colorIndex < 0) continue;

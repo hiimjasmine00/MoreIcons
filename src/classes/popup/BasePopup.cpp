@@ -1,5 +1,4 @@
 #include "BasePopup.hpp"
-#include "../../utils/Get.hpp"
 
 using namespace geode::prelude;
 

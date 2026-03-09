@@ -4,7 +4,6 @@
 #include "utils/Get.hpp"
 #include "utils/Icons.hpp"
 #include "utils/Json.hpp"
-#include <Geode/binding/CCTextInputNode.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
@@ -13,6 +12,7 @@
 
 using namespace geode::prelude;
 
+Mod* MoreIcons::customGamemodeColors = nullptr;
 Mod* MoreIcons::separateDualIcons = nullptr;
 
 $on_mod(Loaded) {
@@ -24,6 +24,16 @@ $on_mod(Loaded) {
         else if (separateDualIcons->shouldLoad()) {
             ModStateEvent(ModEventType::Loaded, separateDualIcons).listen([separateDualIcons] {
                 MoreIcons::separateDualIcons = separateDualIcons;
+            }).leak();
+        }
+    }
+    if (auto customGamemodeColors = Loader::get()->getInstalledMod("rooot.custom-gamemode-colors")) {
+        if (customGamemodeColors->isLoaded()) {
+            MoreIcons::customGamemodeColors = customGamemodeColors;
+        }
+        else if (customGamemodeColors->shouldLoad()) {
+            ModStateEvent(ModEventType::Loaded, customGamemodeColors).listen([customGamemodeColors] {
+                MoreIcons::customGamemodeColors = customGamemodeColors;
             }).leak();
         }
     }
@@ -41,23 +51,54 @@ bool MoreIcons::dualSelected() {
     return separateDualIcons && separateDualIcons->getSavedValue("2pselected", false);
 }
 
-ccColor3B MoreIcons::vanillaColor1(bool dual) {
-    return Constants::getColor(
-        dual && separateDualIcons ? separateDualIcons->getSavedValue("color1", 0) : Get::GameManager()->m_playerColor);
+namespace MoreIcons {
+    ccColor3B customColor(IconType type, bool dual, std::string_view key, std::string_view dualKey, SeedValueRSV GameManager::* colorMember) {
+        if (customGamemodeColors) {
+            if (auto playerOverride = customGamemodeColors->getSaveContainer().get(
+                dual && separateDualIcons ? "player2_override" : "player1_override"
+            )) {
+                std::string_view gamemode;
+                switch (type) {
+                    case IconType::Cube: gamemode = "cube"; break;
+                    case IconType::Ship:
+                    case IconType::Jetpack: gamemode = "ship"; break;
+                    case IconType::Ball: gamemode = "ball"; break;
+                    case IconType::Ufo: gamemode = "ufo"; break;
+                    case IconType::Wave: gamemode = "wave"; break;
+                    case IconType::Robot: gamemode = "robot"; break;
+                    case IconType::Spider: gamemode = "spider"; break;
+                    case IconType::Swing: gamemode = "swing"; break;
+                    default: break;
+                }
+                if (!gamemode.empty()) {
+                    if (auto colors = playerOverride.unwrap().get(gamemode)) {
+                        auto& colorsValue = colors.unwrap();
+                        if (Json::get(colorsValue, "enabled", false)) {
+                            return Constants::getColor(Json::get(colorsValue, key, 0));
+                        }
+                    }
+                }
+            }
+        }
+
+        return Constants::getColor(dual && separateDualIcons ? separateDualIcons->getSavedValue(dualKey, 0) : Get::gameManager->*colorMember);
+    }
 }
 
-ccColor3B MoreIcons::vanillaColor2(bool dual) {
-    return Constants::getColor(
-        dual && separateDualIcons ? separateDualIcons->getSavedValue("color2", 0) : Get::GameManager()->m_playerColor2);
+ccColor3B MoreIcons::currentColor1(IconType type, bool dual) {
+    return customColor(type, dual, "primary", "color1", &GameManager::m_playerColor);
 }
 
-ccColor3B MoreIcons::vanillaColorGlow(bool dual) {
-    return Constants::getColor(
-        dual && separateDualIcons ? separateDualIcons->getSavedValue("colorglow", 0) : Get::GameManager()->m_playerGlowColor);
+ccColor3B MoreIcons::currentColor2(IconType type, bool dual) {
+    return customColor(type, dual, "secondary", "color2", &GameManager::m_playerColor2);
 }
 
-bool MoreIcons::vanillaGlow(bool dual) {
-    return dual && separateDualIcons ? separateDualIcons->getSavedValue("glow", false) : Get::GameManager()->m_playerGlow;
+ccColor3B MoreIcons::currentColorGlow(IconType type, bool dual) {
+    return customColor(type, dual, "glow", "colorglow", &GameManager::m_playerGlowColor);
+}
+
+bool MoreIcons::currentGlow(bool dual) {
+    return dual && separateDualIcons ? separateDualIcons->getSavedValue("glow", false) : Get::gameManager->m_playerGlow;
 }
 
 int MoreIcons::vanillaIcon(IconType type, bool dual) {
@@ -79,20 +120,19 @@ int MoreIcons::vanillaIcon(IconType type, bool dual) {
         }
     }
     else {
-        auto gameManager = Get::GameManager();
         switch (type) {
-            case IconType::Cube: return gameManager->m_playerFrame;
-            case IconType::Ship: return gameManager->m_playerShip;
-            case IconType::Ball: return gameManager->m_playerBall;
-            case IconType::Ufo: return gameManager->m_playerBird;
-            case IconType::Wave: return gameManager->m_playerDart;
-            case IconType::Robot: return gameManager->m_playerRobot;
-            case IconType::Spider: return gameManager->m_playerSpider;
-            case IconType::Swing: return gameManager->m_playerSwing;
-            case IconType::Jetpack: return gameManager->m_playerJetpack;
-            case IconType::DeathEffect: return gameManager->m_playerDeathEffect;
-            case IconType::Special: return gameManager->m_playerStreak;
-            case IconType::ShipFire: return gameManager->m_playerShipFire;
+            case IconType::Cube: return Get::gameManager->m_playerFrame;
+            case IconType::Ship: return Get::gameManager->m_playerShip;
+            case IconType::Ball: return Get::gameManager->m_playerBall;
+            case IconType::Ufo: return Get::gameManager->m_playerBird;
+            case IconType::Wave: return Get::gameManager->m_playerDart;
+            case IconType::Robot: return Get::gameManager->m_playerRobot;
+            case IconType::Spider: return Get::gameManager->m_playerSpider;
+            case IconType::Swing: return Get::gameManager->m_playerSwing;
+            case IconType::Jetpack: return Get::gameManager->m_playerJetpack;
+            case IconType::DeathEffect: return Get::gameManager->m_playerDeathEffect;
+            case IconType::Special: return Get::gameManager->m_playerStreak;
+            case IconType::ShipFire: return Get::gameManager->m_playerShipFire;
             default: return 0;
         }
     }
@@ -100,11 +140,11 @@ int MoreIcons::vanillaIcon(IconType type, bool dual) {
 
 void MoreIcons::updateGarage(GJGarageLayer* layer) {
     auto noLayer = layer == nullptr;
-    if (noLayer) layer = Get::Director()->getRunningScene()->getChildByType<GJGarageLayer>(0);
+    if (noLayer) layer = Get::director->getRunningScene()->getChildByType<GJGarageLayer>(0);
     if (!layer) return;
 
     auto player1 = layer->m_playerObject;
-    auto iconType1 = Get::GameManager()->m_playerIconType;
+    auto iconType1 = Get::gameManager->m_playerIconType;
     if (noLayer) player1->updatePlayerFrame(vanillaIcon(iconType1, false), iconType1);
     more_icons::updateSimplePlayer(player1, iconType1, false);
 
@@ -183,11 +223,11 @@ std::filesystem::path MoreIcons::getIconPath(IconInfo* info, int id, IconType ty
     return png;
 }
 
-std::filesystem::path getFullPath(CCFileUtils* fileUtils, ZStringView filename) {
+std::filesystem::path getFullPath(ZStringView filename) {
     #ifdef GEODE_IS_WINDOWS
-    return std::filesystem::path(Filesystem::strWide(fileUtils->fullPathForFilename(filename.c_str(), false)));
+    return std::filesystem::path(Filesystem::strWide(Get::fileUtils->fullPathForFilename(filename.c_str(), false)));
     #else
-    return std::filesystem::path(std::string(fileUtils->fullPathForFilename(filename.c_str(), false)));
+    return std::filesystem::path(std::string(Get::fileUtils->fullPathForFilename(filename.c_str(), false)));
     #endif
 }
 
@@ -198,29 +238,27 @@ void MoreIcons::getIconPaths(IconInfo* info, int id, IconType type, std::filesys
         return;
     }
 
-    auto fileUtils = Get::FileUtils();
-
     if (type == IconType::DeathEffect) {
-        png = getFullPath(fileUtils, fmt::format("PlayerExplosion_{:02}.png", id));
-        plist = getFullPath(fileUtils, fmt::format("PlayerExplosion_{:02}.plist", id));
+        png = getFullPath(fmt::format("PlayerExplosion_{:02}.png", id));
+        plist = getFullPath(fmt::format("PlayerExplosion_{:02}.plist", id));
         return;
     }
     else if (type == IconType::Special) {
-        png = getFullPath(fileUtils, fmt::format("streak_{:02}_001.png", id));
+        png = getFullPath(fmt::format("streak_{:02}_001.png", id));
         return;
     }
     else if (type == IconType::ShipFire) {
-        png = getFullPath(fileUtils, fmt::format("shipfire{:02}_001.png", id));
+        png = getFullPath(fmt::format("shipfire{:02}_001.png", id));
         return;
     }
 
     auto iconName = getIconName(id, type);
-    png = getFullPath(fileUtils, fmt::format("icons/{}.png", iconName));
-    plist = getFullPath(fileUtils, fmt::format("icons/{}.plist", iconName));
+    png = getFullPath(fmt::format("icons/{}.png", iconName));
+    plist = getFullPath(fmt::format("icons/{}.plist", iconName));
 }
 
-ZStringView MoreIcons::getText(CCTextInputNode* input) {
-    return input->m_textField->getString();
+ZStringView MoreIcons::getText(CCTextFieldTTF* input) {
+    return *input->m_pInputText;
 }
 
 void MoreIcons::loadFromSave(IconType type) {

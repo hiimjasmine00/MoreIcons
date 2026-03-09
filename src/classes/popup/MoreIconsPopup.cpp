@@ -43,10 +43,7 @@ bool MoreIconsPopup::init() {
     m_mainLayer->addChild(m_gamemodesNode);
 
     m_dual = MoreIcons::dualSelected();
-    m_color1 = MoreIcons::vanillaColor1(m_dual);
-    m_color2 = MoreIcons::vanillaColor2(m_dual);
-    m_colorGlow = MoreIcons::vanillaColorGlow(m_dual);
-    m_glow = MoreIcons::vanillaGlow(m_dual);
+    m_glow = MoreIcons::currentGlow(m_dual);
 
     createMenu(IconType::Cube);
     createMenu(IconType::Ship);
@@ -95,14 +92,15 @@ void MoreIconsPopup::createMenu(IconType type) {
     background->setID("background");
     gamemodeMenu->addChild(background);
 
-    auto id = MoreIcons::vanillaIcon(type, m_dual);
+    auto info = more_icons::activeIcon(type, m_dual);
+    auto id = info ? 1 : MoreIcons::vanillaIcon(type, m_dual);
     if (type <= IconType::Jetpack) {
         auto icon = SimplePlayer::create(1);
         icon->updatePlayerFrame(id, type);
-        more_icons::updateSimplePlayer(icon, type, m_dual);
-        icon->setColor(m_color1);
-        icon->setSecondColor(m_color2);
-        icon->enableCustomGlowColor(m_colorGlow);
+        more_icons::updateSimplePlayer(icon, info);
+        icon->setColor(MoreIcons::currentColor1(type, m_dual));
+        icon->setSecondColor(MoreIcons::currentColor2(type, m_dual));
+        icon->enableCustomGlowColor(MoreIcons::currentColorGlow(type, m_dual));
         icon->m_hasGlowOutline = m_glow;
         icon->updateColors();
         icon->setPosition({ 35.0f, 100.0f });
@@ -111,7 +109,6 @@ void MoreIconsPopup::createMenu(IconType type) {
         gamemodeMenu->addChild(icon);
     }
     else if (type >= IconType::DeathEffect) {
-        auto info = more_icons::activeIcon(type, m_dual);
         auto sprite = info ? MoreIcons::customIcon(info) : CCSprite::createWithSpriteFrameName(
             type == IconType::DeathEffect ? fmt::format("explosionIcon_{:02}_001.png", id).c_str() :
             type == IconType::Special ? fmt::format("player_special_{:02}_001.png", id).c_str() :
@@ -155,7 +152,7 @@ void MoreIconsPopup::createMenu(IconType type) {
     label->setID("info-label");
     gamemodeMenu->addChild(label);
 
-    auto vanillaLabel = CCLabelBMFont::create(fmt::format("Vanilla: {}", Get::GameManager()->countForType(type)).c_str(), "goldFont.fnt");
+    auto vanillaLabel = CCLabelBMFont::create(fmt::format("Vanilla: {}", Get::gameManager->countForType(type)).c_str(), "goldFont.fnt");
     vanillaLabel->limitLabelWidth(65.0f, 0.4f, 0.0f);
     auto vanillaButton = CCMenuItemSpriteExtra::create(vanillaLabel, this, menu_selector(MoreIconsPopup::onVanilla));
     vanillaButton->setPosition({ 35.0f, 62.0f });

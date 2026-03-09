@@ -50,7 +50,7 @@ bool EditTrailPopup::init(BasePopup* popup) {
     nameInput->setID("text-input");
     m_mainLayer->addChild(nameInput);
 
-    m_nameInput = nameInput->getInputNode();
+    m_nameInput = nameInput->getInputNode()->m_textField;
 
     auto bottomMenu = CCMenu::create();
     bottomMenu->setPosition({ 175.0f, 30.0f });

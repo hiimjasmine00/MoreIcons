@@ -110,7 +110,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         if (!icons) return m_iconPages[type];
 
         auto info = more_icons::activeIcon(type, dual);
-        return info ? (Get::GameManager()->countForType(type) + 35) / 36 + (info - icons->data()) / 36 : m_iconPages[type];
+        return info ? (Get::gameManager->countForType(type) + 35) / 36 + (info - icons->data()) / 36 : m_iconPages[type];
     }
 
     CCSprite* getCursor(bool alt, bool dual) {
@@ -130,7 +130,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         GJGarageLayer::onSelect(sender);
 
-        if (!Get::GameManager()->isIconUnlocked(sender->getTag(), btn->m_iconType)) return;
+        if (!Get::gameManager->isIconUnlocked(sender->getTag(), btn->m_iconType)) return;
 
         getCursor(btn->m_iconType == IconType::ShipFire, dual)->setOpacity(255);
 
@@ -164,7 +164,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         swapDual(IconType::Special);
         swapDual(IconType::ShipFire);
 
-        more_icons::updateSimplePlayer(m_playerObject, Get::GameManager()->m_playerIconType, false);
+        more_icons::updateSimplePlayer(m_playerObject, Get::gameManager->m_playerIconType, false);
         more_icons::updateSimplePlayer(m_fields->m_playerObject2, (IconType)MoreIcons::separateDualIcons->getSavedValue("lastmode", 0), true);
         selectTab(m_iconType);
     }
@@ -178,7 +178,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     void createNavMenu(int page, IconType type) {
         auto f = m_fields.self();
         if (!f->m_navMenu) {
-            auto winSize = Get::Director()->getWinSize();
+            auto winSize = Get::director->getWinSize();
             f->m_navMenu = CCMenu::create();
             f->m_navMenu->setPosition({ winSize.width / 2.0f, 15.0f });
             f->m_navMenu->setContentSize({ winSize.width - 60.0f, 20.0f });
@@ -190,14 +190,14 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         auto iconCount = more_icons::getIconCount(type);
         m_navDotMenu->setPositionY(iconCount > 0 ? 35.0f : 25.0f);
-        auto count = (Get::GameManager()->countForType(type) + 35) / 36;
+        auto count = (Get::gameManager->countForType(type) + 35) / 36;
         if (count < 2) {
             m_navDotMenu->setVisible(true);
             m_navDotMenu->setEnabled(true);
             m_navDotMenu->removeAllChildren();
             auto firstDot = static_cast<CCMenuItemSprite*>(m_pageButtons->objectAtIndex(0));
             static_cast<CCSprite*>(firstDot->getNormalImage())->setDisplayFrame(
-                Get::SpriteFrameCache()->spriteFrameByName("gj_navDotBtn_on_001.png"));
+                Get::spriteFrameCache->spriteFrameByName("gj_navDotBtn_on_001.png"));
             m_navDotMenu->addChild(firstDot);
             m_navDotMenu->updateLayout();
             m_leftArrow->setVisible(true);
@@ -248,7 +248,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
     void onArrow(CCObject* sender) {
         auto page = m_iconPages[m_iconType] + sender->getTag();
-        auto pages = (Get::GameManager()->countForType(m_iconType) + 35) / 36 + (more_icons::getIconCount(m_iconType) + 35) / 36;
+        auto pages = (Get::gameManager->countForType(m_iconType) + 35) / 36 + (more_icons::getIconCount(m_iconType) + 35) / 36;
         GJGarageLayer::setupPage(pages > 0 ? page < 0 ? pages + page : page >= pages ? page - pages : page : 0, m_iconType);
     }
 
@@ -259,7 +259,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto icons = more_icons::getIcons(type);
         if (!icons) return;
 
-        auto customPage = page - (Get::GameManager()->countForType(type) + 35) / 36;
+        auto customPage = page - (Get::gameManager->countForType(type) + 35) / 36;
         if (customPage < 0) return;
 
         std::vector<IconInfo*> infoView;
@@ -295,7 +295,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         m_iconSelection->setVisible(false);
 
         if (auto navDots = m_navDotMenu->getChildren()) {
-            auto offFrame = Get::SpriteFrameCache()->spriteFrameByName("gj_navDotBtn_off_001.png");
+            auto offFrame = Get::spriteFrameCache->spriteFrameByName("gj_navDotBtn_off_001.png");
             for (auto navDot : CCArrayExt<CCMenuItemSprite, false>(navDots)) {
                 static_cast<CCSprite*>(navDot->getNormalImage())->setDisplayFrame(offFrame);
             }
@@ -362,7 +362,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             f->m_pageBar = nullptr;
         }
 
-        f->m_pageBar = ListButtonBar::create(objs, Get::Director()->getWinSize() / 2.0f - CCPoint { 0.0f, 65.0f },
+        f->m_pageBar = ListButtonBar::create(objs, Get::director->getWinSize() / 2.0f - CCPoint { 0.0f, 65.0f },
             12, 3, 5.0f, 5.0f, 25.0f, 220.0f, 1);
         f->m_pageBar->m_scrollLayer->togglePageIndicators(false);
         f->m_pageBar->setID("icon-selection-bar"_spr);
@@ -422,7 +422,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             MoreIcons::separateDualIcons->setSavedValue("lasttype", (int)type);
         }
         else {
-            if (isIcon) Get::GameManager()->m_playerIconType = type;
+            if (isIcon) Get::gameManager->m_playerIconType = type;
             m_selectedIconType = type;
         }
 

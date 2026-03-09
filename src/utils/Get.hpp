@@ -7,10 +7,4 @@ namespace Get {
     extern GameManager* gameManager;
     extern cocos2d::CCSpriteFrameCache* spriteFrameCache;
     extern cocos2d::CCTextureCache* textureCache;
-
-    cocos2d::CCDirector* Director();
-    cocos2d::CCFileUtils* FileUtils();
-    GameManager* GameManager();
-    cocos2d::CCSpriteFrameCache* SpriteFrameCache();
-    cocos2d::CCTextureCache* TextureCache();
 }

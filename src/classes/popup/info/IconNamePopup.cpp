@@ -41,7 +41,7 @@ bool IconNamePopup::init(MoreInfoPopup* popup, IconInfo* info) {
     nameInput->setID("name-input");
     m_mainLayer->addChild(nameInput);
 
-    m_nameInput = nameInput->getInputNode();
+    m_nameInput = nameInput->getInputNode()->m_textField;
 
     auto confirmButton = CCMenuItemSpriteExtra::create(ButtonSprite::create("Confirm", 0.8f), this, menu_selector(IconNamePopup::onConfirm));
     confirmButton->setPosition({ 175.0f, 30.0f });

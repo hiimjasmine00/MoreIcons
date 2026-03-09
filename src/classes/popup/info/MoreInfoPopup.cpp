@@ -289,11 +289,12 @@ bool MoreInfoPopup::init(IconInfo* info) {
 void MoreInfoPopup::onIcon(CCObject* sender) {
     m_toggled = !m_toggled;
 
+    auto type = m_info->getType();
     auto dual = MoreIcons::dualSelected();
-    m_icon->setMainColor(m_toggled ? MoreIcons::vanillaColor1(dual) : ccColor3B { 255, 255, 255 });
-    m_icon->setSecondaryColor(m_toggled ? MoreIcons::vanillaColor2(dual) : ccColor3B { 255, 255, 255 });
-    m_icon->setGlowColor(m_toggled ? MoreIcons::vanillaColorGlow(dual) : ccColor3B { 255, 255, 255 });
-    m_icon->setGlow(!m_toggled || MoreIcons::vanillaGlow(dual));
+    m_icon->setMainColor(m_toggled ? MoreIcons::currentColor1(type, dual) : ccColor3B { 255, 255, 255 });
+    m_icon->setSecondaryColor(m_toggled ? MoreIcons::currentColor2(type, dual) : ccColor3B { 255, 255, 255 });
+    m_icon->setGlowColor(m_toggled ? MoreIcons::currentColorGlow(type, dual) : ccColor3B { 255, 255, 255 });
+    m_icon->setGlow(!m_toggled || MoreIcons::currentGlow(dual));
 }
 
 void MoreInfoPopup::onSettings(CCObject* sender) {

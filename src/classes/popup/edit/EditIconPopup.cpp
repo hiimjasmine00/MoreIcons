@@ -337,7 +337,7 @@ void EditIconPopup::onPieceClear(CCObject* sender) {
         auto emptyFrame = Icons::getFrame("emptyFrame.png"_spr);
         if (!emptyFrame) {
             emptyFrame = frameWithTexture(Load::createTexture(nullptr, 0, 0));
-            Get::SpriteFrameCache()->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
+            Get::spriteFrameCache->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
         }
         addFrame(emptyFrame);
     }
@@ -468,7 +468,7 @@ void EditIconPopup::sliderChanged(CCObject* sender) {
 }
 
 void EditIconPopup::textChanged(CCTextInputNode* input) {
-    auto value = numFromString<float>(MoreIcons::getText(input));
+    auto value = numFromString<float>(MoreIcons::getText(input->m_textField));
     updateControl(input->getTag(), value.unwrapOrDefault(), true, false, value.isOk());
     updateTargets();
 }
@@ -534,7 +534,7 @@ CCMenuItemSpriteExtra* EditIconPopup::addPieceButton(std::string_view suffix, in
 
     auto pieceFrame = Icons::getFrame("{}{}.png", MoreIcons::getIconName(1, m_iconType), suffix);
     if (pieceFrame) m_frames.emplace(suffix, pieceFrame);
-    else pieceFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
+    else pieceFrame = Get::spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
     auto pieceSprite = CCSprite::createWithSpriteFrame(pieceFrame);
     auto pieceButton = CCMenuItemSpriteExtra::create(pieceSprite, this, menu_selector(EditIconPopup::onSelectPiece));
     pieceSprite->setPosition({ 15.0f, 15.0f });
@@ -657,7 +657,7 @@ bool EditIconPopup::updateWithSelectedFiles(bool useSuffix) {
 }
 
 void EditIconPopup::updatePieces() {
-    auto crossFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
+    auto crossFrame = Get::spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
     for (auto& [suffix, sprite] : m_pieces) {
         auto it = m_frames.find(suffix);
         auto spriteFrame = it != m_frames.end() ? it->second.data() : nullptr;

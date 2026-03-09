@@ -44,7 +44,7 @@ bool SaveEditorPopup::init(
     nameInput->setID("name-input");
     m_mainLayer->addChild(nameInput);
 
-    m_nameInput = nameInput->getInputNode();
+    m_nameInput = nameInput->getInputNode()->m_textField;
 
     auto saveButton = CCMenuItemSpriteExtra::create(
         ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f), this, menu_selector(SaveEditorPopup::onSave)

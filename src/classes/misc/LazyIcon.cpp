@@ -48,7 +48,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
 
     MoreIcons::getIconPaths(info, id, type, m_texture, m_sheet);
 
-    if (Get::TextureCache()->textureForKey(Filesystem::strNarrow(m_texture.native()).data())) {
+    if (Get::textureCache->textureForKey(Filesystem::strNarrow(m_texture.native()).data())) {
         m_visited = true;
         createIcon();
     }
@@ -67,7 +67,7 @@ void LazyIcon::createIcon() {
     if (m_error.empty()) {
         if (!m_frameName.empty()) {
             auto spriteFrame = Icons::getFrame(m_frameName);
-            if (!spriteFrame) spriteFrame = Get::SpriteFrameCache()->spriteFrameByName("GJ_deleteIcon_001.png");
+            if (!spriteFrame) spriteFrame = Get::spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
             setMainNode(CCSprite::createWithSpriteFrame(spriteFrame));
         }
         else {
@@ -146,12 +146,11 @@ void LazyIcon::visit() {
 
 LazyIcon::~LazyIcon() {
     if (!m_frames.empty()) {
-        auto spriteFrameCache = Get::SpriteFrameCache();
         for (auto& frame : m_frames) {
-            spriteFrameCache->removeSpriteFrameByName(frame.c_str());
+            Get::spriteFrameCache->removeSpriteFrameByName(frame.c_str());
         }
     }
     if (!m_key.empty()) {
-        Get::TextureCache()->removeTextureForKey(m_key.c_str());
+        Get::textureCache->removeTextureForKey(m_key.c_str());
     }
 }

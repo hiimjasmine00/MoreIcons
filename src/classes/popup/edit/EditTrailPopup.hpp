@@ -8,7 +8,7 @@ protected:
     std::filesystem::path m_pendingPath;
     BasePopup* m_parentPopup;
     cocos2d::CCSprite* m_streak;
-    CCTextInputNode* m_nameInput;
+    cocos2d::CCTextFieldTTF* m_nameInput;
     bool m_hasChanged = false;
 
     bool init(BasePopup* popup);

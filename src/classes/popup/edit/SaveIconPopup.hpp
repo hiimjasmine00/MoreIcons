@@ -11,7 +11,7 @@ protected:
     BasePopup* m_parentPopup2;
     const IconEditorState* m_state;
     const geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>>* m_frames;
-    CCTextInputNode* m_nameInput;
+    cocos2d::CCTextFieldTTF* m_nameInput;
     IconType m_iconType;
 
     bool init(

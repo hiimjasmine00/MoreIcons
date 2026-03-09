@@ -31,7 +31,7 @@ class $modify(MIGameManager, GameManager) {
 
         if (!m_reloadTextures) return;
 
-        Get::fileUtils = nullptr;
+        Get::fileUtils = CCFileUtils::sharedFileUtils();
         Get::spriteFrameCache = nullptr;
         Get::textureCache = nullptr;
         more_icons::clearAllIcons();
@@ -47,7 +47,7 @@ class $modify(MIGameManager, GameManager) {
     gd::string sheetNameForIcon(int id, int type) {
         auto ret = GameManager::sheetNameForIcon(id, type);
         if (ret.empty() || id < 1) return ret;
-        return Get::FileUtils()->fullPathForFilename(ret.c_str(), false);
+        return Get::fileUtils->fullPathForFilename(ret.c_str(), false);
     }
 
     CCTexture2D* loadIcon(int id, int type, int requestID) {

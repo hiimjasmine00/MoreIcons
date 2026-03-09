@@ -144,7 +144,7 @@ class $modify(MIPlayerObject, PlayerObject) {
 
             m_regularTrail->updateFade(fade);
             m_regularTrail->setStroke(stroke);
-            m_regularTrail->setTexture(Get::TextureCache()->addImage(info->getTextureString().c_str(), false));
+            m_regularTrail->setTexture(Get::textureCache->addImage(info->getTextureString().c_str(), false));
             if (info->getSpecialID() == 6) m_regularTrail->enableRepeatMode(0.1f);
             MoreIcons::blendStreak(m_regularTrail, info);
             Icons::setIcon(m_regularTrail, info);
@@ -157,7 +157,7 @@ class $modify(MIPlayerObject, PlayerObject) {
             auto& fireInfo = info->getSpecialInfo();
             auto fade = Json::get(fireInfo, "fade", 0.1f);
             auto stroke = Json::get(fireInfo, "stroke", 20.0f);
-            auto texture = Get::TextureCache()->addImage(info->getTextureString().c_str(), false);
+            auto texture = Get::textureCache->addImage(info->getTextureString().c_str(), false);
             if (m_shipStreak) {
                 m_shipStreak->updateFade(fade);
                 m_shipStreak->setStroke(stroke);
@@ -209,7 +209,7 @@ class $modify(MIPlayerObject, PlayerObject) {
             auto fireCount = info->getFireCount();
             auto interval = Json::get(info->getSpecialInfo(), "interval", 0.05f);
             texture.replace(texture.size() - 7, 3, fmt::format("{:03}", (int)(m_totalTime / interval) % fireCount + 1));
-            m_shipStreak->setTexture(Get::TextureCache()->addImage(texture.c_str(), false));
+            m_shipStreak->setTexture(Get::textureCache->addImage(texture.c_str(), false));
         }
     }
 
@@ -268,9 +268,8 @@ class $modify(MIPlayerObject, PlayerObject) {
         effect->setRotation((float)jasmine::random::get(-rotationVar, rotationVar) + rotation);
 
         auto frames = CCArray::create();
-        auto spriteFrameCache = Get::SpriteFrameCache();
         for (auto it = frameNames.begin() + 1; it != frameNames.end(); ++it) {
-            frames->addObject(spriteFrameCache->spriteFrameByName(it->c_str()));
+            frames->addObject(Get::spriteFrameCache->spriteFrameByName(it->c_str()));
         }
 
         auto frameDelay = Json::get(deathInfo, "frame-delay", 0.05f);
@@ -336,7 +335,7 @@ class $modify(MIPlayerObject, PlayerObject) {
         outline->m_lineWidth = 10;
         m_parentLayer->addChild(outline, 99);
 
-        if (Get::GameManager()->getGameVariable(GameVar::PlayerExplode)) return;
+        if (Get::gameManager->getGameVariable(GameVar::PlayerExplode)) return;
 
         int size = vehicleSize * 40.0f;
         auto renderTexture = CCRenderTexture::create(size, size);
