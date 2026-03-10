@@ -53,7 +53,9 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         MoreIcons::updateGarage(this);
 
-        f->m_cursor3->setOpacity(more_icons::hasIcon(IconType::Cube, true) && f->m_cursor3->isVisible() ? 127 : 255);
+        if (MoreIcons::separateDualIcons) {
+            f->m_cursor3->setOpacity(more_icons::hasIcon(IconType::Cube, true) && f->m_cursor3->isVisible() ? 127 : 255);
+        }
 
         if (more_icons::hasIcon(IconType::Cube, false)) setupCustomPage(findIconPage(IconType::Cube, false), IconType::Cube);
         else createNavMenu(m_iconPages[IconType::Cube], IconType::Cube);
@@ -235,9 +237,11 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         }
 
         if (f->m_initialized) {
-            f->m_cursor3->setOpacity(more_icons::hasIcon(type, true) && f->m_cursor3->isVisible() ? 127 : 255);
-            if (type == IconType::Special) {
-                f->m_cursor4->setOpacity(more_icons::hasIcon(IconType::ShipFire, true) && f->m_cursor4->isVisible() ? 127 : 255);
+            if (MoreIcons::separateDualIcons) {
+                f->m_cursor3->setOpacity(more_icons::hasIcon(type, true) && f->m_cursor3->isVisible() ? 127 : 255);
+                if (type == IconType::Special) {
+                    f->m_cursor4->setOpacity(more_icons::hasIcon(IconType::ShipFire, true) && f->m_cursor4->isVisible() ? 127 : 255);
+                }
             }
             setupCustomPage(page == -1 ? findIconPage(type, MoreIcons::dualSelected()) : page, type);
         }
@@ -280,10 +284,14 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto f = m_fields.self();
 
         m_cursor1->setOpacity(255);
-        f->m_cursor3->setOpacity(255);
         if (type == IconType::Special) {
             m_cursor2->setOpacity(255);
-            f->m_cursor4->setOpacity(255);
+        }
+        if (MoreIcons::separateDualIcons) {
+            f->m_cursor3->setOpacity(255);
+            if (type == IconType::Special) {
+                f->m_cursor4->setOpacity(255);
+            }
         }
         m_iconSelection->setVisible(false);
 
@@ -301,8 +309,8 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         CCMenuItemSpriteExtra* current4 = nullptr;
         auto active = more_icons::activeIcon(type, false);
         auto active2 = type == IconType::Special ? more_icons::activeIcon(IconType::ShipFire, false) : nullptr;
-        auto active3 = more_icons::activeIcon(type, true);
-        auto active4 = type == IconType::Special ? more_icons::activeIcon(IconType::ShipFire, true) : nullptr;
+        auto active3 = MoreIcons::separateDualIcons ? more_icons::activeIcon(type, true) : nullptr;
+        auto active4 = MoreIcons::separateDualIcons && type == IconType::Special ? more_icons::activeIcon(IconType::ShipFire, true) : nullptr;
 
         std::span<IconInfo*> infoPage(infoView.data() + index, std::min<size_t>(36, size - index));
 
@@ -327,7 +335,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
                 iconButton->m_iconType = type;
                 objs->addObject(iconButton);
                 if (info == active) current = iconButton;
-                if (info == active3) current3 = iconButton;
+                if (MoreIcons::separateDualIcons && info == active3) current3 = iconButton;
             }
         }
         else if (type >= IconType::DeathEffect) {
@@ -342,10 +350,10 @@ class $modify(MIGarageLayer, GJGarageLayer) {
                 iconButton->m_iconType = infoType;
                 objs->addObject(iconButton);
                 if (info == active) current = iconButton;
-                if (info == active3) current3 = iconButton;
-                if (infoType == IconType::ShipFire) {
-                    if (info == active2) current2 = iconButton;
-                    if (info == active4) current4 = iconButton;
+                if (infoType == IconType::ShipFire && info == active2) current2 = iconButton;
+                if (MoreIcons::separateDualIcons) {
+                    if (info == active3) current3 = iconButton;
+                    if (infoType == IconType::ShipFire && info == active4) current4 = iconButton;
                 }
             }
         }
@@ -363,14 +371,20 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         m_cursor1->setVisible(current != nullptr);
         if (current) m_cursor1->setPosition(current->getParent()->convertToWorldSpace(current->getPosition()));
-        f->m_cursor3->setVisible(current3 != nullptr);
-        if (current3) f->m_cursor3->setPosition(current3->getParent()->convertToWorldSpace(current3->getPosition()));
 
         if (type == IconType::Special) {
             m_cursor2->setVisible(current2 != nullptr);
             if (current2) m_cursor2->setPosition(current2->getParent()->convertToWorldSpace(current2->getPosition()));
-            f->m_cursor4->setVisible(current4 != nullptr);
-            if (current4) f->m_cursor4->setPosition(current4->getParent()->convertToWorldSpace(current4->getPosition()));
+        }
+
+        if (MoreIcons::separateDualIcons) {
+            f->m_cursor3->setVisible(current3 != nullptr);
+            if (current3) f->m_cursor3->setPosition(current3->getParent()->convertToWorldSpace(current3->getPosition()));
+
+            if (type == IconType::Special) {
+                f->m_cursor4->setVisible(current4 != nullptr);
+                if (current4) f->m_cursor4->setPosition(current4->getParent()->convertToWorldSpace(current4->getPosition()));
+            }
         }
     }
 
@@ -381,18 +395,11 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         auto type = sender->m_iconType;
         auto isIcon = type <= IconType::Jetpack;
 
-        if (type == IconType::ShipFire) {
-            auto cursor2 = getCursor(true, dual);
-            cursor2->setPosition(sender->getParent()->convertToWorldSpace(sender->getPosition()));
-            cursor2->setVisible(true);
-            cursor2->setOpacity(255);
-        }
-        else {
-            auto cursor1 = getCursor(false, dual);
-            cursor1->setPosition(sender->getParent()->convertToWorldSpace(sender->getPosition()));
-            cursor1->setVisible(true);
-            cursor1->setOpacity(255);
-        }
+        auto cursor = getCursor(type == IconType::ShipFire, dual);
+        cursor->setPosition(sender->getParent()->convertToWorldSpace(sender->getPosition()));
+        cursor->setVisible(true);
+        cursor->setOpacity(255);
+
         if (isIcon) {
             auto player = dual ? f->m_playerObject2 : m_playerObject;
             player->updateColors();

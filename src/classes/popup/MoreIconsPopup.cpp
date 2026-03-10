@@ -43,6 +43,11 @@ bool MoreIconsPopup::init() {
     m_mainLayer->addChild(m_gamemodesNode);
 
     m_dual = MoreIcons::dualSelected();
+    if (!MoreIcons::customGamemodeColors) {
+        m_color1 = MoreIcons::currentColor1(IconType::Cube, m_dual);
+        m_color2 = MoreIcons::currentColor2(IconType::Cube, m_dual);
+        m_colorGlow = MoreIcons::currentColorGlow(IconType::Cube, m_dual);
+    }
     m_glow = MoreIcons::currentGlow(m_dual);
 
     createMenu(IconType::Cube);
@@ -98,9 +103,16 @@ void MoreIconsPopup::createMenu(IconType type) {
         auto icon = SimplePlayer::create(1);
         icon->updatePlayerFrame(id, type);
         more_icons::updateSimplePlayer(icon, info);
-        icon->setColor(MoreIcons::currentColor1(type, m_dual));
-        icon->setSecondColor(MoreIcons::currentColor2(type, m_dual));
-        icon->enableCustomGlowColor(MoreIcons::currentColorGlow(type, m_dual));
+        if (MoreIcons::customGamemodeColors) {
+            icon->setColor(MoreIcons::currentColor1(type, m_dual));
+            icon->setSecondColor(MoreIcons::currentColor2(type, m_dual));
+            icon->enableCustomGlowColor(MoreIcons::currentColorGlow(type, m_dual));
+        }
+        else {
+            icon->setColor(m_color1);
+            icon->setSecondColor(m_color2);
+            icon->enableCustomGlowColor(m_colorGlow);
+        }
         icon->m_hasGlowOutline = m_glow;
         icon->updateColors();
         icon->setPosition({ 35.0f, 100.0f });

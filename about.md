@@ -1,11 +1,6 @@
 # More Icons
 Custom icons without the hassle.
 
-**Hang tight! The tutorial videos will be updated in December 2025!**\
-[~~Windows Tutorial~~](https://youtu.be/Dn0S3DPuq08)\
-[~~Android Tutorial~~](https://youtu.be/GJKoLUnkyBk)\
-[~~macOS Tutorial~~](https://youtu.be/1sI4WJE0yqE)
-
 ## Gallery
 ![More Icons Popup](hiimjustin000.more_icons/more-icons-popup.png?width=300)
 
@@ -27,6 +22,8 @@ Custom icons without the hassle.
 
 ## Credits
 - [DeepResonanceX](user:5668656) - Ideas and funding for the mod
+- [NyteLyte](user:26352471) - Contributions to the mod
+- [0xilis](user:3272359) - Contributions to the mod
 - [hiimjasmine00](user:7466002) - Creator of the mod
 
 ## License
