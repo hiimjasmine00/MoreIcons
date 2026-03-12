@@ -45,6 +45,7 @@ namespace Load {
     geode::Result<matjson::Value> readPlist(const std::filesystem::path& path);
     bool doesExist(const std::filesystem::path& path);
     geode::Result<cocos2d::CCTexture2D*> createTexture(const std::filesystem::path& path);
+    cocos2d::CCTexture2D* createRelativeTexture(const char* path);
     cocos2d::CCTexture2D* createTexture(const uint8_t* data, uint32_t width, uint32_t height);
     void initTexture(cocos2d::CCTexture2D* texture, const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha = true);
     geode::Result<ImageResult> createFrames(

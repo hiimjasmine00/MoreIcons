@@ -34,7 +34,8 @@ bool EditTrailPopup::init(BasePopup* popup) {
 
     m_parentPopup = popup;
 
-    m_streak = CCSprite::create("streak_01_001.png");
+    auto texture = Load::createRelativeTexture("streak_01_001.png");
+    m_streak = CCSprite::createWithTexture(texture, { { 0.0f, 0.0f }, texture ? texture->getContentSize() : CCSize { 0.0f, 0.0f }});
     m_streak->setPosition({ 175.0f, 120.0f });
     m_streak->setRotation(-90.0f);
     auto& size = m_streak->getContentSize();
@@ -110,7 +111,7 @@ void EditTrailPopup::onSave(CCObject* sender) {
     auto iconName = MoreIcons::getText(m_nameInput);
     if (iconName.empty()) return Notify::info("Please enter a name.");
 
-    m_pendingPath = MoreIcons::getIconStem(fmt::format("{}.png", iconName), IconType::Special);
+    m_pendingPath = MoreIcons::getIconStem(iconName, IconType::Special);
     if (Filesystem::doesExist(m_pendingPath)) {
         auto alert = FLAlertLayer::create(
             this,
@@ -135,6 +136,10 @@ void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
 }
 
 void EditTrailPopup::saveTrail() {
+    if (auto res = file::createDirectoryAll(m_pendingPath); res.isErr()) {
+        return Notify::error(res.unwrapErr());
+    }
+
     auto sprite = CCSprite::createWithTexture(m_streak->getTexture());
     sprite->setAnchorPoint({ 0.0f, 0.0f });
     sprite->setBlendFunc({ GL_ONE, GL_ZERO });
@@ -144,7 +149,7 @@ void EditTrailPopup::saveTrail() {
     if (imageRes.isErr()) {
         return Notify::error("Failed to encode image: {}", imageRes.unwrapErr());
     }
-    if (auto res = file::writeBinary(m_pendingPath, imageRes.unwrap()); res.isErr()) {
+    if (auto res = file::writeBinary(m_pendingPath / L("trail.png"), imageRes.unwrap()); res.isErr()) {
         return Notify::error("Failed to save image: {}", res.unwrapErr());
     }
 
@@ -154,7 +159,7 @@ void EditTrailPopup::saveTrail() {
         more_icons::updateIcon(icon);
     }
     else {
-        auto jsonPath = Filesystem::withExt(m_pendingPath, L(".json"));
+        auto jsonPath = m_pendingPath / L("settings.json");
         (void)file::writeString(jsonPath, "{}");
         icon = more_icons::addTrail(
             name, name, std::move(m_pendingPath), std::move(jsonPath), {}, {}, "More Icons", 0, Defaults::getTrailInfo(0), false, false
