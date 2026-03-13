@@ -21,10 +21,13 @@ namespace MoreIcons {
     std::filesystem::path getIconDir(IconType type);
     std::string getIconName(int id, IconType type);
     void getIconPaths(IconInfo* info, int id, IconType type, std::filesystem::path& png, std::filesystem::path& plist);
+    std::filesystem::path getFirePath(IconInfo* info, int id, int frame);
+    std::filesystem::path getFirePath(IconInfo* info, int id, std::string_view frameSuffix);
     std::filesystem::path getIconStem(std::string_view name, IconType type);
     std::filesystem::path getIconPath(IconInfo* info, int id, IconType type);
     geode::ZStringView getText(cocos2d::CCTextFieldTTF* input);
     void loadFromSave(IconType type);
+    void setTexture(cocos2d::CCSprite* sprite, cocos2d::CCTexture2D* texture);
     void updateGarage(GJGarageLayer* layer = nullptr);
     int vanillaIcon(IconType type, bool dual);
 }

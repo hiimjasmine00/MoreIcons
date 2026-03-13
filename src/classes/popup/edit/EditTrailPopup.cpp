@@ -34,8 +34,7 @@ bool EditTrailPopup::init(BasePopup* popup) {
 
     m_parentPopup = popup;
 
-    auto texture = Load::createRelativeTexture("streak_01_001.png");
-    m_streak = CCSprite::createWithTexture(texture, { { 0.0f, 0.0f }, texture ? texture->getContentSize() : CCSize { 0.0f, 0.0f }});
+    m_streak = CCSprite::create("streak_01_001.png");
     m_streak->setPosition({ 175.0f, 120.0f });
     m_streak->setRotation(-90.0f);
     auto& size = m_streak->getContentSize();
@@ -79,6 +78,8 @@ bool EditTrailPopup::init(BasePopup* popup) {
     bottomMenu->addChild(saveButton);
 
     bottomMenu->setLayout(RowLayout::create()->setGap(25.0f));
+
+    updateWithPath(MoreIcons::getIconPath(nullptr, 1, IconType::Special));
 
     handleTouchPriority(this);
 
@@ -128,8 +129,8 @@ void EditTrailPopup::onSave(CCObject* sender) {
 }
 
 void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
-    if (auto textureRes = Load::createTexture(path); textureRes.isOk()) {
-        m_streak->setTexture(textureRes.unwrap());
+    if (auto textureRes = Load::createTexture(path)) {
+        MoreIcons::setTexture(m_streak, textureRes.unwrap());
         m_hasChanged = true;
     }
     else if (textureRes.isErr()) Notify::error(textureRes.unwrapErr());

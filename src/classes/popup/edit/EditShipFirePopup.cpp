@@ -1,4 +1,5 @@
 #include "EditShipFirePopup.hpp"
+#include "FramePresetPopup.hpp"
 #include "IconPresetPopup.hpp"
 #include "ImageRenderer.hpp"
 #include "../../../MoreIcons.hpp"
@@ -34,13 +35,7 @@ bool EditShipFirePopup::init(BasePopup* popup) {
 
     m_parentPopup = popup;
 
-    std::vector<CCTexture2D*> textures;
-    for (int i = 1; i < 11; i++) {
-        textures.push_back(Load::createRelativeTexture(fmt::format("shipfire03_{:03}.png", i).c_str()));
-    }
-
-    auto texture = textures[0];
-    m_streak = CCSprite::createWithTexture(texture, { { 0.0f, 0.0f }, texture ? texture->getContentSize() : CCSize { 0.0f, 0.0f }});
+    m_streak = CCSprite::create("shipfire03_001.png");
     m_streak->setPosition({ 200.0f, 120.0f });
     m_streak->setRotation(-90.0f);
     auto& size = m_streak->getContentSize();
@@ -73,19 +68,9 @@ bool EditShipFirePopup::init(BasePopup* popup) {
     m_frameMenu->setID("frame-menu");
     m_mainLayer->addChild(m_frameMenu);
 
-    CCMenuItemSpriteExtra* selected;
-
-    for (size_t i = 0; i < textures.size(); i++) {
-        auto button = addFrameButton(textures[i]);
-        if (i == 0) selected = button;
-    }
-
     m_selectSprite = CCSprite::createWithSpriteFrameName("GJ_select_001.png");
     m_selectSprite->setID("select-sprite");
     m_mainLayer->addChild(m_selectSprite);
-
-    updateState();
-    onFrameSelect(selected);
 
     auto prevSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_01_001.png");
     prevSprite->setScale(0.5f);
@@ -162,6 +147,8 @@ bool EditShipFirePopup::init(BasePopup* popup) {
 
     bottomMenu->setLayout(RowLayout::create()->setGap(20.0f));
 
+    updateWithPath(MoreIcons::getIconPath(nullptr, 3, IconType::ShipFire), 10);
+
     handleTouchPriority(this);
 
     return true;
@@ -207,8 +194,7 @@ void EditShipFirePopup::onFrameSelect(CCObject* sender) {
     m_selectedFrame = sender->getTag();
     m_selectSprite->setVisible(true);
     m_selectSprite->setPosition(m_mainLayer->convertToNodeSpace(m_frameMenu->convertToWorldSpace(static_cast<CCNode*>(sender)->getPosition())));
-    m_streak->setTexture(static_cast<CCSprite*>(static_cast<CCMenuItemSpriteExtra*>(sender)->getNormalImage())->getTexture());
-    m_streak->setVisible(true);
+    MoreIcons::setTexture(m_streak, static_cast<CCSprite*>(static_cast<CCMenuItemSpriteExtra*>(sender)->getNormalImage())->getTexture());
 }
 
 void EditShipFirePopup::onFrameAdd(CCObject* sender) {
@@ -226,9 +212,10 @@ void EditShipFirePopup::onFrameAdd(CCObject* sender) {
         auto textureRes = Load::createTexture(path.value());
         if (textureRes.isErr()) return Notify::error("Failed to load image: {}", textureRes.unwrapErr());
 
+        auto button = addFrameButton(textureRes.unwrap());
         m_page = (m_frameButtons.size() - 1) / 5;
         updateState();
-        onFrameSelect(addFrameButton(textureRes.unwrap()));
+        onFrameSelect(button);
         m_hasChanged = true;
     });
 }
@@ -250,14 +237,30 @@ void EditShipFirePopup::onFrameImport(CCObject* sender) {
         if (textureRes.isErr()) return Notify::error("Failed to load image: {}", textureRes.unwrapErr());
 
         auto texture = textureRes.unwrap();
-        static_cast<CCSprite*>(m_frameButtons[m_selectedFrame]->getNormalImage())->setTexture(texture);
-        m_streak->setTexture(texture);
+        MoreIcons::setTexture(static_cast<CCSprite*>(m_frameButtons[m_selectedFrame]->getNormalImage()), texture);
+        MoreIcons::setTexture(m_streak, texture);
         m_hasChanged = true;
     });
 }
 
 void EditShipFirePopup::onFramePreset(CCObject* sender) {
+    FramePresetPopup::create(IconType::ShipFire, [this](int id, IconInfo* info, int frame) {
+        auto textureRes = Load::createTexture(MoreIcons::getFirePath(info, id, frame));
+        if (textureRes.isErr()) return Notify::error("Failed to load image: {}", textureRes.unwrapErr());
 
+        auto texture = textureRes.unwrap();
+        if (m_frameButtons.empty()) {
+            auto button = addFrameButton(texture);
+            m_page = (m_frameButtons.size() - 1) / 5;
+            updateState();
+            onFrameSelect(button);
+        }
+        else {
+            MoreIcons::setTexture(static_cast<CCSprite*>(m_frameButtons[m_selectedFrame]->getNormalImage()), texture);
+            MoreIcons::setTexture(m_streak, texture);
+        }
+        m_hasChanged = true;
+    })->show();
 }
 
 void EditShipFirePopup::onFrameRemove(CCObject* sender) {
@@ -270,9 +273,8 @@ void EditShipFirePopup::onFrameRemove(CCObject* sender) {
     if (m_frameButtons.empty()) {
         m_selectedFrame = 0;
         m_frameMenu->updateLayout();
-        m_streak->setTexture(nullptr);
+        MoreIcons::setTexture(m_streak, nullptr);
         m_selectSprite->setVisible(false);
-        m_streak->setVisible(false);
         return;
     }
 
@@ -305,7 +307,7 @@ void EditShipFirePopup::onImport(CCObject* sender) {
         for (size_t i = 0; i < paths.size(); i++) {
             auto& path = paths[i];
             auto textureRes = Load::createTexture(path);
-            if (textureRes.isErr()) return Notify::error("Failed to load {}: {}", path.filename(), textureRes.unwrapErr());
+            if (textureRes.isErr()) return Notify::error("Failed to load {}: {}", Filesystem::filenameFormat(path), textureRes.unwrapErr());
             auto button = addFrameButton(textureRes.unwrap());
             if (i == m_selectedFrame) selected = button;
         }
@@ -322,7 +324,33 @@ void EditShipFirePopup::onImport(CCObject* sender) {
 }
 
 void EditShipFirePopup::onPreset(CCObject* sender) {
+    IconPresetPopup::create(IconType::ShipFire, {}, [this](int id, IconInfo* info) {
+        updateWithPath(MoreIcons::getIconPath(info, id, IconType::ShipFire), info ? info->getFireCount() : Defaults::getShipFireCount(id));
+    })->show();
+}
 
+void EditShipFirePopup::updateWithPath(std::filesystem::path path, int count) {
+    m_frameMenu->removeAllChildren();
+    m_frameButtons.clear();
+
+    auto& pathString = const_cast<std::filesystem::path::string_type&>(path.native());
+    CCMenuItemSpriteExtra* selected = nullptr;
+    for (int i = 0; i < count; i++) {
+        pathString.replace(pathString.size() - 7, 3, fmt::format(L("{:03}"), i + 1));
+        auto textureRes = Load::createTexture(path);
+        if (textureRes.isErr()) return Notify::error("Failed to load {}: {}", Filesystem::filenameFormat(path), textureRes.unwrapErr());
+        auto button = addFrameButton(textureRes.unwrap());
+        if (i == m_selectedFrame) selected = button;
+    }
+    if (!selected) {
+        selected = m_frameButtons.back();
+        m_selectedFrame = m_frameButtons.size() - 1;
+    }
+
+    m_page = m_selectedFrame / 5;
+    updateState();
+    onFrameSelect(selected);
+    m_hasChanged = true;
 }
 
 void EditShipFirePopup::onSave(CCObject* sender) {

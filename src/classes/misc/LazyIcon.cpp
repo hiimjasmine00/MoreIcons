@@ -38,11 +38,30 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
     if (type >= IconType::DeathEffect) {
         m_visited = true;
         setEnabled(true);
-        setMainNode(info ? MoreIcons::customIcon(info) : CCSprite::createWithSpriteFrameName(
-            type == IconType::DeathEffect ? fmt::format("explosionIcon_{:02}_001.png", id).c_str() :
-            type == IconType::Special ? fmt::format("player_special_{:02}_001.png", id).c_str() :
-            type == IconType::ShipFire ? fmt::format("shipfireIcon_{:02}_001.png", id).c_str() : "cc_2x2_white_image"
-        ));
+        if (suffix.empty()) {
+            setMainNode(info ? MoreIcons::customIcon(info) : CCSprite::createWithSpriteFrameName(
+                type == IconType::DeathEffect ? fmt::format("explosionIcon_{:02}_001.png", id).c_str() :
+                type == IconType::Special ? fmt::format("player_special_{:02}_001.png", id).c_str() :
+                type == IconType::ShipFire ? fmt::format("shipfireIcon_{:02}_001.png", id).c_str() : "cc_2x2_white_image"
+            ));
+        }
+        else if (type == IconType::DeathEffect) {
+            setMainNode(CCSprite::createWithSpriteFrameName(fmt::format("playerExplosion_{:02}{}.png", id, suffix).c_str()));
+        }
+        else if (type == IconType::ShipFire) {
+            auto firePath = MoreIcons::getFirePath(info, id, suffix);
+            auto sprite = CCSprite::create(Filesystem::strNarrow(firePath.native()).data());
+            if (!sprite || sprite->getUserObject("geode.texture-loader/fallback")) {
+                m_error = fmt::format("Failed to load {}", firePath);
+                log::error("{}: {}", m_name, m_error);
+                setMainNode(CCSprite::createWithSpriteFrameName("GJ_deleteIcon_001.png"));
+            }
+            else {
+                limitNodeHeight(sprite, 30.0f, 1.0f, 0.0f);
+                sprite->setPosition({ 15.0f, 15.0f });
+                setMainNode(sprite);
+            }
+        }
         return true;
     }
 

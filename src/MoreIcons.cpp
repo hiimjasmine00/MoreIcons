@@ -231,6 +231,22 @@ std::filesystem::path getFullPath(ZStringView filename) {
     #endif
 }
 
+std::filesystem::path MoreIcons::getFirePath(IconInfo* info, int id, int frame) {
+    return getFirePath(info, id, fmt::format("_{:03}", frame));
+}
+
+std::filesystem::path MoreIcons::getFirePath(IconInfo* info, int id, std::string_view frameSuffix) {
+    if (info) {
+        auto path = info->getTexture();
+        auto& pathString = const_cast<std::filesystem::path::string_type&>(path.native());
+        pathString.replace(pathString.size() - 8, 4, Filesystem::strWide(frameSuffix));
+        return path;
+    }
+    else {
+        return getFullPath(fmt::format("shipfire{:02}{}.png", id, frameSuffix));
+    }
+}
+
 void MoreIcons::getIconPaths(IconInfo* info, int id, IconType type, std::filesystem::path& png, std::filesystem::path& plist) {
     if (info) {
         png = info->getTexture();
@@ -279,5 +295,16 @@ void MoreIcons::loadFromSave(IconType type) {
         else {
             dualIcon = std::string();
         }
+    }
+}
+
+void MoreIcons::setTexture(CCSprite* sprite, CCTexture2D* texture) {
+    if (texture) {
+        sprite->setTexture(texture);
+        sprite->setTextureRect({ { 0.0f, 0.0f }, texture->getContentSize() });
+    }
+    else {
+        sprite->setTexture(nullptr);
+        sprite->setTextureRect({ 0.0f, 0.0f, 0.0f, 0.0f });
     }
 }

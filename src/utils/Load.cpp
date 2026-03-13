@@ -152,20 +152,6 @@ Result<CCTexture2D*> Load::createTexture(const std::filesystem::path& path) {
     return Ok(createTexture(image.data.data(), image.width, image.height));
 }
 
-CCTexture2D* Load::createRelativeTexture(const char* path) {
-    #ifdef GEODE_IS_WINDOWS
-    auto fullPath = std::filesystem::path(Filesystem::strWide(Get::fileUtils->fullPathForFilename(path, true)));
-    #else
-    auto fullPath = std::filesystem::path(std::string(Get::fileUtils->fullPathForFilename(path, true)));
-    #endif
-    auto res = Load::createTexture(fullPath);
-    if (res.isErr()) {
-        log::error("Failed to create texture from {}: {}", fullPath, res.unwrapErr());
-        return nullptr;
-    }
-    else return res.unwrap();
-}
-
 CCTexture2D* Load::createTexture(const uint8_t* data, uint32_t width, uint32_t height) {
     auto texture = new CCTexture2D();
     initTexture(texture, data, width, height, false);

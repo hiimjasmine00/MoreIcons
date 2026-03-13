@@ -29,6 +29,7 @@ protected:
     void onFrameRemove(cocos2d::CCObject* sender);
     void onImport(cocos2d::CCObject* sender);
     void onPreset(cocos2d::CCObject* sender);
+    void updateWithPath(std::filesystem::path path, int count);
     void onSave(cocos2d::CCObject* sender);
     void saveShipFire();
     void onClose(cocos2d::CCObject* sender) override;
