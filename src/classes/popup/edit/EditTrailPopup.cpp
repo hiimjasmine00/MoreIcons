@@ -34,12 +34,9 @@ bool EditTrailPopup::init(BasePopup* popup) {
 
     m_parentPopup = popup;
 
-    m_streak = CCSprite::create("streak_01_001.png");
+    m_streak = CCSprite::create();
     m_streak->setPosition({ 175.0f, 120.0f });
     m_streak->setRotation(-90.0f);
-    auto& size = m_streak->getContentSize();
-    m_streak->setScaleX(14.0f / size.width);
-    m_streak->setScaleY(320.0f / size.height);
     m_streak->setID("streak-preview");
     m_mainLayer->addChild(m_streak);
 
@@ -80,6 +77,7 @@ bool EditTrailPopup::init(BasePopup* popup) {
     bottomMenu->setLayout(RowLayout::create()->setGap(25.0f));
 
     updateWithPath(MoreIcons::getIconPath(nullptr, 1, IconType::Special));
+    m_hasChanged = false;
 
     handleTouchPriority(this);
 
@@ -131,6 +129,9 @@ void EditTrailPopup::onSave(CCObject* sender) {
 void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
     if (auto textureRes = Load::createTexture(path)) {
         MoreIcons::setTexture(m_streak, textureRes.unwrap());
+        auto& size = m_streak->getContentSize();
+        m_streak->setScaleX(14.0f / size.width);
+        m_streak->setScaleY(160.0f / size.height);
         m_hasChanged = true;
     }
     else if (textureRes.isErr()) Notify::error(textureRes.unwrapErr());
@@ -150,7 +151,9 @@ void EditTrailPopup::saveTrail() {
     if (imageRes.isErr()) {
         return Notify::error("Failed to encode image: {}", imageRes.unwrapErr());
     }
-    if (auto res = file::writeBinary(m_pendingPath / L("trail.png"), imageRes.unwrap()); res.isErr()) {
+
+    auto trailPath = m_pendingPath / L("trail.png");
+    if (auto res = file::writeBinary(trailPath, imageRes.unwrap()); res.isErr()) {
         return Notify::error("Failed to save image: {}", res.unwrapErr());
     }
 
@@ -163,7 +166,7 @@ void EditTrailPopup::saveTrail() {
         auto jsonPath = m_pendingPath / L("settings.json");
         (void)file::writeString(jsonPath, "{}");
         icon = more_icons::addTrail(
-            name, name, std::move(m_pendingPath), std::move(jsonPath), {}, {}, "More Icons", 0, Defaults::getTrailInfo(0), false, false
+            name, name, std::move(trailPath), std::move(jsonPath), {}, {}, "More Icons", 0, Defaults::getTrailInfo(0), false, false
         );
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }

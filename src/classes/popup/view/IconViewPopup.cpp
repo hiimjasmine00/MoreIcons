@@ -1,4 +1,5 @@
 #include "IconViewPopup.hpp"
+#include "ViewShipFirePopup.hpp"
 #include "ViewIconPopup.hpp"
 #include "../../misc/LazyIcon.hpp"
 #include "../../../utils/Constants.hpp"
@@ -48,7 +49,12 @@ bool IconViewPopup::init(IconType type, bool custom) {
             for (auto& info : *icons) {
                 auto iconMenu = CCMenu::create();
                 auto lazyIcon = LazyIcon::create(type, 0, &info, {}, [this, info = &info, type] {
+                if (type == IconType::ShipFire) {
+                    ViewShipFirePopup::create(0, info)->show();
+                }
+                else {
                     ViewIconPopup::create(type, 0, info)->show();
+                }
                 });
                 lazyIcon->setPosition({ 15.0f, 30.0f });
                 iconMenu->setContentSize({ 30.0f, 30.0f });
@@ -64,7 +70,12 @@ bool IconViewPopup::init(IconType type, bool custom) {
         for (int i = 1; i <= count; i++) {
             auto iconMenu = CCMenu::create();
             auto lazyIcon = LazyIcon::create(type, i, nullptr, {}, [this, i, type] {
-                ViewIconPopup::create(type, i, nullptr)->show();
+                if (type == IconType::ShipFire) {
+                    ViewShipFirePopup::create(i, nullptr)->show();
+                }
+                else {
+                    ViewIconPopup::create(type, i, nullptr)->show();
+                }
             });
             lazyIcon->setPosition({ 15.0f, 30.0f });
             iconMenu->setContentSize({ 30.0f, 30.0f });

@@ -238,7 +238,7 @@ std::filesystem::path MoreIcons::getFirePath(IconInfo* info, int id, int frame) 
 std::filesystem::path MoreIcons::getFirePath(IconInfo* info, int id, std::string_view frameSuffix) {
     if (info) {
         auto path = info->getTexture();
-        auto& pathString = const_cast<std::filesystem::path::string_type&>(path.native());
+        auto& pathString = Filesystem::getPathString(path);
         pathString.replace(pathString.size() - 8, 4, Filesystem::strWide(frameSuffix));
         return path;
     }

@@ -483,10 +483,7 @@ void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
     auto name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
     auto fireCount = 0;
-    Filesystem::iterate(path, std::filesystem::file_type::regular, [&fireCount](const std::filesystem::path& path) {
-        auto filename = Filesystem::filenameView(path);
-        if (filename == fmt::format(L("fire_{:03}.png"), fireCount + 1)) fireCount++;
-    });
+    while (Filesystem::doesExist(path / fmt::format(L("fire_{:03}.png"), fireCount + 1))) fireCount++;
     if (fireCount == 0) return Log::error(std::move(name), "No ship fire frames found");
 
     log::debug("Pre-loading ship fire {} from {}", name, pack.name);

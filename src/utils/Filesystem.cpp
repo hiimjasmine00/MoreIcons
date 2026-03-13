@@ -5,14 +5,14 @@
 
 using namespace geode;
 
-inline std::filesystem::path::string_type& getPathString(std::filesystem::path& path) {
+std::filesystem::path::string_type& Filesystem::getPathString(std::filesystem::path& path) {
     return const_cast<std::filesystem::path::string_type&>(path.native());
 }
 
 MI_FILESYSTEM_BEGIN
 namespace filesystem {
     void appendPath(path& p, Filesystem::PathView right) {
-        auto& left = getPathString(p);
+        auto& left = Filesystem::getPathString(p);
         #ifdef GEODE_IS_WINDOWS
         if (!right.empty() && (right.size() < 2 || !_Is_drive_prefix(right.data())) && !_Is_slash(right[0])) {
             auto needsSlash = !left.empty() && (left.size() != 2 || !_Is_drive_prefix(left.data())) && !_Is_slash(left.back());

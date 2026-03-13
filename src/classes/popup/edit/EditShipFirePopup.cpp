@@ -5,7 +5,6 @@
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Defaults.hpp"
 #include "../../../utils/Filesystem.hpp"
-#include "../../../utils/Get.hpp"
 #include "../../../utils/Icons.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
@@ -35,12 +34,9 @@ bool EditShipFirePopup::init(BasePopup* popup) {
 
     m_parentPopup = popup;
 
-    m_streak = CCSprite::create("shipfire03_001.png");
+    m_streak = CCSprite::create();
     m_streak->setPosition({ 200.0f, 120.0f });
     m_streak->setRotation(-90.0f);
-    auto& size = m_streak->getContentSize();
-    m_streak->setScaleX(20.0f / size.width);
-    m_streak->setScaleY(80.0f / size.height);
     m_streak->setID("streak-preview");
     m_mainLayer->addChild(m_streak);
 
@@ -148,6 +144,7 @@ bool EditShipFirePopup::init(BasePopup* popup) {
     bottomMenu->setLayout(RowLayout::create()->setGap(20.0f));
 
     updateWithPath(MoreIcons::getIconPath(nullptr, 3, IconType::ShipFire), 10);
+    m_hasChanged = false;
 
     handleTouchPriority(this);
 
@@ -195,6 +192,9 @@ void EditShipFirePopup::onFrameSelect(CCObject* sender) {
     m_selectSprite->setVisible(true);
     m_selectSprite->setPosition(m_mainLayer->convertToNodeSpace(m_frameMenu->convertToWorldSpace(static_cast<CCNode*>(sender)->getPosition())));
     MoreIcons::setTexture(m_streak, static_cast<CCSprite*>(static_cast<CCMenuItemSpriteExtra*>(sender)->getNormalImage())->getTexture());
+    auto& size = m_streak->getContentSize();
+    m_streak->setScaleX(20.0f / size.width);
+    m_streak->setScaleY(80.0f / size.height);
 }
 
 void EditShipFirePopup::onFrameAdd(CCObject* sender) {
@@ -333,7 +333,7 @@ void EditShipFirePopup::updateWithPath(std::filesystem::path path, int count) {
     m_frameMenu->removeAllChildren();
     m_frameButtons.clear();
 
-    auto& pathString = const_cast<std::filesystem::path::string_type&>(path.native());
+    auto& pathString = Filesystem::getPathString(path);
     CCMenuItemSpriteExtra* selected = nullptr;
     for (int i = 0; i < count; i++) {
         pathString.replace(pathString.size() - 7, 3, fmt::format(L("{:03}"), i + 1));
@@ -404,7 +404,8 @@ void EditShipFirePopup::saveShipFire() {
         auto jsonPath = m_pendingPath / L("settings.json");
         (void)file::writeString(jsonPath, "{}");
         icon = more_icons::addShipFire(
-            name, name, std::move(m_pendingPath), std::move(jsonPath), {}, {}, "More Icons", 0, Defaults::getShipFireInfo(0), false, false
+            name, name, m_pendingPath / L("fire_001.png"), std::move(jsonPath), {}, {}, "More Icons", 0,
+            Defaults::getShipFireInfo(0), m_frameButtons.size(), false, false
         );
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }

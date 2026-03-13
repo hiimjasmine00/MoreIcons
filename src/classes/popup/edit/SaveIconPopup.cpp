@@ -66,7 +66,8 @@ void SaveIconPopup::onSave(CCObject* sender) {
     auto iconName = MoreIcons::getText(m_nameInput);
     if (iconName.empty()) return Notify::info("Please enter a name.");
 
-    auto stem = std::move(const_cast<std::filesystem::path::string_type&>(MoreIcons::getIconStem(iconName, m_iconType).native()));
+    auto path = MoreIcons::getIconStem(iconName, m_iconType);
+    auto stem = std::move(Filesystem::getPathString(path));
     m_pngs[0] = fmt::format(L("{}-uhd.png"), stem);
     m_pngs[1] = fmt::format(L("{}-hd.png"), stem);
     m_pngs[2] = fmt::format(L("{}.png"), stem);
