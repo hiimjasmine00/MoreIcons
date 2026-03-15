@@ -19,22 +19,22 @@ class $modify(MIPlayerObject, PlayerObject) {
         (void)self.setHookPriorityAfterPost("PlayerObject::setupStreak", "weebify.separate_dual_icons");
     }
 
-    bool isPlayer1() {
+    bool isP1() {
         return m_gameLayer && (!m_gameLayer->m_player1 || m_gameLayer->m_player1 == this);
     }
 
-    bool isPlayer2() {
+    bool isP2() {
         return m_gameLayer && (!m_gameLayer->m_player2 || m_gameLayer->m_player2 == this);
     }
 
     IconInfo* getIconInfo(IconType type) {
-        if (isPlayer1()) return more_icons::activeIcon(type, false);
-        else if (isPlayer2()) return more_icons::activeIcon(type, true);
+        if (isP1()) return more_icons::activeIcon(type, false);
+        else if (isP2()) return more_icons::activeIcon(type, true);
         else return nullptr;
     }
 
-    void updateIcon(IconType type) {
-        auto icon = getIconInfo(type);
+    void updateIcon(IconType type, bool player2) {
+        auto icon = more_icons::activeIcon(type, player2);
         if (icon) more_icons::updatePlayerObject(this, icon);
         else Icons::setIcon(this, nullptr);
     }
@@ -42,16 +42,25 @@ class $modify(MIPlayerObject, PlayerObject) {
     bool init(int player, int ship, GJBaseGameLayer* gameLayer, CCLayer* layer, bool playLayer) {
         if (!PlayerObject::init(player, ship, gameLayer, layer, playLayer)) return false;
 
-        if (isPlayer1() || isPlayer2()) {
-            updateIcon(IconType::Cube);
-            updateIcon(IconType::Ship);
+        if (gameLayer) {
+            if (!gameLayer->m_player1 || gameLayer->m_player1 == this) {
+                updateIcon(IconType::Cube, false);
+                updateIcon(IconType::Ship, false);
+            }
+            else if (!gameLayer->m_player2 || gameLayer->m_player2 == this) {
+                updateIcon(IconType::Cube, true);
+                updateIcon(IconType::Ship, true);
+            }
         }
 
         return true;
     }
 
     void updateIcon(int frame, IconType type, void(PlayerObject::*func)(int)) {
-        if (frame == 0 || (!isPlayer1() && !isPlayer2())) {
+        auto player1 = isP1();
+        auto player2 = isP2();
+
+        if (frame == 0 || (!player1 && !player2)) {
             (this->*func)(frame);
             return Icons::setIcon(this, nullptr);
         }
@@ -68,7 +77,12 @@ class $modify(MIPlayerObject, PlayerObject) {
 
         if (loadedIcon) (*loadedIcon)++;
         (this->*func)(frame);
-        updateIcon(type);
+        if (player1) {
+            updateIcon(type, false);
+        }
+        else if (player2) {
+            updateIcon(type, player2);
+        }
         if (loadedIcon) (*loadedIcon)--;
     }
 
