@@ -1,5 +1,4 @@
 #include "FramePresetPopup.hpp"
-#include "../../misc/LazyIcon.hpp"
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Defaults.hpp"
 #include "../../../utils/Filesystem.hpp"
@@ -27,7 +26,7 @@ FramePresetPopup* FramePresetPopup::create(IconType type, Function<void(CCSprite
 std::mutex imageMutex2;
 std::vector<ImageResult> images2;
 
-void loadDeathEffects(std::vector<arc::BlockingTaskHandle<void>>& tasks, std::string_view suffix) {
+void loadDeathEffects(std::vector<arc::BlockingTaskHandle<void>>& tasks, Filesystem::PathView suffix) {
     auto& rt = runtime();
 
     auto count = Get::gameManager->countForType(IconType::DeathEffect);
@@ -130,7 +129,9 @@ bool FramePresetPopup::init(IconType type, Function<void(CCSpriteFrame*)> callba
     std::vector<arc::BlockingTaskHandle<void>> tasks;
 
     auto factor = Get::director->getContentScaleFactor();
-    std::string_view suffix = factor >= 4.0f ? "-uhd" : factor >= 2.0f ? "-hd" : "";
+    Filesystem::PathView suffix;
+    if (factor >= 4.0f) suffix = L("-uhd");
+    else if (factor >= 2.0f) suffix = L("-hd");
 
     if (type == IconType::DeathEffect) loadDeathEffects(tasks, suffix);
     else if (type == IconType::ShipFire) loadShipFires(tasks);
