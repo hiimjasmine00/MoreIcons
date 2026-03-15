@@ -14,9 +14,6 @@ more_icons::updateRobotSprite(robot);
 // Change the icon of a GJRobotSprite to the current icon (Determined icon type, Separate Dual Icons)
 more_icons::updateRobotSprite(robot, true);
 
-// Change the icon of a GJRobotSprite to a custom icon (Determined icon type)
-more_icons::updateRobotSprite(robot, "my_custom_icon");
-
 // Change the icon of a GJRobotSprite to the current icon
 more_icons::updateRobotSprite(robot, IconType::Robot);
 
@@ -24,5 +21,5 @@ more_icons::updateRobotSprite(robot, IconType::Robot);
 more_icons::updateRobotSprite(robot, IconType::Robot, true);
 
 // Change the icon of a GJRobotSprite to a custom icon
-more_icons::updateRobotSprite(robot, "my_custom_icon", IconType::Robot);
+more_icons::updateRobotSprite(robot, more_icons::getIcon("my_custom_icon", IconType::Robot));
 ```

@@ -12,7 +12,7 @@ order: 7
 int requestID = 0; // Replace with the request ID from the loading
 
 // Unload a custom icon from the texture cache
-more_icons::unloadIcon("my_custom_icon", IconType::Cube, requestID);
+more_icons::unloadIcon(more_icons::getIcon("my_custom_icon", IconType::Cube), requestID);
 
 // Unload all custom icons from the request ID
 more_icons::unloadIcons(requestID);

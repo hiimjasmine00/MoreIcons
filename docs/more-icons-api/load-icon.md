@@ -12,5 +12,5 @@ order: 6
 int requestID = GameManager::get()->getIconRequestID();
 
 // Load a custom icon into the texture cache
-cocos2d::CCTexture2D* texture = more_icons::loadIcon("my_custom_icon", IconType::Cube, requestID);
+cocos2d::CCTexture2D* texture = more_icons::loadIcon(more_icons::getIcon("my_custom_icon", IconType::Cube), requestID);
 ```

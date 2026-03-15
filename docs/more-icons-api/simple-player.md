@@ -15,5 +15,5 @@ more_icons::updateSimplePlayer(player, IconType::Cube);
 more_icons::updateSimplePlayer(player, IconType::Cube, true);
 
 // Change the icon of a SimplePlayer to a custom icon
-more_icons::updateSimplePlayer(player, "my_custom_icon", IconType::Cube);
+more_icons::updateSimplePlayer(player, more_icons::getIcon("my_custom_icon", IconType::Cube));
 ```

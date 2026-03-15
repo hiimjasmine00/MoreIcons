@@ -26,7 +26,7 @@ For non-required dependencies, make sure to add this definition before including
 #include <hiimjustin000.more_icons/include/MoreIcons.hpp>
 ```
 
-## Supported [Icon Types](https://github.com/geode-sdk/bindings/blob/c949aeae063175eca528b33cf8f5b573935b0079/bindings/include/Geode/Enums.hpp#L911)
+## Supported [Icon Types](https://github.com/geode-sdk/bindings/blob/02cd3eb702ffc7cb7e91eb9e92267950ee5a9851/bindings/include/Geode/Enums.hpp#L927)
 - `IconType::Cube` (0)
 - `IconType::Ship` (1)
 - `IconType::Ball` (2)
@@ -36,4 +36,6 @@ For non-required dependencies, make sure to add this definition before including
 - `IconType::Spider` (6)
 - `IconType::Swing` (7)
 - `IconType::Jetpack` (8)
+- `IconType::DeathEffect` (98)
 - `IconType::Special` (99)
+- `IconType::ShipFire` (101)

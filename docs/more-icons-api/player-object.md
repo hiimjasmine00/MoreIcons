@@ -14,9 +14,6 @@ more_icons::updatePlayerObject(player);
 // Change the icon of a PlayerObject to the current icon (Determined icon type, Separate Dual Icons)
 more_icons::updatePlayerObject(player, true);
 
-// Change the icon of a PlayerObject to a custom icon (Determined icon type)
-more_icons::updatePlayerObject(player, "my_custom_icon");
-
 // Change the icon of a PlayerObject to the current icon
 more_icons::updatePlayerObject(player, IconType::Cube);
 
@@ -24,5 +21,5 @@ more_icons::updatePlayerObject(player, IconType::Cube);
 more_icons::updatePlayerObject(player, IconType::Cube, true);
 
 // Change the icon of a PlayerObject to a custom icon
-more_icons::updatePlayerObject(player, "my_custom_icon", IconType::Cube);
+more_icons::updatePlayerObject(player, more_icons::getIcon("my_custom_icon", IconType::Cube));
 ```
