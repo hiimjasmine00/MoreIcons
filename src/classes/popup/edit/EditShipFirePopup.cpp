@@ -244,11 +244,8 @@ void EditShipFirePopup::onFrameImport(CCObject* sender) {
 }
 
 void EditShipFirePopup::onFramePreset(CCObject* sender) {
-    FramePresetPopup::create(IconType::ShipFire, [this](int id, IconInfo* info, int frame) {
-        auto textureRes = Load::createTexture(MoreIcons::getFirePath(info, id, frame));
-        if (textureRes.isErr()) return Notify::error("Failed to load image: {}", textureRes.unwrapErr());
-
-        auto texture = textureRes.unwrap();
+    FramePresetPopup::create(IconType::ShipFire, [this](CCSpriteFrame* frame) {
+        auto texture = frame->getTexture();
         if (m_frameButtons.empty()) {
             auto button = addFrameButton(texture);
             m_page = (m_frameButtons.size() - 1) / 5;

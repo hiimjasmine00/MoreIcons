@@ -8,7 +8,6 @@
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
-#include <Geode/binding/GJItemIcon.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
 #include <Geode/binding/TextArea.hpp>
 #include <Geode/loader/Dirs.hpp>

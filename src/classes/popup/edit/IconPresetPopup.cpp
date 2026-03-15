@@ -3,7 +3,6 @@
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Get.hpp"
 #include <Geode/binding/GameManager.hpp>
-#include <Geode/binding/GJItemIcon.hpp>
 #include <Geode/ui/Scrollbar.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
 #include <MoreIcons.hpp>

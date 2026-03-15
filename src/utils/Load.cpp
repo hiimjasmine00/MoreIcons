@@ -166,7 +166,7 @@ void Load::initTexture(CCTexture2D* texture, const uint8_t* data, uint32_t width
 
 Result<ImageResult> Load::createFrames(
     const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type,
-    std::string_view target, bool premultiply
+    std::string_view target, bool premultiply, bool forceKeepNames
 ) {
     GEODE_UNWRAP_INTO(auto data, readBinary(png).mapErr([](std::string err) {
         return fmt::format("Failed to read image: {}", err);
@@ -177,7 +177,9 @@ Result<ImageResult> Load::createFrames(
     }));
 
     auto texture = Ref<CCTexture2D>::adopt(new CCTexture2D());
-    GEODE_UNWRAP_INTO(auto frames, createFrames(plist, texture, name, type, target, !premultiply || !name.empty()).mapErr([](std::string err) {
+    GEODE_UNWRAP_INTO(auto frames, createFrames(
+        plist, texture, name, type, target, !forceKeepNames && (!premultiply || !name.empty())
+    ).mapErr([](std::string err) {
         return fmt::format("Failed to create frames: {}", err);
     }));
 

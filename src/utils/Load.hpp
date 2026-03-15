@@ -49,7 +49,7 @@ namespace Load {
     void initTexture(cocos2d::CCTexture2D* texture, const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha = true);
     geode::Result<ImageResult> createFrames(
         const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type,
-        std::string_view target = {}, bool premultiply = true
+        std::string_view target = {}, bool premultiply = true, bool forceKeepNames = false
     );
     geode::Result<geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>>> createFrames(
         const std::filesystem::path& path, cocos2d::CCTexture2D* texture, std::string_view name, IconType type,
