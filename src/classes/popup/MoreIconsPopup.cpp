@@ -1,4 +1,5 @@
 #include "MoreIconsPopup.hpp"
+#include "edit/EditDeathEffectPopup.hpp"
 #include "edit/EditIconPopup.hpp"
 #include "edit/EditTrailPopup.hpp"
 #include "edit/EditShipFirePopup.hpp"
@@ -222,6 +223,7 @@ void MoreIconsPopup::onLogs(CCObject* sender) {
 void MoreIconsPopup::onAdd(CCObject* sender) {
     auto type = (IconType)sender->getTag();
     if (type <= IconType::Jetpack) EditIconPopup::create(this, type)->show();
+    else if (type == IconType::DeathEffect) EditDeathEffectPopup::create(this)->show();
     else if (type == IconType::Special) EditTrailPopup::create(this)->show();
     else if (type == IconType::ShipFire) EditShipFirePopup::create(this)->show();
 }

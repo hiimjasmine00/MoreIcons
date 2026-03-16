@@ -35,13 +35,7 @@ constexpr std::initializer_list<std::string_view> cubeEndings = {
 };
 
 void Load::fixFrameName(std::string& frameName, std::string_view name, IconType type) {
-    if (frameName.size() < 8 || !frameName.ends_with(".png")) return;
-
-    if (type == IconType::DeathEffect) {
-        return replaceOrErase(frameName, 8, name);
-    }
-
-    if (!frameName.ends_with("_001.png")) return;
+    if (type == IconType::DeathEffect || !frameName.ends_with("_001.png")) return;
 
     std::initializer_list<std::string_view> endings;
     if (type == IconType::Robot || type == IconType::Spider) endings = robotEndings;

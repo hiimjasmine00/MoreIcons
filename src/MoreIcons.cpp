@@ -255,8 +255,8 @@ void MoreIcons::getIconPaths(IconInfo* info, int id, IconType type, std::filesys
     }
 
     if (type == IconType::DeathEffect) {
-        png = getFullPath(fmt::format("PlayerExplosion_{:02}.png", id));
-        plist = getFullPath(fmt::format("PlayerExplosion_{:02}.plist", id));
+        png = getFullPath(fmt::format("PlayerExplosion_{:02}.png", id - 1));
+        plist = getFullPath(fmt::format("PlayerExplosion_{:02}.plist", id - 1));
         return;
     }
     else if (type == IconType::Special) {

@@ -5,7 +5,6 @@
 #include "LoadEditorPopup.hpp"
 #include "SaveEditorPopup.hpp"
 #include "SaveIconPopup.hpp"
-#include "../MoreIconsPopup.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Filesystem.hpp"

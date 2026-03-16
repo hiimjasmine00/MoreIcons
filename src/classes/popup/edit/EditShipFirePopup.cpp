@@ -402,7 +402,7 @@ void EditShipFirePopup::saveShipFire() {
         (void)file::writeString(jsonPath, "{}");
         icon = more_icons::addShipFire(
             name, name, m_pendingPath / L("fire_001.png"), std::move(jsonPath), {}, {}, "More Icons", 0,
-            Defaults::getShipFireInfo(0), m_frameButtons.size(), false, false
+            Defaults::getShipFireInfo(0), m_frameButtons.size()
         );
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }
