@@ -9,9 +9,11 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/ui/Scrollbar.hpp>
 #include <Geode/ui/ScrollLayer.hpp>
+#include <jasmine/mod.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
+using namespace jasmine::mod;
 
 FramePresetPopup* FramePresetPopup::create(IconType type, Function<void(CCSpriteFrame*)> callback) {
     auto ret = new FramePresetPopup();
@@ -23,22 +25,65 @@ FramePresetPopup* FramePresetPopup::create(IconType type, Function<void(CCSprite
     return nullptr;
 }
 
+struct ExtendedResult {
+    std::vector<uint8_t> data;
+    geode::Ref<cocos2d::CCTexture2D> texture;
+    geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>> frames;
+    uint32_t width;
+    uint32_t height;
+    IconInfo* info;
+    int id;
+    int index;
+
+    ExtendedResult(ImageResult&& image, IconInfo* info, int id, int index)
+        : data(std::move(image.data))
+        , texture(image.texture)
+        , frames(std::move(image.frames))
+        , width(image.width)
+        , height(image.height)
+        , info(info)
+        , id(id)
+        , index(index) {}
+    ExtendedResult(const ExtendedResult& result) = delete;
+    ExtendedResult(ExtendedResult&& result) noexcept :
+        data(std::move(result.data)),
+        texture(result.texture),
+        frames(std::move(result.frames)),
+        width(result.width),
+        height(result.height),
+        info(result.info),
+        id(result.id),
+        index(result.index) {}
+    ExtendedResult& operator=(const ExtendedResult& result) = delete;
+    ExtendedResult& operator=(ExtendedResult&& result) noexcept {
+        data = std::move(result.data);
+        texture = result.texture;
+        frames = std::move(result.frames);
+        width = result.width;
+        height = result.height;
+        info = result.info;
+        id = result.id;
+        index = result.index;
+        return *this;
+    }
+};
+
 std::mutex imageMutex2;
-std::vector<ImageResult> images2;
+std::vector<ExtendedResult> images2;
 
 void loadDeathEffects(std::vector<arc::BlockingTaskHandle<void>>& tasks, Filesystem::PathView suffix) {
     auto& rt = runtime();
 
     auto count = Get::gameManager->countForType(IconType::DeathEffect);
-    for (int i = 2; i <= count; i++) {
+    for (int i = 1; i < count; i++) {
         auto texture = Icons::vanillaTexturePath(fmt::format(L("PlayerExplosion_{:02}{}.png"), i, suffix), false);
         auto sheet = Icons::vanillaTexturePath(fmt::format(L("PlayerExplosion_{:02}{}.plist"), i, suffix), false);
-        tasks.push_back(rt.spawnBlocking<void>([texture = std::move(texture), sheet = std::move(sheet)] {
+        tasks.push_back(rt.spawnBlocking<void>([texture = std::move(texture), sheet = std::move(sheet), i] mutable {
             auto res = Load::createFrames(texture, sheet, {}, IconType::DeathEffect, {}, false, true);
             if (res.isErr()) return;
 
             std::unique_lock lock(imageMutex2);
-            images2.push_back(std::move(res).unwrap());
+            images2.emplace_back(std::move(res).unwrap(), nullptr, i, 0);
         }));
     }
 
@@ -46,13 +91,12 @@ void loadDeathEffects(std::vector<arc::BlockingTaskHandle<void>>& tasks, Filesys
         for (auto& info : *icons) {
             auto& texture = info.getTexture();
             auto& sheet = info.getSheet();
-            auto& name = info.getName();
-            tasks.push_back(rt.spawnBlocking<void>([&texture, &sheet, &name] {
-                auto res = Load::createFrames(texture, sheet, name, IconType::DeathEffect, {}, false);
+            tasks.push_back(rt.spawnBlocking<void>([&texture, &sheet, name = info.getName(), info = &info] mutable {
+                auto res = Load::createFrames(texture, sheet, {}, IconType::DeathEffect, {}, false);
                 if (res.isErr()) return;
 
                 std::unique_lock lock(imageMutex2);
-                images2.push_back(std::move(res).unwrap());
+                images2.emplace_back(std::move(res).unwrap(), info, 0, 0);
             }));
         }
     }
@@ -65,44 +109,30 @@ void loadShipFires(std::vector<arc::BlockingTaskHandle<void>>& tasks) {
     for (int i = 2; i <= count; i++) {
         for (int j = 1; j <= Defaults::getShipFireCount(i); j++) {
             auto texture = Icons::vanillaTexturePath(fmt::format(L("shipfire{:02}_{:03}.png"), i, j), true);
-            auto textureName = fmt::format("shipfire{:02}_{:03}", i, j);
-            tasks.push_back(rt.spawnBlocking<void>([texture = std::move(texture), textureName = std::move(textureName)] {
+            auto textureName = fmt::format("shipfire{:02}-{}", i, j);
+            tasks.push_back(rt.spawnBlocking<void>([texture = std::move(texture), textureName = std::move(textureName), i, j] mutable {
                 auto res = Load::createFrames(texture, {}, {}, IconType::ShipFire, {}, false, false);
                 if (res.isErr()) return;
 
-                auto image = std::move(res).unwrap();
-                image.name = std::move(textureName);
-
                 std::unique_lock lock(imageMutex2);
-                images2.push_back(std::move(image));
+                images2.emplace_back(std::move(res).unwrap(), nullptr, i, j);
             }));
         }
     }
 
     if (auto icons = more_icons::getIcons(IconType::ShipFire)) {
         for (auto& info : *icons) {
-            std::vector<std::filesystem::path> textures;
-            std::vector<std::string> textureNames;
             for (int i = 1; i <= info.getFireCount(); i++) {
                 auto texture = info.getTexture();
                 auto& textureString = Filesystem::getPathString(texture);
                 textureString.replace(textureString.size() - 7, 3, fmt::format(L("{:03}"), i));
-                textures.push_back(std::move(texture));
-                textureNames.push_back(fmt::format("{}_{:03}", info.getName(), i));
-            }
-            while (!textures.empty()) {
-                tasks.push_back(rt.spawnBlocking<void>([texture = std::move(textures[0]), textureName = std::move(textureNames[0])] {
+                tasks.push_back(rt.spawnBlocking<void>([texture = std::move(texture), info = &info, i] mutable {
                     auto res = Load::createFrames(texture, {}, {}, IconType::ShipFire, {}, false, false);
                     if (res.isErr()) return;
 
-                    auto image = std::move(res).unwrap();
-                    image.name = std::move(textureName);
-
                     std::unique_lock lock(imageMutex2);
-                    images2.push_back(std::move(image));
+                    images2.emplace_back(std::move(res).unwrap(), info, 0, i);
                 }));
-                textures.erase(textures.begin());
-                textureNames.erase(textureNames.begin());
             }
         }
     }
@@ -137,13 +167,47 @@ bool FramePresetPopup::init(IconType type, Function<void(CCSpriteFrame*)> callba
     else if (type == IconType::ShipFire) loadShipFires(tasks);
 
     m_loader.spawn(arc::joinAll(tasks), [this] {
+        std::unique_lock lock(imageMutex2);
+
+        std::ranges::sort(images2, [](const ExtendedResult& a, const ExtendedResult& b) {
+            if (a.info && b.info) return *a.info == *b.info ? a.index < b.index : *a.info < *b.info;
+            else if (a.info) return false;
+            else if (b.info) return true;
+            else return a.id == b.id ? a.index < b.index : a.id < b.id;
+        });
+
         for (auto it = images2.begin(); it != images2.end(); it = images2.erase(it)) {
             auto& image = *it;
             Load::initTexture(image.texture, image.data.data(), image.width, image.height, false);
-            m_textures.push_back(std::move(image.texture));
-            m_textureNames.push_back(std::move(image.name));
-            for (auto it2 = image.frames.begin(); it2 != image.frames.end(); it2 = image.frames.erase(it2)) {
-                m_frames.insert(std::move(*it2));
+
+            if (image.frames.empty()) {
+                m_textures.push_back(std::move(image.texture));
+                if (image.info) {
+                    m_names.push_back(fmt::format("{}-{}"_spr, image.info->getName(), image.index));
+                }
+                else {
+                    m_names.push_back(fmt::format("shipfire{:02}-{}", image.id, image.index));
+                }
+            }
+            else {
+                std::vector<std::string_view> keys;
+                for (auto& frame : image.frames) {
+                    keys.push_back(frame.first);
+                }
+                std::ranges::sort(keys);
+                for (size_t i = 0; i < keys.size(); i++) {
+                    auto it = image.frames.find(keys[i]);
+                    if (it != image.frames.end()) {
+                        m_frames.push_back(std::move(it->second));
+                        if (image.info) {
+                            m_names.push_back(fmt::format("{}-{}"_spr, image.info->getName(), i));
+                        }
+                        else {
+                            m_names.push_back(fmt::format("PlayerExplosion_{:02}-{}", image.id, i));
+                        }
+                        image.frames.erase(it);
+                    }
+                }
             }
         }
         setupScroll();
@@ -177,28 +241,28 @@ void FramePresetPopup::setupScroll() {
             limitNodeHeight(iconSprite, 30.0f, 1.0f, 0.0f);
             auto iconButton = CCMenuItemSpriteExtra::create(iconSprite, this, menu_selector(FramePresetPopup::onSelect));
             iconButton->setPosition({ 15.0f, 30.0f });
-            iconButton->setID(m_textureNames[i]);
+            iconButton->setID(fmt::format("{}-button", m_names[i]));
 
             auto iconMenu = CCMenu::create();
             iconMenu->setContentSize({ 30.0f, 30.0f });
             iconMenu->ignoreAnchorPointForPosition(false);
-            iconMenu->setID(fmt::format("{}-menu", m_textureNames[i]));
+            iconMenu->setID(fmt::format("{}-menu", m_names[i]));
             iconMenu->addChild(iconButton);
             contentLayer->addChild(iconMenu);
         }
     }
     else {
-        for (auto& frame : m_frames) {
-            auto iconSprite = CCSprite::createWithSpriteFrame(frame.second);
+        for (size_t i = 0; i < m_frames.size(); i++) {
+            auto iconSprite = CCSprite::createWithSpriteFrame(m_frames[i]);
             limitNodeHeight(iconSprite, 30.0f, 1.0f, 0.0f);
             auto iconButton = CCMenuItemSpriteExtra::create(iconSprite, this, menu_selector(FramePresetPopup::onSelect));
             iconButton->setPosition({ 15.0f, 30.0f });
-            iconButton->setID(frame.first);
+            iconButton->setID(fmt::format("{}-button", m_names[i]));
 
             auto iconMenu = CCMenu::create();
             iconMenu->setContentSize({ 30.0f, 30.0f });
             iconMenu->ignoreAnchorPointForPosition(false);
-            iconMenu->setID(fmt::format("{}-menu", frame.first));
+            iconMenu->setID(fmt::format("{}-menu", m_names[i]));
             iconMenu->addChild(iconButton);
             contentLayer->addChild(iconMenu);
         }
