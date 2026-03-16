@@ -26,7 +26,9 @@ namespace MoreIcons {
     std::filesystem::path getFirePath(IconInfo* info, int id, std::string_view frameSuffix);
     std::filesystem::path getIconStem(std::string_view name, IconType type);
     std::filesystem::path getIconPath(IconInfo* info, int id, IconType type);
-    geode::ZStringView getText(cocos2d::CCTextFieldTTF* input);
+    inline geode::ZStringView getText(cocos2d::CCTextFieldTTF* input) {
+        return *input->m_pInputText;
+    }
     void loadFromSave(IconType type);
     void setTexture(cocos2d::CCSprite* sprite, cocos2d::CCTexture2D* texture);
     void updateGarage(GJGarageLayer* layer = nullptr);

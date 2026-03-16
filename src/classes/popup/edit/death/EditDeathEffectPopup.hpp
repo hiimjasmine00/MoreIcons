@@ -34,6 +34,8 @@ protected:
     void onPieceImport(cocos2d::CCObject* sender);
     void onPiecePreset(cocos2d::CCObject* sender);
     void onPieceRemove(cocos2d::CCObject* sender);
+    void onLoadState(cocos2d::CCObject* sender);
+    void onSaveState(cocos2d::CCObject* sender);
     void onPNG(cocos2d::CCObject* sender);
     void onPlist(cocos2d::CCObject* sender);
     void onPreset(cocos2d::CCObject* sender);
@@ -46,7 +48,7 @@ protected:
     void updateControls();
     CCMenuItemSpriteExtra* addPieceButton(int index, cocos2d::CCSpriteFrame* frame);
     void onSelectPiece(cocos2d::CCObject* sender);
-    bool updateWithSelectedFiles();
+    bool updateWithSelectedFiles(bool update = true);
     void updatePieces();
     void updateState();
     void updateTargets();

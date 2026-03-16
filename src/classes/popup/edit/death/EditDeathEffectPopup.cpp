@@ -1,16 +1,21 @@
 #include "EditDeathEffectPopup.hpp"
 #include "SaveDeathEffectPopup.hpp"
-#include "../IconPresetPopup.hpp"
+#include "SaveEffectEditorPopup.hpp"
 #include "../FramePresetPopup.hpp"
+#include "../IconPresetPopup.hpp"
 #include "../ImageRenderer.hpp"
+#include "../LoadEditorPopup.hpp"
 #include "../../../../MoreIcons.hpp"
+#include "../../../../utils/Filesystem.hpp"
 #include "../../../../utils/Get.hpp"
+#include "../../../../utils/Json.hpp"
 #include "../../../../utils/Load.hpp"
 #include "../../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/Slider.hpp>
 #include <Geode/utils/file.hpp>
 #include <jasmine/mod.hpp>
+#include <matjson/std.hpp>
 
 using namespace geode::prelude;
 using namespace jasmine::mod;
@@ -86,6 +91,27 @@ bool EditDeathEffectPopup::init(BasePopup* popup) {
     nextButton->setPosition({ 420.0f, 222.0f });
     nextButton->setID("next-button");
     m_buttonMenu->addChild(nextButton);
+
+    auto saveMenu = CCMenu::create();
+    saveMenu->setPosition({ 51.0f, 110.0f });
+    saveMenu->setContentSize({ 30.0f, 100.0f });
+    saveMenu->ignoreAnchorPointForPosition(false);
+    saveMenu->setID("save-menu");
+    m_mainLayer->addChild(saveMenu);
+
+    auto loadStateSprite = CircleButtonSprite::createWithSprite("MI_loadBtn_001.png"_spr, 1.0f, CircleBaseColor::Green, CircleBaseSize::Small);
+    loadStateSprite->setScale(0.7f);
+    auto loadStateButton = CCMenuItemSpriteExtra::create(loadStateSprite, this, menu_selector(EditDeathEffectPopup::onLoadState));
+    loadStateButton->setID("load-state-button");
+    saveMenu->addChild(loadStateButton);
+
+    auto saveStateSprite = CircleButtonSprite::createWithSprite("MI_saveBtn_001.png"_spr, 1.0f, CircleBaseColor::Cyan, CircleBaseSize::Small);
+    saveStateSprite->setScale(0.7f);
+    auto saveStateButton = CCMenuItemSpriteExtra::create(saveStateSprite, this, menu_selector(EditDeathEffectPopup::onSaveState));
+    saveStateButton->setID("save-state-button");
+    saveMenu->addChild(saveStateButton);
+
+    saveMenu->setLayout(ColumnLayout::create()->setGap(10.0f)->setAxisReverse(true));
 
     m_selectSprite = CCSprite::createWithSpriteFrameName("GJ_select_001.png");
     m_selectSprite->setID("select-sprite");
@@ -250,10 +276,39 @@ void EditDeathEffectPopup::onPieceRemove(CCObject* sender) {
     updatePieces();
     for (size_t i = 0; i < m_frames.size(); i++) {
         m_pieceButtons[i]->setTag(i);
-        m_pieceButtons[i]->setID(fmt::format("piece-{}-button", i));
+        m_pieceButtons[i]->setID(fmt::format("piece-{}-button", i + 1));
     }
     if (!m_frames.empty()) onSelectPiece(m_pieceButtons[m_selectedPiece]);
     else MoreIcons::setTexture(m_previewSprite, nullptr);
+}
+
+void EditDeathEffectPopup::onLoadState(CCObject* sender) {
+    LoadEditorPopup::create(IconType::DeathEffect, [this](const std::filesystem::path& directory, std::string_view name) {
+        auto stateRes = file::readJson(directory / L("state.json"));
+        if (stateRes.isErr()) return Notify::error("Failed to load {}: {}", name, stateRes.unwrapErr());
+
+        auto state = std::move(stateRes).unwrap();
+        if (!state.isObject()) return Notify::error("Failed to load {}: Expected object", name);
+
+        m_selectedPNG = directory / L("effect.png");
+        m_selectedPlist = directory / L("effect.plist");
+        if (!updateWithSelectedFiles(false)) return;
+
+        m_definitions = Json::get<std::vector<FrameDefinition>>(state, "definitions");
+        if (m_selectedPiece >= m_definitions.size()) m_selectedPiece = m_definitions.size() - 1;
+        m_definition = &m_definitions[m_selectedPiece];
+        updateControls();
+        updatePieces();
+        onSelectPiece(m_pieceButtons[m_selectedPiece]);
+
+        Notify::success("{} loaded!", name);
+    })->show();
+}
+
+void EditDeathEffectPopup::onSaveState(CCObject* sender) {
+    SaveEffectEditorPopup::create(m_definitions, m_frames, [this] {
+        m_hasChanged = false;
+    })->show();
 }
 
 void EditDeathEffectPopup::onPNG(CCObject* sender) {
@@ -449,7 +504,7 @@ CCMenuItemSpriteExtra* EditDeathEffectPopup::addPieceButton(int index, CCSpriteF
     pieceSprite->setPosition({ 15.0f, 15.0f });
     pieceButton->setContentSize({ 30.0f, 30.0f });
     pieceButton->setTag(index);
-    pieceButton->setID(fmt::format("piece-{}-button", index));
+    pieceButton->setID(fmt::format("piece-{}-button", index + 1));
     m_pieceMenu->addChild(pieceButton);
 
     m_pieces.push_back(pieceSprite);
@@ -469,7 +524,7 @@ void EditDeathEffectPopup::onSelectPiece(CCObject* sender) {
     updateTargets();
 }
 
-bool EditDeathEffectPopup::updateWithSelectedFiles() {
+bool EditDeathEffectPopup::updateWithSelectedFiles(bool update) {
     auto ret = false;
     if (auto imageRes = Load::createFrames(m_selectedPNG, m_selectedPlist, {}, IconType::DeathEffect, {}, false)) {
         auto image = std::move(imageRes).unwrap();
@@ -496,10 +551,12 @@ bool EditDeathEffectPopup::updateWithSelectedFiles() {
                 image.frames.erase(it);
             }
         }
-        if (!selected) selected = m_pieceButtons.back();
+        if (update) {
+            if (!selected) selected = m_pieceButtons.back();
 
-        updatePieces();
-        onSelectPiece(selected);
+            updatePieces();
+            onSelectPiece(selected);
+        }
 
         ret = true;
     }

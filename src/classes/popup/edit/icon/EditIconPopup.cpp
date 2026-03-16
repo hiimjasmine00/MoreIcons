@@ -1,10 +1,10 @@
 #include "EditIconPopup.hpp"
 #include "IconColorPopup.hpp"
-#include "LoadEditorPopup.hpp"
 #include "SaveEditorPopup.hpp"
 #include "SaveIconPopup.hpp"
 #include "../IconPresetPopup.hpp"
 #include "../ImageRenderer.hpp"
+#include "../LoadEditorPopup.hpp"
 #include "../../../../MoreIcons.hpp"
 #include "../../../../utils/Constants.hpp"
 #include "../../../../utils/Filesystem.hpp"
@@ -248,17 +248,25 @@ void EditIconPopup::onNextPage(CCObject* sender) {
 
 void EditIconPopup::onLoadState(CCObject* sender) {
     LoadEditorPopup::create(m_iconType, [this](const std::filesystem::path& directory, std::string_view name) {
+        auto stateRes = file::readFromJson<IconEditorState>(directory / L("state.json"));
+        if (stateRes.isErr()) return Notify::error("Failed to load {}: {}", name, stateRes.unwrapErr());
+
         m_selectedPNG = directory / L("icon.png");
         m_selectedPlist = directory / L("icon.plist");
         if (!updateWithSelectedFiles()) return;
-
-        auto stateRes = file::readFromJson<IconEditorState>(directory / L("state.json"));
-        if (stateRes.isErr()) return Notify::error("Failed to load {}: {}", name, stateRes.unwrapErr());
 
         m_state = std::move(stateRes).unwrap();
         updateColor(1, m_state.mainColor);
         updateColor(2, m_state.secondaryColor);
         updateColor(3, m_state.glowColor);
+
+        auto it = m_state.definitions.find(m_suffix);
+        if (it != m_state.definitions.end()) {
+            m_definition = &it->second;
+        }
+        else {
+            m_definition = &m_state.definitions.emplace(m_suffix, FrameDefinition()).first->second;
+        }
         updateControls();
 
         for (auto& [key, definition] : m_state.definitions) {

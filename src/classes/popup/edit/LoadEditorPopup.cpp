@@ -1,7 +1,7 @@
 #include "LoadEditorPopup.hpp"
-#include "../../../../MoreIcons.hpp"
-#include "../../../../utils/Constants.hpp"
-#include "../../../../utils/Filesystem.hpp"
+#include "../../../MoreIcons.hpp"
+#include "../../../utils/Constants.hpp"
+#include "../../../utils/Filesystem.hpp"
 #include <algorithm>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/ui/Scrollbar.hpp>
@@ -63,8 +63,8 @@ bool LoadEditorPopup::init(IconType type, Function<void(const std::filesystem::p
         }), path);
     });
 
-    for (auto& path : entries) {
-        auto filename = std::string(Filesystem::strNarrow(Filesystem::filenameView(path)));
+    for (auto it = entries.begin(); it != entries.end(); it = entries.erase(it)) {
+        auto filename = std::string(Filesystem::strNarrow(Filesystem::filenameView(*it)));
 
         auto entryMenu = CCMenu::create();
         entryMenu->setContentSize({ 200.0f, 30.0f });
@@ -76,7 +76,7 @@ bool LoadEditorPopup::init(IconType type, Function<void(const std::filesystem::p
             ButtonSprite::create(filename.c_str(), 174, 0, 1.0f, false, "goldFont.fnt", "GJ_button_05.png", 0.0f),
             this, menu_selector(LoadEditorPopup::onEntry)
         );
-        entryButton->setUserObject("entry-path", ObjWrapper<std::filesystem::path>::create(std::move(path)));
+        entryButton->setUserObject("entry-path", ObjWrapper<std::filesystem::path>::create(std::move(*it)));
         entryButton->setPosition({ 100.0f, 20.0f });
         entryButton->setID(std::move(filename));
         entryMenu->addChild(entryButton);

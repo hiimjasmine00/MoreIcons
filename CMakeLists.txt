@@ -32,7 +32,7 @@ set(GEODE_NO_PUGIXML_HEADER ON)
 add_subdirectory($ENV{GEODE_SDK} ${CMAKE_CURRENT_BINARY_DIR}/geode)
 
 CPMAddPackage("gh:zeux/pugixml@1.15")
-CPMAddPackage("gh:hiimjasmine00/texpack@0.6.0")
+CPMAddPackage("gh:hiimjasmine00/texpack@0.6.1")
 CPMAddPackage("gh:hiimjasmine00/jasmine-tools@1.5.2")
 if (WIN32)
     target_compile_definitions(pugixml-static PRIVATE _HAS_ITERATOR_DEBUGGING=0)

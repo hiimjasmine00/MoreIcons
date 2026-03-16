@@ -243,6 +243,11 @@ std::optional<std::pair<std::string_view, std::string_view>> splitWithForm(std::
     if (end != std::string_view::npos) return std::nullopt;
     str2 = pointStr.substr(begin, pointStr.size() - begin);
 
+    while (str1.starts_with(' ')) str1.remove_prefix(1);
+    while (str1.ends_with(' ')) str1.remove_suffix(1);
+    while (str2.starts_with(' ')) str2.remove_prefix(1);
+    while (str2.ends_with(' ')) str2.remove_suffix(1);
+
     if (str1.empty() || str2.empty()) return std::nullopt;
 
     return std::make_pair(str1, str2);

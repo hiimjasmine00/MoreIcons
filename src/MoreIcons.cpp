@@ -273,10 +273,6 @@ void MoreIcons::getIconPaths(IconInfo* info, int id, IconType type, std::filesys
     plist = getFullPath(fmt::format("icons/{}.plist", iconName));
 }
 
-ZStringView MoreIcons::getText(CCTextFieldTTF* input) {
-    return *input->m_pInputText;
-}
-
 void MoreIcons::loadFromSave(IconType type) {
     auto saveContainer = Mod::get()->getSaveContainer();
     auto& mainIcon = saveContainer[more_icons::saveKey(type, false)];
