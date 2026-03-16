@@ -394,6 +394,8 @@ CCTexture2D* Load::addFrames(ImageResult& image, std::vector<std::string>& frame
             Get::spriteFrameCache->addSpriteFrame(it->second, it->first.c_str());
             frameNames.push_back(std::move(const_cast<std::string&>(it->first)));
         }
+
+        std::ranges::sort(frameNames);
     }
 
     return image.texture;

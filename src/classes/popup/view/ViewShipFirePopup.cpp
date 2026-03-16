@@ -1,12 +1,9 @@
 #include "ViewShipFirePopup.hpp"
 #include "../../../MoreIcons.hpp"
-#include "../../../utils/Constants.hpp"
 #include "../../../utils/Defaults.hpp"
 #include "../../../utils/Filesystem.hpp"
-#include "../../../utils/Icons.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
-#include <Geode/binding/ButtonSprite.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
@@ -26,7 +23,7 @@ bool ViewShipFirePopup::init(int id, IconInfo* info) {
 
     setID("ViewShipFirePopup");
     setTitle("Ship Fire Viewer");
-    m_title->setID("view-frames-title");
+    m_title->setID("view-ship-fire-title");
 
     m_streak = CCSprite::create();
     m_streak->setPosition({ 200.0f, 20.0f });

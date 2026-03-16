@@ -390,6 +390,8 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
         }
     }
 
+    std::ranges::sort(frameNames);
+
     auto icons = getIcons(type);
     if (!icons) return;
 
@@ -455,6 +457,8 @@ void more_icons::updateIcon(IconInfo* info) {
         Get::spriteFrameCache->addSpriteFrame(frame, frameName.c_str());
         frameNames.push_back(frameName);
     }
+
+    std::ranges::sort(frameNames);
 }
 
 void more_icons::updateSimplePlayer(SimplePlayer* player, IconInfo* info) {

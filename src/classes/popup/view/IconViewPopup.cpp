@@ -1,6 +1,7 @@
 #include "IconViewPopup.hpp"
-#include "ViewShipFirePopup.hpp"
+#include "ViewDeathEffectPopup.hpp"
 #include "ViewIconPopup.hpp"
+#include "ViewShipFirePopup.hpp"
 #include "../../misc/LazyIcon.hpp"
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Get.hpp"
@@ -48,12 +49,15 @@ bool IconViewPopup::init(IconType type, bool custom) {
             for (auto& info : *icons) {
                 auto iconMenu = CCMenu::create();
                 auto lazyIcon = LazyIcon::create(type, 0, &info, {}, [this, info = &info, type] {
-                if (type == IconType::ShipFire) {
-                    ViewShipFirePopup::create(0, info)->show();
-                }
-                else {
-                    ViewIconPopup::create(type, 0, info)->show();
-                }
+                    if (type == IconType::ShipFire) {
+                        ViewShipFirePopup::create(0, info)->show();
+                    }
+                    else if (type == IconType::DeathEffect) {
+                        ViewDeathEffectPopup::create(0, info)->show();
+                    }
+                    else {
+                        ViewIconPopup::create(type, 0, info)->show();
+                    }
                 });
                 lazyIcon->setPosition({ 15.0f, 30.0f });
                 iconMenu->setContentSize({ 30.0f, 30.0f });
@@ -66,10 +70,13 @@ bool IconViewPopup::init(IconType type, bool custom) {
     }
     else {
         auto count = Get::gameManager->countForType(type);
-        for (int i = 1; i <= count; i++) {
+        for (int i = type == IconType::DeathEffect || type == IconType::ShipFire ? 2 : 1; i <= count; i++) {
             auto iconMenu = CCMenu::create();
             auto lazyIcon = LazyIcon::create(type, i, nullptr, {}, [this, i, type] {
-                if (type == IconType::ShipFire) {
+                if (type == IconType::DeathEffect) {
+                    ViewDeathEffectPopup::create(i, nullptr)->show();
+                }
+                else if (type == IconType::ShipFire) {
                     ViewShipFirePopup::create(i, nullptr)->show();
                 }
                 else {
