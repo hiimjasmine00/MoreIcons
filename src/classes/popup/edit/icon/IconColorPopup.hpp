@@ -1,4 +1,4 @@
-#include "../BasePopup.hpp"
+#include "../../BasePopup.hpp"
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
 
 class IconColorPopup : public BasePopup, public FLAlertLayerProtocol {

@@ -1,17 +1,17 @@
 #include "EditIconPopup.hpp"
 #include "IconColorPopup.hpp"
-#include "IconPresetPopup.hpp"
-#include "ImageRenderer.hpp"
 #include "LoadEditorPopup.hpp"
 #include "SaveEditorPopup.hpp"
 #include "SaveIconPopup.hpp"
-#include "../../../MoreIcons.hpp"
-#include "../../../utils/Constants.hpp"
-#include "../../../utils/Filesystem.hpp"
-#include "../../../utils/Get.hpp"
-#include "../../../utils/Icons.hpp"
-#include "../../../utils/Load.hpp"
-#include "../../../utils/Notify.hpp"
+#include "../IconPresetPopup.hpp"
+#include "../ImageRenderer.hpp"
+#include "../../../../MoreIcons.hpp"
+#include "../../../../utils/Constants.hpp"
+#include "../../../../utils/Filesystem.hpp"
+#include "../../../../utils/Get.hpp"
+#include "../../../../utils/Icons.hpp"
+#include "../../../../utils/Load.hpp"
+#include "../../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/Slider.hpp>
 #include <Geode/utils/file.hpp>
@@ -28,10 +28,6 @@ EditIconPopup* EditIconPopup::create(BasePopup* popup, IconType type) {
     }
     delete ret;
     return nullptr;
-}
-
-CCSpriteFrame* frameWithTexture(CCTexture2D* texture) {
-    return CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() });
 }
 
 bool EditIconPopup::init(BasePopup* popup, IconType type) {
@@ -314,7 +310,7 @@ void EditIconPopup::onPieceImport(CCObject* sender) {
         if (!path.has_value()) return;
 
         if (auto textureRes = Load::createTexture(path.value())) {
-            addFrame(frameWithTexture(textureRes.unwrap()));
+            addFrame(MoreIcons::frameWithTexture(textureRes.unwrap()));
             updatePieces();
         }
         else if (textureRes.isErr()) return Notify::error(textureRes.unwrapErr());
@@ -335,7 +331,7 @@ void EditIconPopup::onPieceClear(CCObject* sender) {
     else {
         auto emptyFrame = Icons::getFrame("emptyFrame.png"_spr);
         if (!emptyFrame) {
-            emptyFrame = frameWithTexture(Load::createTexture(nullptr, 0, 0));
+            emptyFrame = MoreIcons::frameWithTexture(Load::createTexture(nullptr, 0, 0));
             Get::spriteFrameCache->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
         }
         addFrame(emptyFrame);

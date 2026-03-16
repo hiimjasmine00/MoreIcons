@@ -17,6 +17,7 @@ namespace MoreIcons {
     bool currentGlow(bool dual);
     cocos2d::CCSprite* customIcon(IconInfo* info);
     bool dualSelected();
+    cocos2d::CCSpriteFrame* frameWithTexture(cocos2d::CCTexture2D* texture);
     std::filesystem::path getEditorDir(IconType type);
     std::filesystem::path getIconDir(IconType type);
     std::string getIconName(int id, IconType type);

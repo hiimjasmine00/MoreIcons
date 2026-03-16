@@ -1,12 +1,12 @@
 #include "EditDeathEffectPopup.hpp"
-#include "IconPresetPopup.hpp"
-#include "FramePresetPopup.hpp"
-#include "ImageRenderer.hpp"
 #include "SaveDeathEffectPopup.hpp"
-#include "../../../MoreIcons.hpp"
-#include "../../../utils/Get.hpp"
-#include "../../../utils/Load.hpp"
-#include "../../../utils/Notify.hpp"
+#include "../IconPresetPopup.hpp"
+#include "../FramePresetPopup.hpp"
+#include "../ImageRenderer.hpp"
+#include "../../../../MoreIcons.hpp"
+#include "../../../../utils/Get.hpp"
+#include "../../../../utils/Load.hpp"
+#include "../../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/Slider.hpp>
 #include <Geode/utils/file.hpp>
@@ -23,10 +23,6 @@ EditDeathEffectPopup* EditDeathEffectPopup::create(BasePopup* popup) {
     }
     delete ret;
     return nullptr;
-}
-
-CCSpriteFrame* frameWithTexture(CCTexture2D* texture) {
-    return CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() });
 }
 
 bool EditDeathEffectPopup::init(BasePopup* popup) {
@@ -202,7 +198,7 @@ void EditDeathEffectPopup::onPieceAdd(CCObject* sender) {
         if (!path.has_value()) return;
 
         if (auto textureRes = Load::createTexture(path.value())) {
-            auto frame = frameWithTexture(textureRes.unwrap());
+            auto frame = MoreIcons::frameWithTexture(textureRes.unwrap());
             auto button = addPieceButton(m_frames.size(), frame);
             m_frames.push_back(frame);
             m_page = (m_frames.size() - 1) / 5;
@@ -227,7 +223,7 @@ void EditDeathEffectPopup::onPieceImport(CCObject* sender) {
         if (!path.has_value()) return;
 
         if (auto textureRes = Load::createTexture(path.value())) {
-            m_frames[m_selectedPiece] = frameWithTexture(textureRes.unwrap());
+            m_frames[m_selectedPiece] = MoreIcons::frameWithTexture(textureRes.unwrap());
             updatePieces();
             onSelectPiece(m_pieceButtons[m_selectedPiece]);
         }

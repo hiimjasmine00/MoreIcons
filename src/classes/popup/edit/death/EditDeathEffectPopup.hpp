@@ -1,50 +1,39 @@
-#include "IconEditorState.hpp"
-#include "../BasePopup.hpp"
-#include "../../misc/SimpleIcon.hpp"
+#include "../FrameDefinition.hpp"
+#include "../../BasePopup.hpp"
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/async.hpp>
 
-class EditIconPopup : public BasePopup, public FLAlertLayerProtocol, public TextInputDelegate {
+class EditDeathEffectPopup : public BasePopup, public FLAlertLayerProtocol, public TextInputDelegate {
 protected:
     BasePopup* m_parentPopup;
     geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
     std::filesystem::path m_selectedPNG;
     std::filesystem::path m_selectedPlist;
-    std::vector<std::vector<cocos2d::CCNode*>> m_pages;
-    std::vector<std::string_view> m_required;
-    geode::utils::StringMap<cocos2d::CCSprite*> m_pieces;
-    geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>> m_frames;
-    SimpleIcon* m_player;
+    std::vector<cocos2d::CCSprite*> m_pieces;
+    std::vector<CCMenuItemSpriteExtra*> m_pieceButtons;
+    std::vector<geode::Ref<cocos2d::CCSpriteFrame>> m_frames;
     std::array<Slider*, 6> m_sliders;
     std::array<geode::TextInput*, 6> m_inputs;
-    std::string_view m_suffix;
-    std::span<cocos2d::CCSprite*> m_targets;
+    cocos2d::CCSprite* m_previewSprite;
+    cocos2d::CCNode* m_previewNode;
     cocos2d::CCSprite* m_selectSprite;
     cocos2d::CCMenu* m_pieceMenu;
     ButtonSprite* m_pngSprite;
     ButtonSprite* m_plistSprite;
-    cocos2d::CCMenu* m_colorMenu;
-    cocos2d::CCSprite* m_mainColorSprite;
-    cocos2d::CCSprite* m_secondaryColorSprite;
-    cocos2d::CCSprite* m_glowColorSprite;
-    IconEditorState m_state;
+    std::vector<FrameDefinition> m_definitions;
     FrameDefinition* m_definition;
-    IconType m_iconType;
     int m_page = 0;
-    int m_selectedPage = 0;
+    int m_selectedPiece = 0;
     bool m_hasChanged = false;
 
-    bool init(BasePopup* popup, IconType type);
+    bool init(BasePopup* popup);
     void onPrevPage(cocos2d::CCObject* sender);
     void onNextPage(cocos2d::CCObject* sender);
-    void onLoadState(cocos2d::CCObject* sender);
-    void onSaveState(cocos2d::CCObject* sender);
-    void addFrame(geode::Ref<cocos2d::CCSpriteFrame>&& frame);
-    void eraseFrame();
+    void onPieceAdd(cocos2d::CCObject* sender);
     void onPieceImport(cocos2d::CCObject* sender);
     void onPiecePreset(cocos2d::CCObject* sender);
-    void onPieceClear(cocos2d::CCObject* sender);
+    void onPieceRemove(cocos2d::CCObject* sender);
     void onPNG(cocos2d::CCObject* sender);
     void onPlist(cocos2d::CCObject* sender);
     void onPreset(cocos2d::CCObject* sender);
@@ -55,17 +44,14 @@ protected:
     void onReset(cocos2d::CCObject* sender);
     void updateControl(int offset, float value, bool slider, bool input, bool definition);
     void updateControls();
-    CCMenuItemSpriteExtra* addPieceButton(std::string_view suffix, int page, bool required = true);
+    CCMenuItemSpriteExtra* addPieceButton(int index, cocos2d::CCSpriteFrame* frame);
     void onSelectPiece(cocos2d::CCObject* sender);
-    cocos2d::CCSprite* addColorButton(int type, const char* text, std::string&& id);
-    void onColor(cocos2d::CCObject* sender);
-    void updateColor(int type, int index);
-    bool updateWithSelectedFiles(bool useSuffix = false);
+    bool updateWithSelectedFiles();
     void updatePieces();
-    void goToPage(int page);
+    void updateState();
     void updateTargets();
     void onClose(cocos2d::CCObject* sender) override;
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override;
 public:
-    static EditIconPopup* create(BasePopup* popup, IconType type);
+    static EditDeathEffectPopup* create(BasePopup* popup);
 };

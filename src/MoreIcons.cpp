@@ -308,3 +308,7 @@ void MoreIcons::setTexture(CCSprite* sprite, CCTexture2D* texture) {
         sprite->setTextureRect({ 0.0f, 0.0f, 0.0f, 0.0f });
     }
 }
+
+CCSpriteFrame* MoreIcons::frameWithTexture(CCTexture2D* texture) {
+    return CCSpriteFrame::createWithTexture(texture, { { 0.0f, 0.0f }, texture->getContentSize() });
+}

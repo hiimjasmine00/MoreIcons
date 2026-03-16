@@ -1,10 +1,10 @@
 #include "SaveEditorPopup.hpp"
-#include "ImageRenderer.hpp"
-#include "../../../MoreIcons.hpp"
-#include "../../../utils/Constants.hpp"
-#include "../../../utils/Filesystem.hpp"
-#include "../../../utils/Get.hpp"
-#include "../../../utils/Notify.hpp"
+#include "../ImageRenderer.hpp"
+#include "../../../../MoreIcons.hpp"
+#include "../../../../utils/Constants.hpp"
+#include "../../../../utils/Filesystem.hpp"
+#include "../../../../utils/Get.hpp"
+#include "../../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/file.hpp>

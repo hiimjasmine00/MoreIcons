@@ -1,5 +1,5 @@
-#include "IconEditorState.hpp"
-#include "../BasePopup.hpp"
+#include "../FrameDefinition.hpp"
+#include "../../BasePopup.hpp"
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
 
 class SaveDeathEffectPopup : public BasePopup, public FLAlertLayerProtocol {

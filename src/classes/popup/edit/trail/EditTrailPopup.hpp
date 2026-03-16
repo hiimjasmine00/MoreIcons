@@ -1,4 +1,4 @@
-#include "../BasePopup.hpp"
+#include "../../BasePopup.hpp"
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
 #include <Geode/utils/async.hpp>
 

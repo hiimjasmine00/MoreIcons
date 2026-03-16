@@ -1,6 +1,6 @@
 #include "IconColorPopup.hpp"
-#include "../../../utils/Constants.hpp"
-#include "../../../utils/Get.hpp"
+#include "../../../../utils/Constants.hpp"
+#include "../../../../utils/Get.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 
 using namespace geode::prelude;
