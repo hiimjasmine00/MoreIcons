@@ -402,6 +402,9 @@ void EditShipFirePopup::saveShipFire() {
     auto iconPath = m_iconButton->saveIcon(m_pendingPath);
 
     if (auto icon = more_icons::getIcon(name, IconType::ShipFire)) {
+        if (!iconPath.empty() && icon->getIcon().empty()) {
+            icon->setIcon(std::move(iconPath));
+        }
         more_icons::updateIcon(icon);
     }
     else {

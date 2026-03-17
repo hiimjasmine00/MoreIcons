@@ -167,6 +167,9 @@ void EditTrailPopup::saveTrail() {
     auto name = MoreIcons::getText(m_nameInput);
 
     if (auto icon = more_icons::getIcon(name, IconType::Special)) {
+        if (!iconPath.empty() && icon->getIcon().empty()) {
+            icon->setIcon(std::move(iconPath));
+        }
         more_icons::updateIcon(icon);
     }
     else {
