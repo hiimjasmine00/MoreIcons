@@ -242,7 +242,7 @@ void SpecialSettingsPopup::onClose(CCObject* sender) {
             Constants::getSingularLowercase(type)),
         "No",
         "Yes",
-        350.0f
+        430.0f
     )->show();
 }
 
