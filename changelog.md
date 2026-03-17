@@ -1,5 +1,5 @@
 # More Icons Changelog
-## v2.0.0 (2026-03-16)
+## v2.0.0 (2026-03-17)
 - Ported to Geometry Dash v2.208 / Geode SDK v5.0.0 (You can all stop pestering me about this now :P)
 - Added custom death effect support ([#12](https://github.com/hiimjasmine00/MoreIcons/issues/12))
 - Added custom ship fire support

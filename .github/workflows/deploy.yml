@@ -28,15 +28,12 @@ jobs:
 
     steps:
       - name: Checkout More Icons
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           path: ./MoreIcons
 
-      - name: Setup Ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
-
       - name: Download Flash
-        uses: robinraju/release-downloader@v1.11
+        uses: robinraju/release-downloader@v1.12
         with:
           repository: hiimjasmine00/flash
           latest: true
@@ -71,7 +68,7 @@ jobs:
           ../flash.exe -i ../MoreIcons -o . --overwrite && node ./fix-docs.js
 
       - name: Upload Pages
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: ./dist
 
