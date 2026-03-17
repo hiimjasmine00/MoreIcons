@@ -96,7 +96,7 @@ std::filesystem::path IconButton::saveIcon(const std::filesystem::path& path) {
                 Notify::error("Failed to save icon image: {}", res.unwrapErr());
             }
 
-            if (scale == 1.0f) iconPath = savePath;
+            if (scale == 1.0f) iconPath = std::move(savePath);
         }
     }
     return iconPath;

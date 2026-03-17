@@ -1,9 +1,11 @@
 #include "MoreInfoPopup.hpp"
 #include "IconNamePopup.hpp"
 #include "SpecialSettingsPopup.hpp"
+#include "../edit/ImageRenderer.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Filesystem.hpp"
+#include "../../../utils/Get.hpp"
 #include "../../../utils/Icons.hpp"
 #include "../../../utils/Load.hpp"
 #include "../../../utils/Notify.hpp"
@@ -231,10 +233,12 @@ bool MoreInfoPopup::init(IconInfo* info) {
     }
     else if (type >= IconType::DeathEffect) {
         auto sprite = MoreIcons::customIcon(info);
-        sprite->setPosition({ 150.0f, hasPack ? 165.0f : 171.0f });
         sprite->setScale(hasPack ? 1.1f : 1.25f);
-        sprite->setID("custom-icon");
-        m_mainLayer->addChild(sprite);
+
+        auto iconButton = CCMenuItemSpriteExtra::create(sprite, this, menu_selector(MoreInfoPopup::onSwapIcon));
+        iconButton->setPosition({ 150.0f, hasPack ? 165.0f : 171.0f });
+        iconButton->setID("icon-button");
+        m_buttonMenu->addChild(iconButton);
 
         if (info->getSpecialID() == 0) {
             auto settingsSprite = CCSprite::createWithSpriteFrameName("GJ_optionsBtn_001.png");
@@ -294,6 +298,59 @@ void MoreInfoPopup::onIcon(CCObject* sender) {
     m_icon->setSecondaryColor(m_toggled ? MoreIcons::currentColor2(type, dual) : ccColor3B { 255, 255, 255 });
     m_icon->setGlowColor(m_toggled ? MoreIcons::currentColorGlow(type, dual) : ccColor3B { 255, 255, 255 });
     m_icon->setGlow(!m_toggled || MoreIcons::currentGlow(dual));
+}
+
+void MoreInfoPopup::onSwapIcon(CCObject* sender) {
+    m_listener.spawn(file::pick(file::PickMode::OpenFile, {
+        .filters = {{
+            .description = "PNG files",
+            .files = { "*.png" }
+        }}
+    }), [this](Result<std::optional<std::filesystem::path>> res) {
+        if (res.isErr()) return Notify::error("Failed to import PNG file: {}", res.unwrapErr());
+
+        auto path = std::move(res).unwrap();
+        if (!path.has_value()) return;
+
+        auto textureRes = Load::createTexture(path.value());
+        if (textureRes.isErr()) {
+            return Notify::error("Failed to load texture: {}", textureRes.unwrapErr());
+        }
+
+        auto parentPath = Filesystem::parentPath(m_info->getTexture());
+        std::filesystem::path iconPath;
+        auto texture = textureRes.unwrap();
+        auto scaleFactor = Get::director->getContentScaleFactor();
+        std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
+        std::array names = { L("icon-uhd.png"), L("icon-hd.png"), L("icon.png") };
+        for (int i = 0; i < 3; i++) {
+            auto scale = scales[i];
+            auto sprite = CCSprite::createWithTexture(texture);
+            sprite->setScale(scale);
+            sprite->setAnchorPoint({ 0.0f, 0.0f });
+            sprite->setBlendFunc({ GL_ONE, GL_ZERO });
+            auto iconImage = ImageRenderer::getImage(sprite);
+            sprite->release();
+
+            auto iconImageRes = texpack::toPNG(iconImage);
+            if (iconImageRes.isErr()) {
+                Notify::error("Failed to encode icon image: {}", iconImageRes.unwrapErr());
+            }
+
+            auto savePath = parentPath / names[i];
+            if (auto res = file::writeBinary(savePath, iconImageRes.unwrap()); res.isErr()) {
+                Notify::error("Failed to save icon image: {}", res.unwrapErr());
+            }
+
+            if (scale == 1.0f) iconPath = std::move(savePath);
+        }
+
+        m_info->setIcon(std::move(iconPath));
+        auto notif = fmt::format("Icon for {} changed!", m_info->getShortName());
+        close();
+        Notify::success(notif);
+        MoreIcons::updateGarage();
+    });
 }
 
 void MoreInfoPopup::onSettings(CCObject* sender) {
