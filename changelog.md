@@ -4,7 +4,7 @@
 - Added custom death effect support ([#12](https://github.com/hiimjasmine00/MoreIcons/issues/12))
 - Added custom ship fire support
 - Revamped trail support, allowing for trails to have custom display icons ([#19](https://github.com/hiimjasmine00/MoreIcons/issues/19))
-- Added compatibility with the mod "Custom Gamemode Colors" by rooot
+- Added compatibility with the mods "Custom Gamemode Colors" by rooot and "Fine Outline" by Alphalaneous
 - Renamed `MoreIconsV2.hpp` to `MoreIcons.hpp` and made it the main API header
 - Refactored `IconInfo.hpp` to use pointer-to-implementation
 

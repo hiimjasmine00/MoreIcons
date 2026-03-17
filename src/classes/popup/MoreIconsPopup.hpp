@@ -6,6 +6,7 @@ protected:
     cocos2d::ccColor3B m_color1;
     cocos2d::ccColor3B m_color2;
     cocos2d::ccColor3B m_colorGlow;
+    cocos2d::ccColor3B m_outlineColor = { 0, 0, 0 };
     bool m_glow;
     bool m_dual;
 

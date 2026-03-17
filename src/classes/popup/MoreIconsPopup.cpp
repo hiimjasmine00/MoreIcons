@@ -10,6 +10,7 @@
 #include "../../utils/Get.hpp"
 #include "../../utils/Log.hpp"
 #include "../../utils/Notify.hpp"
+#include <alphalaneous.fine_outline/include/FineOutline.hpp>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
@@ -49,6 +50,9 @@ bool MoreIconsPopup::init() {
         m_color1 = MoreIcons::currentColor1(IconType::Cube, m_dual);
         m_color2 = MoreIcons::currentColor2(IconType::Cube, m_dual);
         m_colorGlow = MoreIcons::currentColorGlow(IconType::Cube, m_dual);
+    }
+    if (Loader::get()->isModLoaded("alphalaneous.fine_outline")) {
+        m_outlineColor = alpha::fine_outline::getColor();
     }
     m_glow = MoreIcons::currentGlow(m_dual);
 
@@ -105,6 +109,7 @@ void MoreIconsPopup::createMenu(IconType type) {
         auto icon = SimplePlayer::create(1);
         icon->updatePlayerFrame(id, type);
         more_icons::updateSimplePlayer(icon, info);
+        alpha::fine_outline::setOutlineColor(icon, m_outlineColor);
         if (MoreIcons::customGamemodeColors) {
             icon->setColor(MoreIcons::currentColor1(type, m_dual));
             icon->setSecondColor(MoreIcons::currentColor2(type, m_dual));

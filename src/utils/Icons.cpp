@@ -160,7 +160,7 @@ Result<> checkPath(const std::filesystem::path& path) {
     if (count == 0) return Err(formatSystemError(GetLastError()));
 
     std::string str(count, '\0');
-    auto result = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), -1, &str[0], count, nullptr, nullptr);
+    auto result = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr.size(), &str[0], count, nullptr, nullptr);
     if (result == 0) return Err(formatSystemError(GetLastError()));
     else return Ok();
 }

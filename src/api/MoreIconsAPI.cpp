@@ -5,6 +5,7 @@
 #include "../utils/Get.hpp"
 #include "../utils/Icons.hpp"
 #include "../utils/Load.hpp"
+#include <alphalaneous.fine_outline/include/FineOutline.hpp>
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
@@ -525,6 +526,8 @@ void more_icons::updateSimplePlayer(SimplePlayer* player, IconInfo* info) {
         detailSprite->setDisplayFrame(extraFrame);
         detailSprite->setPosition(firstCenter);
     }
+
+    alpha::fine_outline::updateOutline(player);
 }
 
 void more_icons::updateRobotSprite(GJRobotSprite* sprite, IconInfo* info) {
@@ -635,4 +638,6 @@ void more_icons::updatePlayerObject(PlayerObject* object, IconInfo* info) {
         detailSprite->setDisplayFrame(extraFrame);
         detailSprite->setPosition(firstCenter);
     }
+
+    alpha::fine_outline::updateOutline(object);
 }

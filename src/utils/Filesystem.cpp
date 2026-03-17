@@ -16,10 +16,11 @@ namespace filesystem {
         #ifdef GEODE_IS_WINDOWS
         if (!right.empty() && (right.size() < 2 || !_Is_drive_prefix(right.data())) && !_Is_slash(right[0])) {
             auto needsSlash = !left.empty() && (left.size() != 2 || !_Is_drive_prefix(left.data())) && !_Is_slash(left.back());
-            return left.resize_and_overwrite(left.size() + right.size() + (needsSlash ? 1 : 0), [
-                &left, right, needsSlash
+            auto leftSize = left.size();
+            return left.resize_and_overwrite(leftSize + right.size() + (needsSlash ? 1 : 0), [
+                leftSize, right, needsSlash
             ](wchar_t* dest, size_t size) {
-                dest += left.size();
+                dest += leftSize;
                 if (needsSlash) {
                     *dest = L'\\';
                     dest++;
