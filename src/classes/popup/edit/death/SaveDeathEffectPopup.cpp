@@ -1,4 +1,5 @@
 #include "SaveDeathEffectPopup.hpp"
+#include "../IconButton.hpp"
 #include "../ImageRenderer.hpp"
 #include "../../../../MoreIcons.hpp"
 #include "../../../../utils/Defaults.hpp"
@@ -14,10 +15,11 @@
 using namespace geode::prelude;
 
 SaveDeathEffectPopup* SaveDeathEffectPopup::create(
-    BasePopup* popup1, BasePopup* popup2, const std::vector<FrameDefinition>& definitions, const std::vector<Ref<CCSpriteFrame>>& frames
+    BasePopup* popup1, BasePopup* popup2, IconButton* iconButton,
+    const std::vector<FrameDefinition>& definitions, const std::vector<Ref<CCSpriteFrame>>& frames
 ) {
     auto ret = new SaveDeathEffectPopup();
-    if (ret->init(popup1, popup2, definitions, frames)) {
+    if (ret->init(popup1, popup2, iconButton, definitions, frames)) {
         ret->autorelease();
         return ret;
     }
@@ -26,7 +28,8 @@ SaveDeathEffectPopup* SaveDeathEffectPopup::create(
 }
 
 bool SaveDeathEffectPopup::init(
-    BasePopup* popup1, BasePopup* popup2, const std::vector<FrameDefinition>& definitions, const std::vector<Ref<CCSpriteFrame>>& frames
+    BasePopup* popup1, BasePopup* popup2, IconButton* iconButton,
+    const std::vector<FrameDefinition>& definitions, const std::vector<Ref<CCSpriteFrame>>& frames
 ) {
     if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
@@ -36,6 +39,7 @@ bool SaveDeathEffectPopup::init(
 
     m_parentPopup1 = popup1;
     m_parentPopup2 = popup2;
+    m_iconButton = iconButton;
     m_definitions = &definitions;
     m_frames = &frames;
 
@@ -143,6 +147,8 @@ void SaveDeathEffectPopup::saveIcon() {
         return Notify::error("Failed to save SD icon: {}", res.unwrapErr());
     }
 
+    auto iconPath = m_iconButton->saveIcon(m_pendingPath);
+
     if (auto icon = more_icons::getIcon(name, IconType::DeathEffect)) {
         more_icons::updateIcon(icon);
     }
@@ -165,7 +171,7 @@ void SaveDeathEffectPopup::saveIcon() {
         auto jsonPath = m_pendingPath / L("settings.json");
         (void)file::writeString(jsonPath, "{}");
         icon = more_icons::addDeathEffect(
-            name, name, std::move(pngPath), std::move(plistPath), std::move(jsonPath), {},
+            name, name, std::move(pngPath), std::move(plistPath), std::move(jsonPath), std::move(iconPath),
             Get::director->getLoadedTextureQuality(), {}, "More Icons", 0, Defaults::getDeathEffectInfo(0)
         );
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);

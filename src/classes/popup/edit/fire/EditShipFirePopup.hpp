@@ -2,6 +2,8 @@
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
 #include <Geode/utils/async.hpp>
 
+class IconButton;
+
 class EditShipFirePopup : public BasePopup, public FLAlertLayerProtocol {
 protected:
     geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_pickListener;
@@ -13,6 +15,7 @@ protected:
     cocos2d::CCSprite* m_streak;
     cocos2d::CCSprite* m_selectSprite;
     cocos2d::CCTextFieldTTF* m_nameInput;
+    IconButton* m_iconButton;
     int m_selectedFrame = 0;
     int m_page = 0;
     bool m_hasChanged = false;

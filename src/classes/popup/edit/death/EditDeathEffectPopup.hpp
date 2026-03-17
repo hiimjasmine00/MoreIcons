@@ -4,6 +4,8 @@
 #include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/async.hpp>
 
+class IconButton;
+
 class EditDeathEffectPopup : public BasePopup, public FLAlertLayerProtocol, public TextInputDelegate {
 protected:
     BasePopup* m_parentPopup;
@@ -23,6 +25,7 @@ protected:
     ButtonSprite* m_plistSprite;
     std::vector<FrameDefinition> m_definitions;
     FrameDefinition* m_definition;
+    IconButton* m_iconButton;
     int m_page = 0;
     int m_selectedPiece = 0;
     bool m_hasChanged = false;

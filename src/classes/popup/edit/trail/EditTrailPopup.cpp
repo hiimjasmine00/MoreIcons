@@ -1,4 +1,5 @@
 #include "EditTrailPopup.hpp"
+#include "../IconButton.hpp"
 #include "../IconPresetPopup.hpp"
 #include "../ImageRenderer.hpp"
 #include "../../../../MoreIcons.hpp"
@@ -75,6 +76,10 @@ bool EditTrailPopup::init(BasePopup* popup) {
     bottomMenu->addChild(saveButton);
 
     bottomMenu->setLayout(RowLayout::create()->setGap(25.0f));
+
+    m_iconButton = IconButton::create();
+    m_iconButton->setID("icon-button");
+    m_buttonMenu->addChild(m_iconButton);
 
     updateWithPath(MoreIcons::getIconPath(nullptr, 1, IconType::Special));
     m_hasChanged = false;
@@ -157,6 +162,8 @@ void EditTrailPopup::saveTrail() {
         return Notify::error("Failed to save image: {}", res.unwrapErr());
     }
 
+    auto iconPath = m_iconButton->saveIcon(m_pendingPath);
+
     auto name = MoreIcons::getText(m_nameInput);
 
     if (auto icon = more_icons::getIcon(name, IconType::Special)) {
@@ -166,7 +173,7 @@ void EditTrailPopup::saveTrail() {
         auto jsonPath = m_pendingPath / L("settings.json");
         (void)file::writeString(jsonPath, "{}");
         icon = more_icons::addTrail(
-            name, name, std::move(trailPath), std::move(jsonPath), {}, {}, "More Icons", 0, Defaults::getTrailInfo(0)
+            name, name, std::move(trailPath), std::move(jsonPath), std::move(iconPath), {}, "More Icons", 0, Defaults::getTrailInfo(0)
         );
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }

@@ -2,6 +2,8 @@
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
 #include <Geode/utils/async.hpp>
 
+class IconButton;
+
 class EditTrailPopup : public BasePopup, public FLAlertLayerProtocol {
 protected:
     geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
@@ -9,6 +11,7 @@ protected:
     BasePopup* m_parentPopup;
     cocos2d::CCSprite* m_streak;
     cocos2d::CCTextFieldTTF* m_nameInput;
+    IconButton* m_iconButton;
     bool m_hasChanged = false;
 
     bool init(BasePopup* popup);

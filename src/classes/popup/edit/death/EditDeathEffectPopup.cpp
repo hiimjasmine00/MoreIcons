@@ -2,6 +2,7 @@
 #include "SaveDeathEffectPopup.hpp"
 #include "SaveEffectEditorPopup.hpp"
 #include "../FramePresetPopup.hpp"
+#include "../IconButton.hpp"
 #include "../IconPresetPopup.hpp"
 #include "../ImageRenderer.hpp"
 #include "../LoadEditorPopup.hpp"
@@ -187,6 +188,10 @@ bool EditDeathEffectPopup::init(BasePopup* popup) {
     iconButtonMenu->addChild(saveButton);
 
     iconButtonMenu->setLayout(RowLayout::create()->setGap(30.0f));
+
+    m_iconButton = IconButton::create();
+    m_iconButton->setID("icon-button");
+    m_buttonMenu->addChild(m_iconButton);
 
     MoreIcons::getIconPaths(nullptr, 2, IconType::DeathEffect, m_selectedPNG, m_selectedPlist);
     updateWithSelectedFiles();
@@ -377,7 +382,7 @@ void EditDeathEffectPopup::onPreset(CCObject* sender) {
 void EditDeathEffectPopup::onSave(CCObject* sender) {
     if (m_frames.empty()) return Notify::error("No pieces to save.");
 
-    SaveDeathEffectPopup::create(m_parentPopup, this, m_definitions, m_frames)->show();
+    SaveDeathEffectPopup::create(m_parentPopup, this, m_iconButton, m_definitions, m_frames)->show();
 }
 
 void EditDeathEffectPopup::createControls(const CCPoint& pos, const char* text, std::string_view id, int offset) {

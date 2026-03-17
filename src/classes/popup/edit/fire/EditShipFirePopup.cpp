@@ -1,5 +1,6 @@
 #include "EditShipFirePopup.hpp"
 #include "../FramePresetPopup.hpp"
+#include "../IconButton.hpp"
 #include "../IconPresetPopup.hpp"
 #include "../ImageRenderer.hpp"
 #include "../../../../MoreIcons.hpp"
@@ -142,6 +143,10 @@ bool EditShipFirePopup::init(BasePopup* popup) {
     bottomMenu->addChild(saveButton);
 
     bottomMenu->setLayout(RowLayout::create()->setGap(20.0f));
+
+    m_iconButton = IconButton::create();
+    m_iconButton->setID("icon-button");
+    m_buttonMenu->addChild(m_iconButton);
 
     updateWithPath(MoreIcons::getIconPath(nullptr, 3, IconType::ShipFire), 10);
     m_hasChanged = false;
@@ -394,6 +399,8 @@ void EditShipFirePopup::saveShipFire() {
         }
     }
 
+    auto iconPath = m_iconButton->saveIcon(m_pendingPath);
+
     if (auto icon = more_icons::getIcon(name, IconType::ShipFire)) {
         more_icons::updateIcon(icon);
     }
@@ -401,7 +408,7 @@ void EditShipFirePopup::saveShipFire() {
         auto jsonPath = m_pendingPath / L("settings.json");
         (void)file::writeString(jsonPath, "{}");
         icon = more_icons::addShipFire(
-            name, name, m_pendingPath / L("fire_001.png"), std::move(jsonPath), {}, {}, "More Icons", 0,
+            name, name, m_pendingPath / L("fire_001.png"), std::move(jsonPath), std::move(iconPath), {}, "More Icons", 0,
             Defaults::getShipFireInfo(0), m_frameButtons.size()
         );
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
