@@ -1,4 +1,5 @@
 #include "SaveEffectEditorPopup.hpp"
+#include "../IconButton.hpp"
 #include "../ImageRenderer.hpp"
 #include "../../../../MoreIcons.hpp"
 #include "../../../../utils/Constants.hpp"
@@ -13,10 +14,11 @@
 using namespace geode::prelude;
 
 SaveEffectEditorPopup* SaveEffectEditorPopup::create(
-    const std::vector<FrameDefinition>& definitions, const std::vector<Ref<CCSpriteFrame>>& frames, Function<void()> callback
+    const std::vector<FrameDefinition>& definitions, const std::vector<Ref<CCSpriteFrame>>& frames,
+    IconButton* iconButton, Function<void()> callback
 ) {
     auto ret = new SaveEffectEditorPopup();
-    if (ret->init(definitions, frames, std::move(callback))) {
+    if (ret->init(definitions, frames, iconButton, std::move(callback))) {
         ret->autorelease();
         return ret;
     }
@@ -25,7 +27,8 @@ SaveEffectEditorPopup* SaveEffectEditorPopup::create(
 }
 
 bool SaveEffectEditorPopup::init(
-    const std::vector<FrameDefinition>& definitions, const std::vector<Ref<CCSpriteFrame>>& frames, Function<void()> callback
+    const std::vector<FrameDefinition>& definitions, const std::vector<Ref<CCSpriteFrame>>& frames,
+    IconButton* iconButton, Function<void()> callback
 ) {
     if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
@@ -36,6 +39,7 @@ bool SaveEffectEditorPopup::init(
     m_callback = std::move(callback);
     m_definitions = &definitions;
     m_frames = &frames;
+    m_iconButton = iconButton;
 
     auto nameInput = TextInput::create(300.0f, "State Name");
     nameInput->setPosition({ 175.0f, 70.0f });
@@ -102,6 +106,23 @@ void SaveEffectEditorPopup::saveEditor() {
 
     if (auto res = ImageRenderer::save(packer, m_pendingPath / L("effect.png"), m_pendingPath / L("effect.plist"), "effect.png"); res.isErr()) {
         return Notify::error(res.unwrapErr());
+    }
+
+    if (auto texture = m_iconButton->getIconTexture()) {
+        auto iconSprite = CCSprite::createWithTexture(texture);
+        iconSprite->setAnchorPoint({ 0.0f, 0.0f });
+        iconSprite->setBlendFunc({ GL_ONE, GL_ZERO });
+        auto iconImage = ImageRenderer::getImage(iconSprite);
+        iconSprite->release();
+
+        auto iconImageRes = texpack::toPNG(iconImage);
+        if (iconImageRes.isErr()) {
+            return Notify::error("Failed to encode icon: {}", iconImageRes.unwrapErr());
+        }
+
+        if (auto res = file::writeBinary(m_pendingPath / L("icon.png"), iconImageRes.unwrap()); res.isErr()) {
+            return Notify::error("Failed to save icon: {}", res.unwrapErr());
+        }
     }
 
     auto notif = fmt::format("{} saved!", MoreIcons::getText(m_nameInput));

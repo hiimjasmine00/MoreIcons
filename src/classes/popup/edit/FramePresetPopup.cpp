@@ -27,8 +27,8 @@ FramePresetPopup* FramePresetPopup::create(IconType type, Function<void(CCSprite
 
 struct ExtendedResult {
     std::vector<uint8_t> data;
-    geode::Ref<cocos2d::CCTexture2D> texture;
-    geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>> frames;
+    Ref<CCTexture2D> texture;
+    StringMap<Ref<CCSpriteFrame>> frames;
     uint32_t width;
     uint32_t height;
     IconInfo* info;

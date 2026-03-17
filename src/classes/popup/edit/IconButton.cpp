@@ -52,22 +52,27 @@ void IconButton::activate() {
         auto path = std::move(res).unwrap();
         if (!path.has_value()) return;
 
-        auto textureRes = Load::createTexture(path.value());
-        if (textureRes.isErr()) {
-            return Notify::error("Failed to load texture: {}", textureRes.unwrapErr());
-        }
-
-        if (m_unselectedSprite) {
-            m_unselectedSprite->removeFromParent();
-            m_unselectedSprite = nullptr;
-        }
-        if (m_plusLabel) {
-            m_plusLabel->removeFromParent();
-            m_plusLabel = nullptr;
-        }
-        MoreIcons::setTexture(static_cast<CCSprite*>(getNormalImage()), textureRes.unwrap());
-        updateSprite();
+        setIcon(path.value());
     });
+}
+
+void IconButton::setIcon(const std::filesystem::path& path) {
+    auto textureRes = Load::createTexture(path);
+    if (textureRes.isErr()) {
+        Notify::error("Failed to load texture: {}", textureRes.unwrapErr());
+        return;
+    }
+
+    if (m_unselectedSprite) {
+        m_unselectedSprite->removeFromParent();
+        m_unselectedSprite = nullptr;
+    }
+    if (m_plusLabel) {
+        m_plusLabel->removeFromParent();
+        m_plusLabel = nullptr;
+    }
+    MoreIcons::setTexture(static_cast<CCSprite*>(getNormalImage()), textureRes.unwrap());
+    updateSprite();
 }
 
 std::filesystem::path IconButton::saveIcon(const std::filesystem::path& path) {
@@ -100,4 +105,8 @@ std::filesystem::path IconButton::saveIcon(const std::filesystem::path& path) {
         }
     }
     return iconPath;
+}
+
+CCTexture2D* IconButton::getIconTexture() {
+    return !m_unselectedSprite && !m_plusLabel ? static_cast<CCSprite*>(getNormalImage())->getTexture() : nullptr;
 }

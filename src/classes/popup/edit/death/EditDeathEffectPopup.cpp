@@ -299,6 +299,11 @@ void EditDeathEffectPopup::onLoadState(CCObject* sender) {
         m_selectedPlist = directory / L("effect.plist");
         if (!updateWithSelectedFiles(false)) return;
 
+        auto iconPath = directory / L("icon.png");
+        if (Filesystem::doesExist(iconPath)) {
+            m_iconButton->setIcon(iconPath);
+        }
+
         m_definitions = Json::get<std::vector<FrameDefinition>>(state, "definitions");
         if (m_selectedPiece >= m_definitions.size()) m_selectedPiece = m_definitions.size() - 1;
         m_definition = &m_definitions[m_selectedPiece];
@@ -311,7 +316,7 @@ void EditDeathEffectPopup::onLoadState(CCObject* sender) {
 }
 
 void EditDeathEffectPopup::onSaveState(CCObject* sender) {
-    SaveEffectEditorPopup::create(m_definitions, m_frames, [this] {
+    SaveEffectEditorPopup::create(m_definitions, m_frames, m_iconButton, [this] {
         m_hasChanged = false;
     })->show();
 }
