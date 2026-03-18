@@ -15,6 +15,8 @@ class $modify(MIFileUtils, CCFileUtils) {
     }
 
     gd::string fullPathForFilename(const char* filename, bool skipSuffix) {
+        if (!Get::director) return CCFileUtils::fullPathForFilename(filename, skipSuffix);
+
         std::string_view name = filename;
         if (name.starts_with("icons/") || name.starts_with("PlayerExplosion_") || name.starts_with("streak_") || name.starts_with("shipfire")) {
             gd::string ret = string::pathToString(Icons::vanillaTexturePath(Filesystem::strWide(name), skipSuffix));
