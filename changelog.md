@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v2.0.1 (2026-03-18)
+- Fixed a bug where checkboxes in the trail settings would be swapped ([#68](https://github.com/hiimjasmine00/MoreIcons/issues/68))
+
 ## v2.0.0 (2026-03-18)
 - Ported to Geometry Dash v2.208 / Geode SDK v5.0.0 (You can all stop pestering me about this now :P)
 - Added custom death effect support ([#12](https://github.com/hiimjasmine00/MoreIcons/issues/12))

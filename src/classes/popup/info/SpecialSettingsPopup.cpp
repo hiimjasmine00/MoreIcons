@@ -111,7 +111,6 @@ void SpecialSettingsPopup::addControl(
     m_mainLayer->addChild(positioner);
 
     auto slider = Slider::create(this, menu_selector(SpecialSettingsPopup::sliderChanged), 0.8f);
-    slider->setPosition({ 0.0f, 0.0f });
     slider->setValue((initial - min) / (max - min));
     slider->setID(fmt::format("{}-slider", id));
     positioner->addChild(slider);
@@ -204,7 +203,6 @@ void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, con
     auto onSprite = CCSprite::createWithSpriteFrameName("GJ_checkOn_001.png");
     onSprite->setScale(0.8f);
     auto toggle = CCMenuItemToggler::create(offSprite, onSprite, this, menu_selector(SpecialSettingsPopup::onToggle));
-    toggle->setPosition({ 0.0f, 0.0f });
     toggle->toggle(value.asBool().unwrapOr(def));
     toggle->setUserObject("setting-value", ObjWrapper<matjson::Value*>::create(&value));
     toggle->setID(fmt::format("{}-toggle", id));
