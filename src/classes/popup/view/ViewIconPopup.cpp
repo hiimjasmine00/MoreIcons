@@ -8,6 +8,7 @@
 #include "../../../utils/Json.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/loader/Mod.hpp>
+#include <IconInfo.hpp>
 
 using namespace geode::prelude;
 

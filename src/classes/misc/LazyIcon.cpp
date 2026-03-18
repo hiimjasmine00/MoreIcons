@@ -9,6 +9,7 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/loader/Loader.hpp>
 #include <Geode/utils/async.hpp>
+#include <IconInfo.hpp>
 #include <jasmine/mod.hpp>
 
 using namespace geode::prelude;

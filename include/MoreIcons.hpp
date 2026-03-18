@@ -370,6 +370,14 @@ namespace more_icons {
     /// Updates an icon's image and sheet data.
     /// @param info The icon info of the icon to update.
     MI_DLL void updateIcon(IconInfo* info) MI_EXP(updateIcon, (info),);
+
+    /// Prepares the mod for refreshing internal icon storage.
+    // This should be called before any modifications to icons outside of the provided API functions to prevent bugs and crashes.
+    MI_DLL void preRefreshIcons() MI_EXP(preRefreshIcons, (),);
+
+    /// Refreshes internal icon storage.
+    // This should be called after preRefreshIcons() and any modifications to icons outside of the provided API functions to prevent bugs and crashes.
+    MI_DLL void refreshIcons() MI_EXP(refreshIcons, (),);
 }
 
 #undef MI_EXPAND

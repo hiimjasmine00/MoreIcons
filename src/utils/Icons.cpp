@@ -16,6 +16,7 @@ using namespace geode::prelude;
 
 std::map<int, std::map<IconType, IconInfo*>> Icons::requestedIcons;
 std::unordered_map<IconInfo*, int> Icons::loadedIcons;
+std::unordered_map<IconWrapper*, IconInfo*> Icons::iconWrappers;
 std::vector<Hook*> Icons::hooks;
 bool Icons::traditionalPacks = true;
 bool Icons::preloadIcons = false;
@@ -697,11 +698,11 @@ CCSpriteFrame* Icons::getFrame(ZStringView name) {
 }
 
 void Icons::setIcon(CCNode* node, IconInfo* info) {
-    if (auto obj = static_cast<ObjWrapper<IconInfo*>*>(node->getUserObject("info"_spr))) {
-        obj->getValue() = info;
+    if (auto obj = static_cast<IconWrapper*>(node->getUserObject("info"_spr))) {
+        obj->setInfo(info);
     }
     else {
-        node->setUserObject("info"_spr, ObjWrapper<IconInfo*>::create(info));
+        node->setUserObject("info"_spr, IconWrapper::create(info));
     }
 }
 
@@ -715,4 +716,24 @@ void Icons::uncacheIcon(IconInfo* info) {
     if (Get::textureCache) {
         Get::textureCache->removeTextureForKey(info->getTextureString().c_str());
     }
+}
+
+IconWrapper* IconWrapper::create(IconInfo* info) {
+    auto ret = new IconWrapper();
+    ret->setInfo(info);
+    ret->autorelease();
+    return ret;
+}
+
+IconInfo* IconWrapper::getInfo() const {
+    return m_info;
+}
+
+void IconWrapper::setInfo(IconInfo* info) {
+    Icons::iconWrappers.emplace(this, m_info);
+    m_info = info;
+}
+
+IconWrapper::~IconWrapper() {
+    setInfo(nullptr);
 }

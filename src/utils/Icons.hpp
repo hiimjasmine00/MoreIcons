@@ -1,6 +1,6 @@
 #include <cocos2d.h>
+#include <Geode/Enums.hpp>
 #include <Geode/loader/Types.hpp>
-#include <IconInfo.hpp>
 
 #ifdef GEODE_IS_WINDOWS
 #define CONFIG_PATH std::wstring_view(L"config\\" GEODE_CONCAT(L, GEODE_MOD_ID), sizeof(GEODE_MOD_ID) + 6)
@@ -8,9 +8,13 @@
 #define CONFIG_PATH std::string_view("config/" GEODE_MOD_ID, sizeof(GEODE_MOD_ID) + 6)
 #endif
 
+class IconInfo;
+class IconWrapper;
+
 namespace Icons {
     extern std::map<int, std::map<IconType, IconInfo*>> requestedIcons;
     extern std::unordered_map<IconInfo*, int> loadedIcons;
+    extern std::unordered_map<IconWrapper*, IconInfo*> iconWrappers;
     extern std::vector<geode::Hook*> hooks;
     extern bool traditionalPacks;
     extern bool preloadIcons;
@@ -33,3 +37,15 @@ namespace Icons {
     void uncacheIcon(IconInfo* info);
     std::filesystem::path vanillaTexturePath(std::basic_string_view<std::filesystem::path::value_type> path, bool skipSuffix);
 }
+
+class IconWrapper : public cocos2d::CCObject {
+protected:
+    IconInfo* m_info = nullptr;
+public:
+    static IconWrapper* create(IconInfo* info);
+
+    IconInfo* getInfo() const;
+    void setInfo(IconInfo* info);
+
+    ~IconWrapper();
+};

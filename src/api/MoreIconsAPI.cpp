@@ -70,6 +70,85 @@ void more_icons::clearAllIcons() {
     }
 }
 
+std::map<IconType, std::pair<IconInfoImpl*, IconInfoImpl*>> activeIconImpls;
+std::map<int, std::map<IconType, IconInfoImpl*>> requestedIconImpls;
+std::unordered_map<IconInfoImpl*, int> loadedIconImpls;
+std::unordered_map<IconWrapper*, IconInfoImpl*> iconWrapperImpls;
+
+IconInfoImpl* getImpl(IconInfo* info) {
+    return info ? *reinterpret_cast<IconInfoImpl**>(info) : nullptr;
+}
+
+void more_icons::preRefreshIcons() {
+    activeIconImpls.clear();
+    for (auto it = activeIcons.begin(); it != activeIcons.end(); it = activeIcons.erase(it)) {
+        auto first = it->second.first;
+        auto second = it->second.second;
+        activeIconImpls.emplace(it->first, std::make_pair(getImpl(first), getImpl(second)));
+    }
+
+    requestedIconImpls.clear();
+    for (auto it = Icons::requestedIcons.begin(); it != Icons::requestedIcons.end(); it = Icons::requestedIcons.erase(it)) {
+        auto& implMap = requestedIconImpls[it->first];
+        auto& iconRequests = it->second;
+        for (auto it2 = iconRequests.begin(); it2 != iconRequests.end(); it2 = iconRequests.erase(it2)) {
+            implMap.emplace(it2->first, getImpl(it2->second));
+        }
+    }
+
+    loadedIconImpls.clear();
+    for (auto it = Icons::loadedIcons.begin(); it != Icons::loadedIcons.end(); it = Icons::loadedIcons.erase(it)) {
+        loadedIconImpls.emplace(getImpl(it->first), it->second);
+    }
+
+    iconWrapperImpls.clear();
+    for (auto it = Icons::iconWrappers.begin(); it != Icons::iconWrappers.end(); it = Icons::iconWrappers.erase(it)) {
+        iconWrapperImpls.emplace(it->first, getImpl(it->second));
+    }
+}
+
+void more_icons::refreshIcons() {
+    std::unordered_map<IconInfoImpl*, IconInfo*> implToInfo;
+    for (auto& [type, icons] : iconsMap) {
+        for (auto& icon : icons) {
+            if (auto impl = getImpl(&icon)) {
+                implToInfo.emplace(impl, &icon);
+            }
+        }
+    }
+
+    activeIcons.clear();
+    for (auto it = activeIconImpls.begin(); it != activeIconImpls.end(); it = activeIconImpls.erase(it)) {
+        auto first = it->second.first;
+        auto second = it->second.second;
+        activeIcons.emplace(it->first, std::make_pair(first ? implToInfo[first] : nullptr, second ? implToInfo[second] : nullptr));
+    }
+
+    Icons::requestedIcons.clear();
+    for (auto it = requestedIconImpls.begin(); it != requestedIconImpls.end(); it = requestedIconImpls.erase(it)) {
+        auto& infoMap = Icons::requestedIcons[it->first];
+        auto& iconRequests = it->second;
+        for (auto it2 = iconRequests.begin(); it2 != iconRequests.end(); it2 = iconRequests.erase(it2)) {
+            auto impl = it2->second;
+            infoMap.emplace(it2->first, impl ? implToInfo[impl] : nullptr);
+        }
+    }
+
+    Icons::loadedIcons.clear();
+    for (auto it = loadedIconImpls.begin(); it != loadedIconImpls.end(); it = loadedIconImpls.erase(it)) {
+        Icons::loadedIcons.emplace(implToInfo[it->first], it->second);
+    }
+
+    Icons::iconWrappers.clear();
+    for (auto it = iconWrapperImpls.begin(); it != iconWrapperImpls.end(); it = iconWrapperImpls.erase(it)) {
+        auto impl = it->second;
+        auto info = impl ? implToInfo[impl] : nullptr;
+        auto wrapper = it->first;
+        wrapper->setInfo(info);
+        Icons::iconWrappers.emplace(wrapper, info);
+    }
+}
+
 std::vector<IconInfo>* more_icons::getIcons(IconType type) {
     auto it = iconsMap.find(type);
     return it != iconsMap.end() ? &it->second : nullptr;
@@ -175,12 +254,14 @@ IconInfo* addIcon(
     });
     if (it != icons->end() && it->equals(name, type)) icons->erase(it);
 
-    auto impl = std::make_unique<IconInfoImpl>(
+    more_icons::preRefreshIcons();
+    auto info = std::to_address(icons->insert(it, IconInfo(std::make_unique<IconInfoImpl>(
         std::move(name), std::move(shortName), type, std::move(png), std::move(plist),
         std::move(json), std::move(icon), quality, std::move(packID), std::move(packName),
         specialID, std::move(specialInfo), fireCount, vanilla, zipped
-    );
-    return std::to_address(icons->insert(it, IconInfo(std::move(impl))));
+    ))));
+    more_icons::refreshIcons();
+    return info;
 }
 
 IconInfo* more_icons::addIcon(
@@ -328,7 +409,11 @@ void more_icons::removeIcon(IconInfo* info) {
     }
 
     auto icons = getIcons(type);
-    if (icons) icons->erase(icons->begin() + (info - icons->data()));
+    if (icons) {
+        preRefreshIcons();
+        icons->erase(icons->begin() + (info - icons->data()));
+        refreshIcons();
+    }
 }
 
 void more_icons::renameIcon(IconInfo* info, std::string name) {
@@ -403,7 +488,11 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
     auto it = std::to_address(std::ranges::find_if(*icons, [info](const IconInfo& icon) {
         return icon > *info;
     }));
-    if (it != info) std::rotate(info, info + 1, it);
+    if (it != info) {
+        preRefreshIcons();
+        std::rotate(info, info + 1, it);
+        refreshIcons();
+    }
 }
 
 void more_icons::updateIcon(IconInfo* info) {

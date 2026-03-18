@@ -1,4 +1,9 @@
 # More Icons Changelog
+## v2.0.2 (2026-03-18)
+- Fixed bugs relating to improper storage of icon info
+- Added `more_icons::preRefreshIcons` and `more_icons::refreshIcons` to the API, which can be used to refresh internal icon storage
+  - No, I'm not following semantic versioning this time
+
 ## v2.0.1 (2026-03-18)
 - Fixed a bug where checkboxes in the trail settings would be swapped ([#68](https://github.com/hiimjasmine00/MoreIcons/issues/68))
 
