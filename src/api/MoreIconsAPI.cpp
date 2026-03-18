@@ -494,7 +494,7 @@ void more_icons::updateSimplePlayer(SimplePlayer* player, IconInfo* info) {
     }
     else if (player->m_spiderSprite) player->m_spiderSprite->setVisible(false);
 
-    if (type == IconType::Robot || type == IconType::Spider) return;
+    if (type == IconType::Robot || type == IconType::Spider) return alpha::fine_outline::updateOutline(player);
 
     loadIcon(info, player->m_iconRequestID);
 
@@ -602,7 +602,7 @@ void more_icons::updatePlayerObject(PlayerObject* object, IconInfo* info) {
             batchNode->setTexture(robotSprite->getTexture());
             batchNode->appendChild(robotSprite);
         }
-        return;
+        return alpha::fine_outline::updateOutline(object);
     }
     else if (type == IconType::Spider) {
         if (auto spiderSprite = object->m_spiderSprite) {
@@ -612,7 +612,7 @@ void more_icons::updatePlayerObject(PlayerObject* object, IconInfo* info) {
             batchNode->setTexture(spiderSprite->getTexture());
             batchNode->appendChild(spiderSprite);
         }
-        return;
+        return alpha::fine_outline::updateOutline(object);
     }
 
     loadIcon(info, object->m_iconRequestID);

@@ -542,6 +542,7 @@ CCMenuItemSpriteExtra* EditIconPopup::addPieceButton(std::string_view suffix, in
     auto pieceButton = CCMenuItemSpriteExtra::create(pieceSprite, this, menu_selector(EditIconPopup::onSelectPiece));
     pieceSprite->setPosition({ 15.0f, 15.0f });
     pieceButton->setContentSize({ 30.0f, 30.0f });
+    pieceButton->setVisible(false);
     pieceButton->setUserObject("piece-suffix", ObjWrapper<std::string_view>::create(suffix));
     pieceButton->setID(fmt::format("piece{}", suffix));
     m_pieceMenu->addChild(pieceButton);

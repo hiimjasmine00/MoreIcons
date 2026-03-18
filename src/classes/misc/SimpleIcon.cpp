@@ -206,7 +206,7 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
         m_targets[texture].push_back(primarySprite);
         m_mainColorSprites.emplace_back(primarySprite, factor);
 
-        texture.replace(0, 0, "_2", 2);
+        texture.replace(3, 0, "_2", 2);
 
         auto secondarySprite = spriteWithFrame("{}{}.png", name, texture);
         secondarySprite->setColor(spriteColor);
@@ -215,7 +215,7 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
         m_targets[texture].push_back(secondarySprite);
         m_secondaryColorSprites.emplace_back(secondarySprite, factor);
 
-        texture.replace(0, 2, "_glow", 5);
+        texture.replace(3, 2, "_glow", 5);
 
         auto glowSprite = spriteWithFrame("{}{}.png", name, texture);
         glowSprite->setID(fmt::format("{}{}", prefix, texture));
@@ -225,7 +225,7 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
         m_glowColorSprites.push_back(glowSprite);
 
         if (texture.starts_with("_01")) {
-            texture.replace(0, 5, "_extra", 6);
+            texture.replace(3, 5, "_extra", 6);
 
             auto extraSprite = spriteWithFrame("{}{}.png", name, texture);
             extraSprite->setID(fmt::format("{}{}", prefix, texture));
