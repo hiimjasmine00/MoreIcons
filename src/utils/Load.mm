@@ -1,7 +1,7 @@
 #import <CoreFoundation/CoreFoundation.h>
-#import <fmt/format.h>
-#import <Geode/Result.hpp>
-#import <span>
+#include <fmt/format.h>
+#include <Geode/Result.hpp>
+#include <span>
 
 using namespace geode;
 
