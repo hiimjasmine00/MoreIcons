@@ -204,8 +204,18 @@ matjson::Value parseNode(const pugi::xml_node& node) {
     else return nullptr;
 }
 
+#if defined(GEODE_IS_MACOS) || defined(GEODE_IS_IOS)
+Result<std::vector<uint8_t>> readBinaryPlist(std::span<const uint8_t> data);
+#endif
+
 Result<matjson::Value> Load::readPlist(const std::filesystem::path& path) {
     GEODE_UNWRAP_INTO(auto data, readBinary(path));
+
+    #if defined(GEODE_IS_MACOS) || defined(GEODE_IS_IOS)
+    if (data.size() >= 6 && data[0] == 0x62 && data[1] == 0x70 && data[2] == 0x6c && data[3] == 0x69 && data[4] == 0x73 && data[5] == 0x74) {
+        GEODE_UNWRAP_INTO(data, readBinaryPlist(data));
+    }
+    #endif
 
     pugi::xml_document doc;
     auto result = doc.load_buffer(data.data(), data.size());
