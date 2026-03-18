@@ -35,7 +35,8 @@ class IconInfoImpl;
 /// A class that contains information about a custom icon.
 class MORE_ICONS_DLL IconInfo {
 private:
-    std::shared_ptr<IconInfoImpl> m_impl;
+    std::unique_ptr<IconInfoImpl> m_impl;
+    uintptr_t m_padding = 0; // Leftover from shared_ptr
 
     friend class IconInfoImpl;
     friend IconInfo* addIcon(
@@ -44,13 +45,23 @@ private:
         int specialID, matjson::Value specialInfo, int fireCount, bool vanilla, bool zipped
     );
 
-    IconInfo(std::shared_ptr<IconInfoImpl> impl) : m_impl(std::move(impl)) {}
+    IconInfo(std::unique_ptr<IconInfoImpl> impl);
 public:
     IconInfo() = delete;
-    IconInfo(const IconInfo&) = default;
-    IconInfo& operator=(const IconInfo&) = default;
-    IconInfo(IconInfo&&) = default;
-    IconInfo& operator=(IconInfo&&) = default;
+    IconInfo(const IconInfo&) = delete;
+    IconInfo& operator=(const IconInfo&) = delete;
+    #ifdef MORE_ICONS_EVENTS
+    IconInfo(IconInfo&& other) noexcept : m_impl(std::move(other.m_impl)) {}
+    IconInfo& operator=(IconInfo&& other) noexcept {
+        m_impl = std::move(other.m_impl);
+        return *this;
+    }
+    ~IconInfo() = default;
+    #else
+    IconInfo(IconInfo&&) noexcept;
+    IconInfo& operator=(IconInfo&&) noexcept;
+    ~IconInfo();
+    #endif
 
     const std::string& getName() const MI_EXPORT_REF(IconInfo::getName, (this));
     const std::string& getShortName() const MI_EXPORT_REF(IconInfo::getShortName, (this));

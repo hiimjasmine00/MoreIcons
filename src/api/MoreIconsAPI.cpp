@@ -18,34 +18,38 @@
 
 using namespace geode::prelude;
 
-std::map<IconType, std::vector<IconInfo>> iconsMap = {
-    { IconType::Cube, {} },
-    { IconType::Ship, {} },
-    { IconType::Ball, {} },
-    { IconType::Ufo, {} },
-    { IconType::Wave, {} },
-    { IconType::Robot, {} },
-    { IconType::Spider, {} },
-    { IconType::Swing, {} },
-    { IconType::Jetpack, {} },
-    { IconType::DeathEffect, {} },
-    { IconType::Special, {} },
-    { IconType::ShipFire, {} }
-};
-std::map<IconType, std::pair<IconInfo*, IconInfo*>> activeIcons = {
-    { IconType::Cube, { nullptr, nullptr } },
-    { IconType::Ship, { nullptr, nullptr } },
-    { IconType::Ball, { nullptr, nullptr } },
-    { IconType::Ufo, { nullptr, nullptr } },
-    { IconType::Wave, { nullptr, nullptr } },
-    { IconType::Robot, { nullptr, nullptr } },
-    { IconType::Spider, { nullptr, nullptr } },
-    { IconType::Swing, { nullptr, nullptr } },
-    { IconType::Jetpack, { nullptr, nullptr } },
-    { IconType::DeathEffect, { nullptr, nullptr } },
-    { IconType::Special, { nullptr, nullptr } },
-    { IconType::ShipFire, { nullptr, nullptr } }
-};
+std::map<IconType, std::vector<IconInfo>> iconsMap = [] {
+    std::map<IconType, std::vector<IconInfo>> map;
+    map.try_emplace(IconType::Cube);
+    map.try_emplace(IconType::Ship);
+    map.try_emplace(IconType::Ball);
+    map.try_emplace(IconType::Ufo);
+    map.try_emplace(IconType::Wave);
+    map.try_emplace(IconType::Robot);
+    map.try_emplace(IconType::Spider);
+    map.try_emplace(IconType::Swing);
+    map.try_emplace(IconType::Jetpack);
+    map.try_emplace(IconType::DeathEffect);
+    map.try_emplace(IconType::Special);
+    map.try_emplace(IconType::ShipFire);
+    return map;
+}();
+std::map<IconType, std::pair<IconInfo*, IconInfo*>> activeIcons = [] {
+    std::map<IconType, std::pair<IconInfo*, IconInfo*>> map;
+    map.try_emplace(IconType::Cube);
+    map.try_emplace(IconType::Ship);
+    map.try_emplace(IconType::Ball);
+    map.try_emplace(IconType::Ufo);
+    map.try_emplace(IconType::Wave);
+    map.try_emplace(IconType::Robot);
+    map.try_emplace(IconType::Spider);
+    map.try_emplace(IconType::Swing);
+    map.try_emplace(IconType::Jetpack);
+    map.try_emplace(IconType::DeathEffect);
+    map.try_emplace(IconType::Special);
+    map.try_emplace(IconType::ShipFire);
+    return map;
+}();
 
 FLAlertLayer* more_icons::createInfoPopup(IconInfo* info) {
     if (info) return MoreInfoPopup::create(info);
@@ -171,7 +175,7 @@ IconInfo* addIcon(
     });
     if (it != icons->end() && it->equals(name, type)) icons->erase(it);
 
-    auto impl = std::make_shared<IconInfoImpl>(
+    auto impl = std::make_unique<IconInfoImpl>(
         std::move(name), std::move(shortName), type, std::move(png), std::move(plist),
         std::move(json), std::move(icon), quality, std::move(packID), std::move(packName),
         specialID, std::move(specialInfo), fireCount, vanilla, zipped
@@ -396,14 +400,10 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
     auto icons = getIcons(type);
     if (!icons) return;
 
-    auto it = std::ranges::find_if(*icons, [info](const IconInfo& icon) {
+    auto it = std::to_address(std::ranges::find_if(*icons, [info](const IconInfo& icon) {
         return icon > *info;
-    });
-    if (std::to_address(it) == info) return;
-
-    auto icon = std::move(*info);
-    icons->erase(icons->begin() + (info - icons->data()));
-    icons->insert(it, std::move(icon));
+    }));
+    if (it != info) std::rotate(info, info + 1, it);
 }
 
 void more_icons::updateIcon(IconInfo* info) {
