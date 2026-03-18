@@ -203,7 +203,7 @@ void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, con
     offSprite->setScale(0.8f);
     auto onSprite = CCSprite::createWithSpriteFrameName("GJ_checkOn_001.png");
     onSprite->setScale(0.8f);
-    auto toggle = CCMenuItemToggler::create(onSprite, offSprite, this, menu_selector(SpecialSettingsPopup::onToggle));
+    auto toggle = CCMenuItemToggler::create(offSprite, onSprite, this, menu_selector(SpecialSettingsPopup::onToggle));
     toggle->setPosition({ 0.0f, 0.0f });
     toggle->toggle(value.asBool().unwrapOr(def));
     toggle->setUserObject("setting-value", ObjWrapper<matjson::Value*>::create(&value));
