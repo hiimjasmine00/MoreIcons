@@ -23,7 +23,7 @@ std::string addSuffix(std::string str, std::string_view suffix) {
 
 bool isFileExist(const gd::string& path) {
     #ifdef GEODE_IS_WINDOWS
-    auto attrs = GetFileAttributesA(path);
+    auto attrs = GetFileAttributesA(path.c_str());
     return (attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY) == 0);
     #else
     return Get::fileUtils->isFileExist(path);
