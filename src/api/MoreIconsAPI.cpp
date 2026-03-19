@@ -255,7 +255,7 @@ IconInfo* addIcon(
     if (it != icons->end() && it->equals(name, type)) icons->erase(it);
 
     if (Icons::loadingFinished) more_icons::preRefreshIcons();
-    auto info = std::to_address(icons->insert(it, IconInfo(std::make_unique<IconInfoImpl>(
+    auto info = std::to_address(icons->insert(it, IconInfo(std::make_shared<IconInfoImpl>(
         std::move(name), std::move(shortName), type, std::move(png), std::move(plist),
         std::move(json), std::move(icon), quality, std::move(packID), std::move(packName),
         specialID, std::move(specialInfo), fireCount, vanilla, zipped

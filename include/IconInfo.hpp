@@ -35,8 +35,7 @@ class IconInfoImpl;
 /// A class that contains information about a custom icon.
 class MORE_ICONS_DLL IconInfo {
 private:
-    std::unique_ptr<IconInfoImpl> m_impl;
-    uintptr_t m_padding = 0; // Leftover from shared_ptr
+    std::shared_ptr<IconInfoImpl> m_impl;
 
     friend class IconInfoImpl;
     friend IconInfo* addIcon(
@@ -45,17 +44,14 @@ private:
         int specialID, matjson::Value specialInfo, int fireCount, bool vanilla, bool zipped
     );
 
-    IconInfo(std::unique_ptr<IconInfoImpl> impl);
+    IconInfo(std::shared_ptr<IconInfoImpl> impl);
 public:
     IconInfo() = delete;
     IconInfo(const IconInfo&) = delete;
     IconInfo& operator=(const IconInfo&) = delete;
     #ifdef MORE_ICONS_EVENTS
-    IconInfo(IconInfo&& other) noexcept : m_impl(std::move(other.m_impl)) {}
-    IconInfo& operator=(IconInfo&& other) noexcept {
-        m_impl = std::move(other.m_impl);
-        return *this;
-    }
+    IconInfo(IconInfo&&) noexcept = default;
+    IconInfo& operator=(IconInfo&&) noexcept = default;
     ~IconInfo() = default;
     #else
     IconInfo(IconInfo&&) noexcept;

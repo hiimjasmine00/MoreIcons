@@ -5,14 +5,11 @@
 
 using namespace geode::prelude;
 
-IconInfo::IconInfo(std::unique_ptr<IconInfoImpl> impl) : m_impl(std::move(impl)) {}
+IconInfo::IconInfo(std::shared_ptr<IconInfoImpl> impl) : m_impl(std::move(impl)) {}
 
-IconInfo::IconInfo(IconInfo&& other) noexcept : m_impl(std::move(other.m_impl)) {}
+IconInfo::IconInfo(IconInfo&&) noexcept = default;
 
-IconInfo& IconInfo::operator=(IconInfo&& other) noexcept {
-    m_impl = std::move(other.m_impl);
-    return *this;
-}
+IconInfo& IconInfo::operator=(IconInfo&&) noexcept = default;
 
 IconInfo::~IconInfo() = default;
 
