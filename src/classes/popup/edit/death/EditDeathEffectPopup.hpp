@@ -1,12 +1,12 @@
 #include "../FrameDefinition.hpp"
 #include "../../BasePopup.hpp"
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
-#include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/async.hpp>
 
 class IconButton;
+class MultiControl;
 
-class EditDeathEffectPopup : public BasePopup, public FLAlertLayerProtocol, public TextInputDelegate {
+class EditDeathEffectPopup : public BasePopup, public FLAlertLayerProtocol {
 protected:
     BasePopup* m_parentPopup;
     geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
@@ -15,8 +15,7 @@ protected:
     std::vector<cocos2d::CCSprite*> m_pieces;
     std::vector<CCMenuItemSpriteExtra*> m_pieceButtons;
     std::vector<geode::Ref<cocos2d::CCSpriteFrame>> m_frames;
-    std::array<Slider*, 6> m_sliders;
-    std::array<geode::TextInput*, 6> m_inputs;
+    std::array<MultiControl*, 6> m_controls;
     cocos2d::CCSprite* m_previewSprite;
     cocos2d::CCNode* m_previewNode;
     cocos2d::CCSprite* m_selectSprite;
@@ -43,11 +42,7 @@ protected:
     void onPlist(cocos2d::CCObject* sender);
     void onPreset(cocos2d::CCObject* sender);
     void onSave(cocos2d::CCObject* sender);
-    void createControls(const cocos2d::CCPoint& pos, const char* text, std::string_view id, int offset);
-    void sliderChanged(cocos2d::CCObject* sender);
-    void textChanged(CCTextInputNode* input) override;
-    void onReset(cocos2d::CCObject* sender);
-    void updateControl(int offset, float value, bool slider, bool input, bool definition);
+    void createControls(const cocos2d::CCPoint& pos, const char* text, std::string&& id, int offset);
     void updateControls();
     CCMenuItemSpriteExtra* addPieceButton(int index, cocos2d::CCSpriteFrame* frame);
     void onSelectPiece(cocos2d::CCObject* sender);

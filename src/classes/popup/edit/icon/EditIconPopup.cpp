@@ -5,6 +5,7 @@
 #include "../IconPresetPopup.hpp"
 #include "../ImageRenderer.hpp"
 #include "../LoadEditorPopup.hpp"
+#include "../../../misc/MultiControl.hpp"
 #include "../../../../MoreIcons.hpp"
 #include "../../../../utils/Constants.hpp"
 #include "../../../../utils/Filesystem.hpp"
@@ -165,12 +166,12 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
     m_selectSprite->setID("select-sprite");
     m_mainLayer->addChild(m_selectSprite);
 
-    createControls({ 185.0f, 175.0f }, "Offset X:", "offset-x", 0);
-    createControls({ 355.0f, 175.0f }, "Offset Y:", "offset-y", 1);
-    createControls({ 185.0f, 135.0f }, "Rotation X:", "rotation-x", 2);
-    createControls({ 355.0f, 135.0f }, "Rotation Y:", "rotation-y", 3);
-    createControls({ 185.0f, 95.0f }, "Scale X:", "scale-x", 4);
-    createControls({ 355.0f, 95.0f }, "Scale Y:", "scale-y", 5);
+    createControls({ 185.0f, 175.0f }, "Offset X:", "offset-x-control", 0);
+    createControls({ 355.0f, 175.0f }, "Offset Y:", "offset-y-control", 1);
+    createControls({ 185.0f, 135.0f }, "Rotation X:", "rotation-x-control", 2);
+    createControls({ 355.0f, 135.0f }, "Rotation Y:", "rotation-y-control", 3);
+    createControls({ 185.0f, 95.0f }, "Scale X:", "scale-x-control", 4);
+    createControls({ 355.0f, 95.0f }, "Scale Y:", "scale-y-control", 5);
 
     goToPage(0);
     onSelectPiece(selected);
@@ -418,118 +419,39 @@ void EditIconPopup::onSave(CCObject* sender) {
     SaveIconPopup::create(m_parentPopup, this, m_iconType, m_state, m_frames)->show();
 }
 
-void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::string_view id, int offset) {
+void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::string&& id, int offset) {
     auto def = offset == 4 || offset == 5 ? 1.0f : 0.0f;
     auto min = offset == 0 || offset == 1 ? -20.0f : offset == 4 || offset == 5 ? -10.0f : 0.0f;
     auto max = offset == 0 || offset == 1 ? 20.0f : offset == 4 || offset == 5 ? 10.0f : 360.0f;
-    auto decimals = offset != 2 && offset != 3;
+    int decimals = offset != 2 && offset != 3;
 
-    auto slider = Slider::create(this, menu_selector(EditIconPopup::sliderChanged), 0.75f);
-    slider->getThumb()->setTag(offset);
-    slider->setPosition(pos - CCPoint { 0.0f, 10.0f });
-    slider->setID(fmt::format("{}-slider", id));
-    m_mainLayer->addChild(slider);
-    m_sliders[offset] = slider;
+    auto multiControl = MultiControl::create([this, offset](float value) {
+        reinterpret_cast<float*>(m_definition)[offset] = value;
+        updateTargets();
+    }, text, def, min, max, def, decimals, 0.75f, 60.0f);
+    multiControl->setPosition(pos);
+    multiControl->setID(std::move(id));
+    m_mainLayer->addChild(multiControl);
 
-    auto menu = CCMenu::create();
-    menu->setPosition(pos + CCPoint { 0.0f, 10.0f });
-    menu->setContentSize({ 150.0f, 30.0f });
-    menu->ignoreAnchorPointForPosition(false);
-    menu->setID(fmt::format("{}-menu", id));
-    m_mainLayer->addChild(menu);
+    multiControl->getSlider()->setPosition({ 0.0f, -10.0f });
+    multiControl->getLabel()->setScale(0.6f);
+    multiControl->getInput()->setScale(0.5f);
 
-    auto label = CCLabelBMFont::create(text, "goldFont.fnt");
-    label->setScale(0.6f);
-    label->setID(fmt::format("{}-label", id));
-    menu->addChild(label);
+    auto menu = multiControl->getMenu();
+    menu->setPosition({ 0.0f, 10.0f });
+    menu->setContentSize({ 350.0f, 30.0f });
+    menu->updateLayout();
 
-    auto input = TextInput::create(60.0f, "Num");
-    input->setScale(0.5f);
-    input->setCommonFilter(decimals ? CommonFilter::Float : CommonFilter::Uint);
-    input->setMaxCharCount(decimals ? 5 : 3);
-    input->setDelegate(this, offset);
-    input->setID(fmt::format("{}-input", id));
-    menu->addChild(input);
-    m_inputs[offset] = input;
-
-    auto resetSprite = CCSprite::createWithSpriteFrameName("GJ_updateBtn_001.png");
-    resetSprite->setScale(0.4f);
-    auto resetButton = CCMenuItemSpriteExtra::create(resetSprite, this, menu_selector(EditIconPopup::onReset));
-    resetButton->setTag(offset);
-    resetButton->setID(fmt::format("reset-{}-button", id));
-    menu->addChild(resetButton);
-
-    menu->setLayout(RowLayout::create()->setAutoScale(false));
-}
-
-void EditIconPopup::sliderChanged(CCObject* sender) {
-    auto offset = sender->getTag();
-    auto min = offset == 0 || offset == 1 ? -20.0f : offset == 4 || offset == 5 ? -10.0f : 0.0f;
-    auto max = offset == 0 || offset == 1 ? 20.0f : offset == 4 || offset == 5 ? 10.0f : 360.0f;
-    updateControl(offset, static_cast<SliderThumb*>(sender)->getValue() * (max - min) + min, false, true, true);
-    updateTargets();
-}
-
-void EditIconPopup::textChanged(CCTextInputNode* input) {
-    auto value = numFromString<float>(MoreIcons::getText(input->m_textField));
-    updateControl(input->getTag(), value.unwrapOrDefault(), true, false, value.isOk());
-    updateTargets();
-}
-
-void EditIconPopup::onReset(CCObject* sender) {
-    auto offset = sender->getTag();
-    updateControl(offset, offset == 4 || offset == 5 ? 1.0f : 0.0f, true, true, true);
-    updateTargets();
-}
-
-void EditIconPopup::updateControl(int offset, float value, bool slider, bool input, bool definition) {
-    switch (offset) {
-        case 0:
-            if (!definition) value = m_definition->offsetX;
-            m_definition->offsetX = std::clamp(roundf(value * 10.0f) / 10.0f, -20.0f, 20.0f);
-            if (slider) m_sliders[0]->setValue((value + 20.0f) / 40.0f);
-            if (input) m_inputs[0]->setString(fmt::format("{:.1f}", value));
-            break;
-        case 1:
-            if (!definition) value = m_definition->offsetY;
-            m_definition->offsetY = std::clamp(roundf(value * 10.0f) / 10.0f, -20.0f, 20.0f);
-            if (slider) m_sliders[1]->setValue((value + 20.0f) / 40.0f);
-            if (input) m_inputs[1]->setString(fmt::format("{:.1f}", value));
-            break;
-        case 2:
-            if (!definition) value = m_definition->rotationX;
-            m_definition->rotationX = std::clamp(roundf(value), 0.0f, 360.0f);
-            if (slider) m_sliders[2]->setValue(value / 360.0f);
-            if (input) m_inputs[2]->setString(fmt::format("{:.0f}", value));
-            break;
-        case 3:
-            if (!definition) value = m_definition->rotationY;
-            m_definition->rotationY = std::clamp(roundf(value), 0.0f, 360.0f);
-            if (slider) m_sliders[3]->setValue(value / 360.0f);
-            if (input) m_inputs[3]->setString(fmt::format("{:.0f}", value));
-            break;
-        case 4:
-            if (!definition) value = m_definition->scaleX;
-            m_definition->scaleX = std::clamp(roundf(value * 10.0f) / 10.0f, -10.0f, 10.0f);
-            if (slider) m_sliders[4]->setValue((value + 10.0f) / 20.0f);
-            if (input) m_inputs[4]->setString(fmt::format("{:.1f}", value));
-            break;
-        case 5:
-            if (!definition) value = m_definition->scaleY;
-            m_definition->scaleY = std::clamp(roundf(value * 10.0f) / 10.0f, -10.0f, 10.0f);
-            if (slider) m_sliders[5]->setValue((value + 10.0f) / 20.0f);
-            if (input) m_inputs[5]->setString(fmt::format("{:.1f}", value));
-            break;
-    }
+    m_controls[offset] = multiControl;
 }
 
 void EditIconPopup::updateControls() {
-    updateControl(0, m_definition->offsetX, true, true, true);
-    updateControl(1, m_definition->offsetY, true, true, true);
-    updateControl(2, m_definition->rotationX, true, true, true);
-    updateControl(3, m_definition->rotationY, true, true, true);
-    updateControl(4, m_definition->scaleX, true, true, true);
-    updateControl(5, m_definition->scaleY, true, true, true);
+    m_controls[0]->setValue(m_definition->offsetX);
+    m_controls[1]->setValue(m_definition->offsetY);
+    m_controls[2]->setValue(m_definition->rotationX);
+    m_controls[3]->setValue(m_definition->rotationY);
+    m_controls[4]->setValue(m_definition->scaleX);
+    m_controls[5]->setValue(m_definition->scaleY);
 }
 
 CCMenuItemSpriteExtra* EditIconPopup::addPieceButton(std::string_view suffix, int page, bool required) {

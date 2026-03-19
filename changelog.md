@@ -1,4 +1,8 @@
 # More Icons Changelog
+## v2.0.4 (2026-03-19)
+- Fixed a bug where the game would crash when renaming an icon (Reported by [LaFluffaroni](user:7900457))
+- Fixed a bug where the game would crash when changing death effect settings ([#72](https://github.com/hiimjasmine00/MoreIcons/issues/72))
+
 ## v2.0.3 (2026-03-18)
 - Fixed a bug where the game would crash when reloading textures
 

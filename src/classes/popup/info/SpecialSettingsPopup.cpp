@@ -1,11 +1,11 @@
 #include "SpecialSettingsPopup.hpp"
-#include "SpecialControlData.hpp"
+#include "../../misc/MultiControl.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
+#include "../../../utils/Defaults.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/Slider.hpp>
-#include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/file.hpp>
 #include <IconInfo.hpp>
 
@@ -37,6 +37,8 @@ bool SpecialSettingsPopup::init(IconInfo* info) {
     m_iconType = type;
 
     if (type == IconType::DeathEffect) {
+        checkDefaults(Defaults::getDeathEffectInfo(0));
+
         addControl("scale", "Scale:", { 65.0f, 225.0f }, 0.7f, 0.0f, 2.0f, 1.0f, 2);
         addControl("scale-variance", "+-:", { 565.0f / 3.0f, 225.0f }, 0.7f, 0.0f, 1.0f, 0.0f, 2);
         addControl("rotation", "Rotation:", { 935.0f / 3.0f, 225.0f }, 0.7f, 0.0f, 360.0f, 0.0f, 0);
@@ -61,6 +63,8 @@ bool SpecialSettingsPopup::init(IconInfo* info) {
         addToggle("outline-use-delay", "Use\nDelay", { 446.0f, 58.0f }, 0.8f, false);
     }
     else if (type == IconType::Special) {
+        checkDefaults(Defaults::getTrailInfo(0));
+
         addControl("fade", "Fade Time:", { 100.0f, 87.5f }, 1.0f, 0.0f, 2.0f, 0.3f, 2);
         addControl("stroke", "Stroke Width:", { 300.0f, 87.5f }, 1.0f, 0.0f, 20.0f, 14.0f, 1);
         addToggle("blend", "Additive\nBlending", { 60.0f, 60.0f }, 1.0f, true);
@@ -68,6 +72,8 @@ bool SpecialSettingsPopup::init(IconInfo* info) {
         addToggle("show", "Always\nShow", { 280.0f, 60.0f }, 1.0f, true);
     }
     else if (type == IconType::ShipFire) {
+        checkDefaults(Defaults::getShipFireInfo(0));
+
         addControl("fade", "Fade Time:", { 100.0f, 135.0f }, 1.0f, 0.0f, 2.0f, 0.1f, 2);
         addControl("stroke", "Stroke Width:", { 300.0f, 135.0f }, 1.0f, 0.0f, 40.0f, 20.0f, 1);
         addControl("x", "Offset X:", { 100.0f, 92.5f }, 1.0f, -20.0f, 20.0f, 0.0f, 1);
@@ -86,6 +92,18 @@ bool SpecialSettingsPopup::init(IconInfo* info) {
     return true;
 }
 
+void SpecialSettingsPopup::checkDefaults(const matjson::Value& defaultInfo) {
+    for (auto& value : defaultInfo) {
+        auto key = value.getKey().value_or(std::string());
+        if (auto valueRes = m_settings.get(key)) {
+            if (valueRes.unwrap().type() != value.type()) m_settings.set(key, value);
+        }
+        else {
+            m_settings.set(key, value);
+        }
+    }
+}
+
 void SpecialSettingsPopup::onSave(CCObject* sender) {
     if (auto res = file::writeToJson(m_info->getJSON(), m_settings); res.isErr()) {
         Notify::error("Failed to save info: {}", res.unwrapErr());
@@ -99,95 +117,28 @@ void SpecialSettingsPopup::onSave(CCObject* sender) {
 void SpecialSettingsPopup::addControl(
     std::string_view id, const char* text, const CCPoint& position, float scale, float min, float max, float def, int decimals
 ) {
-    auto& value = m_settings[id];
-    if (!value.isNumber()) value = def;
-    auto initial = value.as<float>().unwrapOr(def);
+    auto& val = m_settings[id];
 
-    auto positioner = CCNode::create();
-    positioner->setPosition(position);
-    positioner->setScale(scale);
-    positioner->setAnchorPoint({ 0.5f, 0.5f });
-    positioner->setID(fmt::format("{}-positioner", id));
-    m_mainLayer->addChild(positioner);
+    auto multiControl = MultiControl::create([this, &val](float value) {
+        val = value;
+        m_hasChanged = true;
+    }, text, val.as<float>().unwrapOr(def), min, max, def, decimals, 0.8f, 60.0f);
+    multiControl->setPosition(position);
+    multiControl->setScale(scale);
+    multiControl->setID(fmt::format("{}-control", id));
+    m_mainLayer->addChild(multiControl);
 
-    auto slider = Slider::create(this, menu_selector(SpecialSettingsPopup::sliderChanged), 0.8f);
-    slider->setValue((initial - min) / (max - min));
-    slider->setID(fmt::format("{}-slider", id));
-    positioner->addChild(slider);
+    multiControl->getLabel()->setScale(0.7f);
+    multiControl->getInput()->setScale(0.6f);
+    multiControl->getResetButton()->removeFromParent();
 
-    auto container = CCNode::create();
-    container->setPosition({ 0.0f, 22.5f });
-    container->setContentSize({ 170.0f, 30.0f });
-    container->setAnchorPoint({ 0.5f, 0.5f });
-    container->setID(fmt::format("{}-container", id));
-    positioner->addChild(container);
-
-    auto label = CCLabelBMFont::create(text, "goldFont.fnt");
-    label->setScale(0.7f);
-    label->setID(fmt::format("{}-label", id));
-    container->addChild(label);
-
-    auto exponent = 1;
-    for (int i = 0; i < decimals; i++) exponent *= 10;
-
-    auto input = TextInput::create(60.0f, "Num");
-    input->setScale(0.6f);
-    input->setString(fmt::format("{:.{}f}", initial, decimals));
-    input->setFilter(std::string(min < 0.0f ? "-.0123456789" : ".0123456789", min < 0.0f ? 12 : 11));
-    input->setMaxCharCount(log10f(std::max(floorf(max), 1.0f)) + decimals + (min < 0.0f ? 2 : 1));
-    input->setDelegate(this);
-    input->setID(fmt::format("{}-input", id));
-    container->addChild(input);
-
-    container->setLayout(RowLayout::create()->setAutoScale(false));
-
-    auto controlData = SpecialControlData::create(value, min, max, def, decimals, exponent);
-    auto thumb = slider->getThumb();
-    thumb->setUserObject("control-data", controlData);
-    thumb->setUserObject("input-node", input);
-    auto node = input->getInputNode();
-    node->setUserObject("control-data", controlData);
-    node->setUserObject("slider-node", slider);
-}
-
-void SpecialSettingsPopup::sliderChanged(CCObject* sender) {
-    auto thumb = static_cast<SliderThumb*>(sender);
-    auto controlData = static_cast<SpecialControlData*>(thumb->getUserObject("control-data"));
-    auto& value = *controlData->value;
-    auto min = controlData->min;
-    auto max = controlData->max;
-    auto def = controlData->def;
-    auto decimals = controlData->decimals;
-    auto exponent = controlData->exponent;
-
-    auto floatValue = roundf(thumb->getValue() * (max - min) + min) * exponent / exponent;
-    static_cast<TextInput*>(thumb->getUserObject("input-node"))->setString(fmt::format("{:.{}f}", floatValue, decimals));
-    value = floatValue;
-}
-
-void SpecialSettingsPopup::textChanged(CCTextInputNode* input) {
-    auto controlData = static_cast<SpecialControlData*>(input->getUserObject("control-data"));
-    auto& value = *controlData->value;
-    auto min = controlData->min;
-    auto max = controlData->max;
-    auto def = controlData->def;
-    auto exponent = controlData->exponent;
-
-    auto floatValue = def;
-    if (auto res = numFromString<float>(MoreIcons::getText(input->m_textField))) {
-        floatValue = res.unwrap();
-    }
-    else {
-        floatValue = value.as<float>().unwrapOr(def);
-    }
-    floatValue = std::clamp(roundf(floatValue * exponent) / exponent, min, max);
-    static_cast<Slider*>(input->getUserObject("slider-node"))->setValue((floatValue - min) / (max - min));
-    value = floatValue;
+    auto menu = multiControl->getMenu();
+    menu->setPosition({ 0.0f, 22.5f });
+    menu->updateLayout();
 }
 
 void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, const CCPoint& position, float scale, bool def) {
     auto& value = m_settings[id];
-    if (!value.isBool()) value = def;
 
     auto positioner = CCMenu::create();
     positioner->setPosition(position);
@@ -219,6 +170,7 @@ void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, con
 void SpecialSettingsPopup::onToggle(CCObject* sender) {
     auto toggle = static_cast<CCMenuItemToggler*>(sender);
     *static_cast<ObjWrapper<matjson::Value*>*>(toggle->getUserObject("setting-value"))->getValue() = !toggle->m_toggled;
+    m_hasChanged = true;
 }
 
 void SpecialSettingsPopup::addLabel(std::string&& id, const char* text, const CCPoint& position) {
@@ -230,7 +182,7 @@ void SpecialSettingsPopup::addLabel(std::string&& id, const char* text, const CC
 }
 
 void SpecialSettingsPopup::onClose(CCObject* sender) {
-    if (m_settings == m_info->getSpecialInfo()) return close();
+    if (!m_hasChanged) return close();
 
     auto type = m_iconType;
     FLAlertLayer::create(

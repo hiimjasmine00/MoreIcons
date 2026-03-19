@@ -1,5 +1,4 @@
 #include "IconNamePopup.hpp"
-#include "MoreInfoPopup.hpp"
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Filesystem.hpp"
@@ -11,7 +10,7 @@
 
 using namespace geode::prelude;
 
-IconNamePopup* IconNamePopup::create(MoreInfoPopup* popup, IconInfo* info) {
+IconNamePopup* IconNamePopup::create(BasePopup* popup, IconInfo* info) {
     auto ret = new IconNamePopup();
     if (ret->init(popup, info)) {
         ret->autorelease();
@@ -21,7 +20,7 @@ IconNamePopup* IconNamePopup::create(MoreInfoPopup* popup, IconInfo* info) {
     return nullptr;
 }
 
-bool IconNamePopup::init(MoreInfoPopup* popup, IconInfo* info) {
+bool IconNamePopup::init(BasePopup* popup, IconInfo* info) {
     if (!BasePopup::init(350.0f, 130.0f)) return false;
 
     auto type = info->getType();
@@ -30,6 +29,7 @@ bool IconNamePopup::init(MoreInfoPopup* popup, IconInfo* info) {
     setTitle(fmt::format("Edit {} Name", Constants::getSingularUppercase(type)));
     m_title->setID("icon-name-title");
 
+    m_parentPopup = popup;
     m_info = info;
     m_iconType = type;
 
