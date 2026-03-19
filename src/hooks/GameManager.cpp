@@ -59,6 +59,8 @@ class $modify(MIGameManager, GameManager) {
         more_icons::clearAllIcons();
         Icons::requestedIcons.clear();
         Icons::loadedIcons.clear();
+        Icons::iconWrappers.clear();
+        Icons::loadingFinished = false;
         Log::logs.clear();
         Icons::loadSettings();
         for (auto hook : Icons::hooks) {

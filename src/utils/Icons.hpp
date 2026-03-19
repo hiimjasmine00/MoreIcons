@@ -18,6 +18,7 @@ namespace Icons {
     extern std::vector<geode::Hook*> hooks;
     extern bool traditionalPacks;
     extern bool preloadIcons;
+    extern bool loadingFinished;
 
     cocos2d::CCSpriteFrame* getFrame(geode::ZStringView name);
     template <typename... Args>
@@ -44,7 +45,6 @@ protected:
 public:
     static IconWrapper* create(IconInfo* info);
 
-    IconInfo* getInfo() const;
     void setInfo(IconInfo* info);
 
     ~IconWrapper();

@@ -20,6 +20,7 @@ std::unordered_map<IconWrapper*, IconInfo*> Icons::iconWrappers;
 std::vector<Hook*> Icons::hooks;
 bool Icons::traditionalPacks = true;
 bool Icons::preloadIcons = false;
+bool Icons::loadingFinished = false;
 
 void Icons::loadSettings() {
     auto logLevel = jasmine::setting::get<std::string>("log-level");
@@ -679,6 +680,7 @@ void Icons::loadIcons(IconType type) {
 void Icons::finishLoading() {
     packs.clear();
     images.clear();
+    loadingFinished = true;
 }
 
 CCTexture2D* Icons::createAndAddFrames(IconInfo* info) {
@@ -725,15 +727,11 @@ IconWrapper* IconWrapper::create(IconInfo* info) {
     return ret;
 }
 
-IconInfo* IconWrapper::getInfo() const {
-    return m_info;
-}
-
 void IconWrapper::setInfo(IconInfo* info) {
     Icons::iconWrappers.emplace(this, m_info);
     m_info = info;
 }
 
 IconWrapper::~IconWrapper() {
-    setInfo(nullptr);
+    Icons::iconWrappers.erase(this);
 }

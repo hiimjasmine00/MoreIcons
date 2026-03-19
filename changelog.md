@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v2.0.3 (2026-03-18)
+- Fixed a bug where the game would crash when reloading textures
+
 ## v2.0.2 (2026-03-18)
 - Fixed bugs relating to improper storage of icon info
 - Added `more_icons::preRefreshIcons` and `more_icons::refreshIcons` to the API, which can be used to refresh internal icon storage
