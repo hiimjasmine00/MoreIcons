@@ -3,9 +3,9 @@
 #include "Get.hpp"
 #include "Json.hpp"
 #if defined(GEODE_IS_MACOS) || defined(GEODE_IS_IOS)
-#include <CoreFoundation/CoreFoundation.h>
-#include <CoreGraphics/CoreGraphics.h>
-#include <ImageIO/ImageIO.h>
+#include <CoreFoundation/CFPropertyList.h>
+#include <CoreGraphics/CGImage.h>
+#include <ImageIO/CGImageSource.h>
 #elif defined(GEODE_IS_ANDROID)
 #include <Geode/cocos/support/zip_support/unzip.h>
 #endif

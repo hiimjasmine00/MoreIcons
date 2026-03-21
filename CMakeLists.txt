@@ -40,4 +40,8 @@ if (WIN32)
 endif()
 target_link_libraries(${PROJECT_NAME} texpack jasmine-tools)
 
+if ("${CMAKE_SYSTEM_NAME}" STREQUAL "iOS" OR IOS)
+    target_link_libraries(${PROJECT_NAME} "-framework ImageIO")
+endif()
+
 setup_geode_mod(${PROJECT_NAME} EXTERNALS geode.node-ids:1.2.0)
