@@ -10,16 +10,11 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(GEODE_DISABLE_PRECOMPILED_HEADERS ON)
 set(GEODE_CODEGEN_EXTRA_ARGS "--skip-pugixml")
 
-project(MoreIcons VERSION 2.0.5)
+project(MoreIcons VERSION 2.0.6)
 
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS src/*.cpp)
-file(GLOB_RECURSE OBJC_SOURCES CONFIGURE_DEPENDS src/*.mm)
 
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
-
-if (APPLE)
-    target_sources(${PROJECT_NAME} PRIVATE ${OBJC_SOURCES})
-endif()
 
 target_include_directories(${PROJECT_NAME} PRIVATE include)
 

@@ -3,7 +3,6 @@
 #include "../../utils/Icons.hpp"
 #include "../../utils/Json.hpp"
 #include "../../utils/Load.hpp"
-#include <Geode/binding/CCSpritePlus.hpp>
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Log.hpp>
 
@@ -101,20 +100,16 @@ bool SimpleIcon::init(IconType type, std::string_view name) {
 }
 
 void SimpleIcon::createSimpleIcon(IconType type, std::string_view name) {
-    auto yOffset = type == IconType::Ufo ? -7.0f : 0.0f;
-    auto scale = type == IconType::Ball ? 0.9f : 1.0f;
+    if (type == IconType::Ufo) m_mainLayer->setPositionY(8.0f);
+    if (type == IconType::Ball) m_mainLayer->setScale(0.9f);
 
     auto primarySprite = spriteWithFrame("{}_001.png", name);
-    primarySprite->setPositionY(yOffset);
-    primarySprite->setScale(scale);
     primarySprite->setID("sprite_001");
     m_mainLayer->addChild(primarySprite, 0);
     m_targets["_001"].push_back(primarySprite);
     m_mainColorSprites.emplace_back(primarySprite, 1.0f);
 
     auto secondarySprite = spriteWithFrame("{}_2_001.png", name);
-    secondarySprite->setPositionY(yOffset);
-    secondarySprite->setScale(scale);
     secondarySprite->setID("sprite_2_001");
     m_mainLayer->addChild(secondarySprite, -1);
     m_targets["_2_001"].push_back(secondarySprite);
@@ -122,24 +117,18 @@ void SimpleIcon::createSimpleIcon(IconType type, std::string_view name) {
 
     if (type == IconType::Ufo) {
         auto tertiarySprite = spriteWithFrame("{}_3_001.png", name);
-        tertiarySprite->setPositionY(yOffset);
-        tertiarySprite->setScale(scale);
         tertiarySprite->setID("sprite_3_001");
         m_mainLayer->addChild(tertiarySprite, -2);
         m_targets["_3_001"].push_back(tertiarySprite);
     }
 
     auto glowSprite = spriteWithFrame("{}_glow_001.png", name);
-    glowSprite->setPositionY(yOffset);
-    glowSprite->setScale(scale);
     glowSprite->setID("sprite_glow_001");
     m_mainLayer->addChild(glowSprite, -3);
     m_targets["_glow_001"].push_back(glowSprite);
     m_glowColorSprites.push_back(glowSprite);
 
     auto extraSprite = spriteWithFrame("{}_extra_001.png", name);
-    extraSprite->setPositionY(yOffset);
-    extraSprite->setScale(scale);
     extraSprite->setID("sprite_extra_001");
     m_mainLayer->addChild(extraSprite, 1);
     m_targets["_extra_001"].push_back(extraSprite);
@@ -188,13 +177,9 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
         auto factor = customID == "back01" || customID == "back02" || customID == "back03" ? (spider ? 0.5f : 0.7f) : 1.0f;
         ccColor3B spriteColor = { (uint8_t)(factor * 255.0f), (uint8_t)(factor * 255.0f), (uint8_t)(factor * 255.0f) };
 
-        auto partNode = new CCSpritePlus();
-        partNode->init();
-        partNode->autorelease();
-        partNode->m_propagateScaleChanges = true;
-        partNode->m_propagateFlipChanges = true;
+        auto partNode = CCNode::create();
         partNode->setID(fmt::format("sprite_{}", i + 1));
-        m_mainLayer->addChild(partNode);
+        m_mainLayer->addChild(partNode, 0);
         m_spriteParts.push_back(partNode);
 
         auto prefix = partNode->getID();
@@ -217,10 +202,14 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
 
         texture.replace(3, 2, "_glow", 5);
 
+        auto glowPartNode = CCNode::create();
+        glowPartNode->setID(fmt::format("sprite_{}_glow", i + 1));
+        glowNode->addChild(glowPartNode, -1);
+        m_glowParts.push_back(glowPartNode);
+
         auto glowSprite = spriteWithFrame("{}{}.png", name, texture);
         glowSprite->setID(fmt::format("{}{}", prefix, texture));
-        glowNode->addChild(glowSprite, -1);
-        partNode->addFollower(glowSprite);
+        glowPartNode->addChild(glowSprite, 0);
         m_targets[texture].push_back(glowSprite);
         m_glowColorSprites.push_back(glowSprite);
 
@@ -258,18 +247,34 @@ void SimpleIcon::updateComplexSprite(std::span<SpriteDefinition const> definitio
         spritePart->setVisible(false);
     }
 
+    for (auto glowPart : m_glowParts) {
+        glowPart->setVisible(false);
+    }
+
     for (auto& definition : definitions) {
-        auto spritePart = m_spriteParts[definition.tag];
-        spritePart->setPosition(definition.position);
-        spritePart->setScaleX(definition.scale.x);
-        spritePart->setScaleY(definition.scale.y);
-        spritePart->setRotation(definition.rotation);
-        spritePart->setFlipX(definition.flipped.x != 0.0f);
-        spritePart->setFlipY(definition.flipped.y != 0.0f);
-        if (spritePart->getZOrder() != definition.zValue) {
-            spritePart->getParent()->reorderChild(spritePart, definition.zValue);
+        auto& position = definition.position;
+        auto scaleX = definition.scale.x * (definition.flipped.x != 0.0f ? -1.0f : 1.0f);
+        auto scaleY = definition.scale.y * (definition.flipped.y != 0.0f ? -1.0f : 1.0f);
+        auto rotation = definition.rotation;
+        auto zValue = definition.zValue;
+        auto tag = definition.tag;
+
+        auto spritePart = m_spriteParts[tag];
+        spritePart->setPosition(position);
+        spritePart->setScaleX(scaleX);
+        spritePart->setScaleY(scaleY);
+        spritePart->setRotation(rotation);
+        if (spritePart->getZOrder() != zValue) {
+            m_mainLayer->reorderChild(spritePart, zValue);
         }
         spritePart->setVisible(true);
+
+        auto glowPart = m_glowParts[tag];
+        glowPart->setPosition(position);
+        glowPart->setScaleX(scaleX);
+        glowPart->setScaleY(scaleY);
+        glowPart->setRotation(rotation);
+        glowPart->setVisible(true);
     }
 }
 

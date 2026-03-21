@@ -1,4 +1,11 @@
 # More Icons Changelog
+## v2.0.6 (2026-03-21)
+- Fixed a bug where the game would crash when renaming an icon to a name that would place it before its current position (Reported by [GMDAntiMatter](user:26068292))
+- Fixed preview positions in some icon editors (Reported by [Finnical](user:39868068))
+- Fixed some icon editors not properly loading icons on opening
+- Fixed CoreGraphics Bitmap Image (CGBI) loading on macOS and iOS
+- Added back `IconInfo` copy constructor and assignment operators
+
 ## v2.0.5 (2026-03-19)
 - Changed `IconInfo` implementation back to `std::shared_ptr` because apparently you can't destroy a `std::unique_ptr` with an incomplete type (Reported by [RaZooM](user:12034228))
 

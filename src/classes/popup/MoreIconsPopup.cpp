@@ -10,14 +10,28 @@
 #include "../../utils/Get.hpp"
 #include "../../utils/Log.hpp"
 #include "../../utils/Notify.hpp"
-#include <alphalaneous.fine_outline/include/FineOutline.hpp>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/loader/Dispatch.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
+
+namespace alpha::fine_outline {
+    enum class PlayerIcon {
+        SELECTED = -1,
+        ONE,
+        TWO
+    };
+
+    ccColor3B getColor(PlayerIcon player = PlayerIcon::SELECTED) GEODE_EVENT_EXPORT_CALL_NORES(
+        &getColor, (player), std::string("alphalaneous.fine_outline/getColor", 34));
+
+    void setOutlineColor(SimplePlayer* player, const ccColor3B& color) GEODE_EVENT_EXPORT_CALL_NORES(
+        &setOutlineColor, (player, color), std::string("alphalaneous.fine_outline/_setOutlineColorSimplePlayer", 54));
+}
 
 MoreIconsPopup* MoreIconsPopup::create() {
     auto ret = new MoreIconsPopup();

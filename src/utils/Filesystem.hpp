@@ -39,11 +39,16 @@ namespace Filesystem {
     bool doesExist(const std::filesystem::path& path);
     #ifdef GEODE_IS_WINDOWS
     std::wstring& getPathString(std::filesystem::path& path);
+    std::wstring getPathString(std::filesystem::path&& path);
     std::string strNarrow(std::wstring_view str);
     std::wstring strWide(std::string_view str);
     std::string filenameFormat(const std::filesystem::path& path);
+    inline std::string pathToString(const std::filesystem::path& path) {
+        return strNarrow(path.native());
+    }
     #else
     std::string& getPathString(std::filesystem::path& path);
+    std::string getPathString(std::filesystem::path&& path);
     inline std::string_view strNarrow(std::string_view str) {
         return str;
     }
@@ -51,6 +56,12 @@ namespace Filesystem {
         return str;
     }
     std::string_view filenameFormat(const std::filesystem::path& path);
+    inline std::string pathToString(const std::filesystem::path& path) {
+        return path.native();
+    }
+    inline std::string pathToString(std::filesystem::path&& path) {
+        return getPathString(path);
+    }
     #endif
     PathView filenameView(const std::filesystem::path& path);
     std::filesystem::path parentPath(const std::filesystem::path& path);

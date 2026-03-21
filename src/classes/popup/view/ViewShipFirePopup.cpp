@@ -74,7 +74,7 @@ bool ViewShipFirePopup::init(int id, IconInfo* info) {
 
     for (int i = 1; i <= count; i++) {
         pathString.replace(pathString.size() - 7, 3, fmt::format(L("{:03}"), i));
-        auto textureRes = Load::createTexture(path);
+        auto textureRes = Load::createTexture(path, true);
         if (textureRes.isErr()) {
             Notify::error("Failed to load {}: {}", Filesystem::filenameFormat(path), textureRes.unwrapErr());
             failed = true;

@@ -74,15 +74,14 @@ class $modify(MIGameManager, GameManager) {
         auto factor = Get::director->getContentScaleFactor();
         #ifdef GEODE_IS_MOBILE
         if (factor >= 4.0f) {
-            auto uhdPath = Icons::vanillaTexturePath(fmt::format("{}.png", ret), false);
-            auto uhdSuffix = addSuffix(std::move(Filesystem::getPathString(uhdPath)), "-uhd");
+            auto uhdSuffix = addSuffix(Filesystem::getPathString(Icons::vanillaTexturePath(fmt::format("{}.png", ret), false)), "-uhd");
             if (isFileExist(uhdSuffix)) {
                 uhdSuffix.resize(uhdSuffix.size() - 4);
                 return uhdSuffix;
             }
         }
         #endif
-        auto path = string::pathToString(dirs::getResourcesDir() / fmt::format(L("{}.png"), Filesystem::strWide(ret)));
+        auto path = Filesystem::pathToString(dirs::getResourcesDir() / fmt::format(L("{}.png"), Filesystem::strWide(ret)));
         #ifndef GEODE_IS_MOBILE
         if (factor >= 4.0f) {
             auto uhdSuffix = addSuffix(path, "-uhd");

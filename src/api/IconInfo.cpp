@@ -7,7 +7,11 @@ using namespace geode::prelude;
 
 IconInfo::IconInfo(std::shared_ptr<IconInfoImpl> impl) : m_impl(std::move(impl)) {}
 
+IconInfo::IconInfo(const IconInfo&) = default;
+
 IconInfo::IconInfo(IconInfo&&) noexcept = default;
+
+IconInfo& IconInfo::operator=(const IconInfo&) = default;
 
 IconInfo& IconInfo::operator=(IconInfo&&) noexcept = default;
 

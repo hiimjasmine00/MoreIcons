@@ -127,7 +127,7 @@ void LazyIcon::visit() {
         selfref = WeakRef(this), texture = m_texture, sheet = m_sheet,
         name = m_info ? m_info->getName() : std::string_view(), type = m_type, frameName = m_frameName
     ] {
-        auto image = Load::createFrames(texture, sheet, name, type, frameName);
+        auto image = Load::createFrames(texture, sheet, name, type, frameName, true);
         queueInMainThread([selfref = std::move(selfref), image = std::move(image)] mutable {
             if (auto self = selfref.lock()) {
                 if (image.isOk()) {

@@ -234,6 +234,10 @@ bool EditIconPopup::init(BasePopup* popup, IconType type) {
 
     iconButtonMenu->setLayout(RowLayout::create()->setGap(30.0f));
 
+    MoreIcons::getIconPaths(nullptr, 1, type, m_selectedPNG, m_selectedPlist);
+    updateWithSelectedFiles();
+    m_hasChanged = false;
+
     handleTouchPriority(this);
 
     return true;
@@ -543,9 +547,9 @@ void EditIconPopup::updateColor(int type, int index) {
 
 bool EditIconPopup::updateWithSelectedFiles(bool useSuffix) {
     auto ret = false;
-    if (auto imageRes = Load::createFrames(m_selectedPNG, m_selectedPlist, {}, m_iconType, useSuffix ? m_suffix : std::string_view(), false)) {
+    if (auto imageRes = Load::createFrames(m_selectedPNG, m_selectedPlist, {}, m_iconType, useSuffix ? m_suffix : std::string_view())) {
         auto image = std::move(imageRes).unwrap();
-        Load::initTexture(image.texture, image.data.data(), image.width, image.height, false);
+        Load::initTexture(image.texture, image.data.data(), image.width, image.height);
 
         if (useSuffix) {
             if (auto it = image.frames.find(m_suffix); it != image.frames.end()) {

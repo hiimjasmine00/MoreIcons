@@ -39,17 +39,26 @@ struct ImageResult {
     }
 };
 
+struct RGBAImage {
+    std::vector<uint8_t> data;
+    uint32_t width;
+    uint32_t height;
+
+    RGBAImage(std::vector<uint8_t>&& data, uint32_t width, uint32_t height) : data(std::move(data)), width(width), height(height) {}
+};
+
 namespace Load {
     void fixFrameName(std::string& frameName, std::string_view name, IconType type);
     geode::Result<std::vector<uint8_t>> readBinary(const std::filesystem::path& path);
+    geode::Result<RGBAImage> readPNG(const std::filesystem::path& path, bool premultiplyAlpha);
     geode::Result<matjson::Value> readPlist(const std::filesystem::path& path);
     bool doesExist(const std::filesystem::path& path);
-    geode::Result<cocos2d::CCTexture2D*> createTexture(const std::filesystem::path& path);
-    cocos2d::CCTexture2D* createTexture(const uint8_t* data, uint32_t width, uint32_t height);
-    void initTexture(cocos2d::CCTexture2D* texture, const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha = true);
+    geode::Result<cocos2d::CCTexture2D*> createTexture(const std::filesystem::path& path, bool premultiplyAlpha = false);
+    cocos2d::CCTexture2D* createTexture(const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha = false);
+    void initTexture(cocos2d::CCTexture2D* texture, const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha = false);
     geode::Result<ImageResult> createFrames(
         const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type,
-        std::string_view target = {}, bool premultiply = true, bool forceKeepNames = false
+        std::string_view target = {}, bool premultiply = false
     );
     geode::Result<geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>>> createFrames(
         const std::filesystem::path& path, cocos2d::CCTexture2D* texture, std::string_view name, IconType type,

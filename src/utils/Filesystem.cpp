@@ -9,6 +9,10 @@ std::filesystem::path::string_type& Filesystem::getPathString(std::filesystem::p
     return const_cast<std::filesystem::path::string_type&>(path.native());
 }
 
+std::filesystem::path::string_type Filesystem::getPathString(std::filesystem::path&& path) {
+    return std::move(getPathString(path));
+}
+
 MI_FILESYSTEM_BEGIN
 namespace filesystem {
     void appendPath(path& p, Filesystem::PathView right) {
@@ -17,17 +21,13 @@ namespace filesystem {
         if (!right.empty() && (right.size() < 2 || !_Is_drive_prefix(right.data())) && !_Is_slash(right[0])) {
             auto needsSlash = !left.empty() && (left.size() != 2 || !_Is_drive_prefix(left.data())) && !_Is_slash(left.back());
             auto leftSize = left.size();
-            return left.resize_and_overwrite(leftSize + right.size() + (needsSlash ? 1 : 0), [
-                leftSize, right, needsSlash
-            ](wchar_t* dest, size_t size) {
-                dest += leftSize;
-                if (needsSlash) {
-                    *dest = L'\\';
-                    dest++;
-                }
-                ::memcpy(dest, right.data(), right.size() * sizeof(wchar_t));
-                return size;
-            });
+            left.resize(leftSize + right.size() + (size_t)needsSlash);
+            if (needsSlash) {
+                left[leftSize] = L'\\';
+                leftSize++;
+            }
+            right.copy(left.data() + leftSize, right.size());
+            return;
         }
 
         if (right.size() >= 3 && _Is_drive_prefix(right.data()) && _Is_slash(right[2])) {

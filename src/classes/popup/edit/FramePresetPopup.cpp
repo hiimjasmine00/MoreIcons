@@ -79,7 +79,7 @@ void loadDeathEffects(std::vector<arc::BlockingTaskHandle<void>>& tasks, Filesys
         auto texture = Icons::vanillaTexturePath(fmt::format(L("PlayerExplosion_{:02}{}.png"), i, suffix), false);
         auto sheet = Icons::vanillaTexturePath(fmt::format(L("PlayerExplosion_{:02}{}.plist"), i, suffix), false);
         tasks.push_back(rt.spawnBlocking<void>([texture = std::move(texture), sheet = std::move(sheet), i] mutable {
-            auto res = Load::createFrames(texture, sheet, {}, IconType::DeathEffect, {}, false, true);
+            auto res = Load::createFrames(texture, sheet, {}, IconType::DeathEffect);
             if (res.isErr()) return;
 
             std::unique_lock lock(imageMutex2);
@@ -92,7 +92,7 @@ void loadDeathEffects(std::vector<arc::BlockingTaskHandle<void>>& tasks, Filesys
             auto& texture = info.getTexture();
             auto& sheet = info.getSheet();
             tasks.push_back(rt.spawnBlocking<void>([&texture, &sheet, name = info.getName(), info = &info] mutable {
-                auto res = Load::createFrames(texture, sheet, {}, IconType::DeathEffect, {}, false);
+                auto res = Load::createFrames(texture, sheet, {}, IconType::DeathEffect);
                 if (res.isErr()) return;
 
                 std::unique_lock lock(imageMutex2);
@@ -111,7 +111,7 @@ void loadShipFires(std::vector<arc::BlockingTaskHandle<void>>& tasks) {
             auto texture = Icons::vanillaTexturePath(fmt::format(L("shipfire{:02}_{:03}.png"), i, j), true);
             auto textureName = fmt::format("shipfire{:02}-{}", i, j);
             tasks.push_back(rt.spawnBlocking<void>([texture = std::move(texture), textureName = std::move(textureName), i, j] mutable {
-                auto res = Load::createFrames(texture, {}, {}, IconType::ShipFire, {}, false, false);
+                auto res = Load::createFrames(texture, std::filesystem::path(), {}, IconType::ShipFire);
                 if (res.isErr()) return;
 
                 std::unique_lock lock(imageMutex2);
@@ -127,7 +127,7 @@ void loadShipFires(std::vector<arc::BlockingTaskHandle<void>>& tasks) {
                 auto& textureString = Filesystem::getPathString(texture);
                 textureString.replace(textureString.size() - 7, 3, fmt::format(L("{:03}"), i));
                 tasks.push_back(rt.spawnBlocking<void>([texture = std::move(texture), info = &info, i] mutable {
-                    auto res = Load::createFrames(texture, {}, {}, IconType::ShipFire, {}, false, false);
+                    auto res = Load::createFrames(texture, std::filesystem::path(), {}, IconType::ShipFire);
                     if (res.isErr()) return;
 
                     std::unique_lock lock(imageMutex2);
@@ -178,7 +178,7 @@ bool FramePresetPopup::init(IconType type, Function<void(CCSpriteFrame*)> callba
 
         for (auto it = images2.begin(); it != images2.end(); it = images2.erase(it)) {
             auto& image = *it;
-            Load::initTexture(image.texture, image.data.data(), image.width, image.height, false);
+            Load::initTexture(image.texture, image.data.data(), image.width, image.height);
 
             if (image.frames.empty()) {
                 m_textures.push_back(std::move(image.texture));

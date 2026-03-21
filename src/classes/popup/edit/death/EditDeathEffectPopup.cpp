@@ -458,9 +458,9 @@ void EditDeathEffectPopup::onSelectPiece(CCObject* sender) {
 
 bool EditDeathEffectPopup::updateWithSelectedFiles(bool update) {
     auto ret = false;
-    if (auto imageRes = Load::createFrames(m_selectedPNG, m_selectedPlist, {}, IconType::DeathEffect, {}, false)) {
+    if (auto imageRes = Load::createFrames(m_selectedPNG, m_selectedPlist, {}, IconType::DeathEffect)) {
         auto image = std::move(imageRes).unwrap();
-        Load::initTexture(image.texture, image.data.data(), image.width, image.height, false);
+        Load::initTexture(image.texture, image.data.data(), image.width, image.height);
 
         m_frames.clear();
         m_pieceButtons.clear();

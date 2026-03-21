@@ -2,7 +2,11 @@
 #include "Filesystem.hpp"
 #include "Get.hpp"
 #include "Json.hpp"
-#ifdef GEODE_IS_ANDROID
+#if defined(GEODE_IS_MACOS) || defined(GEODE_IS_IOS)
+#include <CoreFoundation/CoreFoundation.h>
+#include <CoreGraphics/CoreGraphics.h>
+#include <ImageIO/ImageIO.h>
+#elif defined(GEODE_IS_ANDROID)
 #include <Geode/cocos/support/zip_support/unzip.h>
 #endif
 #include <Geode/utils/file.hpp>
@@ -35,7 +39,7 @@ constexpr std::initializer_list<std::string_view> cubeEndings = {
 };
 
 void Load::fixFrameName(std::string& frameName, std::string_view name, IconType type) {
-    if (type == IconType::DeathEffect || !frameName.ends_with("_001.png")) return;
+    if (!frameName.ends_with("_001.png")) return;
 
     std::initializer_list<std::string_view> endings;
     if (type == IconType::Robot || type == IconType::Spider) endings = robotEndings;
@@ -134,21 +138,70 @@ bool Load::doesExist(const std::filesystem::path& path) {
     return std::filesystem::exists(path, code);
 }
 
-Result<CCTexture2D*> Load::createTexture(const std::filesystem::path& path) {
-    GEODE_UNWRAP_INTO(auto data, readBinary(path).mapErr([](std::string err) {
+Result<RGBAImage> Load::readPNG(const std::filesystem::path& path, bool premultiplyAlpha) {
+    GEODE_UNWRAP_INTO(auto data, Load::readBinary(path).mapErr([](std::string err) {
         return fmt::format("Failed to read image: {}", err);
     }));
 
-    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(data).mapErr([](std::string err) {
+    #if defined(GEODE_IS_MACOS) || defined(GEODE_IS_IOS)
+    if (data.size() >= 16 && data[12] == 0x43 && data[13] == 0x67 && data[14] == 0x42 && data[15] == 0x49) {
+        auto cfData = CFDataCreateWithBytesNoCopy(kCFAllocatorDefault, data.data(), data.size(), kCFAllocatorNull);
+        if (!cfData) return Err("Failed to create image data");
+
+        auto imageSource = CGImageSourceCreateWithData(cfData, nullptr);
+        CFRelease(cfData);
+        if (!imageSource) return Err("Failed to create image source");
+
+        auto imageRef = CGImageSourceCreateImageAtIndex(imageSource, 0, nullptr);
+        CFRelease(imageSource);
+        if (!imageRef) return Err("Failed to create image");
+
+        auto width = CGImageGetWidth(imageRef);
+        auto height = CGImageGetHeight(imageRef);
+        std::vector<uint8_t> imageData(width * height * 4);
+
+        auto colorSpace = CGColorSpaceCreateDeviceRGB();
+        auto context = CGBitmapContextCreate(
+            imageData.data(), width, height, 8, width * 4, colorSpace, kCGImageAlphaPremultipliedLast
+        );
+        CGColorSpaceRelease(colorSpace);
+
+        if (!context) return Err("Failed to create image context");
+
+        CGContextDrawImage(context, { 0.0, 0.0, (CGFloat)width, (CGFloat)height }, imageRef);
+        CGContextRelease(context);
+        CFRelease(imageRef);
+
+        if (!premultiplyAlpha) {
+            for (size_t i = 0; i < imageData.size(); i += 4) {
+                auto alpha = imageData[i + 3];
+                if (alpha == 0) continue;
+                imageData[i] = (imageData[i] * 255) / alpha;
+                imageData[i + 1] = (imageData[i + 1] * 255) / alpha;
+                imageData[i + 2] = (imageData[i + 2] * 255) / alpha;
+            }
+        }
+
+        return Ok(RGBAImage(std::move(imageData), width, height));
+    }
+    #endif
+
+    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(data, premultiplyAlpha).mapErr([](std::string err) {
         return fmt::format("Failed to parse image: {}", err);
     }));
 
-    return Ok(createTexture(image.data.data(), image.width, image.height));
+    return Ok(RGBAImage(std::move(image.data), image.width, image.height));
 }
 
-CCTexture2D* Load::createTexture(const uint8_t* data, uint32_t width, uint32_t height) {
+Result<CCTexture2D*> Load::createTexture(const std::filesystem::path& path, bool premultiplyAlpha) {
+    GEODE_UNWRAP_INTO(auto image, Load::readPNG(path, premultiplyAlpha));
+
+    return Ok(createTexture(image.data.data(), image.width, image.height, premultiplyAlpha));
+}
+
+CCTexture2D* Load::createTexture(const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha) {
     auto texture = new CCTexture2D();
-    initTexture(texture, data, width, height, false);
+    initTexture(texture, data, width, height, premultiplyAlpha);
     texture->autorelease();
     return texture;
 }
@@ -160,19 +213,13 @@ void Load::initTexture(CCTexture2D* texture, const uint8_t* data, uint32_t width
 
 Result<ImageResult> Load::createFrames(
     const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type,
-    std::string_view target, bool premultiply, bool forceKeepNames
+    std::string_view target, bool premultiply
 ) {
-    GEODE_UNWRAP_INTO(auto data, readBinary(png).mapErr([](std::string err) {
-        return fmt::format("Failed to read image: {}", err);
-    }));
-
-    GEODE_UNWRAP_INTO(auto image, texpack::fromPNG(data, premultiply).mapErr([](std::string err) {
-        return fmt::format("Failed to parse image: {}", err);
-    }));
+    GEODE_UNWRAP_INTO(auto image, Load::readPNG(png, premultiply));
 
     auto texture = Ref<CCTexture2D>::adopt(new CCTexture2D());
     GEODE_UNWRAP_INTO(auto frames, createFrames(
-        plist, texture, name, type, target, !forceKeepNames && (!premultiply || !name.empty())
+        plist, texture, name, type, target, type <= IconType::Jetpack && (!premultiply || !name.empty())
     ).mapErr([](std::string err) {
         return fmt::format("Failed to create frames: {}", err);
     }));
@@ -204,16 +251,50 @@ matjson::Value parseNode(const pugi::xml_node& node) {
     else return nullptr;
 }
 
-#if defined(GEODE_IS_MACOS) || defined(GEODE_IS_IOS)
-Result<std::vector<uint8_t>> readBinaryPlist(std::span<const uint8_t> data);
-#endif
-
 Result<matjson::Value> Load::readPlist(const std::filesystem::path& path) {
     GEODE_UNWRAP_INTO(auto data, readBinary(path));
 
     #if defined(GEODE_IS_MACOS) || defined(GEODE_IS_IOS)
     if (data.size() >= 6 && data[0] == 0x62 && data[1] == 0x70 && data[2] == 0x6c && data[3] == 0x69 && data[4] == 0x73 && data[5] == 0x74) {
-        GEODE_UNWRAP_INTO(data, readBinaryPlist(data));
+        auto cfData = CFDataCreateWithBytesNoCopy(kCFAllocatorDefault, data.data(), data.size(), kCFAllocatorNull);
+        if (!cfData) return Err("Failed to create data");
+
+        CFErrorRef error = nullptr;
+        auto plist = CFPropertyListCreateWithData(kCFAllocatorDefault, cfData, kCFPropertyListImmutable, nullptr, &error);
+        CFRelease(cfData);
+
+        if (!plist) {
+            if (!error) return Err("Failed to parse plist");
+
+            auto message = fmt::format("Failed to parse plist: {}", CFStringGetCStringPtr(CFErrorCopyDescription(error), kCFStringEncodingUTF8));
+            CFRelease(error);
+            return Err(std::move(message));
+        }
+
+        error = nullptr;
+        auto outData = CFPropertyListCreateData(kCFAllocatorDefault, plist, kCFPropertyListXMLFormat_v1_0, 0, &error);
+        CFRelease(plist);
+
+        if (!outData) {
+            if (!error) return Err("Failed to convert plist");
+
+            auto message = fmt::format("Failed to convert plist: {}", CFStringGetCStringPtr(CFErrorCopyDescription(error), kCFStringEncodingUTF8));
+            CFRelease(error);
+            return Err(std::move(message));
+        }
+
+        pugi::xml_document doc;
+        auto result = doc.load_buffer(CFDataGetBytePtr(outData), CFDataGetLength(outData));
+        CFRelease(outData);
+        if (!result) return Err("Failed to parse XML: {}", result.description());
+
+        auto root = doc.child("plist");
+        if (!root) return Err("No root <plist> element found");
+
+        auto json = parseNode(root.first_child());
+        if (!json.isObject()) return Err("No root <dict> element found");
+
+        return Ok(std::move(json));
     }
     #endif
 
@@ -380,7 +461,7 @@ Result<StringMap<Ref<CCSpriteFrame>>> Load::createFrames(
 
 CCTexture2D* Load::addFrames(ImageResult& image, std::vector<std::string>& frameNames) {
     if (auto texture = image.texture.data()) {
-        initTexture(texture, image.data.data(), image.width, image.height);
+        initTexture(texture, image.data.data(), image.width, image.height, true);
         Get::textureCache->m_pTextures->setObject(texture, image.name);
     }
 

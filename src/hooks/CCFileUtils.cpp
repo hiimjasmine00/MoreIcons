@@ -19,7 +19,7 @@ class $modify(MIFileUtils, CCFileUtils) {
 
         std::string_view name = filename;
         if (name.starts_with("icons/") || name.starts_with("PlayerExplosion_") || name.starts_with("streak_") || name.starts_with("shipfire")) {
-            gd::string ret = string::pathToString(Icons::vanillaTexturePath(Filesystem::strWide(name), skipSuffix));
+            gd::string ret = Filesystem::pathToString(Icons::vanillaTexturePath(Filesystem::strWide(name), skipSuffix));
             if (!skipSuffix) {
                 auto factor = Get::director->getContentScaleFactor();
                 if (factor >= 4.0f) {

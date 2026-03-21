@@ -65,9 +65,9 @@ bool ViewDeathEffectPopup::init(int id, IconInfo* info) {
     std::filesystem::path png;
     std::filesystem::path plist;
     MoreIcons::getIconPaths(info, id, IconType::DeathEffect, png, plist);
-    if (auto imageRes = Load::createFrames(png, plist, {}, IconType::DeathEffect)) {
+    if (auto imageRes = Load::createFrames(png, plist, {}, IconType::DeathEffect, {}, true)) {
         auto image = std::move(imageRes).unwrap();
-        Load::initTexture(image.texture.data(), image.data.data(), image.width, image.height);
+        Load::initTexture(image.texture.data(), image.data.data(), image.width, image.height, true);
 
         std::vector<std::string_view> keys;
         for (auto& frame : image.frames) {

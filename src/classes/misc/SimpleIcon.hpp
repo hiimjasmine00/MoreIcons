@@ -15,7 +15,8 @@ struct SpriteDefinition {
 
 class SimpleIcon : public cocos2d::CCNode {
 protected:
-    std::vector<CCSpritePlus*> m_spriteParts;
+    std::vector<cocos2d::CCNode*> m_spriteParts;
+    std::vector<cocos2d::CCNode*> m_glowParts;
     std::vector<std::vector<SpriteDefinition>> m_definitions;
     geode::utils::StringMap<std::vector<cocos2d::CCSprite*>> m_targets;
     std::vector<std::pair<cocos2d::CCSprite*, float>> m_mainColorSprites;

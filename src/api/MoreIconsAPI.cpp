@@ -5,7 +5,6 @@
 #include "../utils/Get.hpp"
 #include "../utils/Icons.hpp"
 #include "../utils/Load.hpp"
-#include <alphalaneous.fine_outline/include/FineOutline.hpp>
 #include <Geode/binding/CCPartAnimSprite.hpp>
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
@@ -490,7 +489,8 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
     }));
     if (it != info) {
         preRefreshIcons();
-        std::rotate(info, info + 1, it);
+        if (it > info) std::rotate(info, info + 1, it);
+        else std::rotate(it, info, info + 1);
         refreshIcons();
     }
 }
@@ -501,15 +501,12 @@ void more_icons::updateIcon(IconInfo* info) {
         texture = Get::textureCache->textureForKey(textureString.c_str());
         if (!texture) continue;
 
-        auto binaryRes = file::readBinary(info->getTexture());
-        if (!binaryRes.isOk()) continue;
-
-        auto imageRes = texpack::fromPNG(binaryRes.unwrap(), true);
+        auto imageRes = Load::readPNG(info->getTexture(), true);
         if (!imageRes.isOk()) continue;
 
         auto image = std::move(imageRes).unwrap();
 
-        Load::initTexture(texture, image.data.data(), image.width, image.height);
+        Load::initTexture(texture, image.data.data(), image.width, image.height, true);
     }
 
     if (!texture) return;
@@ -549,6 +546,14 @@ void more_icons::updateIcon(IconInfo* info) {
     }
 
     std::ranges::sort(frameNames);
+}
+
+namespace alpha::fine_outline {
+    void updateOutline(PlayerObject* object) GEODE_EVENT_EXPORT_CALL_NORES(
+        static_cast<void(*)(PlayerObject*)>(&updateOutline), (object), std::string("alphalaneous.fine_outline/_updateOutlinePlayerObject", 52))
+
+    void updateOutline(SimplePlayer* player) GEODE_EVENT_EXPORT_CALL_NORES(
+        static_cast<void(*)(SimplePlayer*)>(&updateOutline), (player), std::string("alphalaneous.fine_outline/_updateOutlineSimplePlayer", 52))
 }
 
 void more_icons::updateSimplePlayer(SimplePlayer* player, IconInfo* info) {

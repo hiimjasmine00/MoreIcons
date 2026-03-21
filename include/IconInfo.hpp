@@ -47,14 +47,16 @@ private:
     IconInfo(std::shared_ptr<IconInfoImpl> impl);
 public:
     IconInfo() = delete;
-    IconInfo(const IconInfo&) = delete;
-    IconInfo& operator=(const IconInfo&) = delete;
     #ifdef MORE_ICONS_EVENTS
+    IconInfo(const IconInfo&) = default;
     IconInfo(IconInfo&&) noexcept = default;
+    IconInfo& operator=(const IconInfo&) = default;
     IconInfo& operator=(IconInfo&&) noexcept = default;
     ~IconInfo() = default;
     #else
+    IconInfo(const IconInfo&);
     IconInfo(IconInfo&&) noexcept;
+    IconInfo& operator=(const IconInfo&);
     IconInfo& operator=(IconInfo&&) noexcept;
     ~IconInfo();
     #endif

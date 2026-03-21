@@ -540,7 +540,7 @@ void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack
 }
 
 Result<ImageResult> createFrames(IconInfo* info) {
-    return Load::createFrames(info->getTexture(), info->getSheet(), info->getName(), info->getType());
+    return Load::createFrames(info->getTexture(), info->getSheet(), info->getName(), info->getType(), {}, true);
 }
 
 CCTexture2D* addFrames(ImageResult& image, IconInfo* info) {
