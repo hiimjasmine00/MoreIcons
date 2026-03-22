@@ -172,11 +172,9 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     void updatePlayerColors() {
         GJGarageLayer::updatePlayerColors();
 
-        if (m_iconSelection && m_fields->m_pageBar && more_icons::getIconCount(m_iconType) > 0 && (
-            m_iconType != IconType::Special || more_icons::getIconCount(IconType::ShipFire) > 0
-        )) {
-            m_iconSelection->setVisible(false);
-        }
+        auto iconCount = more_icons::getIconCount(m_iconType);
+        if (m_iconType == IconType::Special) iconCount += more_icons::getIconCount(IconType::ShipFire);
+        if (m_iconSelection && m_fields->m_pageBar && iconCount > 0) m_iconSelection->setVisible(false);
     }
 
     void createNavMenu(int page, IconType type) {
