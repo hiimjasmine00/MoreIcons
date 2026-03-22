@@ -172,7 +172,11 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     void updatePlayerColors() {
         GJGarageLayer::updatePlayerColors();
 
-        if (m_iconSelection && m_fields->m_pageBar && more_icons::getIconCount(m_iconType) > 0) m_iconSelection->setVisible(false);
+        if (m_iconSelection && m_fields->m_pageBar && more_icons::getIconCount(m_iconType) > 0 && (
+            m_iconType != IconType::Special || more_icons::getIconCount(IconType::ShipFire) > 0
+        )) {
+            m_iconSelection->setVisible(false);
+        }
     }
 
     void createNavMenu(int page, IconType type) {
@@ -188,8 +192,9 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             addChild(f->m_navMenu, 1);
         }
 
-        auto iconCount = more_icons::getIconCount(type);
-        m_navDotMenu->setPositionY(iconCount > 0 ? 35.0f : 25.0f);
+        auto pageCount = (more_icons::getIconCount(type) + 35) / 36;
+        if (type == IconType::Special) pageCount += (more_icons::getIconCount(IconType::ShipFire) + 35) / 36;
+        m_navDotMenu->setPositionY(pageCount > 0 ? 35.0f : 25.0f);
         auto count = (Get::gameManager->countForType(type) + 35) / 36;
         if (count < 2) {
             m_navDotMenu->setVisible(true);
@@ -205,11 +210,11 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             m_rightArrow->setVisible(true);
             m_rightArrow->setEnabled(true);
         }
-        f->m_navMenu->setVisible(iconCount > 0);
-        if (iconCount <= 0) return;
+        f->m_navMenu->setVisible(pageCount > 0);
+        if (pageCount <= 0) return;
 
         f->m_navMenu->removeAllChildren();
-        auto navDotAmount = count + (iconCount + 35) / 36;
+        auto navDotAmount = count + pageCount;
         for (int i = count; i < navDotAmount; i++) {
             auto dotSprite = CCSprite::createWithSpriteFrameName(i == page ? "gj_navDotBtn_on_001.png" : "gj_navDotBtn_off_001.png");
             dotSprite->setScale(0.9f);
@@ -250,6 +255,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
     void onArrow(CCObject* sender) {
         auto page = m_iconPages[m_iconType] + sender->getTag();
         auto pages = (Get::gameManager->countForType(m_iconType) + 35) / 36 + (more_icons::getIconCount(m_iconType) + 35) / 36;
+        if (m_iconType == IconType::Special) pages += (more_icons::getIconCount(IconType::ShipFire) + 35) / 36;
         GJGarageLayer::setupPage(pages > 0 ? page < 0 ? pages + page : page >= pages ? page - pages : page : 0, m_iconType);
     }
 
@@ -258,24 +264,40 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         createNavMenu(page, type);
 
         auto icons = more_icons::getIcons(type);
-        if (!icons) return;
+        auto shipFires = type == IconType::Special ? more_icons::getIcons(IconType::ShipFire) : nullptr;
+        if (!icons && (type != IconType::Special || !shipFires)) return;
 
         auto customPage = page - (Get::gameManager->countForType(type) + 35) / 36;
         if (customPage < 0) return;
 
         std::vector<IconInfo*> infoView;
-        infoView.reserve(icons->size());
-        for (auto& info : *icons) {
-            infoView.push_back(&info);
+        if (icons && shipFires) {
+            infoView.reserve(icons->size() + shipFires->size() + (36 - icons->size() % 36) % 36);
         }
-        if (type == IconType::Special) {
-            if (auto shipFires = more_icons::getIcons(IconType::ShipFire)) {
-                infoView.reserve(infoView.size() + shipFires->size());
-                for (auto& info : *shipFires) {
-                    infoView.push_back(&info);
+        else if (icons) {
+            infoView.reserve(icons->size());
+        }
+        else if (shipFires) {
+            infoView.reserve(shipFires->size());
+        }
+
+        if (icons) {
+            for (auto& info : *icons) {
+                infoView.push_back(&info);
+            }
+            if (shipFires) {
+                while (infoView.size() % 36 != 0) {
+                    infoView.push_back(nullptr);
                 }
             }
         }
+        if (shipFires) {
+            for (auto& info : *shipFires) {
+                infoView.push_back(&info);
+            }
+        }
+
+        if (infoView.empty()) return;
 
         auto index = customPage * 36;
         auto size = infoView.size();
@@ -319,6 +341,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
             auto hasAnimProf = Loader::get()->isModLoaded("thesillydoggo.animatedprofiles");
             for (size_t i = 0; i < infoPage.size(); i++) {
                 auto info = infoPage[i];
+                if (!info) continue;
                 auto itemIcon = GJItemIcon::createBrowserItem(unlockType, 1);
                 itemIcon->setScale(GJItemIcon::scaleForType(unlockType));
                 auto simplePlayer = static_cast<SimplePlayer*>(itemIcon->m_player);
@@ -341,6 +364,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         else if (type >= IconType::DeathEffect) {
             for (size_t i = 0; i < infoPage.size(); i++) {
                 auto info = infoPage[i];
+                if (!info) continue;
                 auto infoType = info->getType();
                 auto sprite = MoreIcons::customIcon(info);
                 sprite->setScale(0.8f);

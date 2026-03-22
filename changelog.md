@@ -1,4 +1,9 @@
 # More Icons Changelog
+## v2.0.7 (2026-03-22)
+- Fixed a bug where the special icons page in the icon kit would not show up if you had no trails (Reported by [NyteLyte](user:26352471))
+- Separated the ship fire icons from the special icons in the icon kit and added a new page for them
+- Slightly tweaked the save state button in the icon editor
+
 ## v2.0.6 (2026-03-21)
 - Fixed a bug where the game would crash when renaming an icon to a name that would place it before its current position (Reported by [GMDAntiMatter](user:26068292))
 - Fixed preview positions in some icon editors (Reported by [Finnical](user:39868068))
