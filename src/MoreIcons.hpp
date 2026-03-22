@@ -30,6 +30,7 @@ namespace MoreIcons {
         return *input->m_pInputText;
     }
     void loadFromSave(IconType type);
+    void setupCustomStreak(PlayerObject* player);
     void setTexture(cocos2d::CCSprite* sprite, cocos2d::CCTexture2D* texture);
     void updateGarage(GJGarageLayer* layer = nullptr);
     int vanillaIcon(IconType type, bool dual);

@@ -1,4 +1,9 @@
 # More Icons Changelog
+## v2.0.8 (2026-03-22)
+- Fixed enormous lag spikes related to custom ship fires ([#73](https://github.com/hiimjasmine00/MoreIcons/issues/73))
+- Fixed custom trails not working while Separate Dual Icons is enabled
+- Fixed custom death effects not working properly
+
 ## v2.0.7 (2026-03-22)
 - Fixed a bug where the special icons page in the icon kit would not show up if you had no trails (Reported by [NyteLyte](user:26352471))
 - Separated the ship fire icons from the special icons in the icon kit and added a new page for them

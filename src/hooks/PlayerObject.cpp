@@ -15,8 +15,9 @@ using namespace geode::prelude;
 
 class $modify(MIPlayerObject, PlayerObject) {
     static void onModify(ModifyBase<ModifyDerive<MIPlayerObject, PlayerObject>>& self) {
-        (void)self.setHookPriorityAfterPre("PlayerObject::playDeathEffect", "weebify.separate_dual_icons");
-        (void)self.setHookPriorityAfterPost("PlayerObject::setupStreak", "weebify.separate_dual_icons");
+        (void)self.setHookPriorityAfterPost("PlayerObject::playDeathEffect", "weebify.separate_dual_icons");
+        (void)self.setHookPriorityAfterPre("PlayerObject::setupStreak", "weebify.separate_dual_icons");
+        (void)self.setHookPriorityAfterPre("PlayerObject::update", "weebify.separate_dual_icons");
     }
 
     bool isP1() {
@@ -145,6 +146,10 @@ class $modify(MIPlayerObject, PlayerObject) {
     void setupStreak() {
         PlayerObject::setupStreak();
 
+        setupCustomStreak();
+    }
+
+    void setupCustomStreak() {
         if (auto info = getIconInfo(IconType::Special)) {
             auto& trailInfo = info->getSpecialInfo();
             auto tint = Json::get(trailInfo, "tint", false);
@@ -214,9 +219,18 @@ class $modify(MIPlayerObject, PlayerObject) {
     }
 
     void update(float dt) {
+        auto shipStreak = m_shipStreak;
+        if (m_shipStreakType <= ShipStreak::ShipFire1) m_shipStreak = nullptr;
+
         PlayerObject::update(dt);
 
-        if (!m_shipStreak) return;
+        if (!m_shipStreak) {
+            if (m_shipStreakType <= ShipStreak::ShipFire1) {
+                m_shipStreak = shipStreak;
+                if (!m_shipStreak) return;
+            }
+            else return;
+        }
 
         if (auto info = getIconInfo(IconType::ShipFire)) {
             auto texture = info->getTextureString();
@@ -376,3 +390,7 @@ class $modify(MIPlayerObject, PlayerObject) {
         else m_parentLayer->addChild(explodeNode, 101);
     }
 };
+
+void MoreIcons::setupCustomStreak(PlayerObject* player) {
+    static_cast<MIPlayerObject*>(player)->setupCustomStreak();
+}

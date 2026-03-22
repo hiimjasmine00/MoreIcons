@@ -17,7 +17,8 @@ Mod* MoreIcons::separateDualIcons = nullptr;
 
 $on_mod(Loaded) {
     Icons::loadSettings();
-    if (auto separateDualIcons = Loader::get()->getInstalledMod("weebify.separate_dual_icons")) {
+    auto loader = Loader::get();
+    if (auto separateDualIcons = loader->getInstalledMod("weebify.separate_dual_icons")) {
         if (separateDualIcons->isLoaded()) {
             MoreIcons::separateDualIcons = separateDualIcons;
         }
@@ -27,7 +28,7 @@ $on_mod(Loaded) {
             }).leak();
         }
     }
-    if (auto customGamemodeColors = Loader::get()->getInstalledMod("rooot.custom-gamemode-colors")) {
+    if (auto customGamemodeColors = loader->getInstalledMod("rooot.custom-gamemode-colors")) {
         if (customGamemodeColors->isLoaded()) {
             MoreIcons::customGamemodeColors = customGamemodeColors;
         }

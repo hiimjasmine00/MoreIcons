@@ -39,6 +39,12 @@ constexpr std::initializer_list<std::string_view> cubeEndings = {
 };
 
 void Load::fixFrameName(std::string& frameName, std::string_view name, IconType type) {
+    if (frameName.size() < 8 || !frameName.ends_with(".png")) return;
+
+    if (type == IconType::DeathEffect) {
+        return replaceOrErase(frameName, 8, name);
+    }
+
     if (!frameName.ends_with("_001.png")) return;
 
     std::initializer_list<std::string_view> endings;
@@ -218,9 +224,7 @@ Result<ImageResult> Load::createFrames(
     GEODE_UNWRAP_INTO(auto image, Load::readPNG(png, premultiply));
 
     auto texture = Ref<CCTexture2D>::adopt(new CCTexture2D());
-    GEODE_UNWRAP_INTO(auto frames, createFrames(
-        plist, texture, name, type, target, type <= IconType::Jetpack && (!premultiply || !name.empty())
-    ).mapErr([](std::string err) {
+    GEODE_UNWRAP_INTO(auto frames, createFrames(plist, texture, name, type, target, !premultiply || !name.empty()).mapErr([](std::string err) {
         return fmt::format("Failed to create frames: {}", err);
     }));
 
