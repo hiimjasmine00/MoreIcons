@@ -217,8 +217,9 @@ void more_icons::unloadIcon(IconInfo* info, int requestID) {
     loadedIcon--;
     if (loadedIcon < 1) Icons::uncacheIcon(info);
 
-    Icons::requestedIcons[requestID].erase(info->getType());
-    if (Icons::requestedIcons[requestID].empty()) Icons::requestedIcons.erase(requestID);
+    auto& iconRequests = Icons::requestedIcons[requestID];
+    iconRequests.erase(info->getType());
+    if (iconRequests.empty()) Icons::requestedIcons.erase(requestID);
 }
 
 void more_icons::unloadIcons(int requestID) {
@@ -231,14 +232,15 @@ void more_icons::unloadIcons(int requestID) {
     for (int i = 0; i < 9; i++) {
         auto type = (IconType)i;
         if (auto found = iconRequests.find(type); found != iconRequests.end()) {
-            auto info = found->second;
-            if (info) unloadIcon(info, requestID);
+            if (auto info = found->second) {
+                auto willBeRemoved = iconRequests.size() == 1;
+                unloadIcon(info, requestID);
+                if (willBeRemoved) return;
+            }
         }
     }
 
-    if (auto it = Icons::requestedIcons.find(requestID); it != Icons::requestedIcons.end()) {
-        Icons::requestedIcons.erase(it);
-    }
+    Icons::requestedIcons.erase(foundRequests);
 }
 
 IconInfo* addIcon(

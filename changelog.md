@@ -1,4 +1,8 @@
 # More Icons Changelog
+## v2.0.9 (2026-03-23)
+- Fixed a bug where the game would sometimes crash when unloading icons ([#77](https://github.com/hiimjasmine00/MoreIcons/issues/77))
+- Fixed Icon Profile support in the main menu
+
 ## v2.0.8 (2026-03-22)
 - Fixed enormous lag spikes related to custom ship fires ([#73](https://github.com/hiimjasmine00/MoreIcons/issues/73))
 - Fixed custom trails not working while Separate Dual Icons is enabled
