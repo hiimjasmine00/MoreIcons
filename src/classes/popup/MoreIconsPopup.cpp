@@ -241,10 +241,10 @@ void MoreIconsPopup::onLogs(CCObject* sender) {
 
 void MoreIconsPopup::onAdd(CCObject* sender) {
     auto type = (IconType)sender->getTag();
-    if (type <= IconType::Jetpack) EditIconPopup::create(this, type)->show();
-    else if (type == IconType::DeathEffect) EditDeathEffectPopup::create(this)->show();
-    else if (type == IconType::Special) EditTrailPopup::create(this)->show();
-    else if (type == IconType::ShipFire) EditShipFirePopup::create(this)->show();
+    if (type <= IconType::Jetpack) EditIconPopup::create(type)->show();
+    else if (type == IconType::DeathEffect) EditDeathEffectPopup::create()->show();
+    else if (type == IconType::Special) EditTrailPopup::create()->show();
+    else if (type == IconType::ShipFire) EditShipFirePopup::create()->show();
 }
 
 void MoreIconsPopup::onFolder(CCObject* sender) {

@@ -16,9 +16,9 @@
 
 using namespace geode::prelude;
 
-EditTrailPopup* EditTrailPopup::create(BasePopup* popup) {
+EditTrailPopup* EditTrailPopup::create() {
     auto ret = new EditTrailPopup();
-    if (ret->init(popup)) {
+    if (ret->init()) {
         ret->autorelease();
         return ret;
     }
@@ -26,14 +26,12 @@ EditTrailPopup* EditTrailPopup::create(BasePopup* popup) {
     return nullptr;
 }
 
-bool EditTrailPopup::init(BasePopup* popup) {
+bool EditTrailPopup::init() {
     if (!BasePopup::init(350.0f, 180.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("EditTrailPopup");
     setTitle("Trail Editor");
     m_title->setID("edit-trail-title");
-
-    m_parentPopup = popup;
 
     m_streak = CCSprite::create();
     m_streak->setPosition({ 175.0f, 120.0f });
@@ -181,13 +179,7 @@ void EditTrailPopup::saveTrail() {
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }
 
-    auto notif = fmt::format("{} saved!", name);
-
-    close();
-    m_parentPopup->close();
-
-    Notify::success(notif);
-    MoreIcons::updateGarage();
+    MoreIcons::updateGarageAndNotify(fmt::format("{} saved!", name));
 }
 
 void EditTrailPopup::onClose(CCObject* sender) {

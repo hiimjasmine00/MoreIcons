@@ -22,9 +22,9 @@
 using namespace geode::prelude;
 using namespace jasmine::mod;
 
-EditDeathEffectPopup* EditDeathEffectPopup::create(BasePopup* popup) {
+EditDeathEffectPopup* EditDeathEffectPopup::create() {
     auto ret = new EditDeathEffectPopup();
-    if (ret->init(popup)) {
+    if (ret->init()) {
         ret->autorelease();
         return ret;
     }
@@ -32,14 +32,12 @@ EditDeathEffectPopup* EditDeathEffectPopup::create(BasePopup* popup) {
     return nullptr;
 }
 
-bool EditDeathEffectPopup::init(BasePopup* popup) {
+bool EditDeathEffectPopup::init() {
     if (!BasePopup::init(450.0f, 280.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("EditDeathEffectPopup");
     setTitle("Death Effect Editor");
     m_title->setID("edit-death-effect-title");
-
-    m_parentPopup = popup;
 
     auto previewBackground = NineSlice::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
     previewBackground->setPosition({ 51.0f, 205.0f });
@@ -388,7 +386,7 @@ void EditDeathEffectPopup::onPreset(CCObject* sender) {
 void EditDeathEffectPopup::onSave(CCObject* sender) {
     if (m_frames.empty()) return Notify::error("No pieces to save.");
 
-    SaveDeathEffectPopup::create(m_parentPopup, this, m_iconButton, m_definitions, m_frames)->show();
+    SaveDeathEffectPopup::create(m_iconButton, m_definitions, m_frames)->show();
 }
 
 void EditDeathEffectPopup::createControls(const CCPoint& pos, const char* text, std::string&& id, int offset) {

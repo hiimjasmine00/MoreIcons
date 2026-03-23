@@ -51,9 +51,10 @@ class $modify(MIGarageLayer, GJGarageLayer) {
 
         f->m_initialized = true;
 
-        MoreIcons::updateGarage(this);
+        more_icons::updateSimplePlayer(m_playerObject, Get::gameManager->m_playerIconType, false);
 
         if (MoreIcons::separateDualIcons) {
+            more_icons::updateSimplePlayer(f->m_playerObject2, (IconType)MoreIcons::separateDualIcons->getSavedValue("lastmode", 0), true);
             f->m_cursor3->setOpacity(more_icons::hasIcon(IconType::Cube, true) && f->m_cursor3->isVisible() ? 127 : 255);
         }
 

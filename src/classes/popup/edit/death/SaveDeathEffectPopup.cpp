@@ -15,11 +15,10 @@
 using namespace geode::prelude;
 
 SaveDeathEffectPopup* SaveDeathEffectPopup::create(
-    BasePopup* popup1, BasePopup* popup2, IconButton* iconButton,
-    const std::vector<FrameDefinition>& definitions, const std::vector<Ref<CCSpriteFrame>>& frames
+    IconButton* iconButton, const std::vector<FrameDefinition>& definitions, const std::vector<Ref<CCSpriteFrame>>& frames
 ) {
     auto ret = new SaveDeathEffectPopup();
-    if (ret->init(popup1, popup2, iconButton, definitions, frames)) {
+    if (ret->init(iconButton, definitions, frames)) {
         ret->autorelease();
         return ret;
     }
@@ -28,8 +27,7 @@ SaveDeathEffectPopup* SaveDeathEffectPopup::create(
 }
 
 bool SaveDeathEffectPopup::init(
-    BasePopup* popup1, BasePopup* popup2, IconButton* iconButton,
-    const std::vector<FrameDefinition>& definitions, const std::vector<Ref<CCSpriteFrame>>& frames
+    IconButton* iconButton, const std::vector<FrameDefinition>& definitions, const std::vector<Ref<CCSpriteFrame>>& frames
 ) {
     if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
@@ -37,8 +35,6 @@ bool SaveDeathEffectPopup::init(
     setTitle("Save Death Effect");
     m_title->setID("save-icon-title");
 
-    m_parentPopup1 = popup1;
-    m_parentPopup2 = popup2;
     m_iconButton = iconButton;
     m_definitions = &definitions;
     m_frames = &frames;
@@ -180,14 +176,7 @@ void SaveDeathEffectPopup::saveIcon() {
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }
 
-    auto notif = fmt::format("{} saved!", name);
-
-    close();
-    m_parentPopup2->close();
-    m_parentPopup1->close();
-
-    Notify::success(notif);
-    MoreIcons::updateGarage();
+    MoreIcons::updateGarageAndNotify(fmt::format("{} saved!", name));
 }
 
 void SaveDeathEffectPopup::onClose(CCObject* sender) {

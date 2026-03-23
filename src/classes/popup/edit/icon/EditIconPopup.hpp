@@ -8,7 +8,6 @@ class MultiControl;
 
 class EditIconPopup : public BasePopup, public FLAlertLayerProtocol {
 protected:
-    BasePopup* m_parentPopup;
     geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
     std::filesystem::path m_selectedPNG;
     std::filesystem::path m_selectedPlist;
@@ -35,7 +34,7 @@ protected:
     int m_selectedPage = 0;
     bool m_hasChanged = false;
 
-    bool init(BasePopup* popup, IconType type);
+    bool init(IconType type);
     void onPrevPage(cocos2d::CCObject* sender);
     void onNextPage(cocos2d::CCObject* sender);
     void onLoadState(cocos2d::CCObject* sender);
@@ -64,5 +63,5 @@ protected:
     void onClose(cocos2d::CCObject* sender) override;
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override;
 public:
-    static EditIconPopup* create(BasePopup* popup, IconType type);
+    static EditIconPopup* create(IconType type);
 };

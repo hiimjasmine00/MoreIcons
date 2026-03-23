@@ -14,11 +14,9 @@
 
 using namespace geode::prelude;
 
-SaveIconPopup* SaveIconPopup::create(
-    BasePopup* popup1, BasePopup* popup2, IconType type, const IconEditorState& state, const StringMap<Ref<CCSpriteFrame>>& frames
-) {
+SaveIconPopup* SaveIconPopup::create(IconType type, const IconEditorState& state, const StringMap<Ref<CCSpriteFrame>>& frames) {
     auto ret = new SaveIconPopup();
-    if (ret->init(popup1, popup2, type, state, frames)) {
+    if (ret->init(type, state, frames)) {
         ret->autorelease();
         return ret;
     }
@@ -26,17 +24,13 @@ SaveIconPopup* SaveIconPopup::create(
     return nullptr;
 }
 
-bool SaveIconPopup::init(
-    BasePopup* popup1, BasePopup* popup2, IconType type, const IconEditorState& state, const StringMap<Ref<CCSpriteFrame>>& frames
-) {
+bool SaveIconPopup::init(IconType type, const IconEditorState& state, const StringMap<Ref<CCSpriteFrame>>& frames) {
     if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("SaveIconPopup");
     setTitle(fmt::format("Save {}", Constants::getSingularUppercase(type)));
     m_title->setID("save-icon-title");
 
-    m_parentPopup1 = popup1;
-    m_parentPopup2 = popup2;
     m_iconType = type;
     m_state = &state;
     m_frames = &frames;
@@ -153,14 +147,7 @@ void SaveIconPopup::saveIcon() {
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }
 
-    auto notif = fmt::format("{} saved!", name);
-
-    close();
-    m_parentPopup2->close();
-    m_parentPopup1->close();
-
-    Notify::success(notif);
-    MoreIcons::updateGarage();
+    MoreIcons::updateGarageAndNotify(fmt::format("{} saved!", name));
 }
 
 void SaveIconPopup::onClose(CCObject* sender) {

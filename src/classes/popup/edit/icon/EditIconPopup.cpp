@@ -21,9 +21,9 @@
 using namespace geode::prelude;
 using namespace jasmine::mod;
 
-EditIconPopup* EditIconPopup::create(BasePopup* popup, IconType type) {
+EditIconPopup* EditIconPopup::create(IconType type) {
     auto ret = new EditIconPopup();
-    if (ret->init(popup, type)) {
+    if (ret->init(type)) {
         ret->autorelease();
         return ret;
     }
@@ -31,14 +31,13 @@ EditIconPopup* EditIconPopup::create(BasePopup* popup, IconType type) {
     return nullptr;
 }
 
-bool EditIconPopup::init(BasePopup* popup, IconType type) {
+bool EditIconPopup::init(IconType type) {
     if (!BasePopup::init(450.0f, 280.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("EditIconPopup");
     setTitle(fmt::format("{} Editor", Constants::getSingularUppercase(type)));
     m_title->setID("edit-icon-title");
 
-    m_parentPopup = popup;
     m_iconType = type;
 
     auto isRobot = type == IconType::Robot || type == IconType::Spider;
@@ -420,7 +419,7 @@ void EditIconPopup::onSave(CCObject* sender) {
         if (!m_frames.contains(required)) return Notify::info("Missing icon{}.", required);
     }
 
-    SaveIconPopup::create(m_parentPopup, this, m_iconType, m_state, m_frames)->show();
+    SaveIconPopup::create(m_iconType, m_state, m_frames)->show();
 }
 
 void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::string&& id, int offset) {

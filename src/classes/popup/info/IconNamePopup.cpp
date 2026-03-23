@@ -10,9 +10,9 @@
 
 using namespace geode::prelude;
 
-IconNamePopup* IconNamePopup::create(BasePopup* popup, IconInfo* info) {
+IconNamePopup* IconNamePopup::create(IconInfo* info) {
     auto ret = new IconNamePopup();
-    if (ret->init(popup, info)) {
+    if (ret->init(info)) {
         ret->autorelease();
         return ret;
     }
@@ -20,7 +20,7 @@ IconNamePopup* IconNamePopup::create(BasePopup* popup, IconInfo* info) {
     return nullptr;
 }
 
-bool IconNamePopup::init(BasePopup* popup, IconInfo* info) {
+bool IconNamePopup::init(IconInfo* info) {
     if (!BasePopup::init(350.0f, 130.0f)) return false;
 
     auto type = info->getType();
@@ -29,7 +29,6 @@ bool IconNamePopup::init(BasePopup* popup, IconInfo* info) {
     setTitle(fmt::format("Edit {} Name", Constants::getSingularUppercase(type)));
     m_title->setID("icon-name-title");
 
-    m_parentPopup = popup;
     m_info = info;
     m_iconType = type;
 
@@ -182,12 +181,7 @@ void IconNamePopup::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
             auto name = MoreIcons::getText(m_nameInput);
             auto notif = fmt::format("{} renamed to {}!", m_info->getShortName(), name);
             more_icons::renameIcon(m_info, name);
-
-            close();
-            m_parentPopup->close();
-
-            Notify::success(notif);
-            MoreIcons::updateGarage();
+            MoreIcons::updateGarageAndNotify(notif);
             break;
         }
         case 1: {

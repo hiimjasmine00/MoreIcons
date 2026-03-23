@@ -176,8 +176,7 @@ void MoreInfoPopup::moveIcon(bool trash) {
     if (trash) more_icons::removeIcon(m_info);
     else more_icons::moveIcon(m_info, m_pendingPath);
     close();
-    Notify::success(notif);
-    MoreIcons::updateGarage();
+    MoreIcons::updateGarageAndNotify(notif);
 }
 
 bool MoreInfoPopup::init(IconInfo* info) {
@@ -346,10 +345,7 @@ void MoreInfoPopup::onSwapIcon(CCObject* sender) {
         }
 
         m_info->setIcon(std::move(iconPath));
-        auto notif = fmt::format("Icon for {} changed!", m_info->getShortName());
-        close();
-        Notify::success(notif);
-        MoreIcons::updateGarage();
+        MoreIcons::updateGarageAndNotify(fmt::format("Icon for {} changed!", m_info->getShortName()));
     });
 }
 
@@ -389,7 +385,7 @@ void MoreInfoPopup::onConvert(CCObject* sender) {
 }
 
 void MoreInfoPopup::onRename(CCObject* sender) {
-    IconNamePopup::create(this, m_info)->show();
+    IconNamePopup::create(m_info)->show();
 }
 
 void MoreInfoPopup::onTrash(CCObject* sender) {

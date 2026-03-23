@@ -1,9 +1,11 @@
 #include "MoreIcons.hpp"
+#include "classes/popup/BasePopup.hpp"
 #include "utils/Constants.hpp"
 #include "utils/Filesystem.hpp"
 #include "utils/Get.hpp"
 #include "utils/Icons.hpp"
 #include "utils/Json.hpp"
+#include "utils/Notify.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
@@ -139,24 +141,31 @@ int MoreIcons::vanillaIcon(IconType type, bool dual) {
     }
 }
 
-void MoreIcons::updateGarage(GJGarageLayer* layer) {
-    auto noLayer = layer == nullptr;
-    if (noLayer) layer = Get::director->getRunningScene()->getChildByType<GJGarageLayer>(0);
-    if (!layer) return;
+void MoreIcons::updateGarageAndNotify(ZStringView message) {
+    auto runningScene = Get::director->getRunningScene();
 
-    auto player1 = layer->m_playerObject;
-    auto iconType1 = Get::gameManager->m_playerIconType;
-    if (noLayer) player1->updatePlayerFrame(vanillaIcon(iconType1, false), iconType1);
-    more_icons::updateSimplePlayer(player1, iconType1, false);
-
-    if (separateDualIcons) {
-        auto player2 = static_cast<SimplePlayer*>(layer->getChildByID("player2-icon"));
-        auto iconType2 = (IconType)separateDualIcons->getSavedValue("lastmode", 0);
-        if (noLayer) player2->updatePlayerFrame(vanillaIcon(iconType2, true), iconType2);
-        more_icons::updateSimplePlayer(player2, iconType2, true);
+    CCArrayExt<CCNode, false> children = runningScene->getChildren();
+    for (auto it = children.end() - 1; it >= children.begin(); --it) {
+        if (auto basePopup = typeinfo_cast<BasePopup*>(*it)) basePopup->close();
     }
 
-    if (noLayer) layer->selectTab(layer->m_iconType);
+    if (auto layer = runningScene->getChildByType<GJGarageLayer>(0)) {
+        auto player1 = layer->m_playerObject;
+        auto iconType1 = Get::gameManager->m_playerIconType;
+        player1->updatePlayerFrame(vanillaIcon(iconType1, false), iconType1);
+        more_icons::updateSimplePlayer(player1, iconType1, false);
+
+        if (separateDualIcons) {
+            auto player2 = static_cast<SimplePlayer*>(layer->getChildByID("player2-icon"));
+            auto iconType2 = (IconType)separateDualIcons->getSavedValue("lastmode", 0);
+            player2->updatePlayerFrame(vanillaIcon(iconType2, true), iconType2);
+            more_icons::updateSimplePlayer(player2, iconType2, true);
+        }
+
+        layer->selectTab(layer->m_iconType);
+    }
+
+    Notify::success(message);
 }
 
 void MoreIcons::blendStreak(CCMotionStreak* streak, IconInfo* info) {

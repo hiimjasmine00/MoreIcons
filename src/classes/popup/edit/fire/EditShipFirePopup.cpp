@@ -16,9 +16,9 @@
 
 using namespace geode::prelude;
 
-EditShipFirePopup* EditShipFirePopup::create(BasePopup* popup) {
+EditShipFirePopup* EditShipFirePopup::create() {
     auto ret = new EditShipFirePopup();
-    if (ret->init(popup)) {
+    if (ret->init()) {
         ret->autorelease();
         return ret;
     }
@@ -26,14 +26,12 @@ EditShipFirePopup* EditShipFirePopup::create(BasePopup* popup) {
     return nullptr;
 }
 
-bool EditShipFirePopup::init(BasePopup* popup) {
+bool EditShipFirePopup::init() {
     if (!BasePopup::init(400.0f, 200.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("EditShipFirePopup");
     setTitle("Ship Fire Editor");
     m_title->setID("edit-ship-fire-title");
-
-    m_parentPopup = popup;
 
     m_streak = CCSprite::create();
     m_streak->setPosition({ 200.0f, 120.0f });
@@ -417,13 +415,7 @@ void EditShipFirePopup::saveShipFire() {
         if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
     }
 
-    auto notif = fmt::format("{} saved!", name);
-
-    close();
-    m_parentPopup->close();
-
-    Notify::success(notif);
-    MoreIcons::updateGarage();
+    MoreIcons::updateGarageAndNotify(fmt::format("{} saved!", name));
 }
 
 void EditShipFirePopup::onClose(CCObject* sender) {

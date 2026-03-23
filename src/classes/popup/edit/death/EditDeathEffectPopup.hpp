@@ -8,7 +8,6 @@ class MultiControl;
 
 class EditDeathEffectPopup : public BasePopup, public FLAlertLayerProtocol {
 protected:
-    BasePopup* m_parentPopup;
     geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
     std::filesystem::path m_selectedPNG;
     std::filesystem::path m_selectedPlist;
@@ -29,7 +28,7 @@ protected:
     int m_selectedPiece = 0;
     bool m_hasChanged = false;
 
-    bool init(BasePopup* popup);
+    bool init() override;
     void onPrevPage(cocos2d::CCObject* sender);
     void onNextPage(cocos2d::CCObject* sender);
     void onPieceAdd(cocos2d::CCObject* sender);
@@ -53,5 +52,5 @@ protected:
     void onClose(cocos2d::CCObject* sender) override;
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override;
 public:
-    static EditDeathEffectPopup* create(BasePopup* popup);
+    static EditDeathEffectPopup* create();
 };

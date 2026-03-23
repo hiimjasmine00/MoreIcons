@@ -9,7 +9,6 @@ protected:
     geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_pickListener;
     geode::async::TaskHolder<geode::Result<std::vector<std::filesystem::path>>> m_pickManyListener;
     std::filesystem::path m_pendingPath;
-    BasePopup* m_parentPopup;
     std::vector<CCMenuItemSpriteExtra*> m_frameButtons;
     cocos2d::CCMenu* m_frameMenu;
     cocos2d::CCSprite* m_streak;
@@ -20,7 +19,7 @@ protected:
     int m_page = 0;
     bool m_hasChanged = false;
 
-    bool init(BasePopup* popup);
+    bool init() override;
     CCMenuItemSpriteExtra* addFrameButton(cocos2d::CCTexture2D* texture);
     void updateState();
     void onPrev(cocos2d::CCObject* sender);
@@ -38,5 +37,5 @@ protected:
     void onClose(cocos2d::CCObject* sender) override;
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override;
 public:
-    static EditShipFirePopup* create(BasePopup* popup);
+    static EditShipFirePopup* create();
 };
