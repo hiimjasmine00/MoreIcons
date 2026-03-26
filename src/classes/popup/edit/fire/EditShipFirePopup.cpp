@@ -27,27 +27,27 @@ EditShipFirePopup* EditShipFirePopup::create() {
 }
 
 bool EditShipFirePopup::init() {
-    if (!BasePopup::init(400.0f, 155.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
+    if (!BasePopup::init(400.0f, 160.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("EditShipFirePopup");
     setTitle("Ship Fire Editor");
     m_title->setID("edit-ship-fire-title");
 
     m_streak = CCSprite::create();
-    m_streak->setPosition({ 200.0f, 75.0f });
+    m_streak->setPosition({ 200.0f, 80.0f });
     m_streak->setRotation(-90.0f);
     m_streak->setID("streak-preview");
     m_mainLayer->addChild(m_streak);
 
     auto framesBackground = NineSlice::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
-    framesBackground->setPosition({ 200.0f, 105.0f });
+    framesBackground->setPosition({ 200.0f, 110.0f });
     framesBackground->setContentSize({ 300.0f, 30.0f });
     framesBackground->setOpacity(105);
     framesBackground->setID("frames-background");
     m_mainLayer->addChild(framesBackground);
 
     m_frameMenu = CCMenu::create();
-    m_frameMenu->setPosition({ 200.0f, 105.0f });
+    m_frameMenu->setPosition({ 200.0f, 110.0f });
     m_frameMenu->setContentSize({ 300.0f, 30.0f });
     m_frameMenu->ignoreAnchorPointForPosition(false);
     m_frameMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Even), false);
@@ -61,7 +61,7 @@ bool EditShipFirePopup::init() {
     auto prevSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_01_001.png");
     prevSprite->setScale(0.5f);
     auto prevButton = CCMenuItemSpriteExtra::create(prevSprite, this, menu_selector(EditShipFirePopup::onPrev));
-    prevButton->setPosition({ 40.0f, 105.0f });
+    prevButton->setPosition({ 40.0f, 110.0f });
     prevButton->setID("prev-button");
     m_buttonMenu->addChild(prevButton);
 
@@ -69,7 +69,7 @@ bool EditShipFirePopup::init() {
     nextSprite->setScale(0.5f);
     nextSprite->setFlipX(true);
     auto nextButton = CCMenuItemSpriteExtra::create(nextSprite, this, menu_selector(EditShipFirePopup::onNext));
-    nextButton->setPosition({ 360.0f, 105.0f });
+    nextButton->setPosition({ 360.0f, 110.0f });
     nextButton->setID("next-button");
     m_buttonMenu->addChild(nextButton);
 
