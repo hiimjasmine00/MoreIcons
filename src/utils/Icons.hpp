@@ -16,6 +16,7 @@ namespace Icons {
     extern std::unordered_map<IconInfo*, int> loadedIcons;
     extern std::unordered_map<IconWrapper*, IconInfo*> iconWrappers;
     extern std::vector<geode::Hook*> hooks;
+    extern geode::Hook* deathEffectHook;
     extern bool traditionalPacks;
     extern bool preloadIcons;
     extern bool loadingFinished;

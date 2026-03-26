@@ -1,25 +1,28 @@
 #include "EditIconPopup.hpp"
 #include "IconColorPopup.hpp"
-#include "SaveEditorPopup.hpp"
-#include "SaveIconPopup.hpp"
 #include "../IconPresetPopup.hpp"
 #include "../ImageRenderer.hpp"
 #include "../LoadEditorPopup.hpp"
+#include "../SaveIconPopup.hpp"
 #include "../../../misc/MultiControl.hpp"
 #include "../../../../MoreIcons.hpp"
 #include "../../../../utils/Constants.hpp"
 #include "../../../../utils/Filesystem.hpp"
 #include "../../../../utils/Get.hpp"
 #include "../../../../utils/Icons.hpp"
+#include "../../../../utils/Json.hpp"
 #include "../../../../utils/Load.hpp"
 #include "../../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/Slider.hpp>
 #include <Geode/utils/file.hpp>
 #include <jasmine/mod.hpp>
+#include <matjson/std.hpp>
+#include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 using namespace jasmine::mod;
+using namespace std::string_literals;
 
 EditIconPopup* EditIconPopup::create(IconType type) {
     auto ret = new EditIconPopup();
@@ -252,28 +255,31 @@ void EditIconPopup::onNextPage(CCObject* sender) {
 
 void EditIconPopup::onLoadState(CCObject* sender) {
     LoadEditorPopup::create(m_iconType, [this](const std::filesystem::path& directory, std::string_view name) {
-        auto stateRes = file::readFromJson<IconEditorState>(directory / L("state.json"));
+        auto stateRes = file::readJson(directory / L("state.json"));
         if (stateRes.isErr()) return Notify::error("Failed to load {}: {}", name, stateRes.unwrapErr());
+
+        auto state = std::move(stateRes).unwrap();
+        if (!state.isObject()) return Notify::error("Failed to load {}: Expected object", name);
 
         m_selectedPNG = directory / L("icon.png");
         m_selectedPlist = directory / L("icon.plist");
         if (!updateWithSelectedFiles()) return;
 
-        m_state = std::move(stateRes).unwrap();
-        updateColor(1, m_state.mainColor);
-        updateColor(2, m_state.secondaryColor);
-        updateColor(3, m_state.glowColor);
+        m_definitions = Json::get<StringMap<FrameDefinition>>(state, "definitions");
+        updateColor(1, Json::get<int>(state, "main-color", 12));
+        updateColor(2, Json::get<int>(state, "secondary-color", 12));
+        updateColor(3, Json::get<int>(state, "glow-color", 12));
 
-        auto it = m_state.definitions.find(m_suffix);
-        if (it != m_state.definitions.end()) {
+        auto it = m_definitions.find(m_suffix);
+        if (it != m_definitions.end()) {
             m_definition = &it->second;
         }
         else {
-            m_definition = &m_state.definitions.emplace(m_suffix, FrameDefinition()).first->second;
+            m_definition = &m_definitions.emplace(m_suffix, FrameDefinition()).first->second;
         }
         updateControls();
 
-        for (auto& [key, definition] : m_state.definitions) {
+        for (auto& [key, definition] : m_definitions) {
             for (auto target : m_player->getTargets(key)) {
                 target->setPositionX(definition.offsetX);
                 target->setPositionY(definition.offsetY);
@@ -289,9 +295,44 @@ void EditIconPopup::onLoadState(CCObject* sender) {
 }
 
 void EditIconPopup::onSaveState(CCObject* sender) {
-    SaveEditorPopup::create(m_iconType, m_state, m_frames, [this] {
-        m_hasChanged = false;
-    })->show();
+    SaveIconPopup::create(
+        m_iconType, true,
+        [this](ZStringView name) {
+            m_pendingPath = MoreIcons::getEditorDir(m_iconType) / Filesystem::strWide(name);
+            return Filesystem::doesExist(m_pendingPath);
+        },
+        [this](ZStringView name) -> Result<> {
+            if (!Filesystem::doesExist(m_pendingPath)) {
+                GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
+            }
+
+            GEODE_UNWRAP(file::writeString(m_pendingPath / L("state.json"), matjson::makeObject({
+                { "definitions"s, matjson::Value(m_definitions) },
+                { "main-color"s, matjson::Value(m_mainColor) },
+                { "secondary-color"s, matjson::Value(m_secondaryColor) },
+                { "glow-color"s, matjson::Value(m_glowColor) }
+            }).dump()).mapErr([](std::string err) {
+                return fmt::format("Failed to save state: {}", err);
+            }));
+
+            texpack::Packer packer;
+            for (auto& [frameName, frame] : m_frames) {
+                auto sprite = CCSprite::createWithSpriteFrame(frame);
+                sprite->setAnchorPoint({ 0.0f, 0.0f });
+                sprite->setBlendFunc({ GL_ONE, GL_ZERO });
+                packer.frame(fmt::format("icon{}.png", frameName), ImageRenderer::getImage(sprite));
+                sprite->release();
+            }
+
+            GEODE_UNWRAP(ImageRenderer::save(packer, m_pendingPath / L("icon.png"), m_pendingPath / L("icon.plist"), "icon.png"));
+
+            m_hasChanged = false;
+            return Ok();
+        },
+        [this] {
+            m_pendingPath.clear();
+        }
+    )->show();
 }
 
 void EditIconPopup::addFrame(Ref<CCSpriteFrame>&& frame) {
@@ -419,7 +460,85 @@ void EditIconPopup::onSave(CCObject* sender) {
         if (!m_frames.contains(required)) return Notify::info("Missing icon{}.", required);
     }
 
-    SaveIconPopup::create(m_iconType, m_state, m_frames)->show();
+    SaveIconPopup::create(
+        m_iconType, false,
+        [this](ZStringView name) {
+            auto stem = Filesystem::getPathString(MoreIcons::getIconStem(name, m_iconType));
+            m_pngs[0] = fmt::format(L("{}-uhd.png"), stem);
+            m_pngs[1] = fmt::format(L("{}-hd.png"), stem);
+            m_pngs[2] = fmt::format(L("{}.png"), stem);
+            m_plists[0] = fmt::format(L("{}-uhd.plist"), stem);
+            m_plists[1] = fmt::format(L("{}-hd.plist"), stem);
+            m_plists[2] = fmt::format(L("{}.plist"), stem);
+            return Filesystem::doesExist(m_plists[0]) || Filesystem::doesExist(m_plists[1]) || Filesystem::doesExist(m_plists[2]) ||
+                Filesystem::doesExist(m_pngs[0]) || Filesystem::doesExist(m_pngs[1]) || Filesystem::doesExist(m_pngs[2]);
+        },
+        [this](ZStringView name) -> Result<> {
+            std::array<texpack::Packer, 3> packers = {};
+            auto scaleFactor = Get::director->getContentScaleFactor();
+            int index;
+            if (scaleFactor >= 4.0f) index = 0;
+            else if (scaleFactor >= 2.0f) index = 1;
+            else index = 2;
+            std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
+            for (auto& [frameName, frameRef] : m_frames) {
+                auto it = m_definitions.find(frameName);
+                if (it == m_definitions.end()) continue;
+
+                auto& definition = it->second;
+                auto joinedName = fmt::format("{}{}.png", name, frameName);
+                auto frame = frameRef.data();
+                for (int i = 0; i < 3; i++) {
+                    auto node = CCNode::create();
+                    node->setScale(scales[i]);
+                    node->setAnchorPoint({ 0.0f, 0.0f });
+                    auto sprite = CCSprite::createWithSpriteFrame(frame);
+                    sprite->setPosition({ definition.offsetX, definition.offsetY });
+                    sprite->setScaleX(definition.scaleX);
+                    sprite->setScaleY(definition.scaleY);
+                    sprite->setRotationX(definition.rotationX);
+                    sprite->setRotationY(definition.rotationY);
+                    node->addChild(sprite);
+                    auto boundingSize = sprite->boundingBox().size;
+                    node->setContentSize(boundingSize + CCSize { std::abs(definition.offsetX * 2.0f), std::abs(definition.offsetY * 2.0f) });
+                    sprite->setPosition(node->getContentSize() / 2.0f + sprite->getPosition());
+                    sprite->setBlendFunc({ GL_ONE, GL_ZERO });
+                    packers[i].frame(joinedName, ImageRenderer::getImage(node));
+                    node->release();
+                    sprite->release();
+                }
+            }
+
+            GEODE_UNWRAP(ImageRenderer::save(packers[0], m_pngs[0], m_plists[0], fmt::format("icons/{}-uhd.png", name)).mapErr([](std::string err) {
+                return fmt::format("Failed to save UHD icon: {}", err);
+            }));
+            GEODE_UNWRAP(ImageRenderer::save(packers[1], m_pngs[1], m_plists[1], fmt::format("icons/{}-hd.png", name)).mapErr([](std::string err) {
+                return fmt::format("Failed to save HD icon: {}", err);
+            }));
+            GEODE_UNWRAP(ImageRenderer::save(packers[2], m_pngs[2], m_plists[2], fmt::format("icons/{}.png", name)).mapErr([](std::string err) {
+                return fmt::format("Failed to save SD icon: {}", err);
+            }));
+
+            auto type = m_iconType;
+            if (auto icon = more_icons::getIcon(name, type)) {
+                more_icons::updateIcon(icon);
+            }
+            else {
+                more_icons::addIcon(name, name, type,
+                    std::move(m_pngs[index]), std::move(m_plists[index]), Get::director->getLoadedTextureQuality());
+            }
+
+            return Ok();
+        },
+        [this] {
+            m_pngs[0].clear();
+            m_pngs[1].clear();
+            m_pngs[2].clear();
+            m_plists[0].clear();
+            m_plists[1].clear();
+            m_plists[2].clear();
+        }
+    )->show();
 }
 
 void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::string&& id, int offset) {
@@ -458,7 +577,7 @@ void EditIconPopup::updateControls() {
 }
 
 CCMenuItemSpriteExtra* EditIconPopup::addPieceButton(std::string_view suffix, int page, bool required) {
-    m_state.definitions.emplace(suffix, FrameDefinition());
+    m_definitions.emplace(suffix, FrameDefinition());
 
     auto pieceFrame = Icons::getFrame("{}{}.png", MoreIcons::getIconName(1, m_iconType), suffix);
     if (pieceFrame) m_frames.emplace(suffix, pieceFrame);
@@ -483,8 +602,8 @@ void EditIconPopup::onSelectPiece(CCObject* sender) {
     auto suffix = static_cast<ObjWrapper<std::string_view>*>(node->getUserObject("piece-suffix"))->getValue();
     if (m_suffix == suffix) return;
 
-    auto it = m_state.definitions.find(suffix);
-    if (it == m_state.definitions.end()) return;
+    auto it = m_definitions.find(suffix);
+    if (it == m_definitions.end()) return;
 
     m_suffix = suffix;
     m_definition = &it->second;
@@ -521,21 +640,21 @@ void EditIconPopup::onColor(CCObject* sender) {
 void EditIconPopup::updateColor(int type, int index) {
     switch (type) {
         case 1: {
-            m_state.mainColor = index;
+            m_mainColor = index;
             auto mainColor = Constants::getColor(index);
             m_mainColorSprite->setColor(mainColor);
             m_player->setMainColor(mainColor);
             break;
         }
         case 2: {
-            m_state.secondaryColor = index;
+            m_secondaryColor = index;
             auto secondaryColor = Constants::getColor(index);
             m_secondaryColorSprite->setColor(secondaryColor);
             m_player->setSecondaryColor(secondaryColor);
             break;
         }
         case 3: {
-            m_state.glowColor = index;
+            m_glowColor = index;
             auto glowColor = Constants::getColor(index);
             m_glowColorSprite->setColor(glowColor);
             m_player->setGlowColor(glowColor);

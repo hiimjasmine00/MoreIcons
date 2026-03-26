@@ -3,12 +3,15 @@
 #include "../utils/Icons.hpp"
 #include <Geode/modify/CCFileUtils.hpp>
 #include <jasmine/hook.hpp>
+#include <jasmine/setting.hpp>
 
 using namespace geode::prelude;
 
 class $modify(MIFileUtils, CCFileUtils) {
     static void onModify(ModifyBase<ModifyDerive<MIFileUtils, CCFileUtils>>& self) {
-        if (auto hook = jasmine::hook::get(self.m_hooks, "cocos2d::CCFileUtils::fullPathForFilename", Priority::Replace)) {
+        if (auto hook = jasmine::hook::get(
+            self.m_hooks, "cocos2d::CCFileUtils::fullPathForFilename", jasmine::setting::getValue<bool>("traditional-packs")
+        )) {
             hook->setPriority(Priority::Replace);
             Icons::hooks.push_back(hook);
         }

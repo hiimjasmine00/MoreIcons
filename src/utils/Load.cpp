@@ -144,6 +144,12 @@ bool Load::doesExist(const std::filesystem::path& path) {
     return std::filesystem::exists(path, code);
 }
 
+#ifdef GEODE_IS_ANDROID
+bool Load::existsInZip(const std::string& path) {
+    return apkFile->fileList.contains(path);
+}
+#endif
+
 Result<RGBAImage> Load::readPNG(const std::filesystem::path& path, bool premultiplyAlpha) {
     GEODE_UNWRAP_INTO(auto data, Load::readBinary(path).mapErr([](std::string err) {
         return fmt::format("Failed to read image: {}", err);

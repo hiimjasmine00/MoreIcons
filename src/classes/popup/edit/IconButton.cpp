@@ -94,11 +94,13 @@ std::filesystem::path IconButton::saveIcon(const std::filesystem::path& path) {
             auto iconImageRes = texpack::toPNG(iconImage);
             if (iconImageRes.isErr()) {
                 Notify::error("Failed to encode icon image: {}", iconImageRes.unwrapErr());
+                return {};
             }
 
             auto savePath = path / names[i];
             if (auto res = file::writeBinary(savePath, iconImageRes.unwrap()); res.isErr()) {
                 Notify::error("Failed to save icon image: {}", res.unwrapErr());
+                return {};
             }
 
             if (scale == 1.0f) iconPath = std::move(savePath);

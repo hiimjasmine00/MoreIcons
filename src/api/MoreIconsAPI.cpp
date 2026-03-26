@@ -254,13 +254,18 @@ IconInfo* addIcon(
     });
     if (it != icons->end() && it->equals(name, type)) icons->erase(it);
 
-    if (Icons::loadingFinished) more_icons::preRefreshIcons();
+    if (Icons::loadingFinished) {
+        more_icons::preRefreshIcons();
+    }
     auto info = std::to_address(icons->insert(it, IconInfo(std::make_shared<IconInfoImpl>(
         std::move(name), std::move(shortName), type, std::move(png), std::move(plist),
         std::move(json), std::move(icon), quality, std::move(packID), std::move(packName),
         specialID, std::move(specialInfo), fireCount, vanilla, zipped
     ))));
-    if (Icons::loadingFinished) more_icons::refreshIcons();
+    if (Icons::loadingFinished) {
+        more_icons::refreshIcons();
+        if (Icons::preloadIcons) Icons::createAndAddFrames(info);
+    }
     return info;
 }
 
@@ -300,10 +305,8 @@ IconInfo* more_icons::addDeathEffect(
 
 IconInfo* more_icons::addShipFire(
     std::string name, std::string shortName,
-    std::filesystem::path png, std::filesystem::path json, std::filesystem::path icon,
-    std::string packID, std::string packName,
-    int specialID, matjson::Value specialInfo,
-    int fireCount, bool vanilla, bool zipped
+    std::filesystem::path png, std::filesystem::path json, std::filesystem::path icon, int fireCount,
+    std::string packID, std::string packName, int specialID, matjson::Value specialInfo, bool vanilla, bool zipped
 ) {
     return ::addIcon(
         std::move(name), std::move(shortName), IconType::ShipFire, std::move(png), {}, std::move(json), std::move(icon),

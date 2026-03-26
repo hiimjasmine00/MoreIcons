@@ -11,6 +11,7 @@ protected:
     geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
     std::filesystem::path m_selectedPNG;
     std::filesystem::path m_selectedPlist;
+    std::filesystem::path m_pendingPath;
     std::vector<cocos2d::CCSprite*> m_pieces;
     std::vector<CCMenuItemSpriteExtra*> m_pieceButtons;
     std::vector<geode::Ref<cocos2d::CCSpriteFrame>> m_frames;

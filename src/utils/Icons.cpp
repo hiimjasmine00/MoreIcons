@@ -18,6 +18,7 @@ std::map<int, std::map<IconType, IconInfo*>> Icons::requestedIcons;
 std::unordered_map<IconInfo*, int> Icons::loadedIcons;
 std::unordered_map<IconWrapper*, IconInfo*> Icons::iconWrappers;
 std::vector<Hook*> Icons::hooks;
+Hook* Icons::deathEffectHook = nullptr;
 bool Icons::traditionalPacks = true;
 bool Icons::preloadIcons = false;
 bool Icons::loadingFinished = false;
@@ -508,7 +509,7 @@ void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
     auto fireInfo = file::readJson(jsonPath).unwrapOr(Defaults::getShipFireInfo(0));
     auto icon = more_icons::addShipFire(
         std::move(name), std::move(shortName), path / L("fire_001.png"), std::move(jsonPath), std::move(iconPath),
-        pack.id, pack.name, 0, std::move(fireInfo), fireCount, false, pack.zipped
+        fireCount, pack.id, pack.name, 0, std::move(fireInfo), false, pack.zipped
     );
 
     log::debug("Finished pre-loading ship fire {} from {}", icon->getName(), pack.name);
@@ -532,8 +533,8 @@ void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack
     }
 
     auto icon = more_icons::addShipFire(
-        std::move(name), std::move(shortName), path, {}, {}, pack.id, pack.name, fireID,
-        Defaults::getShipFireInfo(fireID), Defaults::getShipFireCount(fireID), true, pack.zipped
+        std::move(name), std::move(shortName), path, {}, {}, Defaults::getShipFireCount(fireID),
+        pack.id, pack.name, fireID, Defaults::getShipFireInfo(fireID), true, pack.zipped
     );
 
     log::debug("Finished pre-loading vanilla ship fire {} from {}", icon->getName(), pack.name);

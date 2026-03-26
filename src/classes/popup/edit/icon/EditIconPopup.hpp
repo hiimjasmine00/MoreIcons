@@ -1,4 +1,4 @@
-#include "IconEditorState.hpp"
+#include "../FrameDefinition.hpp"
 #include "../../BasePopup.hpp"
 #include "../../../misc/SimpleIcon.hpp"
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
@@ -11,10 +11,14 @@ protected:
     geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
     std::filesystem::path m_selectedPNG;
     std::filesystem::path m_selectedPlist;
+    std::filesystem::path m_pendingPath;
+    std::array<std::filesystem::path, 3> m_pngs;
+    std::array<std::filesystem::path, 3> m_plists;
     std::vector<std::vector<cocos2d::CCNode*>> m_pages;
     std::vector<std::string_view> m_required;
     geode::utils::StringMap<cocos2d::CCSprite*> m_pieces;
     geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>> m_frames;
+    geode::utils::StringMap<FrameDefinition> m_definitions;
     SimpleIcon* m_player;
     std::array<MultiControl*, 6> m_controls;
     std::string_view m_suffix;
@@ -27,11 +31,13 @@ protected:
     cocos2d::CCSprite* m_mainColorSprite;
     cocos2d::CCSprite* m_secondaryColorSprite;
     cocos2d::CCSprite* m_glowColorSprite;
-    IconEditorState m_state;
     FrameDefinition* m_definition;
     IconType m_iconType;
     int m_page = 0;
     int m_selectedPage = 0;
+    int m_mainColor = 12;
+    int m_secondaryColor = 12;
+    int m_glowColor = 12;
     bool m_hasChanged = false;
 
     bool init(IconType type);

@@ -174,8 +174,7 @@ bool IconColorPopup::init(int selected, Function<void(int)> callback) {
         colorSprite->setScale(0.65f);
         colorSprite->setColor(Constants::getColor(colorIndex));
         auto colorButton = CCMenuItemSpriteExtra::create(colorSprite, this, menu_selector(IconColorPopup::onColor));
-        auto offset = offsetForIndex(i) * 12.0f;
-        colorButton->setPosition(m_buttonMenu->convertToNodeSpace(center + offset + CCPoint {
+        colorButton->setPosition(m_buttonMenu->convertToNodeSpace(center + offsetForIndex(i) * 12.0f + CCPoint {
             (i % 18) * 24.0f - 198.0f, 89.0f - floorf(i / 18.0f) * 24.0f
         }));
         colorButton->setTag(colorIndex);

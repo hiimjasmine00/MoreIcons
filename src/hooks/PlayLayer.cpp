@@ -1,5 +1,7 @@
 #include "../utils/Icons.hpp"
 #include <Geode/modify/PlayLayer.hpp>
+#include <jasmine/hook.hpp>
+#include <jasmine/setting.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
@@ -15,6 +17,11 @@ class $modify(MIPlayLayer, PlayLayer) {
             }
         }
     };
+
+    static void onModify(ModifyBase<ModifyDerive<MIPlayLayer, PlayLayer>>& self) {
+        Icons::deathEffectHook = jasmine::hook::get(
+            self.m_hooks, "PlayLayer::setupHasCompleted", !jasmine::setting::getValue<bool>("traditional-packs"));
+    }
 
     void setupHasCompleted() {
         PlayLayer::setupHasCompleted();

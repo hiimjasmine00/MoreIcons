@@ -345,12 +345,12 @@ namespace more_icons {
     MI_DLL IconInfo* addShipFire(
         std::string name, std::string shortName,
         std::filesystem::path png, std::filesystem::path json, std::filesystem::path icon,
-        std::string packID = {}, std::string packName = std::string("More Icons", 10),
+        int fireCount = 0, std::string packID = {}, std::string packName = std::string("More Icons", 10),
         int specialID = 0, matjson::Value specialInfo = {},
-        int fireCount = 0, bool vanilla = false, bool zipped = false
+        bool vanilla = false, bool zipped = false
     ) MI_EXP(addShipFire, (
-        std::move(name), std::move(shortName), std::move(png), std::move(json), std::move(icon),
-        std::move(packID), std::move(packName), specialID, std::move(specialInfo), fireCount, vanilla, zipped
+        std::move(name), std::move(shortName), std::move(png), std::move(json), std::move(icon), fireCount,
+        std::move(packID), std::move(packName), specialID, std::move(specialInfo), vanilla, zipped
     ), nullptr);
 
     /// Moves an icon to a different directory.

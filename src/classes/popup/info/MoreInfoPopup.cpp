@@ -175,7 +175,6 @@ void MoreInfoPopup::moveIcon(bool trash) {
     auto notif = trash ? fmt::format("{} trashed!", shortName) : fmt::format("{} moved!", shortName);
     if (trash) more_icons::removeIcon(m_info);
     else more_icons::moveIcon(m_info, m_pendingPath);
-    close();
     MoreIcons::updateGarageAndNotify(notif);
 }
 
@@ -229,6 +228,8 @@ bool MoreInfoPopup::init(IconInfo* info) {
         iconButton->setPosition({ 150.0f, hasPack ? 165.0f : 171.0f });
         iconButton->setID("icon-button");
         m_buttonMenu->addChild(iconButton);
+
+        Icons::setIcon(iconButton, info);
     }
     else if (type >= IconType::DeathEffect) {
         auto sprite = MoreIcons::customIcon(info);
@@ -238,6 +239,8 @@ bool MoreInfoPopup::init(IconInfo* info) {
         iconButton->setPosition({ 150.0f, hasPack ? 165.0f : 171.0f });
         iconButton->setID("icon-button");
         m_buttonMenu->addChild(iconButton);
+
+        Icons::setIcon(iconButton, info);
 
         if (info->getSpecialID() == 0) {
             auto settingsSprite = CCSprite::createWithSpriteFrameName("GJ_optionsBtn_001.png");

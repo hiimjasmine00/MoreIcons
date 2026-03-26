@@ -21,10 +21,22 @@ std::string addSuffix(std::string str, std::string_view suffix) {
     return std::move(str);
 }
 
-bool isFileExist(const gd::string& path) {
+bool isFileExist(const std::string& path) {
     #ifdef GEODE_IS_WINDOWS
     auto attrs = GetFileAttributesA(path.c_str());
     return (attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY) == 0);
+    #elif defined(GEODE_IS_ANDROID)
+    if (path.starts_with("assets/")) {
+        return Load::existsInZip(path);
+    }
+    else {
+        auto file = fopen(path.c_str(), "r");
+        if (file) {
+            fclose(file);
+            return true;
+        }
+        return false;
+    }
     #else
     return Get::fileUtils->isFileExist(path);
     #endif
@@ -66,6 +78,7 @@ class $modify(MIGameManager, GameManager) {
         for (auto hook : Icons::hooks) {
             jasmine::hook::toggle(hook, Icons::traditionalPacks);
         }
+        jasmine::hook::toggle(Icons::deathEffectHook, !Icons::traditionalPacks);
     }
 
     gd::string sheetNameForIcon(int id, int type) {

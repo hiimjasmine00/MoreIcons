@@ -105,7 +105,7 @@ void SpecialSettingsPopup::checkDefaults(const matjson::Value& defaultInfo) {
 }
 
 void SpecialSettingsPopup::onSave(CCObject* sender) {
-    if (auto res = file::writeToJson(m_info->getJSON(), m_settings); res.isErr()) {
+    if (auto res = file::writeString(m_info->getJSON(), m_settings.dump()); res.isErr()) {
         Notify::error("Failed to save info: {}", res.unwrapErr());
     }
     else {

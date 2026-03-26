@@ -172,11 +172,8 @@ void EditTrailPopup::saveTrail() {
     }
     else {
         auto jsonPath = m_pendingPath / L("settings.json");
-        (void)file::writeString(jsonPath, "{}");
-        icon = more_icons::addTrail(
-            name, name, std::move(trailPath), std::move(jsonPath), std::move(iconPath), {}, "More Icons", 0, Defaults::getTrailInfo(0)
-        );
-        if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
+        (void)file::writeString(jsonPath, Defaults::getTrailInfo(0).dump());
+        more_icons::addTrail(name, name, std::move(trailPath), std::move(jsonPath), std::move(iconPath));
     }
 
     MoreIcons::updateGarageAndNotify(fmt::format("{} saved!", name));

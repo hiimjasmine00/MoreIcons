@@ -407,12 +407,8 @@ void EditShipFirePopup::saveShipFire() {
     }
     else {
         auto jsonPath = m_pendingPath / L("settings.json");
-        (void)file::writeString(jsonPath, "{}");
-        icon = more_icons::addShipFire(
-            name, name, m_pendingPath / L("fire_001.png"), std::move(jsonPath), std::move(iconPath), {}, "More Icons", 0,
-            Defaults::getShipFireInfo(0), m_frameButtons.size()
-        );
-        if (Icons::preloadIcons) Icons::createAndAddFrames(icon);
+        (void)file::writeString(jsonPath, Defaults::getShipFireInfo(0).dump());
+        more_icons::addShipFire(name, name, m_pendingPath / L("fire_001.png"), std::move(jsonPath), std::move(iconPath), m_frameButtons.size());
     }
 
     MoreIcons::updateGarageAndNotify(fmt::format("{} saved!", name));
