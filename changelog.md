@@ -1,4 +1,10 @@
 # More Icons Changelog
+## v2.1.0 (2026-03-26)
+- Expanded inputs in the icon editor to 3 decimal places
+- Moved textboxes in the trail and ship fire editors to a separate save popup
+- Fixed a bug where traditional icon packs would not load properly on launch (Reported by [NyteLyte](user:26352471))
+- Fixed a bug where deleting an icon from a stacked popup would crash the game (Reported by [NyteLyte](user:26352471))
+
 ## v2.0.9 (2026-03-23)
 - Fixed a bug where the game would sometimes crash when unloading icons ([#77](https://github.com/hiimjasmine00/MoreIcons/issues/77))
 - Fixed Icon Profile support in the main menu

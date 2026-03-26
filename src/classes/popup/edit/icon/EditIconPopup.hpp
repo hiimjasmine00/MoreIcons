@@ -45,6 +45,7 @@ protected:
     void onNextPage(cocos2d::CCObject* sender);
     void onLoadState(cocos2d::CCObject* sender);
     void onSaveState(cocos2d::CCObject* sender);
+    geode::Result<> saveEditor(geode::ZStringView name);
     void addFrame(geode::Ref<cocos2d::CCSpriteFrame>&& frame);
     void eraseFrame();
     void onPieceImport(cocos2d::CCObject* sender);
@@ -54,6 +55,7 @@ protected:
     void onPlist(cocos2d::CCObject* sender);
     void onPreset(cocos2d::CCObject* sender);
     void onSave(cocos2d::CCObject* sender);
+    geode::Result<> saveIcon(geode::ZStringView name);
     void createControls(const cocos2d::CCPoint& pos, const char* text, std::string&& id, int offset);
     void updateControl(int offset, float value, bool slider, bool input, bool definition);
     void updateControls();

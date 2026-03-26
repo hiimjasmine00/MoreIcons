@@ -41,7 +41,7 @@ bool MultiControl::init(
 
     m_menu = CCMenu::create();
     m_menu->setPosition({ 0.0f, 0.0f });
-    m_menu->setContentSize({ 170.0f, 30.0f });
+    m_menu->setContentSize({ m_slider->m_groove->getTextureRect().size.width * sliderScale, 30.0f });
     m_menu->ignoreAnchorPointForPosition(false);
     m_menu->setLayout(RowLayout::create()->setAutoScale(false), false);
     m_menu->setID("control-menu");

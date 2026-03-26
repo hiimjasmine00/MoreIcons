@@ -145,7 +145,7 @@ bool Load::doesExist(const std::filesystem::path& path) {
 }
 
 #ifdef GEODE_IS_ANDROID
-bool Load::existsInZip(const std::string& path) {
+bool existsInZip(const std::string& path) {
     return apkFile->fileList.contains(path);
 }
 #endif

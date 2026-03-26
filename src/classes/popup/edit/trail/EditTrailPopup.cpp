@@ -2,6 +2,7 @@
 #include "../IconButton.hpp"
 #include "../IconPresetPopup.hpp"
 #include "../ImageRenderer.hpp"
+#include "../SaveIconPopup.hpp"
 #include "../../../../MoreIcons.hpp"
 #include "../../../../utils/Defaults.hpp"
 #include "../../../../utils/Filesystem.hpp"
@@ -10,7 +11,6 @@
 #include "../../../../utils/Load.hpp"
 #include "../../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
-#include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/file.hpp>
 #include <MoreIcons.hpp>
 
@@ -27,26 +27,17 @@ EditTrailPopup* EditTrailPopup::create() {
 }
 
 bool EditTrailPopup::init() {
-    if (!BasePopup::init(350.0f, 180.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
+    if (!BasePopup::init(350.0f, 135.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("EditTrailPopup");
     setTitle("Trail Editor");
     m_title->setID("edit-trail-title");
 
     m_streak = CCSprite::create();
-    m_streak->setPosition({ 175.0f, 120.0f });
+    m_streak->setPosition({ 175.0f, 75.0f });
     m_streak->setRotation(-90.0f);
     m_streak->setID("streak-preview");
     m_mainLayer->addChild(m_streak);
-
-    auto nameInput = TextInput::create(300.0f, "Name");
-    nameInput->setPosition({ 175.0f, 75.0f });
-    nameInput->setFilter("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-. ");
-    nameInput->setMaxCharCount(100);
-    nameInput->setID("text-input");
-    m_mainLayer->addChild(nameInput);
-
-    m_nameInput = nameInput->getInputNode()->m_textField;
 
     auto bottomMenu = CCMenu::create();
     bottomMenu->setPosition({ 175.0f, 30.0f });
@@ -110,23 +101,19 @@ void EditTrailPopup::onPreset(CCObject* sender) {
 }
 
 void EditTrailPopup::onSave(CCObject* sender) {
-    auto iconName = MoreIcons::getText(m_nameInput);
-    if (iconName.empty()) return Notify::info("Please enter a name.");
-
-    m_pendingPath = MoreIcons::getIconStem(iconName, IconType::Special);
-    if (Filesystem::doesExist(m_pendingPath)) {
-        auto alert = FLAlertLayer::create(
-            this,
-            "Existing Trail",
-            fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
-            "No",
-            "Yes",
-            350.0f
-        );
-        alert->setTag(0);
-        alert->show();
-    }
-    else saveTrail();
+    SaveIconPopup::create(
+        IconType::Special, false,
+        [this](ZStringView name) {
+            m_pendingPath = MoreIcons::getIconStem(name, IconType::Special);
+            return Filesystem::doesExist(m_pendingPath);
+        },
+        [this](ZStringView name) {
+            return saveTrail(name);
+        },
+        [this] {
+            m_pendingPath.clear();
+        }
+    )->show();
 }
 
 void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
@@ -140,9 +127,9 @@ void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
     else if (textureRes.isErr()) Notify::error(textureRes.unwrapErr());
 }
 
-void EditTrailPopup::saveTrail() {
-    if (auto res = file::createDirectoryAll(m_pendingPath); res.isErr()) {
-        return Notify::error(res.unwrapErr());
+Result<> EditTrailPopup::saveTrail(ZStringView name) {
+    if (!Filesystem::doesExist(m_pendingPath)) {
+        GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
     }
 
     auto sprite = CCSprite::createWithTexture(m_streak->getTexture());
@@ -150,19 +137,17 @@ void EditTrailPopup::saveTrail() {
     sprite->setBlendFunc({ GL_ONE, GL_ZERO });
     auto image = ImageRenderer::getImage(sprite);
     sprite->release();
-    auto imageRes = texpack::toPNG(image);
-    if (imageRes.isErr()) {
-        return Notify::error("Failed to encode image: {}", imageRes.unwrapErr());
-    }
+
+    GEODE_UNWRAP_INTO(auto imageData, texpack::toPNG(image).mapErr([](std::string err) {
+        return fmt::format("Failed to encode image: {}", err);
+    }));
 
     auto trailPath = m_pendingPath / L("trail.png");
-    if (auto res = file::writeBinary(trailPath, imageRes.unwrap()); res.isErr()) {
-        return Notify::error("Failed to save image: {}", res.unwrapErr());
-    }
+    GEODE_UNWRAP(file::writeBinary(trailPath, imageData).mapErr([](std::string err) {
+        return fmt::format("Failed to save image: {}", err);
+    }));
 
     auto iconPath = m_iconButton->saveIcon(m_pendingPath);
-
-    auto name = MoreIcons::getText(m_nameInput);
 
     if (auto icon = more_icons::getIcon(name, IconType::Special)) {
         if (!iconPath.empty() && icon->getIcon().empty()) {
@@ -176,27 +161,21 @@ void EditTrailPopup::saveTrail() {
         more_icons::addTrail(name, name, std::move(trailPath), std::move(jsonPath), std::move(iconPath));
     }
 
-    MoreIcons::updateGarageAndNotify(fmt::format("{} saved!", name));
+    return Ok();
 }
 
 void EditTrailPopup::onClose(CCObject* sender) {
-    if (!m_hasChanged && MoreIcons::getText(m_nameInput).empty()) return close();
-    auto alert = FLAlertLayer::create(
+    if (!m_hasChanged) return close();
+    FLAlertLayer::create(
         this,
         "Exit Trail Editor",
         "Are you sure you want to <cy>exit</c> the <cg>trail editor</c>?\n<cr>All unsaved changes will be lost!</c>",
         "No",
         "Yes",
         350.0f
-    );
-    alert->setTag(1);
-    alert->show();
+    )->show();
 }
 
 void EditTrailPopup::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
-    if (!btn2) return;
-    switch (layer->getTag()) {
-        case 0: saveTrail(); break;
-        case 1: close(); break;
-    }
+    if (btn2) close();
 }

@@ -322,51 +322,55 @@ void EditDeathEffectPopup::onSaveState(CCObject* sender) {
             m_pendingPath = MoreIcons::getEditorDir(IconType::DeathEffect) / Filesystem::strWide(name);
             return Filesystem::doesExist(m_pendingPath);
         },
-        [this](ZStringView name) -> Result<> {
-            if (!Filesystem::doesExist(m_pendingPath)) {
-                GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
-            }
-
-            GEODE_UNWRAP(file::writeString(m_pendingPath / L("state.json"), matjson::makeObject({
-                { std::string("definitions", 11), matjson::Value(m_definitions) }
-            }).dump()).mapErr([](std::string err) {
-                return fmt::format("Failed to save state: {}", err);
-            }));
-
-            texpack::Packer packer;
-            for (size_t i = 0; i < m_frames.size(); ++i) {
-                auto sprite = CCSprite::createWithSpriteFrame(m_frames[i]);
-                sprite->setAnchorPoint({ 0.0f, 0.0f });
-                sprite->setBlendFunc({ GL_ONE, GL_ZERO });
-                packer.frame(fmt::format("effect_{:03}.png", i + 1), ImageRenderer::getImage(sprite));
-                sprite->release();
-            }
-
-            GEODE_UNWRAP(ImageRenderer::save(packer, m_pendingPath / L("effect.png"), m_pendingPath / L("effect.plist"), "effect.png"));
-
-            if (auto texture = m_iconButton->getIconTexture()) {
-                auto iconSprite = CCSprite::createWithTexture(texture);
-                iconSprite->setAnchorPoint({ 0.0f, 0.0f });
-                iconSprite->setBlendFunc({ GL_ONE, GL_ZERO });
-                auto iconImage = ImageRenderer::getImage(iconSprite);
-                iconSprite->release();
-
-                GEODE_UNWRAP_INTO(auto iconData, texpack::toPNG(iconImage).mapErr([](std::string err) {
-                    return fmt::format("Failed to encode icon: {}", err);
-                }));
-
-                GEODE_UNWRAP(file::writeBinary(m_pendingPath / L("icon.png"), iconData).mapErr([](std::string err) {
-                    return fmt::format("Failed to save icon: {}", err);
-                }));
-            }
-
-            m_hasChanged = false;
-            return Ok();
+        [this](ZStringView name) {
+            return saveEditor(name);
         },
         [this] {
             m_pendingPath.clear();
         }
     )->show();
+}
+
+Result<> EditDeathEffectPopup::saveEditor(ZStringView name) {
+    if (!Filesystem::doesExist(m_pendingPath)) {
+        GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
+    }
+
+    GEODE_UNWRAP(file::writeString(m_pendingPath / L("state.json"), matjson::makeObject({
+        { std::string("definitions", 11), matjson::Value(m_definitions) }
+    }).dump()).mapErr([](std::string err) {
+        return fmt::format("Failed to save state: {}", err);
+    }));
+
+    texpack::Packer packer;
+    for (size_t i = 0; i < m_frames.size(); ++i) {
+        auto sprite = CCSprite::createWithSpriteFrame(m_frames[i]);
+        sprite->setAnchorPoint({ 0.0f, 0.0f });
+        sprite->setBlendFunc({ GL_ONE, GL_ZERO });
+        packer.frame(fmt::format("effect_{:03}.png", i + 1), ImageRenderer::getImage(sprite));
+        sprite->release();
+    }
+
+    GEODE_UNWRAP(ImageRenderer::save(packer, m_pendingPath / L("effect.png"), m_pendingPath / L("effect.plist"), "effect.png"));
+
+    if (auto texture = m_iconButton->getIconTexture()) {
+        auto iconSprite = CCSprite::createWithTexture(texture);
+        iconSprite->setAnchorPoint({ 0.0f, 0.0f });
+        iconSprite->setBlendFunc({ GL_ONE, GL_ZERO });
+        auto iconImage = ImageRenderer::getImage(iconSprite);
+        iconSprite->release();
+
+        GEODE_UNWRAP_INTO(auto iconData, texpack::toPNG(iconImage).mapErr([](std::string err) {
+            return fmt::format("Failed to encode icon: {}", err);
+        }));
+
+        GEODE_UNWRAP(file::writeBinary(m_pendingPath / L("icon.png"), iconData).mapErr([](std::string err) {
+            return fmt::format("Failed to save icon: {}", err);
+        }));
+    }
+
+    m_hasChanged = false;
+    return Ok();
 }
 
 void EditDeathEffectPopup::onPNG(CCObject* sender) {
@@ -441,81 +445,8 @@ void EditDeathEffectPopup::onSave(CCObject* sender) {
             m_pendingPath = MoreIcons::getIconStem(name, IconType::DeathEffect);
             return Filesystem::doesExist(m_pendingPath);
         },
-        [this](ZStringView name) -> Result<> {
-            if (!Filesystem::doesExist(m_pendingPath)) {
-                GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
-            }
-
-            std::array<texpack::Packer, 3> packers = {};
-            std::array pngs = {
-                m_pendingPath / L("effect-uhd.png"),
-                m_pendingPath / L("effect-hd.png"),
-                m_pendingPath / L("effect.png")
-            };
-            std::array plists = {
-                m_pendingPath / L("effect-uhd.plist"),
-                m_pendingPath / L("effect-hd.plist"),
-                m_pendingPath / L("effect.plist")
-            };
-            auto scaleFactor = Get::director->getContentScaleFactor();
-            int index;
-            if (scaleFactor >= 4.0f) index = 0;
-            else if (scaleFactor >= 2.0f) index = 1;
-            else index = 2;
-            std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
-            for (size_t i = 0; i < m_frames.size(); i++) {
-                auto joinedName = fmt::format("effect_{:03}.png", i + 1);
-                auto frame = m_frames[i].data();
-                auto& definition = m_definitions[i];
-                for (int i = 0; i < 3; i++) {
-                    auto node = CCNode::create();
-                    node->setScale(scales[i]);
-                    node->setAnchorPoint({ 0.0f, 0.0f });
-                    auto sprite = CCSprite::createWithSpriteFrame(frame);
-                    sprite->setPosition({ definition.offsetX, definition.offsetY });
-                    sprite->setScaleX(definition.scaleX);
-                    sprite->setScaleY(definition.scaleY);
-                    sprite->setRotationX(definition.rotationX);
-                    sprite->setRotationY(definition.rotationY);
-                    node->addChild(sprite);
-                    auto boundingSize = sprite->boundingBox().size;
-                    node->setContentSize(boundingSize + CCSize { std::abs(definition.offsetX * 2.0f), std::abs(definition.offsetY * 2.0f) });
-                    sprite->setPosition(node->getContentSize() / 2.0f + sprite->getPosition());
-                    sprite->setBlendFunc({ GL_ONE, GL_ZERO });
-                    packers[i].frame(joinedName, ImageRenderer::getImage(node));
-                    node->release();
-                    sprite->release();
-                }
-            }
-
-            GEODE_UNWRAP(ImageRenderer::save(packers[0], pngs[0], plists[0], "effect-uhd.png").mapErr([](std::string err) {
-                return fmt::format("Failed to save UHD effect: {}", err);
-            }));
-
-            GEODE_UNWRAP(ImageRenderer::save(packers[1], pngs[1], plists[1], "effect-hd.png").mapErr([](std::string err) {
-                return fmt::format("Failed to save HD effect: {}", err);
-            }));
-
-            GEODE_UNWRAP(ImageRenderer::save(packers[2], pngs[2], plists[2], "effect.png").mapErr([](std::string err) {
-                return fmt::format("Failed to save SD effect: {}", err);
-            }));
-
-            auto iconPath = m_iconButton->saveIcon(m_pendingPath);
-
-            if (auto icon = more_icons::getIcon(name, IconType::DeathEffect)) {
-                if (!iconPath.empty() && icon->getIcon().empty()) {
-                    icon->setIcon(std::move(iconPath));
-                }
-                more_icons::updateIcon(icon);
-            }
-            else {
-                auto jsonPath = m_pendingPath / L("settings.json");
-                (void)file::writeString(jsonPath, Defaults::getDeathEffectInfo(0).dump());
-                more_icons::addDeathEffect(name, name, std::move(pngs[index]), std::move(plists[index]),
-                    std::move(jsonPath), std::move(iconPath), Get::director->getLoadedTextureQuality());
-            }
-
-            return Ok();
+        [this](ZStringView name) {
+            return saveEffect(name);
         },
         [this] {
             m_pendingPath.clear();
@@ -523,16 +454,92 @@ void EditDeathEffectPopup::onSave(CCObject* sender) {
     )->show();
 }
 
+Result<> EditDeathEffectPopup::saveEffect(ZStringView name) {
+    if (!Filesystem::doesExist(m_pendingPath)) {
+        GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
+    }
+
+    std::array<texpack::Packer, 3> packers = {};
+    std::array pngs = {
+        m_pendingPath / L("effect-uhd.png"),
+        m_pendingPath / L("effect-hd.png"),
+        m_pendingPath / L("effect.png")
+    };
+    std::array plists = {
+        m_pendingPath / L("effect-uhd.plist"),
+        m_pendingPath / L("effect-hd.plist"),
+        m_pendingPath / L("effect.plist")
+    };
+    auto scaleFactor = Get::director->getContentScaleFactor();
+    int index;
+    if (scaleFactor >= 4.0f) index = 0;
+    else if (scaleFactor >= 2.0f) index = 1;
+    else index = 2;
+    std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
+    for (size_t i = 0; i < m_frames.size(); i++) {
+        auto joinedName = fmt::format("effect_{:03}.png", i + 1);
+        auto frame = m_frames[i].data();
+        auto& definition = m_definitions[i];
+        for (int i = 0; i < 3; i++) {
+            auto node = CCNode::create();
+            node->setScale(scales[i]);
+            node->setAnchorPoint({ 0.0f, 0.0f });
+            auto sprite = CCSprite::createWithSpriteFrame(frame);
+            sprite->setPosition({ definition.offsetX, definition.offsetY });
+            sprite->setScaleX(definition.scaleX);
+            sprite->setScaleY(definition.scaleY);
+            sprite->setRotationX(definition.rotationX);
+            sprite->setRotationY(definition.rotationY);
+            node->addChild(sprite);
+            auto boundingSize = sprite->boundingBox().size;
+            node->setContentSize(boundingSize + CCSize { std::abs(definition.offsetX * 2.0f), std::abs(definition.offsetY * 2.0f) });
+            sprite->setPosition(node->getContentSize() / 2.0f + sprite->getPosition());
+            sprite->setBlendFunc({ GL_ONE, GL_ZERO });
+            packers[i].frame(joinedName, ImageRenderer::getImage(node));
+            node->release();
+            sprite->release();
+        }
+    }
+
+    GEODE_UNWRAP(ImageRenderer::save(packers[0], pngs[0], plists[0], "effect-uhd.png").mapErr([](std::string err) {
+        return fmt::format("Failed to save UHD effect: {}", err);
+    }));
+
+    GEODE_UNWRAP(ImageRenderer::save(packers[1], pngs[1], plists[1], "effect-hd.png").mapErr([](std::string err) {
+        return fmt::format("Failed to save HD effect: {}", err);
+    }));
+
+    GEODE_UNWRAP(ImageRenderer::save(packers[2], pngs[2], plists[2], "effect.png").mapErr([](std::string err) {
+        return fmt::format("Failed to save SD effect: {}", err);
+    }));
+
+    auto iconPath = m_iconButton->saveIcon(m_pendingPath);
+
+    if (auto icon = more_icons::getIcon(name, IconType::DeathEffect)) {
+        if (!iconPath.empty() && icon->getIcon().empty()) {
+            icon->setIcon(std::move(iconPath));
+        }
+        more_icons::updateIcon(icon);
+    }
+    else {
+        auto jsonPath = m_pendingPath / L("settings.json");
+        (void)file::writeString(jsonPath, Defaults::getDeathEffectInfo(0).dump());
+        more_icons::addDeathEffect(name, name, std::move(pngs[index]), std::move(plists[index]),
+            std::move(jsonPath), std::move(iconPath), Get::director->getLoadedTextureQuality());
+    }
+
+    return Ok();
+}
+
 void EditDeathEffectPopup::createControls(const CCPoint& pos, const char* text, std::string&& id, int offset) {
     auto def = offset == 4 || offset == 5 ? 1.0f : 0.0f;
     auto min = offset == 0 || offset == 1 ? -20.0f : offset == 4 || offset == 5 ? -10.0f : 0.0f;
     auto max = offset == 0 || offset == 1 ? 20.0f : offset == 4 || offset == 5 ? 10.0f : 360.0f;
-    int decimals = offset != 2 && offset != 3;
 
     auto multiControl = MultiControl::create([this, offset](float value) {
         reinterpret_cast<float*>(m_definition)[offset] = value;
         updateTargets();
-    }, text, def, min, max, def, decimals, 0.75f, 60.0f);
+    }, text, def, min, max, def, 3, 0.75f, 80.0f);
     multiControl->setPosition(pos);
     multiControl->setID(std::move(id));
     m_mainLayer->addChild(multiControl);
@@ -543,7 +550,6 @@ void EditDeathEffectPopup::createControls(const CCPoint& pos, const char* text, 
 
     auto menu = multiControl->getMenu();
     menu->setPosition({ 0.0f, 10.0f });
-    menu->setContentSize({ 350.0f, 30.0f });
     menu->updateLayout();
 
     m_controls[offset] = multiControl;

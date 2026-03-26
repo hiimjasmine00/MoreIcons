@@ -301,38 +301,42 @@ void EditIconPopup::onSaveState(CCObject* sender) {
             m_pendingPath = MoreIcons::getEditorDir(m_iconType) / Filesystem::strWide(name);
             return Filesystem::doesExist(m_pendingPath);
         },
-        [this](ZStringView name) -> Result<> {
-            if (!Filesystem::doesExist(m_pendingPath)) {
-                GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
-            }
-
-            GEODE_UNWRAP(file::writeString(m_pendingPath / L("state.json"), matjson::makeObject({
-                { "definitions"s, matjson::Value(m_definitions) },
-                { "main-color"s, matjson::Value(m_mainColor) },
-                { "secondary-color"s, matjson::Value(m_secondaryColor) },
-                { "glow-color"s, matjson::Value(m_glowColor) }
-            }).dump()).mapErr([](std::string err) {
-                return fmt::format("Failed to save state: {}", err);
-            }));
-
-            texpack::Packer packer;
-            for (auto& [frameName, frame] : m_frames) {
-                auto sprite = CCSprite::createWithSpriteFrame(frame);
-                sprite->setAnchorPoint({ 0.0f, 0.0f });
-                sprite->setBlendFunc({ GL_ONE, GL_ZERO });
-                packer.frame(fmt::format("icon{}.png", frameName), ImageRenderer::getImage(sprite));
-                sprite->release();
-            }
-
-            GEODE_UNWRAP(ImageRenderer::save(packer, m_pendingPath / L("icon.png"), m_pendingPath / L("icon.plist"), "icon.png"));
-
-            m_hasChanged = false;
-            return Ok();
+        [this](ZStringView name) {
+            return saveEditor(name);
         },
         [this] {
             m_pendingPath.clear();
         }
     )->show();
+}
+
+Result<> EditIconPopup::saveEditor(ZStringView name) {
+    if (!Filesystem::doesExist(m_pendingPath)) {
+        GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
+    }
+
+    GEODE_UNWRAP(file::writeString(m_pendingPath / L("state.json"), matjson::makeObject({
+        { "definitions"s, matjson::Value(m_definitions) },
+        { "main-color"s, matjson::Value(m_mainColor) },
+        { "secondary-color"s, matjson::Value(m_secondaryColor) },
+        { "glow-color"s, matjson::Value(m_glowColor) }
+    }).dump()).mapErr([](std::string err) {
+        return fmt::format("Failed to save state: {}", err);
+    }));
+
+    texpack::Packer packer;
+    for (auto& [frameName, frame] : m_frames) {
+        auto sprite = CCSprite::createWithSpriteFrame(frame);
+        sprite->setAnchorPoint({ 0.0f, 0.0f });
+        sprite->setBlendFunc({ GL_ONE, GL_ZERO });
+        packer.frame(fmt::format("icon{}.png", frameName), ImageRenderer::getImage(sprite));
+        sprite->release();
+    }
+
+    GEODE_UNWRAP(ImageRenderer::save(packer, m_pendingPath / L("icon.png"), m_pendingPath / L("icon.plist"), "icon.png"));
+
+    m_hasChanged = false;
+    return Ok();
 }
 
 void EditIconPopup::addFrame(Ref<CCSpriteFrame>&& frame) {
@@ -473,62 +477,8 @@ void EditIconPopup::onSave(CCObject* sender) {
             return Filesystem::doesExist(m_plists[0]) || Filesystem::doesExist(m_plists[1]) || Filesystem::doesExist(m_plists[2]) ||
                 Filesystem::doesExist(m_pngs[0]) || Filesystem::doesExist(m_pngs[1]) || Filesystem::doesExist(m_pngs[2]);
         },
-        [this](ZStringView name) -> Result<> {
-            std::array<texpack::Packer, 3> packers = {};
-            auto scaleFactor = Get::director->getContentScaleFactor();
-            int index;
-            if (scaleFactor >= 4.0f) index = 0;
-            else if (scaleFactor >= 2.0f) index = 1;
-            else index = 2;
-            std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
-            for (auto& [frameName, frameRef] : m_frames) {
-                auto it = m_definitions.find(frameName);
-                if (it == m_definitions.end()) continue;
-
-                auto& definition = it->second;
-                auto joinedName = fmt::format("{}{}.png", name, frameName);
-                auto frame = frameRef.data();
-                for (int i = 0; i < 3; i++) {
-                    auto node = CCNode::create();
-                    node->setScale(scales[i]);
-                    node->setAnchorPoint({ 0.0f, 0.0f });
-                    auto sprite = CCSprite::createWithSpriteFrame(frame);
-                    sprite->setPosition({ definition.offsetX, definition.offsetY });
-                    sprite->setScaleX(definition.scaleX);
-                    sprite->setScaleY(definition.scaleY);
-                    sprite->setRotationX(definition.rotationX);
-                    sprite->setRotationY(definition.rotationY);
-                    node->addChild(sprite);
-                    auto boundingSize = sprite->boundingBox().size;
-                    node->setContentSize(boundingSize + CCSize { std::abs(definition.offsetX * 2.0f), std::abs(definition.offsetY * 2.0f) });
-                    sprite->setPosition(node->getContentSize() / 2.0f + sprite->getPosition());
-                    sprite->setBlendFunc({ GL_ONE, GL_ZERO });
-                    packers[i].frame(joinedName, ImageRenderer::getImage(node));
-                    node->release();
-                    sprite->release();
-                }
-            }
-
-            GEODE_UNWRAP(ImageRenderer::save(packers[0], m_pngs[0], m_plists[0], fmt::format("icons/{}-uhd.png", name)).mapErr([](std::string err) {
-                return fmt::format("Failed to save UHD icon: {}", err);
-            }));
-            GEODE_UNWRAP(ImageRenderer::save(packers[1], m_pngs[1], m_plists[1], fmt::format("icons/{}-hd.png", name)).mapErr([](std::string err) {
-                return fmt::format("Failed to save HD icon: {}", err);
-            }));
-            GEODE_UNWRAP(ImageRenderer::save(packers[2], m_pngs[2], m_plists[2], fmt::format("icons/{}.png", name)).mapErr([](std::string err) {
-                return fmt::format("Failed to save SD icon: {}", err);
-            }));
-
-            auto type = m_iconType;
-            if (auto icon = more_icons::getIcon(name, type)) {
-                more_icons::updateIcon(icon);
-            }
-            else {
-                more_icons::addIcon(name, name, type,
-                    std::move(m_pngs[index]), std::move(m_plists[index]), Get::director->getLoadedTextureQuality());
-            }
-
-            return Ok();
+        [this](ZStringView name) {
+            return saveIcon(name);
         },
         [this] {
             m_pngs[0].clear();
@@ -541,16 +491,73 @@ void EditIconPopup::onSave(CCObject* sender) {
     )->show();
 }
 
+Result<> EditIconPopup::saveIcon(ZStringView name) {
+    std::array<texpack::Packer, 3> packers = {};
+    auto scaleFactor = Get::director->getContentScaleFactor();
+    int index;
+    if (scaleFactor >= 4.0f) index = 0;
+    else if (scaleFactor >= 2.0f) index = 1;
+    else index = 2;
+    std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
+    for (auto& [frameName, frameRef] : m_frames) {
+        auto it = m_definitions.find(frameName);
+        if (it == m_definitions.end()) continue;
+
+        auto& definition = it->second;
+        auto joinedName = fmt::format("{}{}.png", name, frameName);
+        auto frame = frameRef.data();
+        for (int i = 0; i < 3; i++) {
+            auto node = CCNode::create();
+            node->setScale(scales[i]);
+            node->setAnchorPoint({ 0.0f, 0.0f });
+            auto sprite = CCSprite::createWithSpriteFrame(frame);
+            sprite->setPosition({ definition.offsetX, definition.offsetY });
+            sprite->setScaleX(definition.scaleX);
+            sprite->setScaleY(definition.scaleY);
+            sprite->setRotationX(definition.rotationX);
+            sprite->setRotationY(definition.rotationY);
+            node->addChild(sprite);
+            auto boundingSize = sprite->boundingBox().size;
+            node->setContentSize(boundingSize + CCSize { std::abs(definition.offsetX * 2.0f), std::abs(definition.offsetY * 2.0f) });
+            sprite->setPosition(node->getContentSize() / 2.0f + sprite->getPosition());
+            sprite->setBlendFunc({ GL_ONE, GL_ZERO });
+            packers[i].frame(joinedName, ImageRenderer::getImage(node));
+            node->release();
+            sprite->release();
+        }
+    }
+
+    GEODE_UNWRAP(ImageRenderer::save(packers[0], m_pngs[0], m_plists[0], fmt::format("icons/{}-uhd.png", name)).mapErr([](std::string err) {
+        return fmt::format("Failed to save UHD icon: {}", err);
+    }));
+    GEODE_UNWRAP(ImageRenderer::save(packers[1], m_pngs[1], m_plists[1], fmt::format("icons/{}-hd.png", name)).mapErr([](std::string err) {
+        return fmt::format("Failed to save HD icon: {}", err);
+    }));
+    GEODE_UNWRAP(ImageRenderer::save(packers[2], m_pngs[2], m_plists[2], fmt::format("icons/{}.png", name)).mapErr([](std::string err) {
+        return fmt::format("Failed to save SD icon: {}", err);
+    }));
+
+    auto type = m_iconType;
+    if (auto icon = more_icons::getIcon(name, type)) {
+        more_icons::updateIcon(icon);
+    }
+    else {
+        more_icons::addIcon(name, name, type,
+            std::move(m_pngs[index]), std::move(m_plists[index]), Get::director->getLoadedTextureQuality());
+    }
+
+    return Ok();
+}
+
 void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::string&& id, int offset) {
     auto def = offset == 4 || offset == 5 ? 1.0f : 0.0f;
     auto min = offset == 0 || offset == 1 ? -20.0f : offset == 4 || offset == 5 ? -10.0f : 0.0f;
     auto max = offset == 0 || offset == 1 ? 20.0f : offset == 4 || offset == 5 ? 10.0f : 360.0f;
-    int decimals = offset != 2 && offset != 3;
 
     auto multiControl = MultiControl::create([this, offset](float value) {
         reinterpret_cast<float*>(m_definition)[offset] = value;
         updateTargets();
-    }, text, def, min, max, def, decimals, 0.75f, 60.0f);
+    }, text, def, min, max, def, 3, 0.75f, 80.0f);
     multiControl->setPosition(pos);
     multiControl->setID(std::move(id));
     m_mainLayer->addChild(multiControl);
@@ -561,7 +568,6 @@ void EditIconPopup::createControls(const CCPoint& pos, const char* text, std::st
 
     auto menu = multiControl->getMenu();
     menu->setPosition({ 0.0f, 10.0f });
-    menu->setContentSize({ 350.0f, 30.0f });
     menu->updateLayout();
 
     m_controls[offset] = multiControl;

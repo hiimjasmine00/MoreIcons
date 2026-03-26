@@ -13,7 +13,6 @@ protected:
     cocos2d::CCMenu* m_frameMenu;
     cocos2d::CCSprite* m_streak;
     cocos2d::CCSprite* m_selectSprite;
-    cocos2d::CCTextFieldTTF* m_nameInput;
     IconButton* m_iconButton;
     int m_selectedFrame = 0;
     int m_page = 0;
@@ -33,7 +32,7 @@ protected:
     void onPreset(cocos2d::CCObject* sender);
     void updateWithPath(std::filesystem::path path, int count);
     void onSave(cocos2d::CCObject* sender);
-    void saveShipFire();
+    geode::Result<> saveShipFire(geode::ZStringView name);
     void onClose(cocos2d::CCObject* sender) override;
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override;
 public:

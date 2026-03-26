@@ -9,7 +9,6 @@ protected:
     geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
     std::filesystem::path m_pendingPath;
     cocos2d::CCSprite* m_streak;
-    cocos2d::CCTextFieldTTF* m_nameInput;
     IconButton* m_iconButton;
     bool m_hasChanged = false;
 
@@ -18,7 +17,7 @@ protected:
     void onPreset(cocos2d::CCObject* sender);
     void onSave(cocos2d::CCObject* sender);
     void updateWithPath(const std::filesystem::path& path);
-    void saveTrail();
+    geode::Result<> saveTrail(geode::ZStringView name);
     void onClose(cocos2d::CCObject* sender) override;
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override;
 public:

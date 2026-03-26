@@ -53,9 +53,6 @@ namespace Load {
     geode::Result<RGBAImage> readPNG(const std::filesystem::path& path, bool premultiplyAlpha);
     geode::Result<matjson::Value> readPlist(const std::filesystem::path& path);
     bool doesExist(const std::filesystem::path& path);
-    #ifdef GEODE_IS_ANDROID
-    bool existsInZip(const std::string& path);
-    #endif
     geode::Result<cocos2d::CCTexture2D*> createTexture(const std::filesystem::path& path, bool premultiplyAlpha = false);
     cocos2d::CCTexture2D* createTexture(const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha = false);
     void initTexture(cocos2d::CCTexture2D* texture, const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha = false);

@@ -3,6 +3,7 @@
 #include "../IconButton.hpp"
 #include "../IconPresetPopup.hpp"
 #include "../ImageRenderer.hpp"
+#include "../SaveIconPopup.hpp"
 #include "../../../../MoreIcons.hpp"
 #include "../../../../utils/Defaults.hpp"
 #include "../../../../utils/Filesystem.hpp"
@@ -10,7 +11,6 @@
 #include "../../../../utils/Load.hpp"
 #include "../../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
-#include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/file.hpp>
 #include <MoreIcons.hpp>
 
@@ -27,36 +27,27 @@ EditShipFirePopup* EditShipFirePopup::create() {
 }
 
 bool EditShipFirePopup::init() {
-    if (!BasePopup::init(400.0f, 200.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
+    if (!BasePopup::init(400.0f, 155.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("EditShipFirePopup");
     setTitle("Ship Fire Editor");
     m_title->setID("edit-ship-fire-title");
 
     m_streak = CCSprite::create();
-    m_streak->setPosition({ 200.0f, 120.0f });
+    m_streak->setPosition({ 200.0f, 75.0f });
     m_streak->setRotation(-90.0f);
     m_streak->setID("streak-preview");
     m_mainLayer->addChild(m_streak);
 
-    auto nameInput = TextInput::create(300.0f, "Name");
-    nameInput->setPosition({ 200.0f, 90.0f });
-    nameInput->setFilter("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-. ");
-    nameInput->setMaxCharCount(100);
-    nameInput->setID("text-input");
-    m_mainLayer->addChild(nameInput);
-
-    m_nameInput = nameInput->getInputNode()->m_textField;
-
     auto framesBackground = NineSlice::create("square02_001.png", { 0.0f, 0.0f, 80.0f, 80.0f });
-    framesBackground->setPosition({ 200.0f, 150.0f });
+    framesBackground->setPosition({ 200.0f, 105.0f });
     framesBackground->setContentSize({ 300.0f, 30.0f });
     framesBackground->setOpacity(105);
     framesBackground->setID("frames-background");
     m_mainLayer->addChild(framesBackground);
 
     m_frameMenu = CCMenu::create();
-    m_frameMenu->setPosition({ 200.0f, 150.0f });
+    m_frameMenu->setPosition({ 200.0f, 105.0f });
     m_frameMenu->setContentSize({ 300.0f, 30.0f });
     m_frameMenu->ignoreAnchorPointForPosition(false);
     m_frameMenu->setLayout(RowLayout::create()->setAxisAlignment(AxisAlignment::Even), false);
@@ -70,7 +61,7 @@ bool EditShipFirePopup::init() {
     auto prevSprite = CCSprite::createWithSpriteFrameName("GJ_arrow_01_001.png");
     prevSprite->setScale(0.5f);
     auto prevButton = CCMenuItemSpriteExtra::create(prevSprite, this, menu_selector(EditShipFirePopup::onPrev));
-    prevButton->setPosition({ 40.0f, 150.0f });
+    prevButton->setPosition({ 40.0f, 105.0f });
     prevButton->setID("prev-button");
     m_buttonMenu->addChild(prevButton);
 
@@ -78,7 +69,7 @@ bool EditShipFirePopup::init() {
     nextSprite->setScale(0.5f);
     nextSprite->setFlipX(true);
     auto nextButton = CCMenuItemSpriteExtra::create(nextSprite, this, menu_selector(EditShipFirePopup::onNext));
-    nextButton->setPosition({ 360.0f, 150.0f });
+    nextButton->setPosition({ 360.0f, 105.0f });
     nextButton->setID("next-button");
     m_buttonMenu->addChild(nextButton);
 
@@ -356,30 +347,24 @@ void EditShipFirePopup::updateWithPath(std::filesystem::path path, int count) {
 void EditShipFirePopup::onSave(CCObject* sender) {
     if (m_frameButtons.empty()) return Notify::info("Please add at least one frame.");
 
-    auto iconName = MoreIcons::getText(m_nameInput);
-    if (iconName.empty()) return Notify::info("Please enter a name.");
-
-    m_pendingPath = MoreIcons::getIconStem(iconName, IconType::ShipFire);
-    if (Filesystem::doesExist(m_pendingPath)) {
-        auto alert = FLAlertLayer::create(
-            this,
-            "Existing Ship Fire",
-            fmt::format("<cy>{}</c> already exists.\nDo you want to <cr>overwrite</c> it?", iconName),
-            "No",
-            "Yes",
-            350.0f
-        );
-        alert->setTag(0);
-        alert->show();
-    }
-    else saveShipFire();
+    SaveIconPopup::create(
+        IconType::ShipFire, false,
+        [this](ZStringView name) {
+            m_pendingPath = MoreIcons::getIconStem(name, IconType::ShipFire);
+            return Filesystem::doesExist(m_pendingPath);
+        },
+        [this](ZStringView name) {
+            return saveShipFire(name);
+        },
+        [this] {
+            m_pendingPath.clear();
+        }
+    )->show();
 }
 
-void EditShipFirePopup::saveShipFire() {
-    auto name = MoreIcons::getText(m_nameInput);
-
-    if (auto res = file::createDirectoryAll(m_pendingPath); res.isErr()) {
-        return Notify::error(res.unwrapErr());
+Result<> EditShipFirePopup::saveShipFire(ZStringView name) {
+    if (!Filesystem::doesExist(m_pendingPath)) {
+        GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
     }
 
     for (size_t i = 0; i < m_frameButtons.size(); i++) {
@@ -388,13 +373,12 @@ void EditShipFirePopup::saveShipFire() {
         sprite->setBlendFunc({ GL_ONE, GL_ZERO });
         auto image = ImageRenderer::getImage(sprite);
         sprite->release();
-        auto imageRes = texpack::toPNG(image);
-        if (imageRes.isErr()) {
-            return Notify::error("Failed to encode fire_{:03}.png: {}", i + 1, imageRes.unwrapErr());
-        }
-        if (auto res = file::writeBinary(m_pendingPath / fmt::format(L("fire_{:03}.png"), i + 1), imageRes.unwrap()); res.isErr()) {
-            return Notify::error("Failed to save image: {}", res.unwrapErr());
-        }
+        GEODE_UNWRAP_INTO(auto imageData, texpack::toPNG(image).mapErr([i](std::string err) {
+            return fmt::format("Failed to encode fire_{:03}.png: {}", i + 1, err);
+        }));
+        GEODE_UNWRAP(file::writeBinary(m_pendingPath / fmt::format(L("fire_{:03}.png"), i + 1), imageData).mapErr([](std::string err) {
+            return fmt::format("Failed to save image: {}", err);
+        }));
     }
 
     auto iconPath = m_iconButton->saveIcon(m_pendingPath);
@@ -411,27 +395,21 @@ void EditShipFirePopup::saveShipFire() {
         more_icons::addShipFire(name, name, m_pendingPath / L("fire_001.png"), std::move(jsonPath), std::move(iconPath), m_frameButtons.size());
     }
 
-    MoreIcons::updateGarageAndNotify(fmt::format("{} saved!", name));
+    return Ok();
 }
 
 void EditShipFirePopup::onClose(CCObject* sender) {
-    if (!m_hasChanged && MoreIcons::getText(m_nameInput).empty()) return close();
-    auto alert = FLAlertLayer::create(
+    if (!m_hasChanged) return close();
+    FLAlertLayer::create(
         this,
         "Exit Ship Fire Editor",
         "Are you sure you want to <cy>exit</c> the <cg>ship fire editor</c>?\n<cr>All unsaved changes will be lost!</c>",
         "No",
         "Yes",
         350.0f
-    );
-    alert->setTag(1);
-    alert->show();
+    )->show();
 }
 
 void EditShipFirePopup::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
-    if (!btn2) return;
-    switch (layer->getTag()) {
-        case 0: saveShipFire(); break;
-        case 1: close(); break;
-    }
+    if (btn2) close();
 }

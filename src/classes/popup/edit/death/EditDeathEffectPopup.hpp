@@ -38,10 +38,12 @@ protected:
     void onPieceRemove(cocos2d::CCObject* sender);
     void onLoadState(cocos2d::CCObject* sender);
     void onSaveState(cocos2d::CCObject* sender);
+    geode::Result<> saveEditor(geode::ZStringView name);
     void onPNG(cocos2d::CCObject* sender);
     void onPlist(cocos2d::CCObject* sender);
     void onPreset(cocos2d::CCObject* sender);
     void onSave(cocos2d::CCObject* sender);
+    geode::Result<> saveEffect(geode::ZStringView name);
     void createControls(const cocos2d::CCPoint& pos, const char* text, std::string&& id, int offset);
     void updateControls();
     CCMenuItemSpriteExtra* addPieceButton(int index, cocos2d::CCSpriteFrame* frame);
