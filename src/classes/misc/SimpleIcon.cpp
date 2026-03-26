@@ -7,6 +7,8 @@
 #include <Geode/loader/Log.hpp>
 
 using namespace geode::prelude;
+using namespace std::string_literals;
+using namespace std::string_view_literals;
 
 SimpleIcon* SimpleIcon::create(IconType type, std::string_view name) {
     auto ret = new SimpleIcon();
@@ -137,8 +139,8 @@ void SimpleIcon::createSimpleIcon(IconType type, std::string_view name) {
 void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
     auto spider = type == IconType::Spider;
 
-    std::string_view anim = "idle";
-    std::string_view key = spider ? "Spider" : "Robot";
+    auto anim = "idle"sv;
+    auto key = spider ? "Spider"sv : "Robot"sv;
 
     auto& definition = definitions[key];
     if (!definition.isObject()) return;
@@ -160,7 +162,7 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
 
     auto glowNode = CCNode::create();
     glowNode->setAnchorPoint({ 0.5f, 0.5f });
-    glowNode->setID(std::string("glow-node", 9));
+    glowNode->setID("glow-node"s);
     m_mainLayer->addChild(glowNode, -1);
 
     auto minSize = spider ? 13 : 12;
@@ -236,7 +238,7 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
             m_definitions.push_back(parseDefinition(container[fmt::format("{}{:03}.png", prefix, i)]));
         }
         auto looped = Json::get<std::string>(animation, "looped");
-        m_looped = !looped.empty() && looped != std::string_view("0", 1) && looped != std::string_view("false", 5);
+        m_looped = !looped.empty() && looped != "0"sv && looped != "false"sv;
         m_elapsed = 0.0f;
         scheduleUpdate();
     }

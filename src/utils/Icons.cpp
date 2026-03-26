@@ -13,6 +13,7 @@
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
+using namespace std::string_literals;
 
 std::map<int, std::map<IconType, IconInfo*>> Icons::requestedIcons;
 std::unordered_map<IconInfo*, int> Icons::loadedIcons;
@@ -106,11 +107,11 @@ namespace geode::texture_loader {
     };
 
     std::vector<Pack> getAppliedPacks()
-        GEODE_EVENT_EXPORT_CALL_NORES(&getAppliedPacks, (), std::string("geode.texture-loader/getAppliedPacks", 36));
+        GEODE_EVENT_EXPORT_CALL_NORES(&getAppliedPacks, (), "geode.texture-loader/getAppliedPacks"s);
 }
 
 void Icons::loadPacks() {
-    packs.emplace_back(std::string("More Icons", 10), std::string(), dirs::getGeodeDir(), false, false);
+    packs.emplace_back("More Icons"s, std::string(), dirs::getGeodeDir(), false, false);
     migrateTrails(std::move(Mod::get()->getConfigDir().make_preferred()) / L("trail"));
 
     for (auto& pack : texture_loader::getAppliedPacks()) {

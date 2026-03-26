@@ -18,6 +18,7 @@
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
+using namespace std::string_literals;
 
 namespace alpha::fine_outline {
     enum class PlayerIcon {
@@ -27,10 +28,10 @@ namespace alpha::fine_outline {
     };
 
     ccColor3B getColor(PlayerIcon player = PlayerIcon::SELECTED) GEODE_EVENT_EXPORT_CALL_NORES(
-        &getColor, (player), std::string("alphalaneous.fine_outline/getColor", 34));
+        &getColor, (player), "alphalaneous.fine_outline/getColor"s);
 
     void setOutlineColor(SimplePlayer* player, const ccColor3B& color) GEODE_EVENT_EXPORT_CALL_NORES(
-        &setOutlineColor, (player, color), std::string("alphalaneous.fine_outline/_setOutlineColorSimplePlayer", 54));
+        &setOutlineColor, (player, color), "alphalaneous.fine_outline/_setOutlineColorSimplePlayer"s);
 }
 
 MoreIconsPopup* MoreIconsPopup::create() {

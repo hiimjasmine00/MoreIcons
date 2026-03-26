@@ -5,7 +5,12 @@
 #include <Geode/utils/general.hpp>
 
 using namespace geode::prelude;
-using namespace std::string_literals;
+
+#ifdef GEODE_IS_ANDROID
+#define GDSTR(x) gd::string(x, sizeof(x) - 1)
+#else
+#define GDSTR(x) std::string(x, sizeof(x) - 1)
+#endif
 
 MultiControl* MultiControl::create(
     Function<void(float)> onChange, const char* text, float value, float min, float max, float def, int decimals,
@@ -52,7 +57,8 @@ bool MultiControl::init(
     m_menu->addChild(m_label);
 
     m_input = TextInput::create(inputWidth, "Num");
-    m_input->setFilter(min < 0.0f ? (decimals > 0 ? "-.0123456789"s : "-0123456789"s) : (decimals > 0 ? ".0123456789"s : "0123456789"s));
+    m_input->setFilter(min < 0.0f ?
+        (decimals > 0 ? GDSTR("-.0123456789") : GDSTR("-0123456789")) : (decimals > 0 ? GDSTR(".0123456789") : GDSTR("0123456789")));
     m_input->setMaxCharCount((int)log10f(std::max(floorf(max), 1.0f)) + 1 + decimals + (int)(decimals > 0) + (int)(min < 0.0f));
     m_input->setString(fmt::format("{:.{}f}", value, decimals));
     m_input->setDelegate(this);

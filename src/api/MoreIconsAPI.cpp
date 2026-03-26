@@ -15,6 +15,7 @@
 #include <texpack.hpp>
 
 using namespace geode::prelude;
+using namespace std::string_literals;
 
 std::map<IconType, std::vector<IconInfo>> iconsMap = [] {
     std::map<IconType, std::vector<IconInfo>> map;
@@ -554,10 +555,10 @@ void more_icons::updateIcon(IconInfo* info) {
 
 namespace alpha::fine_outline {
     void updateOutline(PlayerObject* object) GEODE_EVENT_EXPORT_CALL_NORES(
-        static_cast<void(*)(PlayerObject*)>(&updateOutline), (object), std::string("alphalaneous.fine_outline/_updateOutlinePlayerObject", 52))
+        static_cast<void(*)(PlayerObject*)>(&updateOutline), (object), "alphalaneous.fine_outline/_updateOutlinePlayerObject"s)
 
     void updateOutline(SimplePlayer* player) GEODE_EVENT_EXPORT_CALL_NORES(
-        static_cast<void(*)(SimplePlayer*)>(&updateOutline), (player), std::string("alphalaneous.fine_outline/_updateOutlineSimplePlayer", 52))
+        static_cast<void(*)(SimplePlayer*)>(&updateOutline), (player), "alphalaneous.fine_outline/_updateOutlineSimplePlayer"s)
 }
 
 void more_icons::updateSimplePlayer(SimplePlayer* player, IconInfo* info) {

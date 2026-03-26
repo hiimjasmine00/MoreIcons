@@ -22,6 +22,7 @@
 
 using namespace geode::prelude;
 using namespace jasmine::mod;
+using namespace std::string_literals;
 
 EditDeathEffectPopup* EditDeathEffectPopup::create() {
     auto ret = new EditDeathEffectPopup();
@@ -337,7 +338,7 @@ Result<> EditDeathEffectPopup::saveEditor(ZStringView name) {
     }
 
     GEODE_UNWRAP(file::writeString(m_pendingPath / L("state.json"), matjson::makeObject({
-        { std::string("definitions", 11), matjson::Value(m_definitions) }
+        { "definitions"s, matjson::Value(m_definitions) }
     }).dump()).mapErr([](std::string err) {
         return fmt::format("Failed to save state: {}", err);
     }));
