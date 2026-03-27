@@ -135,20 +135,20 @@ Result<std::vector<uint8_t>> Load::readBinary(const std::filesystem::path& path)
     return file::readBinary(path);
 }
 
-bool Load::doesExist(const std::filesystem::path& path) {
-    #ifdef GEODE_IS_ANDROID
-    auto& str = path.native();
-    if (str.starts_with("assets/")) return apkFile->fileList.contains(str);
-    #endif
-    std::error_code code;
-    return std::filesystem::exists(path, code);
-}
-
 #ifdef GEODE_IS_ANDROID
 bool existsInZip(const std::string& path) {
     return apkFile->fileList.contains(path);
 }
 #endif
+
+bool Load::doesExist(const std::filesystem::path& path) {
+    #ifdef GEODE_IS_ANDROID
+    auto& str = path.native();
+    if (str.starts_with("assets/")) return existsInZip(str);
+    #endif
+    std::error_code code;
+    return std::filesystem::exists(path, code);
+}
 
 Result<RGBAImage> Load::readPNG(const std::filesystem::path& path, bool premultiplyAlpha) {
     GEODE_UNWRAP_INTO(auto data, Load::readBinary(path).mapErr([](std::string err) {

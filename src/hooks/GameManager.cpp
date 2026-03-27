@@ -30,17 +30,13 @@ bool isFileExist(const std::string& path) {
     auto attrs = GetFileAttributesA(path.c_str());
     return (attrs != INVALID_FILE_ATTRIBUTES && (attrs & FILE_ATTRIBUTE_DIRECTORY) == 0);
     #elif defined(GEODE_IS_ANDROID)
-    if (path.starts_with("assets/")) {
-        return existsInZip(path);
+    if (path.starts_with("assets/")) return existsInZip(path);
+    auto file = fopen(path.c_str(), "r");
+    if (file) {
+        fclose(file);
+        return true;
     }
-    else {
-        auto file = fopen(path.c_str(), "r");
-        if (file) {
-            fclose(file);
-            return true;
-        }
-        return false;
-    }
+    return false;
     #else
     return Get::fileUtils->isFileExist(path);
     #endif
