@@ -12,13 +12,13 @@ class $modify(MIProfilePage, ProfilePage) {
         (void)self.setHookPriorityAfterPost("ProfilePage::loadPageFromUserInfo", "weebify.separate_dual_icons");
     }
 
-    static bool updatePlayer(CCNode* node, IconType type, bool dual) {
+    static bool updatePlayer(CCNode* node, IconInfo* info) {
         if (auto player = typeinfo_cast<SimplePlayer*>(node)) {
-            more_icons::updateSimplePlayer(player, type, dual);
+            more_icons::updateSimplePlayer(player, info);
             return true;
         }
         for (auto child : CCArrayExt<CCNode, false>(node->getChildren())) {
-            if (updatePlayer(child, type, dual)) return true;
+            if (updatePlayer(child, info)) return true;
         }
         return false;
     }
@@ -26,7 +26,7 @@ class $modify(MIProfilePage, ProfilePage) {
     static void updatePlayer(CCNode* menu, std::string_view id, IconType type, bool dual) {
         if (auto player = menu->getChildByID(id)) {
             auto tag = type == IconType::Ship ? player->getTag() : -1;
-            updatePlayer(player, tag != -1 ? (IconType)tag : type, dual);
+            updatePlayer(player, more_icons::activeIcon(tag != -1 ? (IconType)tag : type, dual));
         }
     }
 

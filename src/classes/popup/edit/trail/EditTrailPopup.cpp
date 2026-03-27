@@ -27,7 +27,7 @@ EditTrailPopup* EditTrailPopup::create() {
 }
 
 bool EditTrailPopup::init() {
-    if (!BasePopup::init(350.0f, 135.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
+    if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("EditTrailPopup");
     setTitle("Trail Editor");

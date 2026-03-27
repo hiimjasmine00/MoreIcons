@@ -89,7 +89,12 @@ void SaveIconPopup::saveIcon() {
         return Notify::error(res.unwrapErr());
     }
 
-    MoreIcons::updateGarageAndNotify(fmt::format("{} saved!", name));
+    auto notif = fmt::format("{} saved!", name);
+    if (m_editor) {
+        close();
+        Notify::success(notif);
+    }
+    else MoreIcons::updateGarageAndNotify(notif);
 }
 
 void SaveIconPopup::onClose(CCObject* sender) {

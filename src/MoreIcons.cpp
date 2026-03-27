@@ -146,7 +146,8 @@ void MoreIcons::updateGarageAndNotify(ZStringView message) {
 
     CCArrayExt<CCNode, false> children = runningScene->getChildren();
     for (auto it = children.end() - 1; it >= children.begin(); --it) {
-        if (auto basePopup = typeinfo_cast<BasePopup*>(*it)) basePopup->close();
+        // Avoid collision with mods with the same class name
+        if (auto basePopup = dynamic_cast<BasePopup*>(*it)) basePopup->close();
     }
 
     if (auto layer = runningScene->getChildByType<GJGarageLayer>(0)) {
