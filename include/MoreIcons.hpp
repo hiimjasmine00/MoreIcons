@@ -381,6 +381,7 @@ namespace more_icons {
     MI_DLL void refreshIcons() MI_EXP(refreshIcons, (),);
 }
 
+#undef MI_STRING
 #undef MI_EXPAND
 #undef MI_EXP
 #undef MI_EXP_REF
