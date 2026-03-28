@@ -77,7 +77,7 @@ class $modify(MIGameManager, GameManager) {
         for (auto hook : Icons::hooks) {
             jasmine::hook::toggle(hook, Icons::traditionalPacks);
         }
-        jasmine::hook::toggle(Icons::deathEffectHook, !Icons::traditionalPacks);
+        jasmine::hook::toggle(Icons::deathEffectHook, !Icons::preloadIcons);
     }
 
     gd::string sheetNameForIcon(int id, int type) {

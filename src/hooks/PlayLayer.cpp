@@ -20,7 +20,7 @@ class $modify(MIPlayLayer, PlayLayer) {
 
     static void onModify(ModifyBase<ModifyDerive<MIPlayLayer, PlayLayer>>& self) {
         Icons::deathEffectHook = jasmine::hook::get(
-            self.m_hooks, "PlayLayer::setupHasCompleted", !jasmine::setting::getValue<bool>("traditional-packs"));
+            self.m_hooks, "PlayLayer::setupHasCompleted", !jasmine::setting::getValue<bool>("preload-icons"));
     }
 
     void setupHasCompleted() {
