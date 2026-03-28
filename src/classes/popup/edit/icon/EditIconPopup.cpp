@@ -254,55 +254,56 @@ void EditIconPopup::onNextPage(CCObject* sender) {
 }
 
 void EditIconPopup::onLoadState(CCObject* sender) {
-    LoadEditorPopup::create(m_iconType, [this](const std::filesystem::path& directory, std::string_view name) {
-        auto stateRes = file::readJson(directory / L("state.json"));
-        if (stateRes.isErr()) return Notify::error("Failed to load {}: {}", name, stateRes.unwrapErr());
-
-        auto state = std::move(stateRes).unwrap();
-        if (!state.isObject()) return Notify::error("Failed to load {}: Expected object", name);
-
-        m_selectedPNG = directory / L("icon.png");
-        m_selectedPlist = directory / L("icon.plist");
-        if (!updateWithSelectedFiles()) return;
-
-        m_definitions = Json::get<StringMap<FrameDefinition>>(state, "definitions");
-        updateColor(1, Json::get<int>(state, "main-color", 12));
-        updateColor(2, Json::get<int>(state, "secondary-color", 12));
-        updateColor(3, Json::get<int>(state, "glow-color", 12));
-
-        auto it = m_definitions.find(m_suffix);
-        if (it != m_definitions.end()) {
-            m_definition = &it->second;
-        }
-        else {
-            m_definition = &m_definitions.emplace(m_suffix, FrameDefinition()).first->second;
-        }
-        updateControls();
-
-        for (auto& [key, definition] : m_definitions) {
-            for (auto target : m_player->getTargets(key)) {
-                target->setPositionX(definition.offsetX);
-                target->setPositionY(definition.offsetY);
-                target->setRotationX(definition.rotationX);
-                target->setRotationY(definition.rotationY);
-                target->setScaleX(definition.scaleX);
-                target->setScaleY(definition.scaleY);
-            }
-        }
-
-        Notify::success("{} loaded!", name);
+    LoadEditorPopup::create(m_iconType, [this](const std::filesystem::path& directory) {
+        return loadEditor(directory);
     })->show();
+}
+
+Result<> EditIconPopup::loadEditor(const std::filesystem::path& directory) {
+    GEODE_UNWRAP_INTO(auto state, file::readJson(directory / L("state.json")));
+    if (!state.isObject()) return Err("Expected object");
+
+    m_selectedPNG = directory / L("icon.png");
+    m_selectedPlist = directory / L("icon.plist");
+    GEODE_UNWRAP(updateWithSelectedFilesInternal(false));
+
+    m_definitions = Json::get<StringMap<FrameDefinition>>(state, "definitions");
+    updateColor(1, Json::get<int>(state, "main-color", 12));
+    updateColor(2, Json::get<int>(state, "secondary-color", 12));
+    updateColor(3, Json::get<int>(state, "glow-color", 12));
+
+    auto it = m_definitions.find(m_suffix);
+    if (it != m_definitions.end()) {
+        m_definition = &it->second;
+    }
+    else {
+        m_definition = &m_definitions.emplace(m_suffix, FrameDefinition()).first->second;
+    }
+    updateControls();
+
+    for (auto& [key, definition] : m_definitions) {
+        for (auto target : m_player->getTargets(key)) {
+            target->setPositionX(definition.offsetX);
+            target->setPositionY(definition.offsetY);
+            target->setRotationX(definition.rotationX);
+            target->setRotationY(definition.rotationY);
+            target->setScaleX(definition.scaleX);
+            target->setScaleY(definition.scaleY);
+        }
+    }
+
+    return Ok();
 }
 
 void EditIconPopup::onSaveState(CCObject* sender) {
     SaveIconPopup::create(
         m_iconType, true,
-        [this](ZStringView name) {
+        [this](const gd::string& name) {
             m_pendingPath = MoreIcons::getEditorDir(m_iconType) / Filesystem::strWide(name);
             return Filesystem::doesExist(m_pendingPath);
         },
-        [this](ZStringView name) {
-            return saveEditor(name);
+        [this](const gd::string& name) {
+            return saveEditor();
         },
         [this] {
             m_pendingPath.clear();
@@ -310,7 +311,7 @@ void EditIconPopup::onSaveState(CCObject* sender) {
     )->show();
 }
 
-Result<> EditIconPopup::saveEditor(ZStringView name) {
+Result<> EditIconPopup::saveEditor() {
     if (!Filesystem::doesExist(m_pendingPath)) {
         GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
     }
@@ -386,12 +387,7 @@ void EditIconPopup::onPieceClear(CCObject* sender) {
         eraseFrame();
     }
     else {
-        auto emptyFrame = Icons::getFrame("emptyFrame.png"_spr);
-        if (!emptyFrame) {
-            emptyFrame = MoreIcons::frameWithTexture(Load::createTexture(nullptr, 0, 0));
-            Get::spriteFrameCache->addSpriteFrame(emptyFrame, "emptyFrame.png"_spr);
-        }
-        addFrame(emptyFrame);
+        addFrame(MoreIcons::frameWithTexture(Load::createTexture(nullptr, 0, 0)));
     }
     updatePieces();
 }
@@ -466,7 +462,7 @@ void EditIconPopup::onSave(CCObject* sender) {
 
     SaveIconPopup::create(
         m_iconType, false,
-        [this](ZStringView name) {
+        [this](const gd::string& name) {
             auto stem = Filesystem::getPathString(MoreIcons::getIconStem(name, m_iconType));
             m_pngs[0] = fmt::format(L("{}-uhd.png"), stem);
             m_pngs[1] = fmt::format(L("{}-hd.png"), stem);
@@ -477,7 +473,7 @@ void EditIconPopup::onSave(CCObject* sender) {
             return Filesystem::doesExist(m_plists[0]) || Filesystem::doesExist(m_plists[1]) || Filesystem::doesExist(m_plists[2]) ||
                 Filesystem::doesExist(m_pngs[0]) || Filesystem::doesExist(m_pngs[1]) || Filesystem::doesExist(m_pngs[2]);
         },
-        [this](ZStringView name) {
+        [this](const gd::string& name) {
             return saveIcon(name);
         },
         [this] {
@@ -491,7 +487,7 @@ void EditIconPopup::onSave(CCObject* sender) {
     )->show();
 }
 
-Result<> EditIconPopup::saveIcon(ZStringView name) {
+Result<> EditIconPopup::saveIcon(const gd::string& name) {
     std::array<texpack::Packer, 3> packers = {};
     auto scaleFactor = Get::director->getContentScaleFactor();
     int index;
@@ -669,45 +665,53 @@ void EditIconPopup::updateColor(int type, int index) {
     }
 }
 
-bool EditIconPopup::updateWithSelectedFiles(bool useSuffix) {
-    auto ret = false;
-    if (auto imageRes = Load::createFrames(m_selectedPNG, m_selectedPlist, {}, m_iconType, useSuffix ? m_suffix : std::string_view())) {
-        auto image = std::move(imageRes).unwrap();
-        Load::initTexture(image.texture, image.data.data(), image.width, image.height);
+void EditIconPopup::updateWithSelectedFiles(bool useSuffix) {
+    if (auto res = updateWithSelectedFilesInternal(useSuffix); res.isErr()) {
+        Notify::error(res.unwrapErr());
+    }
+}
 
-        if (useSuffix) {
-            if (auto it = image.frames.find(m_suffix); it != image.frames.end()) {
-                addFrame(std::move(it->second));
-            }
-            else {
-                eraseFrame();
-            }
+Result<> EditIconPopup::updateWithSelectedFilesInternal(bool useSuffix) {
+    auto imageRes = Load::createFrames(m_selectedPNG, m_selectedPlist, {}, m_iconType, useSuffix ? m_suffix : std::string_view());
+    if (imageRes.isErr()) {
+        m_selectedPNG.clear();
+        m_selectedPlist.clear();
+        return std::move(imageRes).asErr();
+    }
+
+    auto image = std::move(imageRes).unwrap();
+    Load::initTexture(image.texture, image.data.data(), image.width, image.height);
+
+    if (useSuffix) {
+        if (auto it = image.frames.find(m_suffix); it != image.frames.end()) {
+            addFrame(std::move(it->second));
         }
         else {
-            for (auto it = m_frames.begin(); it != m_frames.end();) {
-                auto frameIt = image.frames.find(it->first);
-                if (frameIt != image.frames.end()) {
-                    it->second = std::move(frameIt->second);
-                    image.frames.erase(frameIt);
-                    ++it;
-                }
-                else {
-                    it = m_frames.erase(it);
-                }
+            eraseFrame();
+        }
+    }
+    else {
+        for (auto it = m_frames.begin(); it != m_frames.end();) {
+            auto frameIt = image.frames.find(it->first);
+            if (frameIt != image.frames.end()) {
+                it->second = std::move(frameIt->second);
+                image.frames.erase(frameIt);
+                ++it;
             }
-            for (auto it = image.frames.begin(); it != image.frames.end(); it = image.frames.erase(it)) {
-                m_frames.insert(std::move(*it));
+            else {
+                it = m_frames.erase(it);
             }
         }
-
-        updatePieces();
-        ret = true;
+        for (auto it = image.frames.begin(); it != image.frames.end(); it = image.frames.erase(it)) {
+            m_frames.insert(std::move(*it));
+        }
     }
-    else if (imageRes.isErr()) Notify::error(imageRes.unwrapErr());
+
+    updatePieces();
 
     m_selectedPNG.clear();
     m_selectedPlist.clear();
-    return ret;
+    return Ok();
 }
 
 void EditIconPopup::updatePieces() {

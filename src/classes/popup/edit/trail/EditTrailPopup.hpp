@@ -17,7 +17,7 @@ protected:
     void onPreset(cocos2d::CCObject* sender);
     void onSave(cocos2d::CCObject* sender);
     void updateWithPath(const std::filesystem::path& path);
-    geode::Result<> saveTrail(geode::ZStringView name);
+    geode::Result<> saveTrail(const gd::string& name);
     void onClose(cocos2d::CCObject* sender) override;
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override;
 public:

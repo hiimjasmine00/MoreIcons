@@ -349,11 +349,11 @@ void EditShipFirePopup::onSave(CCObject* sender) {
 
     SaveIconPopup::create(
         IconType::ShipFire, false,
-        [this](ZStringView name) {
+        [this](const gd::string& name) {
             m_pendingPath = MoreIcons::getIconStem(name, IconType::ShipFire);
             return Filesystem::doesExist(m_pendingPath);
         },
-        [this](ZStringView name) {
+        [this](const gd::string& name) {
             return saveShipFire(name);
         },
         [this] {
@@ -362,7 +362,7 @@ void EditShipFirePopup::onSave(CCObject* sender) {
     )->show();
 }
 
-Result<> EditShipFirePopup::saveShipFire(ZStringView name) {
+Result<> EditShipFirePopup::saveShipFire(const gd::string& name) {
     if (!Filesystem::doesExist(m_pendingPath)) {
         GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
     }

@@ -49,11 +49,11 @@ bool IconViewPopup::init(IconType type, bool custom) {
             for (auto& info : *icons) {
                 auto iconMenu = CCMenu::create();
                 auto lazyIcon = LazyIcon::create(type, 0, &info, {}, [this, info = &info, type] {
-                    if (type == IconType::ShipFire) {
-                        ViewShipFirePopup::create(0, info)->show();
-                    }
-                    else if (type == IconType::DeathEffect) {
+                    if (type == IconType::DeathEffect) {
                         ViewDeathEffectPopup::create(0, info)->show();
+                    }
+                    else if (type == IconType::ShipFire) {
+                        ViewShipFirePopup::create(0, info)->show();
                     }
                     else {
                         ViewIconPopup::create(type, 0, info)->show();

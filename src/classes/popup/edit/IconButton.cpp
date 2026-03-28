@@ -26,6 +26,17 @@ bool IconButton::init() {
     setContentSize({ 30.0f, 30.0f });
     normalImage->setPosition({ 15.0f, 15.0f });
 
+    resetIcon();
+
+    return true;
+}
+
+void IconButton::resetIcon() {
+    if (m_unselectedSprite || m_plusLabel) return;
+
+    auto normalImage = getNormalImage();
+    MoreIcons::setTexture(static_cast<CCSprite*>(normalImage), nullptr);
+
     m_unselectedSprite = CCSprite::createWithSpriteFrameName("player_special_01_001.png");
     m_unselectedSprite->setColor({ 150, 150, 150 });
     normalImage->addChild(m_unselectedSprite);
@@ -34,8 +45,6 @@ bool IconButton::init() {
     m_plusLabel->setPosition({ 0.75f, 2.25f });
     m_plusLabel->setScale(0.75f);
     normalImage->addChild(m_plusLabel);
-
-    return true;
 }
 
 void IconButton::activate() {

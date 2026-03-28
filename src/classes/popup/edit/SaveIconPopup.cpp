@@ -13,8 +13,8 @@
 using namespace geode::prelude;
 
 SaveIconPopup* SaveIconPopup::create(
-    IconType type, bool editor, Function<bool(ZStringView)> checkCallback,
-    Function<Result<>(ZStringView)> saveCallback, Function<void()> closeCallback
+    IconType type, bool editor, Function<bool(const gd::string&)> checkCallback,
+    Function<Result<>(const gd::string&)> saveCallback, Function<void()> closeCallback
 ) {
     auto ret = new SaveIconPopup();
     if (ret->init(type, editor, std::move(checkCallback), std::move(saveCallback), std::move(closeCallback))) {
@@ -26,8 +26,8 @@ SaveIconPopup* SaveIconPopup::create(
 }
 
 bool SaveIconPopup::init(
-    IconType type, bool editor, Function<bool(ZStringView)> checkCallback,
-    Function<Result<>(ZStringView)> saveCallback, Function<void()> closeCallback
+    IconType type, bool editor, Function<bool(const gd::string&)> checkCallback,
+    Function<Result<>(const gd::string&)> saveCallback, Function<void()> closeCallback
 ) {
     if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
@@ -64,7 +64,7 @@ bool SaveIconPopup::init(
 }
 
 void SaveIconPopup::onSave(CCObject* sender) {
-    auto iconName = MoreIcons::getText(m_nameInput);
+    auto& iconName = *m_nameInput->m_pInputText;
     if (iconName.empty()) return Notify::info("Please enter a name.");
 
     if (m_checkCallback(iconName)) {
@@ -83,7 +83,7 @@ void SaveIconPopup::onSave(CCObject* sender) {
 }
 
 void SaveIconPopup::saveIcon() {
-    auto name = MoreIcons::getText(m_nameInput);
+    auto& name = *m_nameInput->m_pInputText;
 
     if (auto res = m_saveCallback(name); res.isErr()) {
         return Notify::error(res.unwrapErr());
@@ -98,7 +98,7 @@ void SaveIconPopup::saveIcon() {
 }
 
 void SaveIconPopup::onClose(CCObject* sender) {
-    if (MoreIcons::getText(m_nameInput).empty()) {
+    if (m_nameInput->m_pInputText->empty()) {
         m_closeCallback();
         return close();
     }

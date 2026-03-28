@@ -44,8 +44,9 @@ protected:
     void onPrevPage(cocos2d::CCObject* sender);
     void onNextPage(cocos2d::CCObject* sender);
     void onLoadState(cocos2d::CCObject* sender);
+    geode::Result<> loadEditor(const std::filesystem::path& directory);
     void onSaveState(cocos2d::CCObject* sender);
-    geode::Result<> saveEditor(geode::ZStringView name);
+    geode::Result<> saveEditor();
     void addFrame(geode::Ref<cocos2d::CCSpriteFrame>&& frame);
     void eraseFrame();
     void onPieceImport(cocos2d::CCObject* sender);
@@ -55,7 +56,7 @@ protected:
     void onPlist(cocos2d::CCObject* sender);
     void onPreset(cocos2d::CCObject* sender);
     void onSave(cocos2d::CCObject* sender);
-    geode::Result<> saveIcon(geode::ZStringView name);
+    geode::Result<> saveIcon(const gd::string& name);
     void createControls(const cocos2d::CCPoint& pos, const char* text, std::string&& id, int offset);
     void updateControl(int offset, float value, bool slider, bool input, bool definition);
     void updateControls();
@@ -64,7 +65,8 @@ protected:
     cocos2d::CCSprite* addColorButton(int type, const char* text, std::string&& id);
     void onColor(cocos2d::CCObject* sender);
     void updateColor(int type, int index);
-    bool updateWithSelectedFiles(bool useSuffix = false);
+    void updateWithSelectedFiles(bool useSuffix = false);
+    geode::Result<> updateWithSelectedFilesInternal(bool useSuffix);
     void updatePieces();
     void goToPage(int page);
     void updateTargets();

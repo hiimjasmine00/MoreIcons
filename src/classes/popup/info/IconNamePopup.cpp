@@ -53,7 +53,7 @@ bool IconNamePopup::init(IconInfo* info) {
 }
 
 void IconNamePopup::onConfirm(CCObject* sender) {
-    auto name = MoreIcons::getText(m_nameInput);
+    auto& name = *m_nameInput->m_pInputText;
     if (name.empty()) return Notify::info("Name cannot be empty.");
 
     std::string_view old = m_info->getShortName();
@@ -153,7 +153,7 @@ void IconNamePopup::onConfirm(CCObject* sender) {
 }
 
 void IconNamePopup::onClose(CCObject* sender) {
-    auto name = MoreIcons::getText(m_nameInput);
+    auto& name = *m_nameInput->m_pInputText;
     if (name.empty() || name == m_info->getShortName()) return close();
 
     auto type = m_iconType;
@@ -178,7 +178,7 @@ void IconNamePopup::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
                 if (res.isErr()) return Notify::error(res.unwrapErr());
             }
 
-            auto name = MoreIcons::getText(m_nameInput);
+            auto& name = *m_nameInput->m_pInputText;
             auto notif = fmt::format("{} renamed to {}!", m_info->getShortName(), name);
             more_icons::renameIcon(m_info, name);
             MoreIcons::updateGarageAndNotify(notif);

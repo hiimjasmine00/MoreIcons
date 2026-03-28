@@ -2,6 +2,7 @@
 #include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Filesystem.hpp"
+#include "../../../utils/Notify.hpp"
 #include <algorithm>
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/ui/Scrollbar.hpp>
@@ -9,7 +10,7 @@
 
 using namespace geode::prelude;
 
-LoadEditorPopup* LoadEditorPopup::create(IconType type, Function<void(const std::filesystem::path&, std::string_view)> callback) {
+LoadEditorPopup* LoadEditorPopup::create(IconType type, Function<Result<>(const std::filesystem::path&)> callback) {
     auto ret = new LoadEditorPopup();
     if (ret->init(type, std::move(callback))) {
         ret->autorelease();
@@ -19,7 +20,7 @@ LoadEditorPopup* LoadEditorPopup::create(IconType type, Function<void(const std:
     return nullptr;
 }
 
-bool LoadEditorPopup::init(IconType type, Function<void(const std::filesystem::path&, std::string_view)> callback) {
+bool LoadEditorPopup::init(IconType type, Function<Result<>(const std::filesystem::path&)> callback) {
     if (!BasePopup::init(230.0f, 250.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("LoadEditorPopup");
@@ -109,6 +110,12 @@ bool LoadEditorPopup::init(IconType type, Function<void(const std::filesystem::p
 
 void LoadEditorPopup::onEntry(CCObject* sender) {
     auto node = static_cast<CCNode*>(sender);
-    m_callback(static_cast<ObjWrapper<std::filesystem::path>*>(node->getUserObject("entry-path"))->getValue(), node->getID());
-    close();
+    auto name = node->getID();
+    if (auto res = m_callback(static_cast<ObjWrapper<std::filesystem::path>*>(node->getUserObject("entry-path"))->getValue()); res.isErr()) {
+        Notify::error("Failed to load {}: {}", name, res.unwrapErr());
+    }
+    else {
+        Notify::success("{} loaded!", name);
+        close();
+    }
 }

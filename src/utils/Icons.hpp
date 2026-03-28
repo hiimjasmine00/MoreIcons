@@ -21,7 +21,7 @@ namespace Icons {
     extern bool preloadIcons;
     extern bool loadingFinished;
 
-    cocos2d::CCSpriteFrame* getFrame(geode::ZStringView name);
+    cocos2d::CCSpriteFrame* getFrame(const std::string& name);
     template <typename... Args>
     cocos2d::CCSpriteFrame* getFrame(fmt::format_string<Args...> name, Args&&... args) {
         return getFrame(fmt::format(name, std::forward<Args>(args)...));

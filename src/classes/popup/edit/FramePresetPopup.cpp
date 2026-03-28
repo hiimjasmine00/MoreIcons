@@ -167,55 +167,60 @@ bool FramePresetPopup::init(IconType type, Function<void(CCSpriteFrame*)> callba
     else if (type == IconType::ShipFire) loadShipFires(tasks);
 
     m_loader.spawn(arc::joinAll(tasks), [this] {
-        std::unique_lock lock(imageMutex2);
-
-        std::ranges::sort(images2, [](const ExtendedResult& a, const ExtendedResult& b) {
-            if (a.info && b.info) return *a.info == *b.info ? a.index < b.index : *a.info < *b.info;
-            else if (a.info) return false;
-            else if (b.info) return true;
-            else return a.id == b.id ? a.index < b.index : a.id < b.id;
-        });
-
-        for (auto it = images2.begin(); it != images2.end(); it = images2.erase(it)) {
-            auto& image = *it;
-            Load::initTexture(image.texture, image.data.data(), image.width, image.height);
-
-            if (image.frames.empty()) {
-                m_textures.push_back(std::move(image.texture));
-                if (image.info) {
-                    m_names.push_back(fmt::format("{}-{}"_spr, image.info->getName(), image.index));
-                }
-                else {
-                    m_names.push_back(fmt::format("shipfire{:02}-{}", image.id, image.index));
-                }
-            }
-            else {
-                std::vector<std::string_view> keys;
-                for (auto& frame : image.frames) {
-                    keys.push_back(frame.first);
-                }
-                std::ranges::sort(keys);
-                for (size_t i = 0; i < keys.size(); i++) {
-                    auto it = image.frames.find(keys[i]);
-                    if (it != image.frames.end()) {
-                        m_frames.push_back(std::move(it->second));
-                        if (image.info) {
-                            m_names.push_back(fmt::format("{}-{}"_spr, image.info->getName(), i));
-                        }
-                        else {
-                            m_names.push_back(fmt::format("PlayerExplosion_{:02}-{}", image.id, i));
-                        }
-                        image.frames.erase(it);
-                    }
-                }
-            }
-        }
-        setupScroll();
+        setupFrames();
     });
 
     handleTouchPriority(this);
 
     return true;
+}
+
+void FramePresetPopup::setupFrames() {
+    std::unique_lock lock(imageMutex2);
+
+    std::ranges::sort(images2, [](const ExtendedResult& a, const ExtendedResult& b) {
+        if (a.info && b.info) return *a.info == *b.info ? a.index < b.index : *a.info < *b.info;
+        else if (a.info) return false;
+        else if (b.info) return true;
+        else return a.id == b.id ? a.index < b.index : a.id < b.id;
+    });
+
+    for (auto it = images2.begin(); it != images2.end(); it = images2.erase(it)) {
+        auto& image = *it;
+        Load::initTexture(image.texture, image.data.data(), image.width, image.height);
+
+        if (image.frames.empty()) {
+            m_textures.push_back(std::move(image.texture));
+            if (image.info) {
+                m_names.push_back(fmt::format("{}-{}"_spr, image.info->getName(), image.index));
+            }
+            else {
+                m_names.push_back(fmt::format("shipfire{:02}-{}", image.id, image.index));
+            }
+        }
+        else {
+            std::vector<std::string_view> keys;
+            for (auto& frame : image.frames) {
+                keys.push_back(frame.first);
+            }
+            std::ranges::sort(keys);
+            for (size_t i = 0; i < keys.size(); i++) {
+                auto it = image.frames.find(keys[i]);
+                if (it != image.frames.end()) {
+                    m_frames.push_back(std::move(it->second));
+                    if (image.info) {
+                        m_names.push_back(fmt::format("{}-{}"_spr, image.info->getName(), i));
+                    }
+                    else {
+                        m_names.push_back(fmt::format("PlayerExplosion_{:02}-{}", image.id, i));
+                    }
+                    image.frames.erase(it);
+                }
+            }
+        }
+    }
+
+    setupScroll();
 }
 
 void FramePresetPopup::setupScroll() {

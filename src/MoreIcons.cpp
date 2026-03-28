@@ -234,7 +234,7 @@ std::filesystem::path MoreIcons::getIconPath(IconInfo* info, int id, IconType ty
     return png;
 }
 
-std::filesystem::path getFullPath(ZStringView filename) {
+std::filesystem::path getFullPath(const std::string& filename) {
     #ifdef GEODE_IS_WINDOWS
     return std::filesystem::path(Filesystem::strWide(Get::fileUtils->fullPathForFilename(filename.c_str(), false)));
     #else

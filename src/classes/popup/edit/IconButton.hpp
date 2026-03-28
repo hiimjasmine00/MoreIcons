@@ -14,5 +14,6 @@ public:
 
     std::filesystem::path saveIcon(const std::filesystem::path& path);
     void setIcon(const std::filesystem::path& path);
+    void resetIcon();
     cocos2d::CCTexture2D* getIconTexture();
 };

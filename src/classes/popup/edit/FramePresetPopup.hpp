@@ -15,6 +15,7 @@ protected:
     IconType m_type;
 
     bool init(IconType, geode::Function<void(cocos2d::CCSpriteFrame*)>);
+    void setupFrames();
     void setupScroll();
     void onSelect(cocos2d::CCObject*);
 public:

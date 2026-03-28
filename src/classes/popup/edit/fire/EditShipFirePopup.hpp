@@ -32,7 +32,7 @@ protected:
     void onPreset(cocos2d::CCObject* sender);
     void updateWithPath(std::filesystem::path path, int count);
     void onSave(cocos2d::CCObject* sender);
-    geode::Result<> saveShipFire(geode::ZStringView name);
+    geode::Result<> saveShipFire(const gd::string& name);
     void onClose(cocos2d::CCObject* sender) override;
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override;
 public:

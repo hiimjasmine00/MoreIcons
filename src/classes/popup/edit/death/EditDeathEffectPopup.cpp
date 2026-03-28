@@ -289,42 +289,46 @@ void EditDeathEffectPopup::onPieceRemove(CCObject* sender) {
 }
 
 void EditDeathEffectPopup::onLoadState(CCObject* sender) {
-    LoadEditorPopup::create(IconType::DeathEffect, [this](const std::filesystem::path& directory, std::string_view name) {
-        auto stateRes = file::readJson(directory / L("state.json"));
-        if (stateRes.isErr()) return Notify::error("Failed to load {}: {}", name, stateRes.unwrapErr());
-
-        auto state = std::move(stateRes).unwrap();
-        if (!state.isObject()) return Notify::error("Failed to load {}: Expected object", name);
-
-        m_selectedPNG = directory / L("effect.png");
-        m_selectedPlist = directory / L("effect.plist");
-        if (!updateWithSelectedFiles(false)) return;
-
-        auto iconPath = directory / L("icon.png");
-        if (Filesystem::doesExist(iconPath)) {
-            m_iconButton->setIcon(iconPath);
-        }
-
-        m_definitions = Json::get<std::vector<FrameDefinition>>(state, "definitions");
-        if (m_selectedPiece >= m_definitions.size()) m_selectedPiece = m_definitions.size() - 1;
-        m_definition = &m_definitions[m_selectedPiece];
-        updateControls();
-        updatePieces();
-        onSelectPiece(m_pieceButtons[m_selectedPiece]);
-
-        Notify::success("{} loaded!", name);
+    LoadEditorPopup::create(IconType::DeathEffect, [this](const std::filesystem::path& directory) {
+        return loadEditor(directory);
     })->show();
+}
+
+Result<> EditDeathEffectPopup::loadEditor(const std::filesystem::path& directory) {
+    GEODE_UNWRAP_INTO(auto state, file::readJson(directory / L("state.json")));
+    if (!state.isObject()) return Err("Expected object");
+
+    m_selectedPNG = directory / L("effect.png");
+    m_selectedPlist = directory / L("effect.plist");
+    GEODE_UNWRAP(updateWithSelectedFilesInternal(false));
+
+    auto iconPath = directory / L("icon.png");
+    if (Filesystem::doesExist(iconPath)) {
+        m_iconButton->setIcon(iconPath);
+    }
+    else {
+        m_iconButton->resetIcon();
+    }
+
+    m_definitions = Json::get<std::vector<FrameDefinition>>(state, "definitions");
+    if (m_selectedPiece >= m_definitions.size()) m_selectedPiece = m_definitions.size() - 1;
+    m_definition = &m_definitions[m_selectedPiece];
+    updateControls();
+    updatePieces();
+    onSelectPiece(m_pieceButtons[m_selectedPiece]);
+
+    return Ok();
 }
 
 void EditDeathEffectPopup::onSaveState(CCObject* sender) {
     SaveIconPopup::create(
         IconType::DeathEffect, true,
-        [this](ZStringView name) {
+        [this](const gd::string& name) {
             m_pendingPath = MoreIcons::getEditorDir(IconType::DeathEffect) / Filesystem::strWide(name);
             return Filesystem::doesExist(m_pendingPath);
         },
-        [this](ZStringView name) {
-            return saveEditor(name);
+        [this](const gd::string& name) {
+            return saveEditor();
         },
         [this] {
             m_pendingPath.clear();
@@ -332,7 +336,7 @@ void EditDeathEffectPopup::onSaveState(CCObject* sender) {
     )->show();
 }
 
-Result<> EditDeathEffectPopup::saveEditor(ZStringView name) {
+Result<> EditDeathEffectPopup::saveEditor() {
     if (!Filesystem::doesExist(m_pendingPath)) {
         GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
     }
@@ -442,11 +446,11 @@ void EditDeathEffectPopup::onSave(CCObject* sender) {
 
     SaveIconPopup::create(
         IconType::DeathEffect, false,
-        [this](ZStringView name) {
+        [this](const gd::string& name) {
             m_pendingPath = MoreIcons::getIconStem(name, IconType::DeathEffect);
             return Filesystem::doesExist(m_pendingPath);
         },
-        [this](ZStringView name) {
+        [this](const gd::string& name) {
             return saveEffect(name);
         },
         [this] {
@@ -455,7 +459,7 @@ void EditDeathEffectPopup::onSave(CCObject* sender) {
     )->show();
 }
 
-Result<> EditDeathEffectPopup::saveEffect(ZStringView name) {
+Result<> EditDeathEffectPopup::saveEffect(const gd::string& name) {
     if (!Filesystem::doesExist(m_pendingPath)) {
         GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
     }
@@ -595,47 +599,54 @@ void EditDeathEffectPopup::onSelectPiece(CCObject* sender) {
     updateTargets();
 }
 
-bool EditDeathEffectPopup::updateWithSelectedFiles(bool update) {
-    auto ret = false;
-    if (auto imageRes = Load::createFrames(m_selectedPNG, m_selectedPlist, {}, IconType::DeathEffect)) {
-        auto image = std::move(imageRes).unwrap();
-        Load::initTexture(image.texture, image.data.data(), image.width, image.height);
-
-        m_frames.clear();
-        m_pieceButtons.clear();
-        m_pieces.clear();
-        m_definitions.clear();
-        m_pieceMenu->removeAllChildren();
-
-        std::vector<std::string_view> keys;
-        for (auto& frame : image.frames) {
-            keys.push_back(frame.first);
-        }
-        std::ranges::sort(keys);
-        CCMenuItemSpriteExtra* selected = nullptr;
-        for (size_t i = 0; i < keys.size(); ++i) {
-            auto it = image.frames.find(keys[i]);
-            if (it != image.frames.end()) {
-                auto button = addPieceButton(m_frames.size(), it->second);
-                if (i == m_selectedPiece) selected = button;
-                m_frames.push_back(std::move(it->second));
-                image.frames.erase(it);
-            }
-        }
-        if (update) {
-            if (!selected) selected = m_pieceButtons.back();
-
-            updatePieces();
-            onSelectPiece(selected);
-        }
-
-        ret = true;
+void EditDeathEffectPopup::updateWithSelectedFiles(bool update) {
+    if (auto res = updateWithSelectedFilesInternal(update); res.isErr()) {
+        Notify::error(res.unwrapErr());
     }
-    else if (imageRes.isErr()) Notify::error(imageRes.unwrapErr());
+}
+
+Result<> EditDeathEffectPopup::updateWithSelectedFilesInternal(bool update) {
+    auto imageRes = Load::createFrames(m_selectedPNG, m_selectedPlist, {}, IconType::DeathEffect);
+    if (imageRes.isErr()) {
+        m_selectedPNG.clear();
+        m_selectedPlist.clear();
+        return std::move(imageRes).asErr();
+    }
+
+    auto image = std::move(imageRes).unwrap();
+    Load::initTexture(image.texture, image.data.data(), image.width, image.height);
+
+    m_frames.clear();
+    m_pieceButtons.clear();
+    m_pieces.clear();
+    m_definitions.clear();
+    m_pieceMenu->removeAllChildren();
+
+    std::vector<std::string_view> keys;
+    for (auto& frame : image.frames) {
+        keys.push_back(frame.first);
+    }
+    std::ranges::sort(keys);
+    CCMenuItemSpriteExtra* selected = nullptr;
+    for (size_t i = 0; i < keys.size(); ++i) {
+        auto it = image.frames.find(keys[i]);
+        if (it != image.frames.end()) {
+            auto button = addPieceButton(m_frames.size(), it->second);
+            if (i == m_selectedPiece) selected = button;
+            m_frames.push_back(std::move(it->second));
+            image.frames.erase(it);
+        }
+    }
+    if (update) {
+        if (!selected) selected = m_pieceButtons.back();
+
+        updatePieces();
+        onSelectPiece(selected);
+    }
 
     m_selectedPNG.clear();
     m_selectedPlist.clear();
-    return ret;
+    return Ok();
 }
 
 void EditDeathEffectPopup::updatePieces() {

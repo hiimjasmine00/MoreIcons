@@ -103,11 +103,11 @@ void EditTrailPopup::onPreset(CCObject* sender) {
 void EditTrailPopup::onSave(CCObject* sender) {
     SaveIconPopup::create(
         IconType::Special, false,
-        [this](ZStringView name) {
+        [this](const gd::string& name) {
             m_pendingPath = MoreIcons::getIconStem(name, IconType::Special);
             return Filesystem::doesExist(m_pendingPath);
         },
-        [this](ZStringView name) {
+        [this](const gd::string& name) {
             return saveTrail(name);
         },
         [this] {
@@ -127,7 +127,7 @@ void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
     else if (textureRes.isErr()) Notify::error(textureRes.unwrapErr());
 }
 
-Result<> EditTrailPopup::saveTrail(ZStringView name) {
+Result<> EditTrailPopup::saveTrail(const gd::string& name) {
     if (!Filesystem::doesExist(m_pendingPath)) {
         GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
     }
