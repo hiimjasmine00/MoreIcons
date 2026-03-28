@@ -2,6 +2,7 @@
 
 class LoadEditorPopup : public BasePopup {
 protected:
+    std::vector<std::filesystem::path> m_entries;
     geode::Function<geode::Result<>(const std::filesystem::path&)> m_callback;
 
     bool init(IconType type, geode::Function<geode::Result<>(const std::filesystem::path&)> callback);

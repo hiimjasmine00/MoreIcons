@@ -4,7 +4,6 @@
 #include "Json.hpp"
 #if defined(GEODE_IS_MACOS) || defined(GEODE_IS_IOS)
 #include <CoreFoundation/CFPropertyList.h>
-#include <CoreGraphics/CGImage.h>
 #include <ImageIO/CGImageSource.h>
 #elif defined(GEODE_IS_ANDROID)
 #include <Geode/cocos/support/zip_support/unzip.h>
@@ -16,6 +15,26 @@
 
 using namespace geode::prelude;
 using namespace jasmine::mod;
+
+RGBAImage::RGBAImage(std::vector<uint8_t>&& data, uint32_t width, uint32_t height) : data(std::move(data)), width(width), height(height) {}
+
+RGBAImage::RGBAImage(RGBAImage&&) noexcept = default;
+
+RGBAImage& RGBAImage::operator=(RGBAImage&&) noexcept = default;
+
+RGBAImage::~RGBAImage() = default;
+
+ImageResult::ImageResult(std::string&& name, Ref<CCTexture2D>&& texture, StringMap<Ref<CCSpriteFrame>>&& frames, RGBAImage&& image) :
+    name(std::move(name)),
+    texture(std::move(texture)),
+    frames(std::move(frames)),
+    image(std::move(image)) {}
+
+ImageResult::ImageResult(ImageResult&&) noexcept = default;
+
+ImageResult& ImageResult::operator=(ImageResult&&) noexcept = default;
+
+ImageResult::~ImageResult() = default;
 
 void replaceOrErase(std::string& str, size_t offset, std::string_view name) {
     if (name.empty()) {
@@ -218,6 +237,14 @@ CCTexture2D* Load::createTexture(const uint8_t* data, uint32_t width, uint32_t h
     return texture;
 }
 
+void Load::initTexture(const ImageResult& image, bool premultiplyAlpha) {
+    initTexture(image.texture, image.image, premultiplyAlpha);
+}
+
+void Load::initTexture(CCTexture2D* texture, const RGBAImage& image, bool premultiplyAlpha) {
+    initTexture(texture, image.data.data(), image.width, image.height, premultiplyAlpha);
+}
+
 void Load::initTexture(CCTexture2D* texture, const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha) {
     texture->initWithData(data, kCCTexture2DPixelFormat_RGBA8888, width, height, { (float)width, (float)height });
     texture->m_bHasPremultipliedAlpha = premultiplyAlpha;
@@ -234,7 +261,7 @@ Result<ImageResult> Load::createFrames(
         return fmt::format("Failed to create frames: {}", err);
     }));
 
-    return Ok(ImageResult(string::pathToString(png), std::move(image.data), std::move(texture), std::move(frames), image.width, image.height));
+    return Ok(ImageResult(string::pathToString(png), std::move(texture), std::move(frames), std::move(image)));
 }
 
 matjson::Value parseNode(const pugi::xml_node& node) {
@@ -471,7 +498,7 @@ Result<StringMap<Ref<CCSpriteFrame>>> Load::createFrames(
 
 CCTexture2D* Load::addFrames(ImageResult& image, std::vector<std::string>& frameNames) {
     if (auto texture = image.texture.data()) {
-        initTexture(texture, image.data.data(), image.width, image.height, true);
+        initTexture(image, true);
         Get::textureCache->m_pTextures->setObject(texture, image.name);
     }
 

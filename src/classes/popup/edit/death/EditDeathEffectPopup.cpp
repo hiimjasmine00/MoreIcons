@@ -614,7 +614,7 @@ Result<> EditDeathEffectPopup::updateWithSelectedFilesInternal(bool update) {
     }
 
     auto image = std::move(imageRes).unwrap();
-    Load::initTexture(image.texture, image.data.data(), image.width, image.height);
+    Load::initTexture(image);
 
     m_frames.clear();
     m_pieceButtons.clear();

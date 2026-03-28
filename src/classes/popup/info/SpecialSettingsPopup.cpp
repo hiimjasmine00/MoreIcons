@@ -138,8 +138,6 @@ void SpecialSettingsPopup::addControl(
 }
 
 void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, const CCPoint& position, float scale, bool def) {
-    auto& value = m_settings[id];
-
     auto positioner = CCMenu::create();
     positioner->setPosition(position);
     positioner->setScale(scale);
@@ -154,8 +152,7 @@ void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, con
     auto onSprite = CCSprite::createWithSpriteFrameName("GJ_checkOn_001.png");
     onSprite->setScale(0.8f);
     auto toggle = CCMenuItemToggler::create(offSprite, onSprite, this, menu_selector(SpecialSettingsPopup::onToggle));
-    toggle->toggle(value.asBool().unwrapOr(def));
-    toggle->setUserObject("setting-value", ObjWrapper<matjson::Value*>::create(&value));
+    toggle->toggle(m_settings[id].asBool().unwrapOr(def));
     toggle->setID(fmt::format("{}-toggle", id));
     positioner->addChild(toggle);
 
@@ -169,7 +166,9 @@ void SpecialSettingsPopup::addToggle(std::string_view id, const char* label, con
 
 void SpecialSettingsPopup::onToggle(CCObject* sender) {
     auto toggle = static_cast<CCMenuItemToggler*>(sender);
-    *static_cast<ObjWrapper<matjson::Value*>*>(toggle->getUserObject("setting-value"))->getValue() = !toggle->m_toggled;
+    auto id = toggle->getID().view();
+    id.remove_suffix(7);
+    m_settings[id] = !toggle->m_toggled;
     m_hasChanged = true;
 }
 

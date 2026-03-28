@@ -43,11 +43,9 @@ bool LoadEditorPopup::init(IconType type, Function<Result<>(const std::filesyste
     scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(scrollLayer);
 
-    std::vector<std::filesystem::path> entries;
-
-    Filesystem::iterate(MoreIcons::getEditorDir(type), std::filesystem::file_type::directory, [&entries](const std::filesystem::path& path) {
+    Filesystem::iterate(MoreIcons::getEditorDir(type), std::filesystem::file_type::directory, [this](const std::filesystem::path& path) {
         auto a = Filesystem::filenameView(path);
-        entries.insert(std::ranges::find_if(entries, [a](const std::filesystem::path& path) {
+        m_entries.insert(std::ranges::find_if(m_entries, [a](const std::filesystem::path& path) {
             auto b = Filesystem::filenameView(path);
             if (a == b) return false;
             for (size_t i = 0; i < a.size() && i < b.size(); i++) {
@@ -64,8 +62,8 @@ bool LoadEditorPopup::init(IconType type, Function<Result<>(const std::filesyste
         }), path);
     });
 
-    for (auto it = entries.begin(); it != entries.end(); it = entries.erase(it)) {
-        auto filename = std::string(Filesystem::strNarrow(Filesystem::filenameView(*it)));
+    for (size_t i = 0; i < m_entries.size(); i++) {
+        auto filename = std::string(Filesystem::strNarrow(Filesystem::filenameView(m_entries[i])));
 
         auto entryMenu = CCMenu::create();
         entryMenu->setContentSize({ 200.0f, 30.0f });
@@ -77,8 +75,8 @@ bool LoadEditorPopup::init(IconType type, Function<Result<>(const std::filesyste
             ButtonSprite::create(filename.c_str(), 174, 0, 1.0f, false, "goldFont.fnt", "GJ_button_05.png", 0.0f),
             this, menu_selector(LoadEditorPopup::onEntry)
         );
-        entryButton->setUserObject("entry-path", ObjWrapper<std::filesystem::path>::create(std::move(*it)));
         entryButton->setPosition({ 100.0f, 20.0f });
+        entryButton->setTag(i);
         entryButton->setID(std::move(filename));
         entryMenu->addChild(entryButton);
     }
@@ -109,9 +107,8 @@ bool LoadEditorPopup::init(IconType type, Function<Result<>(const std::filesyste
 }
 
 void LoadEditorPopup::onEntry(CCObject* sender) {
-    auto node = static_cast<CCNode*>(sender);
-    auto name = node->getID();
-    if (auto res = m_callback(static_cast<ObjWrapper<std::filesystem::path>*>(node->getUserObject("entry-path"))->getValue()); res.isErr()) {
+    auto name = static_cast<CCNode*>(sender)->getID();
+    if (auto res = m_callback(m_entries[sender->getTag()]); res.isErr()) {
         Notify::error("Failed to load {}: {}", name, res.unwrapErr());
     }
     else {

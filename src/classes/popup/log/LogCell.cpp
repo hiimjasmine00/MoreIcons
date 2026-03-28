@@ -1,8 +1,8 @@
 #include "LogCell.hpp"
 #include "../../../utils/Constants.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
+#include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/FLAlertLayer.hpp>
-#include <Geode/utils/cocos.hpp>
 
 using namespace geode::prelude;
 

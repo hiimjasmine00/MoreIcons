@@ -511,7 +511,7 @@ void more_icons::updateIcon(IconInfo* info) {
 
         auto image = std::move(imageRes).unwrap();
 
-        Load::initTexture(texture, image.data.data(), image.width, image.height, true);
+        Load::initTexture(texture, image, true);
     }
 
     if (!texture) return;

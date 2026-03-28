@@ -26,47 +26,37 @@ FramePresetPopup* FramePresetPopup::create(IconType type, Function<void(CCSprite
 }
 
 struct ExtendedResult {
-    std::vector<uint8_t> data;
     Ref<CCTexture2D> texture;
     StringMap<Ref<CCSpriteFrame>> frames;
-    uint32_t width;
-    uint32_t height;
+    RGBAImage image;
     IconInfo* info;
     int id;
     int index;
 
-    ExtendedResult(ImageResult&& image, IconInfo* info, int id, int index)
-        : data(std::move(image.data))
-        , texture(image.texture)
-        , frames(std::move(image.frames))
-        , width(image.width)
-        , height(image.height)
-        , info(info)
-        , id(id)
-        , index(index) {}
-    ExtendedResult(const ExtendedResult& result) = delete;
-    ExtendedResult(ExtendedResult&& result) noexcept :
-        data(std::move(result.data)),
-        texture(result.texture),
-        frames(std::move(result.frames)),
-        width(result.width),
-        height(result.height),
-        info(result.info),
-        id(result.id),
-        index(result.index) {}
-    ExtendedResult& operator=(const ExtendedResult& result) = delete;
-    ExtendedResult& operator=(ExtendedResult&& result) noexcept {
-        data = std::move(result.data);
-        texture = result.texture;
-        frames = std::move(result.frames);
-        width = result.width;
-        height = result.height;
-        info = result.info;
-        id = result.id;
-        index = result.index;
-        return *this;
-    }
+    ExtendedResult(ImageResult&& image, IconInfo* info, int id, int index);
+
+    ExtendedResult(const ExtendedResult&) = delete;
+    ExtendedResult(ExtendedResult&&) noexcept;
+
+    ExtendedResult& operator=(const ExtendedResult&) = delete;
+    ExtendedResult& operator=(ExtendedResult&&) noexcept;
+
+    ~ExtendedResult();
 };
+
+ExtendedResult::ExtendedResult(ImageResult&& image, IconInfo* info, int id, int index) :
+    image(std::move(image.image)),
+    texture(std::move(image.texture)),
+    frames(std::move(image.frames)),
+    info(info),
+    id(id),
+    index(index) {}
+
+ExtendedResult::ExtendedResult(ExtendedResult&&) noexcept = default;
+
+ExtendedResult& ExtendedResult::operator=(ExtendedResult&&) noexcept = default;
+
+ExtendedResult::~ExtendedResult() = default;
 
 std::mutex imageMutex2;
 std::vector<ExtendedResult> images2;
@@ -187,7 +177,7 @@ void FramePresetPopup::setupFrames() {
 
     for (auto it = images2.begin(); it != images2.end(); it = images2.erase(it)) {
         auto& image = *it;
-        Load::initTexture(image.texture, image.data.data(), image.width, image.height);
+        Load::initTexture(image.texture, image.image);
 
         if (image.frames.empty()) {
             m_textures.push_back(std::move(image.texture));

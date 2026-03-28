@@ -589,7 +589,6 @@ CCMenuItemSpriteExtra* EditIconPopup::addPieceButton(std::string_view suffix, in
     pieceSprite->setPosition({ 15.0f, 15.0f });
     pieceButton->setContentSize({ 30.0f, 30.0f });
     pieceButton->setVisible(false);
-    pieceButton->setUserObject("piece-suffix", ObjWrapper<std::string_view>::create(suffix));
     pieceButton->setID(fmt::format("piece{}", suffix));
     m_pieceMenu->addChild(pieceButton);
 
@@ -601,7 +600,8 @@ CCMenuItemSpriteExtra* EditIconPopup::addPieceButton(std::string_view suffix, in
 
 void EditIconPopup::onSelectPiece(CCObject* sender) {
     auto node = static_cast<CCNode*>(sender);
-    auto suffix = static_cast<ObjWrapper<std::string_view>*>(node->getUserObject("piece-suffix"))->getValue();
+    auto suffix = node->getID().view();
+    suffix.remove_prefix(5);
     if (m_suffix == suffix) return;
 
     auto it = m_definitions.find(suffix);
@@ -680,7 +680,7 @@ Result<> EditIconPopup::updateWithSelectedFilesInternal(bool useSuffix) {
     }
 
     auto image = std::move(imageRes).unwrap();
-    Load::initTexture(image.texture, image.data.data(), image.width, image.height);
+    Load::initTexture(image);
 
     if (useSuffix) {
         if (auto it = image.frames.find(m_suffix); it != image.frames.end()) {

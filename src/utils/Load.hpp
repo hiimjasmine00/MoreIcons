@@ -1,50 +1,42 @@
 #include <Geode/utils/cocos.hpp>
 #include <Geode/utils/StringMap.hpp>
 
-struct ImageResult {
-    std::string name;
-    std::vector<uint8_t> data;
-    geode::Ref<cocos2d::CCTexture2D> texture;
-    geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>> frames;
-    uint32_t width;
-    uint32_t height;
-
-    ImageResult(
-        std::string&& name,
-        std::vector<uint8_t>&& data,
-        geode::Ref<cocos2d::CCTexture2D>&& texture,
-        geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>>&& frames,
-        uint32_t width,
-        uint32_t height
-    ) : name(std::move(name)), data(std::move(data)), texture(std::move(texture)), frames(std::move(frames)), width(width), height(height) {}
-
-    ImageResult(const ImageResult& result) = delete;
-    ImageResult(ImageResult&& result) :
-        name(std::move(result.name)),
-        data(std::move(result.data)),
-        texture(std::move(result.texture)),
-        frames(std::move(result.frames)),
-        width(result.width),
-        height(result.height) {}
-
-    ImageResult& operator=(const ImageResult& result) = delete;
-    ImageResult& operator=(ImageResult&& result) {
-        name = std::move(result.name);
-        data = std::move(result.data);
-        texture = std::move(result.texture);
-        frames = std::move(result.frames);
-        width = result.width;
-        height = result.height;
-        return *this;
-    }
-};
-
 struct RGBAImage {
     std::vector<uint8_t> data;
     uint32_t width;
     uint32_t height;
 
-    RGBAImage(std::vector<uint8_t>&& data, uint32_t width, uint32_t height) : data(std::move(data)), width(width), height(height) {}
+    RGBAImage(std::vector<uint8_t>&& data, uint32_t width, uint32_t height);
+
+    RGBAImage(const RGBAImage&) = delete;
+    RGBAImage(RGBAImage&&) noexcept;
+
+    RGBAImage& operator=(const RGBAImage&) = delete;
+    RGBAImage& operator=(RGBAImage&&) noexcept;
+
+    ~RGBAImage();
+};
+
+struct ImageResult {
+    std::string name;
+    geode::Ref<cocos2d::CCTexture2D> texture;
+    geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>> frames;
+    RGBAImage image;
+
+    ImageResult(
+        std::string&& name,
+        geode::Ref<cocos2d::CCTexture2D>&& texture,
+        geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>>&& frames,
+        RGBAImage&& image
+    );
+
+    ImageResult(const ImageResult&) = delete;
+    ImageResult(ImageResult&&) noexcept;
+
+    ImageResult& operator=(const ImageResult&) = delete;
+    ImageResult& operator=(ImageResult&&) noexcept;
+
+    ~ImageResult();
 };
 
 namespace Load {
@@ -56,6 +48,8 @@ namespace Load {
     geode::Result<cocos2d::CCTexture2D*> createTexture(const std::filesystem::path& path, bool premultiplyAlpha = false);
     cocos2d::CCTexture2D* createTexture(const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha = false);
     void initTexture(cocos2d::CCTexture2D* texture, const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha = false);
+    void initTexture(cocos2d::CCTexture2D* texture, const RGBAImage& image, bool premultiplyAlpha = false);
+    void initTexture(const ImageResult& image, bool premultiplyAlpha = false);
     geode::Result<ImageResult> createFrames(
         const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type,
         std::string_view target = {}, bool premultiply = false
