@@ -243,18 +243,14 @@ std::filesystem::path getFullPath(const std::string& filename) {
 }
 
 std::filesystem::path MoreIcons::getFirePath(IconInfo* info, int id, int frame) {
-    return getFirePath(info, id, fmt::format("_{:03}", frame));
-}
-
-std::filesystem::path MoreIcons::getFirePath(IconInfo* info, int id, std::string_view frameSuffix) {
     if (info) {
         auto path = info->getTexture();
         auto& pathString = Filesystem::getPathString(path);
-        pathString.replace(pathString.size() - 8, 4, Filesystem::strWide(frameSuffix));
+        pathString.replace(pathString.size() - 7, 3, fmt::format(L("{:03}"), frame));
         return path;
     }
     else {
-        return getFullPath(fmt::format("shipfire{:02}{}.png", id, frameSuffix));
+        return getFullPath(fmt::format("shipfire{:02}_{:03}.png", id, frame));
     }
 }
 

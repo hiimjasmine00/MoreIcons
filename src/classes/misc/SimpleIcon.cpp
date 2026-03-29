@@ -176,7 +176,7 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
         texture.erase(0, minSize - 4).erase(texture.size() - 4);
 
         auto customID = Json::get<std::string>(usedTexture, "customID");
-        auto factor = customID == "back01" || customID == "back02" || customID == "back03" ? (spider ? 0.5f : 0.7f) : 1.0f;
+        auto factor = customID == "back01"sv || customID == "back02"sv || customID == "back03"sv ? (spider ? 0.5f : 0.7f) : 1.0f;
         ccColor3B spriteColor = { (uint8_t)(factor * 255.0f), (uint8_t)(factor * 255.0f), (uint8_t)(factor * 255.0f) };
 
         auto partNode = CCNode::create();
@@ -193,7 +193,7 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
         m_targets[texture].push_back(primarySprite);
         m_mainColorSprites.emplace_back(primarySprite, factor);
 
-        texture.replace(3, 0, "_2", 2);
+        texture.replace(3, 0, "_2"sv);
 
         auto secondarySprite = spriteWithFrame("{}{}.png", name, texture);
         secondarySprite->setColor(spriteColor);
@@ -202,7 +202,7 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
         m_targets[texture].push_back(secondarySprite);
         m_secondaryColorSprites.emplace_back(secondarySprite, factor);
 
-        texture.replace(3, 2, "_glow", 5);
+        texture.replace(3, 2, "_glow"sv);
 
         auto glowPartNode = CCNode::create();
         glowPartNode->setID(fmt::format("sprite_{}_glow", i + 1));
@@ -215,8 +215,8 @@ void SimpleIcon::createComplexIcon(IconType type, std::string_view name) {
         m_targets[texture].push_back(glowSprite);
         m_glowColorSprites.push_back(glowSprite);
 
-        if (texture.starts_with("_01")) {
-            texture.replace(3, 5, "_extra", 6);
+        if (texture.starts_with("_01"sv)) {
+            texture.replace(3, 5, "_extra"sv);
 
             auto extraSprite = spriteWithFrame("{}{}.png", name, texture);
             extraSprite->setID(fmt::format("{}{}", prefix, texture));

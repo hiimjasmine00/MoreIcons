@@ -65,15 +65,15 @@ bool ViewShipFirePopup::init(int id, IconInfo* info) {
     nextButton->setID("next-button");
     m_buttonMenu->addChild(nextButton);
 
-    auto path = MoreIcons::getIconPath(info, id, IconType::ShipFire);
     auto count = info ? info->getFireCount() : Defaults::getShipFireCount(id);
+    prevButton->setVisible(count > 5);
+    nextButton->setVisible(count > 5);
 
-    auto& pathString = Filesystem::getPathString(path);
     CCMenuItemSpriteExtra* selected = nullptr;
     auto failed = false;
 
     for (int i = 1; i <= count; i++) {
-        pathString.replace(pathString.size() - 7, 3, fmt::format(L("{:03}"), i));
+        auto path = MoreIcons::getFirePath(info, id, i);
         auto textureRes = Load::createTexture(path, true);
         if (textureRes.isErr()) {
             Notify::error("Failed to load {}: {}", Filesystem::filenameFormat(path), textureRes.unwrapErr());

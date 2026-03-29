@@ -1,4 +1,5 @@
 #include "FramePresetPopup.hpp"
+#include "../../../MoreIcons.hpp"
 #include "../../../utils/Constants.hpp"
 #include "../../../utils/Defaults.hpp"
 #include "../../../utils/Filesystem.hpp"
@@ -66,8 +67,9 @@ void loadDeathEffects(std::vector<arc::BlockingTaskHandle<void>>& tasks, Filesys
 
     auto count = Get::gameManager->countForType(IconType::DeathEffect);
     for (int i = 1; i < count; i++) {
-        auto texture = Icons::vanillaTexturePath(fmt::format(L("PlayerExplosion_{:02}{}.png"), i, suffix), false);
-        auto sheet = Icons::vanillaTexturePath(fmt::format(L("PlayerExplosion_{:02}{}.plist"), i, suffix), false);
+        std::filesystem::path texture;
+        std::filesystem::path sheet;
+        MoreIcons::getIconPaths(nullptr, i + 1, IconType::DeathEffect, texture, sheet);
         tasks.push_back(rt.spawnBlocking<void>([texture = std::move(texture), sheet = std::move(sheet), i] mutable {
             auto res = Load::createFrames(texture, sheet, {}, IconType::DeathEffect);
             if (res.isErr()) return;
@@ -81,7 +83,7 @@ void loadDeathEffects(std::vector<arc::BlockingTaskHandle<void>>& tasks, Filesys
         for (auto& info : *icons) {
             auto& texture = info.getTexture();
             auto& sheet = info.getSheet();
-            tasks.push_back(rt.spawnBlocking<void>([&texture, &sheet, name = info.getName(), info = &info] mutable {
+            tasks.push_back(rt.spawnBlocking<void>([&texture, &sheet, info = &info] mutable {
                 auto res = Load::createFrames(texture, sheet, {}, IconType::DeathEffect);
                 if (res.isErr()) return;
 
@@ -98,9 +100,7 @@ void loadShipFires(std::vector<arc::BlockingTaskHandle<void>>& tasks) {
     auto count = Get::gameManager->countForType(IconType::ShipFire);
     for (int i = 2; i <= count; i++) {
         for (int j = 1; j <= Defaults::getShipFireCount(i); j++) {
-            auto texture = Icons::vanillaTexturePath(fmt::format(L("shipfire{:02}_{:03}.png"), i, j), true);
-            auto textureName = fmt::format("shipfire{:02}-{}", i, j);
-            tasks.push_back(rt.spawnBlocking<void>([texture = std::move(texture), textureName = std::move(textureName), i, j] mutable {
+            tasks.push_back(rt.spawnBlocking<void>([texture = MoreIcons::getFirePath(nullptr, i, j), i, j] mutable {
                 auto res = Load::createFrames(texture, std::filesystem::path(), {}, IconType::ShipFire);
                 if (res.isErr()) return;
 
@@ -113,10 +113,7 @@ void loadShipFires(std::vector<arc::BlockingTaskHandle<void>>& tasks) {
     if (auto icons = more_icons::getIcons(IconType::ShipFire)) {
         for (auto& info : *icons) {
             for (int i = 1; i <= info.getFireCount(); i++) {
-                auto texture = info.getTexture();
-                auto& textureString = Filesystem::getPathString(texture);
-                textureString.replace(textureString.size() - 7, 3, fmt::format(L("{:03}"), i));
-                tasks.push_back(rt.spawnBlocking<void>([texture = std::move(texture), info = &info, i] mutable {
+                tasks.push_back(rt.spawnBlocking<void>([texture = MoreIcons::getFirePath(&info, 0, i), info = &info, i] mutable {
                     auto res = Load::createFrames(texture, std::filesystem::path(), {}, IconType::ShipFire);
                     if (res.isErr()) return;
 

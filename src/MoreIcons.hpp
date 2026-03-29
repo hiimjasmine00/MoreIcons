@@ -23,7 +23,6 @@ namespace MoreIcons {
     std::string getIconName(int id, IconType type);
     void getIconPaths(IconInfo* info, int id, IconType type, std::filesystem::path& png, std::filesystem::path& plist);
     std::filesystem::path getFirePath(IconInfo* info, int id, int frame);
-    std::filesystem::path getFirePath(IconInfo* info, int id, std::string_view frameSuffix);
     std::filesystem::path getIconStem(std::string_view name, IconType type);
     std::filesystem::path getIconPath(IconInfo* info, int id, IconType type);
     void loadFromSave(IconType type);

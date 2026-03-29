@@ -69,6 +69,9 @@ bool ViewDeathEffectPopup::init(int id, IconInfo* info) {
         auto image = std::move(imageRes).unwrap();
         Load::initTexture(image, true);
 
+        prevButton->setVisible(image.frames.size() > 5);
+        nextButton->setVisible(image.frames.size() > 5);
+
         std::vector<std::string_view> keys;
         for (auto& frame : image.frames) {
             keys.push_back(frame.first);
