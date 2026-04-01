@@ -58,5 +58,5 @@ build-*/
 .vs/
 
 # Bruh
-logo.pdn
+*.pdn
 docs/dist

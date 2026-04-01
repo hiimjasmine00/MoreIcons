@@ -1,5 +1,5 @@
-# More Icons
-Custom icons without the hassle.
+# Less Icons
+No custom icons with even more hassle.
 
 ## Gallery
 ![More Icons Popup](https://raw.githubusercontent.com/hiimjasmine00/MoreIcons/refs/heads/master/resources/previews/more-icons-popup.png)

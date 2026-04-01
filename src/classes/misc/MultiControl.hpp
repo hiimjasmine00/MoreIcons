@@ -1,9 +1,10 @@
+#include <Geode/ui/SliderNode.hpp>
 #include <Geode/ui/TextInput.hpp>
 
-class MultiControl : public cocos2d::CCNode, public TextInputDelegate {
+class MultiControl : public cocos2d::CCNode {
 protected:
     geode::Function<void(float)> m_onChange;
-    Slider* m_slider;
+    geode::SliderNode* m_slider;
     cocos2d::CCMenu* m_menu;
     geode::TextInput* m_input;
     cocos2d::CCLabelBMFont* m_label;
@@ -24,11 +25,9 @@ public:
         float sliderScale, float inputWidth
     );
 
-    void sliderChanged(CCObject* sender);
-    void textChanged(CCTextInputNode* input) override;
     void onReset(CCObject* sender);
 
-    Slider* getSlider() const { return m_slider; }
+    geode::SliderNode* getSlider() const { return m_slider; }
     cocos2d::CCMenu* getMenu() const { return m_menu; }
     geode::TextInput* getInput() const { return m_input; }
     cocos2d::CCLabelBMFont* getLabel() const { return m_label; }

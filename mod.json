@@ -1,16 +1,16 @@
 {
-    "geode": "5.4.1",
+    "geode": "5.5.1",
     "gd": {
         "android": "2.2081",
         "win": "2.2081",
         "mac": "2.2081",
         "ios": "2.2081"
     },
-    "version": "v2.1.0",
+    "version": "v2.1.1",
     "id": "hiimjustin000.more_icons",
-    "name": "More Icons",
+    "name": "Less Icons",
     "developer": "hiimjasmine00",
-    "description": "Custom icons without the hassle.",
+    "description": "No custom icons with even more hassle.",
     "dependencies": {
         "geode.node-ids": ">=v1.2.0"
     },

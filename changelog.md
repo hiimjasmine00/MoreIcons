@@ -1,4 +1,7 @@
-# More Icons Changelog
+# Less Icons Changelog
+## v2.1.1 (2026-04-01)
+- Rebranded to Less Icons
+
 ## v2.1.0 (2026-03-27)
 - Expanded inputs in the icon editor to 3 decimal places
 - Moved textboxes in the trail and ship fire editors to a separate save popup

@@ -75,7 +75,7 @@ class $modify(MIGarageLayer, GJGarageLayer) {
         }
 
         if (auto shardsMenu = getChildByID("shards-menu")) {
-            auto miSprite = CircleButtonSprite::createWithSprite("MI_moreIcons_001.png"_spr, 1.0f, CircleBaseColor::Gray, CircleBaseSize::Small);
+            auto miSprite = CircleButtonSprite::createWithSprite("MI_lessIcons_001.png"_spr, 1.0f, CircleBaseColor::Gray, CircleBaseSize::Small);
             if (!Log::logs.empty()) {
                 Severity severity = Severity::Debug;
                 for (auto& [type, logs] : Log::logs) {

@@ -1,5 +1,5 @@
-# More Icons
-Custom icons without the hassle.
+# Less Icons
+No custom icons with even more hassle.
 
 ## Gallery
 ![More Icons Popup](hiimjustin000.more_icons/more-icons-popup.png?width=300)
