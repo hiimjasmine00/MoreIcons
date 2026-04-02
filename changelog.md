@@ -1,4 +1,7 @@
-# Less Icons Changelog
+# More Icons Changelog
+## v2.1.2 (2026-04-02)
+- Reverted back to More Icons (I hope you liked my April Fools' joke :P)
+
 ## v2.1.1 (2026-04-01)
 - Rebranded to Less Icons
 
