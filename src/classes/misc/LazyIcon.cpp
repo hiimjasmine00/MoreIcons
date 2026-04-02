@@ -9,8 +9,8 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/loader/Loader.hpp>
 #include <Geode/utils/async.hpp>
-#include <IconInfo.hpp>
 #include <jasmine/mod.hpp>
+#include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 using namespace jasmine::mod;
@@ -32,7 +32,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
     m_callback = std::move(callback);
     m_type = type;
     m_info = info;
-    m_name = info ? fmt::format("{}"_spr, info->getName()) : MoreIcons::getIconName(id, type);
+    m_name = info ? fmt::format("{}_{}"_spr, more_icons::saveKey(type), info->getName()) : MoreIcons::getIconName(id, type);
     if (!suffix.empty()) m_frameName = fmt::format("{}{}.png", m_name, suffix);
     setID(m_name);
 

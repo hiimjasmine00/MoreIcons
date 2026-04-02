@@ -597,28 +597,30 @@ void more_icons::updateSimplePlayer(SimplePlayer* player, IconInfo* info) {
 
     loadIcon(info, player->m_iconRequestID);
 
+    auto key = saveKey(type);
+
     auto firstLayer = player->m_firstLayer;
-    firstLayer->setDisplayFrame(Icons::getFrame("{}_001.png"_spr, icon));
+    firstLayer->setDisplayFrame(Icons::getFrame("{}_{}_001.png"_spr, key, icon));
     firstLayer->setScale(type == IconType::Ball ? 0.9f : 1.0f);
     firstLayer->setPosition({ 0.0f, type == IconType::Ufo ? -7.0f : 0.0f });
 
     auto firstCenter = firstLayer->getContentSize() / 2.0f;
 
     auto secondLayer = player->m_secondLayer;
-    secondLayer->setDisplayFrame(Icons::getFrame("{}_2_001.png"_spr, icon));
+    secondLayer->setDisplayFrame(Icons::getFrame("{}_{}_2_001.png"_spr, key, icon));
     secondLayer->setPosition(firstCenter);
 
     auto outlineSprite = player->m_outlineSprite;
-    outlineSprite->setDisplayFrame(Icons::getFrame("{}_glow_001.png"_spr, icon));
+    outlineSprite->setDisplayFrame(Icons::getFrame("{}_{}_glow_001.png"_spr, key, icon));
     outlineSprite->setPosition(firstCenter);
 
     if (type == IconType::Ufo) {
         auto birdDome = player->m_birdDome;
-        birdDome->setDisplayFrame(Icons::getFrame("{}_3_001.png"_spr, icon));
+        birdDome->setDisplayFrame(Icons::getFrame("{}_{}_3_001.png"_spr, key, icon));
         birdDome->setPosition(firstCenter);
     }
 
-    auto extraFrame = Icons::getFrame("{}_extra_001.png"_spr, icon);
+    auto extraFrame = Icons::getFrame("{}_{}_extra_001.png"_spr, key, icon);
     auto detailSprite = player->m_detailSprite;
     detailSprite->setVisible(extraFrame != nullptr);
     if (extraFrame) {
@@ -648,26 +650,27 @@ void more_icons::updateRobotSprite(GJRobotSprite* sprite, IconInfo* info) {
     auto headSprite = sprite->m_headSprite;
     auto extraSprite = sprite->m_extraSprite;
     auto& icon = info->getName();
+    auto key = saveKey(info->getType());
 
     for (size_t i = 0; i < spriteParts.size(); i++) {
         auto spritePart = spriteParts[i];
         auto tag = spritePart->getTag();
 
         spritePart->setBatchNode(nullptr);
-        spritePart->setDisplayFrame(Icons::getFrame("{}_{:02}_001.png"_spr, icon, tag));
+        spritePart->setDisplayFrame(Icons::getFrame("{}_{}_{:02}_001.png"_spr, key, icon, tag));
         if (auto secondSprite = secondArray[i]) {
             secondSprite->setBatchNode(nullptr);
-            secondSprite->setDisplayFrame(Icons::getFrame("{}_{:02}_2_001.png"_spr, icon, tag));
+            secondSprite->setDisplayFrame(Icons::getFrame("{}_{}_{:02}_2_001.png"_spr, key, icon, tag));
             secondSprite->setPosition(spritePart->getContentSize() / 2.0f);
         }
 
         if (auto glowChild = glowArray[i]) {
             glowChild->setBatchNode(nullptr);
-            glowChild->setDisplayFrame(Icons::getFrame("{}_{:02}_glow_001.png"_spr, icon, tag));
+            glowChild->setDisplayFrame(Icons::getFrame("{}_{}_{:02}_glow_001.png"_spr, key, icon, tag));
         }
 
         if (spritePart == headSprite) {
-            auto extraFrame = Icons::getFrame("{}_{:02}_extra_001.png"_spr, icon, tag);
+            auto extraFrame = Icons::getFrame("{}_{}_{:02}_extra_001.png"_spr, key, icon, tag);
             if (extraFrame) {
                 if (extraSprite) {
                     extraSprite->setBatchNode(nullptr);
@@ -721,17 +724,18 @@ void more_icons::updatePlayerObject(PlayerObject* object, IconInfo* info) {
     auto secondLayer = isVehicle ? object->m_vehicleSpriteSecondary : object->m_iconSpriteSecondary;
     auto outlineSprite = isVehicle ? object->m_vehicleGlow : object->m_iconGlow;
     auto detailSprite = isVehicle ? object->m_vehicleSpriteWhitener : object->m_iconSpriteWhitener;
+    auto key = saveKey(type);
 
-    firstLayer->setDisplayFrame(Icons::getFrame("{}_001.png"_spr, icon));
-    secondLayer->setDisplayFrame(Icons::getFrame("{}_2_001.png"_spr, icon));
+    firstLayer->setDisplayFrame(Icons::getFrame("{}_{}_001.png"_spr, key, icon));
+    secondLayer->setDisplayFrame(Icons::getFrame("{}_{}_2_001.png"_spr, key, icon));
     auto firstCenter = firstLayer->getContentSize() / 2.0f;
     secondLayer->setPosition(firstCenter);
     if (type == IconType::Ufo) {
-        object->m_birdVehicle->setDisplayFrame(Icons::getFrame("{}_3_001.png"_spr, icon));
+        object->m_birdVehicle->setDisplayFrame(Icons::getFrame("{}_{}_3_001.png"_spr, key, icon));
         object->m_birdVehicle->setPosition(firstCenter);
     }
-    outlineSprite->setDisplayFrame(Icons::getFrame("{}_glow_001.png"_spr, icon));
-    auto extraFrame = Icons::getFrame("{}_extra_001.png"_spr, icon);
+    outlineSprite->setDisplayFrame(Icons::getFrame("{}_{}_glow_001.png"_spr, key, icon));
+    auto extraFrame = Icons::getFrame("{}_{}_extra_001.png"_spr, key, icon);
     detailSprite->setVisible(extraFrame != nullptr);
     if (extraFrame) {
         detailSprite->setDisplayFrame(extraFrame);

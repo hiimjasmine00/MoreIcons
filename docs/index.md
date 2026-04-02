@@ -10,7 +10,7 @@ To use the More Icons API, you must add it as a dependency in your `mod.json` fi
 {
     "dependencies": {
         "hiimjustin000.more_icons": {
-            "version": ">=v2.0.0",
+            "version": ">=v2.1.0",
             "required": true
         }
     }

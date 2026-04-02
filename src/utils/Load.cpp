@@ -10,6 +10,7 @@
 #endif
 #include <Geode/utils/file.hpp>
 #include <jasmine/mod.hpp>
+#include <MoreIcons.hpp>
 #include <pugixml.hpp>
 #include <texpack.hpp>
 
@@ -36,12 +37,12 @@ ImageResult& ImageResult::operator=(ImageResult&&) noexcept = default;
 
 ImageResult::~ImageResult() = default;
 
-void replaceOrErase(std::string& str, size_t offset, std::string_view name) {
+void replaceOrErase(std::string& str, size_t offset, std::string_view name, IconType type) {
     if (name.empty()) {
         str.erase(0, str.size() - offset).erase(str.size() - 4);
     }
     else {
-        str.replace(0, str.size() - offset, fmt::format("{}"_spr, name));
+        str.replace(0, str.size() - offset, fmt::format("{}_{}"_spr, more_icons::saveKey(type), name));
     }
 }
 
@@ -61,7 +62,7 @@ void Load::fixFrameName(std::string& frameName, std::string_view name, IconType 
     if (frameName.size() < 8 || !frameName.ends_with(".png")) return;
 
     if (type == IconType::DeathEffect) {
-        return replaceOrErase(frameName, 8, name);
+        return replaceOrErase(frameName, 8, name, type);
     }
 
     if (!frameName.ends_with("_001.png")) return;
@@ -74,12 +75,12 @@ void Load::fixFrameName(std::string& frameName, std::string_view name, IconType 
     auto end = std::string_view(frameName.data(), frameName.size() - 8);
     for (auto ending : endings) {
         if (end.ends_with(ending)) {
-            return replaceOrErase(frameName, ending.size() + 8, name);
+            return replaceOrErase(frameName, ending.size() + 8, name, type);
         }
     }
 
     if (type != IconType::Robot && type != IconType::Spider) {
-        return replaceOrErase(frameName, 8, name);
+        return replaceOrErase(frameName, 8, name, type);
     }
 }
 

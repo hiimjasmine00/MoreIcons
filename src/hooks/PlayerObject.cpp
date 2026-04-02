@@ -128,8 +128,9 @@ class $modify(MIPlayerObject, PlayerObject) {
         PlayerObject::toggleRobotMode(enable, noEffects);
 
         if (!isRobot && m_isRobot) {
-            auto icon = getIconInfo(IconType::Robot);
-            if (icon) m_iconSprite->setDisplayFrame(Icons::getFrame("{}_01_001.png"_spr, icon->getName()));
+            if (auto icon = getIconInfo(IconType::Robot)) {
+                m_iconSprite->setDisplayFrame(Icons::getFrame("{}_{}_01_001.png"_spr, more_icons::saveKey(IconType::Robot), icon->getName()));
+            }
         }
     }
 
@@ -138,8 +139,9 @@ class $modify(MIPlayerObject, PlayerObject) {
         PlayerObject::toggleSpiderMode(enable, noEffects);
 
         if (!isSpider && m_isSpider) {
-            auto icon = getIconInfo(IconType::Spider);
-            if (icon) m_iconSprite->setDisplayFrame(Icons::getFrame("{}_01_001.png"_spr, icon->getName()));
+            if (auto icon = getIconInfo(IconType::Spider)) {
+                m_iconSprite->setDisplayFrame(Icons::getFrame("{}_{}_01_001.png"_spr, more_icons::saveKey(IconType::Spider), icon->getName()));
+            }
         }
     }
 

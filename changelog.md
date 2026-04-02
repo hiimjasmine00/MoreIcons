@@ -1,4 +1,7 @@
 # More Icons Changelog
+## v2.1.3 (2026-04-02)
+- Fixed a bug where icons with different types but the same name would not load properly (Reported by [G4rlicbr3ad](user:27300083))
+
 ## v2.1.2 (2026-04-02)
 - Reverted back to More Icons (I hope you liked my April Fools' joke :P)
 

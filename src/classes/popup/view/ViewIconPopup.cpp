@@ -8,7 +8,7 @@
 #include "../../../utils/Json.hpp"
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/loader/Mod.hpp>
-#include <IconInfo.hpp>
+#include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 
@@ -62,7 +62,7 @@ bool ViewIconPopup::init(IconType type, int id, IconInfo* info) {
         else if (type == IconType::Ufo) suffixes = ufoSuffixes;
         else suffixes = cubeSuffixes;
 
-        auto prefix = info ? fmt::format("{}"_spr, info->getName()) : MoreIcons::getIconName(id, type);
+        auto prefix = info ? fmt::format("{}_{}"_spr, more_icons::saveKey(type), info->getName()) : MoreIcons::getIconName(id, type);
 
         auto player = SimpleIcon::create(type, prefix);
         player->setPosition({ 175.0f, (isRobot ? 160.0f : 80.0f) - suffixes.size() * 30.0f });
