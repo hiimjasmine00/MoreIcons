@@ -277,7 +277,7 @@ Result<> EditIconPopup::loadEditor(const std::filesystem::path& directory) {
         m_definition = &it->second;
     }
     else {
-        m_definition = &m_definitions.emplace(m_suffix, FrameDefinition()).first->second;
+        m_definition = &m_definitions.emplace(std::string(m_suffix), FrameDefinition()).first->second;
     }
     updateControls();
 
@@ -327,11 +327,7 @@ Result<> EditIconPopup::saveEditor() {
 
     texpack::Packer packer;
     for (auto& [frameName, frame] : m_frames) {
-        auto sprite = CCSprite::createWithSpriteFrame(frame);
-        sprite->setAnchorPoint({ 0.0f, 0.0f });
-        sprite->setBlendFunc({ GL_ONE, GL_ZERO });
-        packer.frame(fmt::format("icon{}.png", frameName), ImageRenderer::getImage(sprite));
-        sprite->release();
+        packer.frame(fmt::format("icon{}.png", frameName), ImageRenderer::getImage(frame));
     }
 
     GEODE_UNWRAP(ImageRenderer::save(packer, m_pendingPath / L("icon.png"), m_pendingPath / L("icon.plist"), "icon.png"));
@@ -502,9 +498,9 @@ Result<> EditIconPopup::saveIcon(const gd::string& name) {
         auto& definition = it->second;
         auto joinedName = fmt::format("{}{}.png", name, frameName);
         auto frame = frameRef.data();
-        for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
             auto node = CCNode::create();
-            node->setScale(scales[i]);
+            node->setScale(scales[j]);
             node->setAnchorPoint({ 0.0f, 0.0f });
             auto sprite = CCSprite::createWithSpriteFrame(frame);
             sprite->setPosition({ definition.offsetX, definition.offsetY });
@@ -517,7 +513,7 @@ Result<> EditIconPopup::saveIcon(const gd::string& name) {
             node->setContentSize(boundingSize + CCSize { std::abs(definition.offsetX * 2.0f), std::abs(definition.offsetY * 2.0f) });
             sprite->setPosition(node->getContentSize() / 2.0f + sprite->getPosition());
             sprite->setBlendFunc({ GL_ONE, GL_ZERO });
-            packers[i].frame(joinedName, ImageRenderer::getImage(node));
+            packers[j].frame(joinedName, ImageRenderer::getImage(node));
             node->release();
             sprite->release();
         }
@@ -579,10 +575,10 @@ void EditIconPopup::updateControls() {
 }
 
 CCMenuItemSpriteExtra* EditIconPopup::addPieceButton(std::string_view suffix, int page, bool required) {
-    m_definitions.emplace(suffix, FrameDefinition());
+    m_definitions.emplace(std::string(suffix), FrameDefinition());
 
     auto pieceFrame = Icons::getFrame("{}{}.png", MoreIcons::getIconName(1, m_iconType), suffix);
-    if (pieceFrame) m_frames.emplace(suffix, pieceFrame);
+    if (pieceFrame) m_frames.emplace(std::string(suffix), pieceFrame);
     else pieceFrame = Get::spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
     auto pieceSprite = CCSprite::createWithSpriteFrame(pieceFrame);
     auto pieceButton = CCMenuItemSpriteExtra::create(pieceSprite, this, menu_selector(EditIconPopup::onSelectPiece));
@@ -593,7 +589,7 @@ CCMenuItemSpriteExtra* EditIconPopup::addPieceButton(std::string_view suffix, in
     m_pieceMenu->addChild(pieceButton);
 
     m_pages[page].push_back(pieceButton);
-    m_pieces.emplace(suffix, pieceSprite);
+    m_pieces.emplace(std::string(suffix), pieceSprite);
     if (required) m_required.push_back(suffix);
     return pieceButton;
 }

@@ -368,12 +368,9 @@ Result<> EditShipFirePopup::saveShipFire(const gd::string& name) {
     }
 
     for (size_t i = 0; i < m_frameButtons.size(); i++) {
-        auto sprite = CCSprite::createWithTexture(static_cast<CCSprite*>(m_frameButtons[i]->getNormalImage())->getTexture());
-        sprite->setAnchorPoint({ 0.0f, 0.0f });
-        sprite->setBlendFunc({ GL_ONE, GL_ZERO });
-        auto image = ImageRenderer::getImage(sprite);
-        sprite->release();
-        GEODE_UNWRAP_INTO(auto imageData, texpack::toPNG(image).mapErr([i](std::string err) {
+        GEODE_UNWRAP_INTO(auto imageData, ImageRenderer::getImage(
+            static_cast<CCSprite*>(m_frameButtons[i]->getNormalImage())->getTexture()
+        ).mapErr([i](std::string err) {
             return fmt::format("Failed to encode fire_{:03}.png: {}", i + 1, err);
         }));
         GEODE_UNWRAP(file::writeBinary(m_pendingPath / fmt::format(L("fire_{:03}.png"), i + 1), imageData).mapErr([](std::string err) {

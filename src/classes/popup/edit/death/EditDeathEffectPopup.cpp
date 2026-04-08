@@ -348,24 +348,14 @@ Result<> EditDeathEffectPopup::saveEditor() {
     }));
 
     texpack::Packer packer;
-    for (size_t i = 0; i < m_frames.size(); ++i) {
-        auto sprite = CCSprite::createWithSpriteFrame(m_frames[i]);
-        sprite->setAnchorPoint({ 0.0f, 0.0f });
-        sprite->setBlendFunc({ GL_ONE, GL_ZERO });
-        packer.frame(fmt::format("effect_{:03}.png", i + 1), ImageRenderer::getImage(sprite));
-        sprite->release();
+    for (size_t i = 0; i < m_frames.size(); i++) {
+        packer.frame(fmt::format("effect_{:03}.png", i + 1), ImageRenderer::getImage(m_frames[i]));
     }
 
     GEODE_UNWRAP(ImageRenderer::save(packer, m_pendingPath / L("effect.png"), m_pendingPath / L("effect.plist"), "effect.png"));
 
     if (auto texture = m_iconButton->getIconTexture()) {
-        auto iconSprite = CCSprite::createWithTexture(texture);
-        iconSprite->setAnchorPoint({ 0.0f, 0.0f });
-        iconSprite->setBlendFunc({ GL_ONE, GL_ZERO });
-        auto iconImage = ImageRenderer::getImage(iconSprite);
-        iconSprite->release();
-
-        GEODE_UNWRAP_INTO(auto iconData, texpack::toPNG(iconImage).mapErr([](std::string err) {
+        GEODE_UNWRAP_INTO(auto iconData, ImageRenderer::getImage(texture).mapErr([](std::string err) {
             return fmt::format("Failed to encode icon: {}", err);
         }));
 
@@ -485,9 +475,9 @@ Result<> EditDeathEffectPopup::saveEffect(const gd::string& name) {
         auto joinedName = fmt::format("effect_{:03}.png", i + 1);
         auto frame = m_frames[i].data();
         auto& definition = m_definitions[i];
-        for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
             auto node = CCNode::create();
-            node->setScale(scales[i]);
+            node->setScale(scales[j]);
             node->setAnchorPoint({ 0.0f, 0.0f });
             auto sprite = CCSprite::createWithSpriteFrame(frame);
             sprite->setPosition({ definition.offsetX, definition.offsetY });
@@ -500,7 +490,7 @@ Result<> EditDeathEffectPopup::saveEffect(const gd::string& name) {
             node->setContentSize(boundingSize + CCSize { std::abs(definition.offsetX * 2.0f), std::abs(definition.offsetY * 2.0f) });
             sprite->setPosition(node->getContentSize() / 2.0f + sprite->getPosition());
             sprite->setBlendFunc({ GL_ONE, GL_ZERO });
-            packers[i].frame(joinedName, ImageRenderer::getImage(node));
+            packers[j].frame(joinedName, ImageRenderer::getImage(node));
             node->release();
             sprite->release();
         }
@@ -628,7 +618,7 @@ Result<> EditDeathEffectPopup::updateWithSelectedFilesInternal(bool update) {
     }
     std::ranges::sort(keys);
     CCMenuItemSpriteExtra* selected = nullptr;
-    for (size_t i = 0; i < keys.size(); ++i) {
+    for (size_t i = 0; i < keys.size(); i++) {
         auto it = image.frames.find(keys[i]);
         if (it != image.frames.end()) {
             auto button = addPieceButton(m_frames.size(), it->second);
@@ -651,7 +641,7 @@ Result<> EditDeathEffectPopup::updateWithSelectedFilesInternal(bool update) {
 
 void EditDeathEffectPopup::updatePieces() {
     auto crossFrame = Get::spriteFrameCache->spriteFrameByName("GJ_deleteIcon_001.png");
-    for (size_t i = 0; i < m_frames.size(); ++i) {
+    for (size_t i = 0; i < m_frames.size(); i++) {
         auto spriteFrame = m_frames[i].data();
         m_pieces[i]->setDisplayFrame(spriteFrame ? spriteFrame : crossFrame);
         limitNodeSize(m_pieces[i], { 30.0f, 30.0f }, 1.0f, 0.0f);

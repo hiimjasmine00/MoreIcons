@@ -12,7 +12,6 @@
 #include <Geode/loader/Mod.hpp>
 #define GEODE_DEFINE_EVENT_EXPORTS
 #include <MoreIcons.hpp>
-#include <texpack.hpp>
 
 using namespace geode::prelude;
 using namespace std::string_literals;

@@ -132,13 +132,7 @@ Result<> EditTrailPopup::saveTrail(const gd::string& name) {
         GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
     }
 
-    auto sprite = CCSprite::createWithTexture(m_streak->getTexture());
-    sprite->setAnchorPoint({ 0.0f, 0.0f });
-    sprite->setBlendFunc({ GL_ONE, GL_ZERO });
-    auto image = ImageRenderer::getImage(sprite);
-    sprite->release();
-
-    GEODE_UNWRAP_INTO(auto imageData, texpack::toPNG(image).mapErr([](std::string err) {
+    GEODE_UNWRAP_INTO(auto imageData, ImageRenderer::getImage(m_streak->getTexture()).mapErr([](std::string err) {
         return fmt::format("Failed to encode image: {}", err);
     }));
 

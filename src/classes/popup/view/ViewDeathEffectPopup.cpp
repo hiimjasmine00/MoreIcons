@@ -78,7 +78,7 @@ bool ViewDeathEffectPopup::init(int id, IconInfo* info) {
         }
         std::ranges::sort(keys);
         CCMenuItemSpriteExtra* selected = nullptr;
-        for (size_t i = 0; i < keys.size(); ++i) {
+        for (size_t i = 0; i < keys.size(); i++) {
             auto it = image.frames.find(keys[i]);
             if (it != image.frames.end()) {
                 auto button = addFrameButton(it->second);
