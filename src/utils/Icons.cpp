@@ -126,6 +126,7 @@ void Icons::loadPacks() {
         if (traditionalPacks) {
             if (Filesystem::doesExist(resourcesPath / L("icons"))) {
                 packs.emplace_back(name, id, resourcesPath, true, zipped);
+                log::info("Added vanilla icon pack {} from {}", name, resourcesPath);
             }
             else {
                 std::error_code code;
@@ -142,6 +143,7 @@ void Icons::loadPacks() {
                             (filename.starts_with(L("shipfire")) && filename.ends_with(L("_001.png")))
                         ) {
                             packs.emplace_back(name, id, resourcesPath, true, zipped);
+                            log::info("Added vanilla icon pack {} from {}", name, resourcesPath);
                             break;
                         }
                     }
@@ -152,6 +154,7 @@ void Icons::loadPacks() {
         auto configPath = resourcesPath / CONFIG_PATH;
         if (Filesystem::doesExist(configPath)) {
             packs.emplace_back(name, id, resourcesPath, false, zipped);
+            log::info("Added icon pack {} from {}", name, resourcesPath);
             migrateTrails(std::move(configPath) / L("trail"));
         }
     }
