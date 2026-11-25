@@ -1,4 +1,5 @@
-#include <cocos2d.h>
+#include <ccTypes.h>
+#include <Geode/cocos/base_nodes/CCNode.h>
 #include <Geode/Enums.hpp>
 #include <Geode/GeneratedPredeclare.hpp>
 #include <Geode/utils/StringMap.hpp>

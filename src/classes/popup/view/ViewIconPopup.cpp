@@ -96,7 +96,7 @@ bool ViewIconPopup::init(IconType type, int id, IconInfo* info) {
         }
     }
     else if (type == IconType::Special) {
-        auto streak = CCSprite::create((info ? info->getTextureString() : fmt::format("streak_{:02}_001.png", id)).c_str());
+        auto streak = CCSprite::create(info ? info->getTexture().c_str() : fmt::format("streak_{:02}_001.png", id).c_str());
         auto& trailInfo = info ? info->getSpecialInfo() : Defaults::getTrailInfo(id);
         if (Json::get(trailInfo, "blend", true)) streak->setBlendFunc({ GL_SRC_ALPHA, GL_ONE });
         streak->setPosition({ 175.0f, 50.0f });

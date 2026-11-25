@@ -15,6 +15,7 @@
 #include "../../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/Slider.hpp>
+#include <Geode/cocos/extensions/GUI/CCControlExtension/CCScale9Sprite.h>
 #include <Geode/utils/file.hpp>
 #include <jasmine/mod.hpp>
 #include <matjson/std.hpp>
@@ -223,7 +224,7 @@ void EditDeathEffectPopup::onPieceAdd(CCObject* sender) {
             .description = "PNG files",
             .files = { "*.png" }
         }}
-    }), [this](Result<std::optional<std::filesystem::path>> res) {
+    }), [this](Result<std::optional<asp::fs::Path>> res) {
         if (res.isErr()) return Notify::error("Failed to import PNG file: {}", res.unwrapErr());
 
         auto path = std::move(res).unwrap();
@@ -248,7 +249,7 @@ void EditDeathEffectPopup::onPieceImport(CCObject* sender) {
             .description = "PNG files",
             .files = { "*.png" }
         }}
-    }), [this](Result<std::optional<std::filesystem::path>> res) {
+    }), [this](Result<std::optional<asp::fs::Path>> res) {
         if (res.isErr()) return Notify::error("Failed to import PNG file: {}", res.unwrapErr());
 
         auto path = std::move(res).unwrap();
@@ -289,21 +290,21 @@ void EditDeathEffectPopup::onPieceRemove(CCObject* sender) {
 }
 
 void EditDeathEffectPopup::onLoadState(CCObject* sender) {
-    LoadEditorPopup::create(IconType::DeathEffect, [this](const std::filesystem::path& directory) {
+    LoadEditorPopup::create(IconType::DeathEffect, [this](const asp::fs::Path& directory) {
         return loadEditor(directory);
     })->show();
 }
 
-Result<> EditDeathEffectPopup::loadEditor(const std::filesystem::path& directory) {
-    GEODE_UNWRAP_INTO(auto state, file::readJson(directory / L("state.json")));
+Result<> EditDeathEffectPopup::loadEditor(asp::fs::PathView directory) {
+    GEODE_UNWRAP_INTO(auto state, file::readJson(directory / "state.json"));
     if (!state.isObject()) return Err("Expected object");
 
-    m_selectedPNG = directory / L("effect.png");
-    m_selectedPlist = directory / L("effect.plist");
+    m_selectedPNG = directory / "effect.png";
+    m_selectedPlist = directory / "effect.plist";
     GEODE_UNWRAP(updateWithSelectedFilesInternal(false));
 
-    auto iconPath = directory / L("icon.png");
-    if (Filesystem::doesExist(iconPath)) {
+    auto iconPath = directory / "icon.png";
+    if (iconPath.exists()) {
         m_iconButton->setIcon(iconPath);
     }
     else {
@@ -323,11 +324,11 @@ Result<> EditDeathEffectPopup::loadEditor(const std::filesystem::path& directory
 void EditDeathEffectPopup::onSaveState(CCObject* sender) {
     SaveIconPopup::create(
         IconType::DeathEffect, true,
-        [this](const gd::string& name) {
-            m_pendingPath = MoreIcons::getEditorDir(IconType::DeathEffect) / Filesystem::strWide(name);
-            return Filesystem::doesExist(m_pendingPath);
+        [this](const std::string& name) {
+            m_pendingPath = MoreIcons::getEditorDir(IconType::DeathEffect) / name;
+            return m_pendingPath.exists();
         },
-        [this](const gd::string& name) {
+        [this](const std::string& name) {
             return saveEditor();
         },
         [this] {
@@ -337,11 +338,11 @@ void EditDeathEffectPopup::onSaveState(CCObject* sender) {
 }
 
 Result<> EditDeathEffectPopup::saveEditor() {
-    if (!Filesystem::doesExist(m_pendingPath)) {
+    if (!m_pendingPath.exists()) {
         GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
     }
 
-    GEODE_UNWRAP(file::writeString(m_pendingPath / L("state.json"), matjson::makeObject({
+    GEODE_UNWRAP(file::writeString(m_pendingPath / "state.json", matjson::makeObject({
         { "definitions"s, matjson::Value(m_definitions) }
     }).dump()).mapErr([](std::string err) {
         return fmt::format("Failed to save state: {}", err);
@@ -352,14 +353,14 @@ Result<> EditDeathEffectPopup::saveEditor() {
         packer.frame(fmt::format("effect_{:03}.png", i + 1), ImageRenderer::getImage(m_frames[i]));
     }
 
-    GEODE_UNWRAP(ImageRenderer::save(packer, m_pendingPath / L("effect.png"), m_pendingPath / L("effect.plist"), "effect.png"));
+    GEODE_UNWRAP(ImageRenderer::save(packer, m_pendingPath / "effect.png", m_pendingPath / "effect.plist", "effect.png"));
 
     if (auto texture = m_iconButton->getIconTexture()) {
         GEODE_UNWRAP_INTO(auto iconData, ImageRenderer::getImage(texture).mapErr([](std::string err) {
             return fmt::format("Failed to encode icon: {}", err);
         }));
 
-        GEODE_UNWRAP(file::writeBinary(m_pendingPath / L("icon.png"), iconData).mapErr([](std::string err) {
+        GEODE_UNWRAP(file::writeBinary(m_pendingPath / "icon.png", iconData).mapErr([](std::string err) {
             return fmt::format("Failed to save icon: {}", err);
         }));
     }
@@ -374,7 +375,7 @@ void EditDeathEffectPopup::onPNG(CCObject* sender) {
             .description = "PNG files",
             .files = { "*.png" }
         }}
-    }), [this](Result<std::optional<std::filesystem::path>> res) {
+    }), [this](Result<std::optional<asp::fs::Path>> res) {
         if (res.isErr()) return Notify::error("Failed to import PNG file: {}", res.unwrapErr());
 
         auto path = std::move(res).unwrap();
@@ -402,7 +403,7 @@ void EditDeathEffectPopup::onPlist(CCObject* sender) {
             .description = "Plist files",
             .files = { "*.plist" }
         }}
-    }), [this](Result<std::optional<std::filesystem::path>> res) {
+    }), [this](Result<std::optional<asp::fs::Path>> res) {
         if (res.isErr()) return Notify::error("Failed to import Plist file: {}", res.unwrapErr());
 
         auto path = std::move(res).unwrap();
@@ -436,11 +437,11 @@ void EditDeathEffectPopup::onSave(CCObject* sender) {
 
     SaveIconPopup::create(
         IconType::DeathEffect, false,
-        [this](const gd::string& name) {
+        [this](const std::string& name) {
             m_pendingPath = MoreIcons::getIconStem(name, IconType::DeathEffect);
-            return Filesystem::doesExist(m_pendingPath);
+            return m_pendingPath.exists();
         },
-        [this](const gd::string& name) {
+        [this](const std::string& name) {
             return saveEffect(name);
         },
         [this] {
@@ -449,21 +450,21 @@ void EditDeathEffectPopup::onSave(CCObject* sender) {
     )->show();
 }
 
-Result<> EditDeathEffectPopup::saveEffect(const gd::string& name) {
-    if (!Filesystem::doesExist(m_pendingPath)) {
+Result<> EditDeathEffectPopup::saveEffect(const std::string& name) {
+    if (!m_pendingPath.exists()) {
         GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
     }
 
     std::array<texpack::Packer, 3> packers = {};
     std::array pngs = {
-        m_pendingPath / L("effect-uhd.png"),
-        m_pendingPath / L("effect-hd.png"),
-        m_pendingPath / L("effect.png")
+        m_pendingPath / "effect-uhd.png",
+        m_pendingPath / "effect-hd.png",
+        m_pendingPath / "effect.png"
     };
     std::array plists = {
-        m_pendingPath / L("effect-uhd.plist"),
-        m_pendingPath / L("effect-hd.plist"),
-        m_pendingPath / L("effect.plist")
+        m_pendingPath / "effect-uhd.plist",
+        m_pendingPath / "effect-hd.plist",
+        m_pendingPath / "effect.plist"
     };
     auto scaleFactor = Get::director->getContentScaleFactor();
     int index;
@@ -517,7 +518,7 @@ Result<> EditDeathEffectPopup::saveEffect(const gd::string& name) {
         more_icons::updateIcon(icon);
     }
     else {
-        auto jsonPath = m_pendingPath / L("settings.json");
+        auto jsonPath = m_pendingPath / "settings.json";
         (void)file::writeString(jsonPath, Defaults::getDeathEffectInfo(0).dump());
         more_icons::addDeathEffect(name, name, std::move(pngs[index]), std::move(plists[index]),
             std::move(jsonPath), std::move(iconPath), Get::director->getLoadedTextureQuality());

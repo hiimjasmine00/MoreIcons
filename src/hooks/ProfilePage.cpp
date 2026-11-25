@@ -25,8 +25,7 @@ class $modify(MIProfilePage, ProfilePage) {
 
     static void updatePlayer(CCNode* menu, std::string_view id, IconType type, bool dual) {
         if (auto player = menu->getChildByID(id)) {
-            auto tag = type == IconType::Ship ? player->getTag() : -1;
-            updatePlayer(player, more_icons::activeIcon(tag != -1 ? (IconType)tag : type, dual));
+            updatePlayer(player, more_icons::activeIcon(type, dual));
         }
     }
 
@@ -67,14 +66,5 @@ class $modify(MIProfilePage, ProfilePage) {
         ButtonHooker::call(sender);
 
         changePlayers();
-    }
-
-    void toggleShip(CCObject* sender) {
-        ProfilePage::toggleShip(sender);
-
-        if (!m_ownProfile) return;
-
-        more_icons::updateSimplePlayer(static_cast<SimplePlayer*>(static_cast<CCMenuItemSprite*>(sender)->getNormalImage()),
-            (IconType)sender->getTag(), MoreIcons::dualSelected());
     }
 };

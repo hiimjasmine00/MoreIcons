@@ -1,4 +1,4 @@
-#include <cocos2d.h>
+#include <Geode/cocos/menu_nodes/CCMenuItem.h>
 #include <Geode/Enums.hpp>
 
 class IconInfo;
@@ -10,8 +10,8 @@ protected:
     std::string m_name;
     std::string m_error;
     std::string m_key;
-    std::filesystem::path m_sheet;
-    std::filesystem::path m_texture;
+    asp::fs::Path m_sheet;
+    asp::fs::Path m_texture;
     std::vector<std::string> m_frames;
     std::string m_frameName;
     IconInfo* m_info;

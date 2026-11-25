@@ -29,41 +29,41 @@ MoreInfoPopup* MoreInfoPopup::create(IconInfo* info) {
     return nullptr;
 }
 
-Result<> copyVanillaFile(const std::filesystem::path& src, const std::filesystem::path& dest) {
+Result<> copyVanillaFile(const asp::fs::Path& src, const asp::fs::Path& dest) {
     GEODE_UNWRAP_INTO(auto vec, Load::readBinary(src).mapErr([&src](std::string err) {
-        return fmt::format("Failed to read {}: {}", Filesystem::filenameFormat(src), err);
+        return fmt::format("Failed to read {}: {}", src.filename().value_or(""), err);
     }));
     return file::writeBinary(dest, vec).mapErr([&dest](std::string err) {
-        return fmt::format("Failed to write {}: {}", Filesystem::filenameFormat(dest), err);
+        return fmt::format("Failed to write {}: {}", dest.filename().value_or(""), err);
     });
 }
 
-Result<> copyFile(const std::filesystem::path& src, const std::filesystem::path& dest) {
-    if (!Filesystem::doesExist(src)) return Ok();
+Result<> copyFile(const asp::fs::Path& src, const asp::fs::Path& dest) {
+    if (!src.exists()) return Ok();
     GEODE_UNWRAP_INTO(auto vec, file::readBinary(src).mapErr([&src](std::string err) {
-        return fmt::format("Failed to read {}: {}", Filesystem::filenameFormat(src), err);
+        return fmt::format("Failed to read {}: {}", src.filename().value_or(""), err);
     }));
     return file::writeBinary(dest, vec).mapErr([&dest](std::string err) {
-        return fmt::format("Failed to write {}: {}", Filesystem::filenameFormat(dest), err);
+        return fmt::format("Failed to write {}: {}", dest.filename().value_or(""), err);
     });
 }
 
-bool moveSheet(Filesystem::PathView name, Filesystem::PathView from, Filesystem::PathView to, Filesystem::PathView parent, bool trash) {
+bool moveSheet(asp::fs::PathView name, asp::fs::PathView from, asp::fs::PathView to, asp::fs::PathView parent, bool trash) {
     auto resources = dirs::getResourcesDir();
     if (!parent.empty()) resources = std::move(resources) / parent;
     resources = std::move(resources) / name;
 
-    std::vector<std::pair<std::filesystem::path, std::filesystem::path>> files;
+    std::vector<std::pair<asp::fs::Path, asp::fs::Path>> files;
 
-    std::filesystem::path uhdPng = fmt::format(L("{}-uhd.png"), from);
-    if (Filesystem::doesExist(uhdPng)) {
-        files.emplace_back(std::move(uhdPng), fmt::format(L("{}-uhd.png"), to));
-        std::filesystem::path fromPlist = fmt::format(L("{}-uhd.plist"), from);
-        std::filesystem::path toPlist = fmt::format(L("{}-uhd.plist"), to);
-        if (Filesystem::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
+    asp::fs::Path uhdPng = fmt::format("{}-uhd.png", from);
+    if (uhdPng.exists()) {
+        files.emplace_back(std::move(uhdPng), fmt::format("{}-uhd.png", to));
+        asp::fs::Path fromPlist = fmt::format("{}-uhd.plist", from);
+        asp::fs::Path toPlist = fmt::format("{}-uhd.plist", to);
+        if (fromPlist.exists()) files.emplace_back(std::move(fromPlist), std::move(toPlist));
         else if (!trash) {
             #ifdef GEODE_IS_DESKTOP
-            if (auto res = copyVanillaFile(fmt::format(L("{}-uhd.plist"), resources), toPlist); res.isErr()) {
+            if (auto res = copyVanillaFile(fmt::format("{}-uhd.plist", resources), toPlist); res.isErr()) {
                 Notify::error(res.unwrapErr());
                 return false;
             }
@@ -71,35 +71,35 @@ bool moveSheet(Filesystem::PathView name, Filesystem::PathView from, Filesystem:
             auto uhdResources = Icons::getUhdResourcesDir();
             if (!parent.empty()) uhdResources = std::move(uhdResources) / parent;
             uhdResources = std::move(uhdResources) / name;
-            if (auto res = copyVanillaFile(fmt::format(L("{}-uhd.plist"), uhdResources), toPlist); res.isErr()) {
+            if (auto res = copyVanillaFile(fmt::format("{}-uhd.plist", uhdResources), toPlist); res.isErr()) {
                 files.pop_back();
             }
             #endif
         }
     }
 
-    std::filesystem::path hdPng = fmt::format(L("{}-hd.png"), from);
-    if (Filesystem::doesExist(hdPng)) {
-        files.emplace_back(std::move(hdPng), fmt::format(L("{}-hd.png"), to));
-        std::filesystem::path fromPlist = fmt::format(L("{}-hd.plist"), from);
-        std::filesystem::path toPlist = fmt::format(L("{}-hd.plist"), to);
-        if (Filesystem::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
+    asp::fs::Path hdPng = fmt::format("{}-hd.png", from);
+    if (hdPng.exists()) {
+        files.emplace_back(std::move(hdPng), fmt::format("{}-hd.png", to));
+        asp::fs::Path fromPlist = fmt::format("{}-hd.plist", from);
+        asp::fs::Path toPlist = fmt::format("{}-hd.plist", to);
+        if (fromPlist.exists()) files.emplace_back(std::move(fromPlist), std::move(toPlist));
         else if (!trash) {
-            if (auto res = copyVanillaFile(fmt::format(L("{}-hd.plist"), resources), toPlist); res.isErr()) {
+            if (auto res = copyVanillaFile(fmt::format("{}-hd.plist", resources), toPlist); res.isErr()) {
                 Notify::error(res.unwrapErr());
                 return false;
             }
         }
     }
 
-    std::filesystem::path png = fmt::format(L("{}.png"), from);
-    if (Filesystem::doesExist(png)) {
-        files.emplace_back(std::move(png), fmt::format(L("{}.png"), to));
-        std::filesystem::path fromPlist = fmt::format(L("{}.plist"), from);
-        std::filesystem::path toPlist = fmt::format(L("{}.plist"), to);
-        if (Filesystem::doesExist(fromPlist)) files.emplace_back(std::move(fromPlist), std::move(toPlist));
+    asp::fs::Path png = fmt::format("{}.png", from);
+    if (png.exists()) {
+        files.emplace_back(std::move(png), fmt::format("{}.png", to));
+        asp::fs::Path fromPlist = fmt::format("{}.plist", from);
+        asp::fs::Path toPlist = fmt::format("{}.plist", to);
+        if (fromPlist.exists()) files.emplace_back(std::move(fromPlist), std::move(toPlist));
         else if (!trash) {
-            if (auto res = copyVanillaFile(fmt::format(L("{}.plist"), resources), toPlist); res.isErr()) {
+            if (auto res = copyVanillaFile(fmt::format("{}.plist", resources), toPlist); res.isErr()) {
                 Notify::error(res.unwrapErr());
                 return false;
             }
@@ -129,47 +129,46 @@ void MoreInfoPopup::moveIcon(bool trash) {
     auto type = m_info->getType();
 
     auto& texture = m_info->getTexture();
-    auto parentDir = Filesystem::parentPath(texture);
+    auto parentDir = texture.parent().value_or("");
     auto& shortName = m_info->getShortName();
-    auto stem = Filesystem::strWide(shortName);
     if (type >= IconType::DeathEffect) {
         if (trash) {
-            if (auto res = Filesystem::renameFile(parentDir, m_pendingPath / Filesystem::filenameView(parentDir)); res.isErr()) {
+            if (auto res = Filesystem::renameFile(parentDir, m_pendingPath / parentDir.filename().value_or("")); res.isErr()) {
                 return Notify::error(res.unwrapErr());
             }
         }
         else {
             if (type == IconType::ShipFire) {
-                if (auto res = Filesystem::renameFile(texture, m_pendingPath / L("fire_001.png")); res.isErr()) {
+                if (auto res = Filesystem::renameFile(texture, m_pendingPath / "fire_001.png"); res.isErr()) {
                     return Notify::error(res.unwrapErr());
                 }
             }
             else if (type == IconType::Special) {
-                if (auto res = Filesystem::renameFile(texture, m_pendingPath / L("trail.png")); res.isErr()) {
+                if (auto res = Filesystem::renameFile(texture, m_pendingPath / "trail.png"); res.isErr()) {
                     return Notify::error(res.unwrapErr());
                 }
             }
             else if (type == IconType::DeathEffect) {
-                if (!moveSheet(stem, (std::move(parentDir) / stem).native(), (m_pendingPath / L("effect")).native(), {}, false)) return;
+                if (!moveSheet(shortName, std::move(parentDir) / shortName, m_pendingPath / "effect", {}, false)) return;
             }
 
-            auto iconStem = Mod::get()->getResourcesDir() / fmt::format(L("{}{:02}"), Constants::getFolderName(type), m_info->getSpecialID());
+            auto iconStem = Mod::get()->getResourcesDir() / fmt::format("{}{:02}", Constants::getFolderName(type), m_info->getSpecialID());
 
-            if (auto res = copyFile(fmt::format(L("{}-uhd.png"), iconStem), m_pendingPath / L("icon-uhd.png")); res.isErr()) {
+            if (auto res = copyFile(fmt::format("{}-uhd.png", iconStem), m_pendingPath / "icon-uhd.png"); res.isErr()) {
                 return Notify::error(res.unwrapErr());
             }
 
-            if (auto res = copyFile(fmt::format(L("{}-hd.png"), iconStem), m_pendingPath / L("icon-hd.png")); res.isErr()) {
+            if (auto res = copyFile(fmt::format("{}-hd.png", iconStem), m_pendingPath / "icon-hd.png"); res.isErr()) {
                 return Notify::error(res.unwrapErr());
             }
 
-            if (auto res = copyFile(fmt::format(L("{}.png"), iconStem), m_pendingPath / L("icon.png")); res.isErr()) {
+            if (auto res = copyFile(fmt::format("{}.png", iconStem), m_pendingPath / "icon.png"); res.isErr()) {
                 return Notify::error(res.unwrapErr());
             }
         }
     }
     else if (type <= IconType::Jetpack) {
-        if (!moveSheet(stem, (std::move(parentDir) / stem).native(), (m_pendingPath / stem).native(), L("icons"), trash)) return;
+        if (!moveSheet(shortName, std::move(parentDir) / shortName, m_pendingPath / shortName, "icons", trash)) return;
     }
 
     auto notif = trash ? fmt::format("{} trashed!", shortName) : fmt::format("{} moved!", shortName);
@@ -206,7 +205,7 @@ bool MoreInfoPopup::init(IconInfo* info) {
     m_mainLayer->addChild(customLabel);
 
     auto descriptionArea = TextArea::create(fmt::format("This <cg>{}</c> is added by the <cl>More Icons</c> mod.",
-        Constants::getSingularUppercase(type)), "bigFont.fnt", 1.0f, 600.0f, { 0.5f, 1.0f }, 42.0f, false);
+        Constants::getSingularUppercase(type)), "bigFont.fnt", 1.0f, 600.0f, { 0.5f, 1.0f }, 42.0f, false, 0);
     descriptionArea->setPosition({ 150.0f, 91.0f });
     descriptionArea->setScale(0.4f);
     descriptionArea->setID("description-area");
@@ -308,7 +307,7 @@ void MoreInfoPopup::onSwapIcon(CCObject* sender) {
             .description = "PNG files",
             .files = { "*.png" }
         }}
-    }), [this](Result<std::optional<std::filesystem::path>> res) {
+    }), [this](Result<std::optional<asp::fs::Path>> res) {
         if (res.isErr()) return Notify::error("Failed to import PNG file: {}", res.unwrapErr());
 
         auto path = std::move(res).unwrap();
@@ -319,12 +318,12 @@ void MoreInfoPopup::onSwapIcon(CCObject* sender) {
             return Notify::error("Failed to load texture: {}", textureRes.unwrapErr());
         }
 
-        auto parentPath = Filesystem::parentPath(m_info->getTexture());
-        std::filesystem::path iconPath;
+        auto parentPath = m_info->getTexture().parent().value_or("");
+        asp::fs::Path iconPath;
         auto texture = textureRes.unwrap();
         auto scaleFactor = Get::director->getContentScaleFactor();
         std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
-        std::array names = { L("icon-uhd.png"), L("icon-hd.png"), L("icon.png") };
+        std::array names = { "icon-uhd.png", "icon-hd.png", "icon.png" };
         for (int i = 0; i < 3; i++) {
             auto scale = scales[i];
             auto sprite = CCSprite::createWithTexture(texture);
@@ -364,12 +363,12 @@ void MoreInfoPopup::onConvert(CCObject* sender) {
     StringBuffer message;
     message.append("Are you sure you want to <cy>convert</c> <cj>{}</c> into a <cl>More Icons</c> <cg>{}</c>?", shortName, lower);
 
-    auto dir = Filesystem::parentPath(m_info->getTexture());
-    if (type <= IconType::Jetpack) dir = Filesystem::parentPath(std::move(dir));
+    auto dir = m_info->getTexture().parent().value_or("").toPath();
+    if (type <= IconType::Jetpack) dir = dir.parent().value_or("");
     dir = std::move(dir) / CONFIG_PATH / Constants::getFolderName(type);
     if (type >= IconType::DeathEffect) {
-        dir = std::move(dir) / Filesystem::strWide(shortName);
-        if (Filesystem::doesExist(dir)) {
+        dir = std::move(dir) / shortName;
+        if (dir.exists()) {
             message.append("\n<cr>This will overwrite the existing custom {}!</c>", lower);
         }
     }
@@ -412,7 +411,7 @@ void MoreInfoPopup::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
             if (auto res = file::createDirectoryAll(m_pendingPath)) {
                 moveIcon(false);
             }
-            else Notify::error(res.unwrapErr());
+            else Notify::error(res.unwrapErr().toString());
         }
         case 1: {
             if (auto res = MoreIcons::createTrash()) {

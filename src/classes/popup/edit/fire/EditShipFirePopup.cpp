@@ -197,7 +197,7 @@ void EditShipFirePopup::onFrameAdd(CCObject* sender) {
             .description = "PNG files",
             .files = { "*.png" }
         }}
-    }), [this](Result<std::optional<std::filesystem::path>> res) {
+    }), [this](Result<std::optional<asp::fs::Path>> res) {
         if (res.isErr()) return Notify::error("Failed to import PNG file: {}", res.unwrapErr());
 
         auto path = std::move(res).unwrap();
@@ -221,7 +221,7 @@ void EditShipFirePopup::onFrameImport(CCObject* sender) {
             .description = "PNG files",
             .files = { "*.png" }
         }}
-    }), [this](Result<std::optional<std::filesystem::path>> res) {
+    }), [this](Result<std::optional<asp::fs::Path>> res) {
         if (res.isErr()) return Notify::error("Failed to import PNG file: {}", res.unwrapErr());
 
         auto path = std::move(res).unwrap();
@@ -286,7 +286,7 @@ void EditShipFirePopup::onImport(CCObject* sender) {
             .description = "PNG files",
             .files = { "*.png" }
         }}
-    }), [this](Result<std::vector<std::filesystem::path>> res) {
+    }), [this](Result<std::vector<asp::fs::Path>> res) {
         if (res.isErr()) return Notify::error("Failed to import PNG files: {}", res.unwrapErr());
 
         auto paths = std::move(res).unwrap();
@@ -298,7 +298,7 @@ void EditShipFirePopup::onImport(CCObject* sender) {
         for (size_t i = 0; i < paths.size(); i++) {
             auto& path = paths[i];
             auto textureRes = Load::createTexture(path);
-            if (textureRes.isErr()) return Notify::error("Failed to load {}: {}", Filesystem::filenameFormat(path), textureRes.unwrapErr());
+            if (textureRes.isErr()) return Notify::error("Failed to load {}: {}", path.filename().value_or(""), textureRes.unwrapErr());
             auto button = addFrameButton(textureRes.unwrap());
             if (i == m_selectedFrame) selected = button;
         }
@@ -320,16 +320,16 @@ void EditShipFirePopup::onPreset(CCObject* sender) {
     })->show();
 }
 
-void EditShipFirePopup::updateWithPath(std::filesystem::path path, int count) {
+void EditShipFirePopup::updateWithPath(asp::fs::Path path, int count) {
     m_frameMenu->removeAllChildren();
     m_frameButtons.clear();
 
     auto& pathString = Filesystem::getPathString(path);
     CCMenuItemSpriteExtra* selected = nullptr;
     for (int i = 0; i < count; i++) {
-        pathString.replace(pathString.size() - 7, 3, fmt::format(L("{:03}"), i + 1));
+        pathString.replace(pathString.size() - 7, 3, fmt::format("{:03}", i + 1));
         auto textureRes = Load::createTexture(path);
-        if (textureRes.isErr()) return Notify::error("Failed to load {}: {}", Filesystem::filenameFormat(path), textureRes.unwrapErr());
+        if (textureRes.isErr()) return Notify::error("Failed to load {}: {}", path.filename().value_or(""), textureRes.unwrapErr());
         auto button = addFrameButton(textureRes.unwrap());
         if (i == m_selectedFrame) selected = button;
     }
@@ -349,11 +349,11 @@ void EditShipFirePopup::onSave(CCObject* sender) {
 
     SaveIconPopup::create(
         IconType::ShipFire, false,
-        [this](const gd::string& name) {
+        [this](const std::string& name) {
             m_pendingPath = MoreIcons::getIconStem(name, IconType::ShipFire);
-            return Filesystem::doesExist(m_pendingPath);
+            return m_pendingPath.exists();
         },
-        [this](const gd::string& name) {
+        [this](const std::string& name) {
             return saveShipFire(name);
         },
         [this] {
@@ -362,8 +362,8 @@ void EditShipFirePopup::onSave(CCObject* sender) {
     )->show();
 }
 
-Result<> EditShipFirePopup::saveShipFire(const gd::string& name) {
-    if (!Filesystem::doesExist(m_pendingPath)) {
+Result<> EditShipFirePopup::saveShipFire(const std::string& name) {
+    if (!m_pendingPath.exists()) {
         GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
     }
 
@@ -373,7 +373,7 @@ Result<> EditShipFirePopup::saveShipFire(const gd::string& name) {
         ).mapErr([i](std::string err) {
             return fmt::format("Failed to encode fire_{:03}.png: {}", i + 1, err);
         }));
-        GEODE_UNWRAP(file::writeBinary(m_pendingPath / fmt::format(L("fire_{:03}.png"), i + 1), imageData).mapErr([](std::string err) {
+        GEODE_UNWRAP(file::writeBinary(m_pendingPath / fmt::format("fire_{:03}.png", i + 1), imageData).mapErr([](std::string err) {
             return fmt::format("Failed to save image: {}", err);
         }));
     }
@@ -387,9 +387,9 @@ Result<> EditShipFirePopup::saveShipFire(const gd::string& name) {
         more_icons::updateIcon(icon);
     }
     else {
-        auto jsonPath = m_pendingPath / L("settings.json");
+        auto jsonPath = m_pendingPath / "settings.json";
         (void)file::writeString(jsonPath, Defaults::getShipFireInfo(0).dump());
-        more_icons::addShipFire(name, name, m_pendingPath / L("fire_001.png"), std::move(jsonPath), std::move(iconPath), m_frameButtons.size());
+        more_icons::addShipFire(name, name, m_pendingPath / "fire_001.png", std::move(jsonPath), std::move(iconPath), m_frameButtons.size());
     }
 
     return Ok();

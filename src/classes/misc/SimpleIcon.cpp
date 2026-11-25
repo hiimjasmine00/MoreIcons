@@ -3,6 +3,7 @@
 #include "../../utils/Icons.hpp"
 #include "../../utils/Json.hpp"
 #include "../../utils/Load.hpp"
+#include <Geode/cocos/cocoa/CCNS.h>
 #include <Geode/loader/Dirs.hpp>
 #include <Geode/loader/Log.hpp>
 
@@ -23,7 +24,7 @@ SimpleIcon* SimpleIcon::create(IconType type, std::string_view name) {
 const matjson::Value definitions = [] {
     matjson::Value json;
 
-    auto def = Load::readPlist(dirs::getResourcesDir() / L("objectDefinitions.plist"));
+    auto def = Load::readPlist(dirs::getResourcesDir() / "objectDefinitions.plist");
     if (def.isErr()) {
         log::error("objectDefinitions.plist: {}", def.unwrapErr());
         return json;
@@ -39,7 +40,7 @@ const matjson::Value definitions = [] {
         auto& animDesc = value["animDesc"];
         if (auto filenameRes = animDesc.asString()) {
             auto filename = std::move(filenameRes).unwrap();
-            if (auto desc = Load::readPlist(dirs::getResourcesDir() / Filesystem::strWide(filename))) {
+            if (auto desc = Load::readPlist(dirs::getResourcesDir() / filename)) {
                 animDesc = std::move(desc).unwrap();
             }
             else {

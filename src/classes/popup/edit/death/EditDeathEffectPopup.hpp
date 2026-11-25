@@ -8,10 +8,10 @@ class MultiControl;
 
 class EditDeathEffectPopup : public BasePopup, public FLAlertLayerProtocol {
 protected:
-    geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
-    std::filesystem::path m_selectedPNG;
-    std::filesystem::path m_selectedPlist;
-    std::filesystem::path m_pendingPath;
+    geode::async::TaskHolder<geode::Result<std::optional<asp::fs::Path>>> m_listener;
+    asp::fs::Path m_selectedPNG;
+    asp::fs::Path m_selectedPlist;
+    asp::fs::Path m_pendingPath;
     std::vector<cocos2d::CCSprite*> m_pieces;
     std::vector<CCMenuItemSpriteExtra*> m_pieceButtons;
     std::vector<geode::Ref<cocos2d::CCSpriteFrame>> m_frames;
@@ -37,14 +37,14 @@ protected:
     void onPiecePreset(cocos2d::CCObject* sender);
     void onPieceRemove(cocos2d::CCObject* sender);
     void onLoadState(cocos2d::CCObject* sender);
-    geode::Result<> loadEditor(const std::filesystem::path& directory);
+    geode::Result<> loadEditor(asp::fs::PathView directory);
     void onSaveState(cocos2d::CCObject* sender);
     geode::Result<> saveEditor();
     void onPNG(cocos2d::CCObject* sender);
     void onPlist(cocos2d::CCObject* sender);
     void onPreset(cocos2d::CCObject* sender);
     void onSave(cocos2d::CCObject* sender);
-    geode::Result<> saveEffect(const gd::string& name);
+    geode::Result<> saveEffect(const std::string& name);
     void createControls(const cocos2d::CCPoint& pos, const char* text, std::string&& id, int offset);
     void updateControls();
     CCMenuItemSpriteExtra* addPieceButton(int index, cocos2d::CCSpriteFrame* frame);

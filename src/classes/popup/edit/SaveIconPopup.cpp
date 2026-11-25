@@ -7,14 +7,13 @@
 #include "../../../utils/Icons.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
-#include <Geode/ui/TextInput.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 
 SaveIconPopup* SaveIconPopup::create(
-    IconType type, bool editor, Function<bool(const gd::string&)> checkCallback,
-    Function<Result<>(const gd::string&)> saveCallback, Function<void()> closeCallback
+    IconType type, bool editor, Function<bool(const std::string&)> checkCallback,
+    Function<Result<>(const std::string&)> saveCallback, Function<void()> closeCallback
 ) {
     auto ret = new SaveIconPopup();
     if (ret->init(type, editor, std::move(checkCallback), std::move(saveCallback), std::move(closeCallback))) {
@@ -26,8 +25,8 @@ SaveIconPopup* SaveIconPopup::create(
 }
 
 bool SaveIconPopup::init(
-    IconType type, bool editor, Function<bool(const gd::string&)> checkCallback,
-    Function<Result<>(const gd::string&)> saveCallback, Function<void()> closeCallback
+    IconType type, bool editor, Function<bool(const std::string&)> checkCallback,
+    Function<Result<>(const std::string&)> saveCallback, Function<void()> closeCallback
 ) {
     if (!BasePopup::init(350.0f, 130.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
@@ -42,14 +41,12 @@ bool SaveIconPopup::init(
     m_saveCallback = std::move(saveCallback);
     m_closeCallback = std::move(closeCallback);
 
-    auto nameInput = TextInput::create(300.0f, "Icon Name");
-    nameInput->setPosition({ 175.0f, 70.0f });
-    nameInput->setFilter("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-. ");
-    nameInput->setMaxCharCount(100);
-    nameInput->setID("name-input");
-    m_mainLayer->addChild(nameInput);
-
-    m_nameInput = nameInput->getInputNode()->m_textField;
+    m_nameInput = TextInput::create(300.0f, "Icon Name");
+    m_nameInput->setPosition({ 175.0f, 70.0f });
+    m_nameInput->setFilter("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-. ");
+    m_nameInput->setMaxCharCount(100);
+    m_nameInput->setID("name-input");
+    m_mainLayer->addChild(m_nameInput);
 
     auto saveButton = CCMenuItemSpriteExtra::create(
         ButtonSprite::create("Save", "goldFont.fnt", "GJ_button_05.png", 0.8f), this, menu_selector(SaveIconPopup::onSave)
@@ -64,7 +61,7 @@ bool SaveIconPopup::init(
 }
 
 void SaveIconPopup::onSave(CCObject* sender) {
-    auto& iconName = *m_nameInput->m_pInputText;
+    auto& iconName = m_nameInput->getString();
     if (iconName.empty()) return Notify::info("Please enter a name.");
 
     if (m_checkCallback(iconName)) {
@@ -83,7 +80,7 @@ void SaveIconPopup::onSave(CCObject* sender) {
 }
 
 void SaveIconPopup::saveIcon() {
-    auto& name = *m_nameInput->m_pInputText;
+    auto& name = m_nameInput->getString();
 
     if (auto res = m_saveCallback(name); res.isErr()) {
         return Notify::error(res.unwrapErr());
@@ -98,7 +95,7 @@ void SaveIconPopup::saveIcon() {
 }
 
 void SaveIconPopup::onClose(CCObject* sender) {
-    if (m_nameInput->m_pInputText->empty()) {
+    if (m_nameInput->getString().empty()) {
         m_closeCallback();
         return close();
     }

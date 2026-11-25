@@ -1,4 +1,4 @@
-#include <filesystem>
+#include <asp/fs/Path.hpp>
 #include <Geode/Enums.hpp>
 #include <matjson.hpp>
 
@@ -8,10 +8,10 @@ public:
     std::string m_shortName;
     std::string m_packID;
     std::string m_packName;
-    std::filesystem::path m_texture;
-    std::filesystem::path m_sheet;
-    std::filesystem::path m_json;
-    std::filesystem::path m_icon;
+    asp::fs::Path m_texture;
+    asp::fs::Path m_sheet;
+    asp::fs::Path m_json;
+    asp::fs::Path m_icon;
     std::vector<std::string> m_frameNames;
     matjson::Value m_specialInfo;
     IconType m_type;
@@ -22,8 +22,8 @@ public:
     bool m_zipped;
 
     IconInfoImpl(
-        std::string&& name, std::string&& shortName, IconType type, std::filesystem::path&& png, std::filesystem::path&& plist,
-        std::filesystem::path&& json, std::filesystem::path&& icon, int quality, std::string&& packID, std::string&& packName,
+        std::string&& name, std::string&& shortName, IconType type, asp::fs::Path&& png, asp::fs::Path&& plist,
+        asp::fs::Path&& json, asp::fs::Path&& icon, int quality, std::string&& packID, std::string&& packName,
         int specialID, matjson::Value&& specialInfo, int fireCount, bool vanilla, bool zipped
     ) : m_name(std::move(name)),
         m_shortName(std::move(shortName)),

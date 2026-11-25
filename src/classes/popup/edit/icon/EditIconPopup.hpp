@@ -8,12 +8,12 @@ class MultiControl;
 
 class EditIconPopup : public BasePopup, public FLAlertLayerProtocol {
 protected:
-    geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
-    std::filesystem::path m_selectedPNG;
-    std::filesystem::path m_selectedPlist;
-    std::filesystem::path m_pendingPath;
-    std::array<std::filesystem::path, 3> m_pngs;
-    std::array<std::filesystem::path, 3> m_plists;
+    geode::async::TaskHolder<geode::Result<std::optional<asp::fs::Path>>> m_listener;
+    asp::fs::Path m_selectedPNG;
+    asp::fs::Path m_selectedPlist;
+    asp::fs::Path m_pendingPath;
+    std::array<asp::fs::Path, 3> m_pngs;
+    std::array<asp::fs::Path, 3> m_plists;
     std::vector<std::vector<cocos2d::CCNode*>> m_pages;
     std::vector<std::string_view> m_required;
     geode::utils::StringMap<cocos2d::CCSprite*> m_pieces;
@@ -44,7 +44,7 @@ protected:
     void onPrevPage(cocos2d::CCObject* sender);
     void onNextPage(cocos2d::CCObject* sender);
     void onLoadState(cocos2d::CCObject* sender);
-    geode::Result<> loadEditor(const std::filesystem::path& directory);
+    geode::Result<> loadEditor(asp::fs::PathView directory);
     void onSaveState(cocos2d::CCObject* sender);
     geode::Result<> saveEditor();
     void addFrame(geode::Ref<cocos2d::CCSpriteFrame>&& frame);
@@ -56,7 +56,7 @@ protected:
     void onPlist(cocos2d::CCObject* sender);
     void onPreset(cocos2d::CCObject* sender);
     void onSave(cocos2d::CCObject* sender);
-    geode::Result<> saveIcon(const gd::string& name);
+    geode::Result<> saveIcon(const std::string& name);
     void createControls(const cocos2d::CCPoint& pos, const char* text, std::string&& id, int offset);
     void updateControl(int offset, float value, bool slider, bool input, bool definition);
     void updateControls();

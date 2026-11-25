@@ -1,9 +1,6 @@
 #include "IconInfoImpl.hpp"
-#include <Geode/utils/string.hpp>
 #define GEODE_DEFINE_EVENT_EXPORTS
 #include <IconInfo.hpp>
-
-using namespace geode::prelude;
 
 IconInfo::IconInfo(std::shared_ptr<IconInfoImpl> impl) : m_impl(std::move(impl)) {}
 
@@ -25,21 +22,17 @@ const std::string& IconInfo::getShortName() const {
     return m_impl->m_shortName;
 }
 
-const std::filesystem::path& IconInfo::getTexture() const {
+const asp::fs::Path& IconInfo::getTexture() const {
     return m_impl->m_texture;
-}
-
-std::string IconInfo::getTextureString() const {
-    return string::pathToString(m_impl->m_texture);
 }
 
 std::vector<std::string> IconInfo::getAllTextures() const {
     if (m_impl->m_type != IconType::ShipFire) {
-        return { getTextureString() };
+        return { m_impl->m_texture.string() };
     }
 
     std::vector<std::string> textures;
-    auto texture = getTextureString();
+    auto texture = m_impl->m_texture.string();
     for (int i = 1; i <= m_impl->m_fireCount; i++) {
         texture.replace(texture.size() - 7, 3, fmt::format("{:03}", i));
         textures.push_back(texture);
@@ -47,28 +40,16 @@ std::vector<std::string> IconInfo::getAllTextures() const {
     return textures;
 }
 
-const std::filesystem::path& IconInfo::getSheet() const {
+const asp::fs::Path& IconInfo::getSheet() const {
     return m_impl->m_sheet;
 }
 
-std::string IconInfo::getSheetString() const {
-    return string::pathToString(m_impl->m_sheet);
-}
-
-const std::filesystem::path& IconInfo::getJSON() const {
+const asp::fs::Path& IconInfo::getJSON() const {
     return m_impl->m_json;
 }
 
-std::string IconInfo::getJSONString() const {
-    return string::pathToString(m_impl->m_json);
-}
-
-const std::filesystem::path& IconInfo::getIcon() const {
+const asp::fs::Path& IconInfo::getIcon() const {
     return m_impl->m_icon;
-}
-
-std::string IconInfo::getIconString() const {
-    return string::pathToString(m_impl->m_icon);
 }
 
 const std::vector<std::string>& IconInfo::getFrameNames() const {
@@ -123,19 +104,19 @@ void IconInfo::setShortName(std::string shortName) {
     m_impl->m_shortName = std::move(shortName);
 }
 
-void IconInfo::setTexture(std::filesystem::path texture) {
+void IconInfo::setTexture(asp::fs::Path texture) {
     m_impl->m_texture = std::move(texture);
 }
 
-void IconInfo::setSheet(std::filesystem::path sheet) {
+void IconInfo::setSheet(asp::fs::Path sheet) {
     m_impl->m_sheet = std::move(sheet);
 }
 
-void IconInfo::setJSON(std::filesystem::path json) {
+void IconInfo::setJSON(asp::fs::Path json) {
     m_impl->m_json = std::move(json);
 }
 
-void IconInfo::setIcon(std::filesystem::path icon) {
+void IconInfo::setIcon(asp::fs::Path icon) {
     m_impl->m_icon = std::move(icon);
 }
 

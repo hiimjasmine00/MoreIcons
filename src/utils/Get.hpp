@@ -1,4 +1,3 @@
-#include <cocos2d.h>
 #include <Geode/GeneratedPredeclare.hpp>
 
 namespace Get {

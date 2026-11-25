@@ -7,6 +7,8 @@
 #include "../../utils/Load.hpp"
 #include <Geode/binding/FLAlertLayer.hpp>
 #include <Geode/binding/GameManager.hpp>
+#include <Geode/cocos/actions/CCActionEase.h>
+#include <Geode/cocos/textures/CCTextureCache.h>
 #include <Geode/loader/Loader.hpp>
 #include <Geode/utils/async.hpp>
 #include <jasmine/mod.hpp>
@@ -49,7 +51,7 @@ bool LazyIcon::init(IconType type, int id, IconInfo* info, std::string_view suff
 
     MoreIcons::getIconPaths(info, id, type, m_texture, m_sheet);
 
-    if (Get::textureCache->textureForKey(Filesystem::strNarrow(m_texture.native()).data())) {
+    if (Get::textureCache->textureForKey(m_texture.c_str())) {
         m_visited = true;
         createIcon();
     }

@@ -9,6 +9,7 @@
 #include <Geode/binding/CCSpritePart.hpp>
 #include <Geode/binding/GJSpiderSprite.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/cocos/textures/CCTextureCache.h>
 #include <Geode/loader/Mod.hpp>
 #define GEODE_DEFINE_EVENT_EXPORTS
 #include <MoreIcons.hpp>
@@ -190,7 +191,7 @@ IconInfo* more_icons::setIcon(IconInfo* info, IconType type, bool dual) {
 CCTexture2D* more_icons::loadIcon(IconInfo* info, int requestID) {
     if (!info) return nullptr;
 
-    auto texture = Get::textureCache->textureForKey(info->getTextureString().c_str());
+    auto texture = Get::textureCache->textureForKey(info->getTexture().c_str());
     if (Icons::preloadIcons) return texture;
 
     auto& loadedIcon = Icons::loadedIcons[info];
@@ -243,8 +244,8 @@ void more_icons::unloadIcons(int requestID) {
 }
 
 IconInfo* addIcon(
-    std::string name, std::string shortName, IconType type, std::filesystem::path png, std::filesystem::path plist,
-    std::filesystem::path json, std::filesystem::path icon, int quality, std::string packID, std::string packName,
+    std::string name, std::string shortName, IconType type, asp::fs::Path png, asp::fs::Path plist,
+    asp::fs::Path json, asp::fs::Path icon, int quality, std::string packID, std::string packName,
     int specialID, matjson::Value specialInfo, int fireCount, bool vanilla, bool zipped
 ) {
     auto icons = more_icons::getIcons(type);
@@ -270,7 +271,7 @@ IconInfo* addIcon(
 }
 
 IconInfo* more_icons::addIcon(
-    std::string name, std::string shortName, IconType type, std::filesystem::path png, std::filesystem::path plist,
+    std::string name, std::string shortName, IconType type, asp::fs::Path png, asp::fs::Path plist,
     TextureQuality quality, std::string packID, std::string packName, bool vanilla, bool zipped
 ) {
     return ::addIcon(
@@ -280,7 +281,7 @@ IconInfo* more_icons::addIcon(
 }
 
 IconInfo* more_icons::addTrail(
-    std::string name, std::string shortName, std::filesystem::path png, std::filesystem::path json, std::filesystem::path icon,
+    std::string name, std::string shortName, asp::fs::Path png, asp::fs::Path json, asp::fs::Path icon,
     std::string packID, std::string packName, int specialID, matjson::Value specialInfo, bool vanilla, bool zipped
 ) {
     return ::addIcon(
@@ -291,8 +292,8 @@ IconInfo* more_icons::addTrail(
 
 IconInfo* more_icons::addDeathEffect(
     std::string name, std::string shortName,
-    std::filesystem::path png, std::filesystem::path plist,
-    std::filesystem::path json, std::filesystem::path icon, TextureQuality quality,
+    asp::fs::Path png, asp::fs::Path plist,
+    asp::fs::Path json, asp::fs::Path icon, TextureQuality quality,
     std::string packID, std::string packName,
     int specialID, matjson::Value specialInfo,
     bool vanilla, bool zipped
@@ -305,7 +306,7 @@ IconInfo* more_icons::addDeathEffect(
 
 IconInfo* more_icons::addShipFire(
     std::string name, std::string shortName,
-    std::filesystem::path png, std::filesystem::path json, std::filesystem::path icon, int fireCount,
+    asp::fs::Path png, asp::fs::Path json, asp::fs::Path icon, int fireCount,
     std::string packID, std::string packName, int specialID, matjson::Value specialInfo, bool vanilla, bool zipped
 ) {
     return ::addIcon(
@@ -314,63 +315,63 @@ IconInfo* more_icons::addShipFire(
     );
 }
 
-void more_icons::moveIcon(IconInfo* info, const std::filesystem::path& path) {
+void more_icons::moveIcon(IconInfo* info, asp::fs::PathView path) {
     auto oldPngs = info->getAllTextures();
     auto type = info->getType();
     if (type <= IconType::Jetpack) {
-        info->setTexture(path / Filesystem::filenameView(info->getTexture()));
-        info->setSheet(path / Filesystem::filenameView(info->getSheet()));
+        info->setTexture(path / info->getTexture().filename().value_or(""));
+        info->setSheet(path / info->getSheet().filename().value_or(""));
     }
     else if (type >= IconType::DeathEffect) {
         if (info->isVanilla()) {
             if (type == IconType::DeathEffect) {
-                Filesystem::PathView png;
-                Filesystem::PathView plist;
+                std::string_view png;
+                std::string_view plist;
                 switch (info->getQuality()) {
                     case kTextureQualityHigh:
-                        png = L("effect-uhd.png");
-                        plist = L("effect-uhd.plist");
+                        png = "effect-uhd.png";
+                        plist = "effect-uhd.plist";
                         break;
                     case kTextureQualityMedium:
-                        png = L("effect-hd.png");
-                        plist = L("effect-hd.plist");
+                        png = "effect-hd.png";
+                        plist = "effect-hd.plist";
                         break;
                     case kTextureQualityLow:
-                        png = L("effect.png");
-                        plist = L("effect.plist");
+                        png = "effect.png";
+                        plist = "effect.plist";
                         break;
                 }
                 info->setTexture(path / png);
                 info->setSheet(path / plist);
             }
             else if (type == IconType::Special) {
-                info->setTexture(path / L("trail.png"));
+                info->setTexture(path / "trail.png");
             }
             else if (type == IconType::ShipFire) {
-                info->setTexture(path / L("fire_001.png"));
+                info->setTexture(path / "fire_001.png");
             }
 
-            info->setJSON(path / L("settings.json"));
+            info->setJSON(path / "settings.json");
 
             auto factor = Get::director->getContentScaleFactor();
-            Filesystem::PathView icon;
-            if (factor >= 4.0f) icon = L("icon-uhd.png");
-            else if (factor >= 2.0f) icon = L("icon-hd.png");
-            else icon = L("icon.png");
+            std::string_view icon;
+            if (factor >= 4.0f) icon = "icon-uhd.png";
+            else if (factor >= 2.0f) icon = "icon-hd.png";
+            else icon = "icon.png";
             info->setIcon(path / icon);
         }
         else {
             if (auto& texture = info->getTexture(); !texture.empty()) {
-                info->setTexture(path / Filesystem::filenameView(texture));
+                info->setTexture(path / texture.filename().value_or(""));
             }
             if (auto& sheet = info->getSheet(); !sheet.empty()) {
-                info->setSheet(path / Filesystem::filenameView(sheet));
+                info->setSheet(path / sheet.filename().value_or(""));
             }
             if (auto& json = info->getJSON(); !json.empty()) {
-                info->setJSON(path / Filesystem::filenameView(json));
+                info->setJSON(path / json.filename().value_or(""));
             }
             if (auto& icon = info->getIcon(); !icon.empty()) {
-                info->setIcon(path / Filesystem::filenameView(icon));
+                info->setIcon(path / icon.filename().value_or(""));
             }
         }
     }
@@ -424,41 +425,41 @@ void more_icons::renameIcon(IconInfo* info, std::string name) {
     info->setShortName(std::move(name));
 
     auto oldPngs = info->getAllTextures();
-    auto wideName = Filesystem::strWide(info->getShortName());
+    auto& shortName = info->getShortName();
     auto type = info->getType();
 
     if (type <= IconType::Jetpack) {
-        std::filesystem::path::string_type png;
-        std::filesystem::path::string_type plist;
+        std::string png;
+        std::string plist;
         switch (info->getQuality()) {
             case kTextureQualityHigh:
-                png = fmt::format(L("{}-uhd.png"), wideName);
-                plist = fmt::format(L("{}-uhd.plist"), wideName);
+                png = fmt::format("{}-uhd.png", shortName);
+                plist = fmt::format("{}-uhd.plist", shortName);
                 break;
             case kTextureQualityMedium:
-                png = fmt::format(L("{}-hd.png"), wideName);
-                plist = fmt::format(L("{}-hd.plist"), wideName);
+                png = fmt::format("{}-hd.png", shortName);
+                plist = fmt::format("{}-hd.plist", shortName);
                 break;
             case kTextureQualityLow:
-                png = fmt::format(L("{}.png"), wideName);
-                plist = fmt::format(L("{}.plist"), wideName);
+                png = fmt::format("{}.png", shortName);
+                plist = fmt::format("{}.plist", shortName);
                 break;
         }
-        info->setTexture(Filesystem::parentPath(info->getTexture()) / png);
-        info->setSheet(Filesystem::parentPath(info->getSheet()) / plist);
+        info->setTexture(info->getTexture().parent().value_or("") / png);
+        info->setSheet(info->getSheet().parent().value_or("") / plist);
     }
     else if (type >= IconType::DeathEffect) {
         if (auto& texture = info->getTexture(); !texture.empty()) {
-            info->setTexture(Filesystem::parentPath(Filesystem::parentPath(texture)) / wideName / Filesystem::filenameView(texture));
+            info->setTexture(texture.parent().value_or("").parent().value_or("") / shortName / texture.filename().value_or(""));
         }
         if (auto& sheet = info->getSheet(); !sheet.empty()) {
-            info->setSheet(Filesystem::parentPath(Filesystem::parentPath(sheet)) / wideName / Filesystem::filenameView(sheet));
+            info->setSheet(sheet.parent().value_or("").parent().value_or("") / shortName / sheet.filename().value_or(""));
         }
         if (auto& json = info->getJSON(); !json.empty()) {
-            info->setJSON(Filesystem::parentPath(Filesystem::parentPath(json)) / wideName / Filesystem::filenameView(json));
+            info->setJSON(json.parent().value_or("").parent().value_or("") / shortName / json.filename().value_or(""));
         }
         if (auto& icon = info->getIcon(); !icon.empty()) {
-            info->setIcon(Filesystem::parentPath(Filesystem::parentPath(icon)) / wideName / Filesystem::filenameView(icon));
+            info->setIcon(icon.parent().value_or("").parent().value_or("") / shortName / icon.filename().value_or(""));
         }
     }
 
@@ -552,14 +553,6 @@ void more_icons::updateIcon(IconInfo* info) {
     std::ranges::sort(frameNames);
 }
 
-namespace alpha::fine_outline {
-    void updateOutline(PlayerObject* object) GEODE_EVENT_EXPORT_CALL_NORES(
-        static_cast<void(*)(PlayerObject*)>(&updateOutline), (object), "alphalaneous.fine_outline/_updateOutlinePlayerObject"s)
-
-    void updateOutline(SimplePlayer* player) GEODE_EVENT_EXPORT_CALL_NORES(
-        static_cast<void(*)(SimplePlayer*)>(&updateOutline), (player), "alphalaneous.fine_outline/_updateOutlineSimplePlayer"s)
-}
-
 void more_icons::updateSimplePlayer(SimplePlayer* player, IconInfo* info) {
     if (!player || !info) return;
 
@@ -591,8 +584,6 @@ void more_icons::updateSimplePlayer(SimplePlayer* player, IconInfo* info) {
         updateRobotSprite(player->m_spiderSprite, info);
     }
     else if (player->m_spiderSprite) player->m_spiderSprite->setVisible(false);
-
-    if (type == IconType::Robot || type == IconType::Spider) return alpha::fine_outline::updateOutline(player);
 
     loadIcon(info, player->m_iconRequestID);
 
@@ -626,8 +617,6 @@ void more_icons::updateSimplePlayer(SimplePlayer* player, IconInfo* info) {
         detailSprite->setDisplayFrame(extraFrame);
         detailSprite->setPosition(firstCenter);
     }
-
-    alpha::fine_outline::updateOutline(player);
 }
 
 void more_icons::updateRobotSprite(GJRobotSprite* sprite, IconInfo* info) {
@@ -703,7 +692,7 @@ void more_icons::updatePlayerObject(PlayerObject* object, IconInfo* info) {
             batchNode->setTexture(robotSprite->getTexture());
             batchNode->appendChild(robotSprite);
         }
-        return alpha::fine_outline::updateOutline(object);
+        return;
     }
     else if (type == IconType::Spider) {
         if (auto spiderSprite = object->m_spiderSprite) {
@@ -713,7 +702,7 @@ void more_icons::updatePlayerObject(PlayerObject* object, IconInfo* info) {
             batchNode->setTexture(spiderSprite->getTexture());
             batchNode->appendChild(spiderSprite);
         }
-        return alpha::fine_outline::updateOutline(object);
+        return;
     }
 
     loadIcon(info, object->m_iconRequestID);
@@ -740,6 +729,4 @@ void more_icons::updatePlayerObject(PlayerObject* object, IconInfo* info) {
         detailSprite->setDisplayFrame(extraFrame);
         detailSprite->setPosition(firstCenter);
     }
-
-    alpha::fine_outline::updateOutline(object);
 }

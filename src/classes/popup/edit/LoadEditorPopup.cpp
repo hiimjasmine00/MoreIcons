@@ -10,7 +10,7 @@
 
 using namespace geode::prelude;
 
-LoadEditorPopup* LoadEditorPopup::create(IconType type, Function<Result<>(const std::filesystem::path&)> callback) {
+LoadEditorPopup* LoadEditorPopup::create(IconType type, Function<Result<>(const asp::fs::Path&)> callback) {
     auto ret = new LoadEditorPopup();
     if (ret->init(type, std::move(callback))) {
         ret->autorelease();
@@ -20,7 +20,7 @@ LoadEditorPopup* LoadEditorPopup::create(IconType type, Function<Result<>(const 
     return nullptr;
 }
 
-bool LoadEditorPopup::init(IconType type, Function<Result<>(const std::filesystem::path&)> callback) {
+bool LoadEditorPopup::init(IconType type, Function<Result<>(const asp::fs::Path&)> callback) {
     if (!BasePopup::init(230.0f, 250.0f, "geode.loader/GE_square03.png", CircleBaseColor::DarkPurple)) return false;
 
     setID("LoadEditorPopup");
@@ -43,19 +43,14 @@ bool LoadEditorPopup::init(IconType type, Function<Result<>(const std::filesyste
     scrollLayer->setID("scroll-layer");
     m_mainLayer->addChild(scrollLayer);
 
-    Filesystem::iterate(MoreIcons::getEditorDir(type), std::filesystem::file_type::directory, [this](const std::filesystem::path& path) {
-        auto a = Filesystem::filenameView(path);
-        m_entries.insert(std::ranges::find_if(m_entries, [a](const std::filesystem::path& path) {
-            auto b = Filesystem::filenameView(path);
+    Filesystem::iterate(MoreIcons::getEditorDir(type), asp::fs::FileType::Directory, [this](const asp::fs::Path& path) {
+        auto a = path.filename().value_or("").view();
+        m_entries.insert(std::ranges::find_if(m_entries, [a](const asp::fs::Path& path) {
+            auto b = path.filename().value_or("").view();
             if (a == b) return false;
             for (size_t i = 0; i < a.size() && i < b.size(); i++) {
-                #ifdef GEODE_IS_WINDOWS
-                auto charA = towlower(a[i]);
-                auto charB = towlower(b[i]);
-                #else
                 auto charA = tolower(a[i]);
                 auto charB = tolower(b[i]);
-                #endif
                 if (charA != charB) return charA < charB;
             }
             return a.size() <= b.size();
@@ -63,7 +58,7 @@ bool LoadEditorPopup::init(IconType type, Function<Result<>(const std::filesyste
     });
 
     for (size_t i = 0; i < m_entries.size(); i++) {
-        auto filename = std::string(Filesystem::strNarrow(Filesystem::filenameView(m_entries[i])));
+        auto filename = m_entries[i].filename().value_or("").string();
 
         auto entryMenu = CCMenu::create();
         entryMenu->setContentSize({ 200.0f, 30.0f });

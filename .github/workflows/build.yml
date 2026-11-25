@@ -37,14 +37,13 @@ jobs:
     runs-on: ${{ matrix.config.os }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Build the mod
         uses: hiimjasmine00/build-geode-mod@xwin
         with:
           build-config: ${{ matrix.config.build-config || 'Release' }}
           export-pdb: true
-          export-symbols: true
           combine: true
           target: ${{ matrix.config.target }}
 

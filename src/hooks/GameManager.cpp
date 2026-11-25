@@ -80,20 +80,20 @@ class $modify(MIGameManager, GameManager) {
         jasmine::hook::toggle(Icons::deathEffectHook, !Icons::preloadIcons);
     }
 
-    gd::string sheetNameForIcon(int id, int type) {
+    std::string sheetNameForIcon(int id, int type) {
         auto ret = GameManager::sheetNameForIcon(id, type);
         if (ret.empty() || id < 1) return ret;
         auto factor = Get::director->getContentScaleFactor();
         #ifdef GEODE_IS_MOBILE
         if (factor >= 4.0f) {
-            auto uhdSuffix = addSuffix(Filesystem::getPathString(Icons::vanillaTexturePath(fmt::format("{}.png", ret), false)), "-uhd");
+            auto uhdSuffix = addSuffix(Icons::vanillaTexturePath(fmt::format("{}.png", ret), false).string(), "-uhd");
             if (isFileExist(uhdSuffix)) {
                 uhdSuffix.resize(uhdSuffix.size() - 4);
                 return uhdSuffix;
             }
         }
         #endif
-        auto path = Filesystem::pathToString(dirs::getResourcesDir() / fmt::format(L("{}.png"), Filesystem::strWide(ret)));
+        auto path = (dirs::getResourcesDir() / fmt::format("{}.png", ret)).string();
         #ifndef GEODE_IS_MOBILE
         if (factor >= 4.0f) {
             auto uhdSuffix = addSuffix(path, "-uhd");

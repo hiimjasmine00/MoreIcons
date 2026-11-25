@@ -62,8 +62,8 @@ bool ViewDeathEffectPopup::init(int id, IconInfo* info) {
     nextButton->setID("next-button");
     m_buttonMenu->addChild(nextButton);
 
-    std::filesystem::path png;
-    std::filesystem::path plist;
+    asp::fs::Path png;
+    asp::fs::Path plist;
     MoreIcons::getIconPaths(info, id, IconType::DeathEffect, png, plist);
     if (auto imageRes = Load::createFrames(png, plist, {}, IconType::DeathEffect, {}, true)) {
         auto image = std::move(imageRes).unwrap();

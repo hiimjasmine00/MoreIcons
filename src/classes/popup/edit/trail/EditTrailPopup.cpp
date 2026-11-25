@@ -84,7 +84,7 @@ void EditTrailPopup::onPNG(CCObject* sender) {
             .description = "PNG files",
             .files = { "*.png" }
         }}
-    }), [this](Result<std::optional<std::filesystem::path>> res) {
+    }), [this](Result<std::optional<asp::fs::Path>> res) {
         if (res.isErr()) return Notify::error("Failed to import PNG file: {}", res.unwrapErr());
 
         auto path = std::move(res).unwrap();
@@ -103,11 +103,11 @@ void EditTrailPopup::onPreset(CCObject* sender) {
 void EditTrailPopup::onSave(CCObject* sender) {
     SaveIconPopup::create(
         IconType::Special, false,
-        [this](const gd::string& name) {
+        [this](const std::string& name) {
             m_pendingPath = MoreIcons::getIconStem(name, IconType::Special);
-            return Filesystem::doesExist(m_pendingPath);
+            return m_pendingPath.exists();
         },
-        [this](const gd::string& name) {
+        [this](const std::string& name) {
             return saveTrail(name);
         },
         [this] {
@@ -116,7 +116,7 @@ void EditTrailPopup::onSave(CCObject* sender) {
     )->show();
 }
 
-void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
+void EditTrailPopup::updateWithPath(asp::fs::PathView path) {
     if (auto textureRes = Load::createTexture(path)) {
         MoreIcons::setTexture(m_streak, textureRes.unwrap());
         auto& size = m_streak->getContentSize();
@@ -127,8 +127,8 @@ void EditTrailPopup::updateWithPath(const std::filesystem::path& path) {
     else if (textureRes.isErr()) Notify::error(textureRes.unwrapErr());
 }
 
-Result<> EditTrailPopup::saveTrail(const gd::string& name) {
-    if (!Filesystem::doesExist(m_pendingPath)) {
+Result<> EditTrailPopup::saveTrail(const std::string& name) {
+    if (!m_pendingPath.exists()) {
         GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
     }
 
@@ -136,7 +136,7 @@ Result<> EditTrailPopup::saveTrail(const gd::string& name) {
         return fmt::format("Failed to encode image: {}", err);
     }));
 
-    auto trailPath = m_pendingPath / L("trail.png");
+    auto trailPath = m_pendingPath / "trail.png";
     GEODE_UNWRAP(file::writeBinary(trailPath, imageData).mapErr([](std::string err) {
         return fmt::format("Failed to save image: {}", err);
     }));
@@ -150,7 +150,7 @@ Result<> EditTrailPopup::saveTrail(const gd::string& name) {
         more_icons::updateIcon(icon);
     }
     else {
-        auto jsonPath = m_pendingPath / L("settings.json");
+        auto jsonPath = m_pendingPath / "settings.json";
         (void)file::writeString(jsonPath, Defaults::getTrailInfo(0).dump());
         more_icons::addTrail(name, name, std::move(trailPath), std::move(jsonPath), std::move(iconPath));
     }

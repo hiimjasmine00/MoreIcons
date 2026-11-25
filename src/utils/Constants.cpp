@@ -83,25 +83,6 @@ std::string_view Constants::getPluralUppercase(IconType type) {
     }
 }
 
-#ifdef GEODE_IS_WINDOWS
-std::wstring_view Constants::getFolderName(IconType type) {
-    switch (type) {
-        case IconType::Cube: return L"icon";
-        case IconType::Ship: return L"ship";
-        case IconType::Ball: return L"ball";
-        case IconType::Ufo: return L"ufo";
-        case IconType::Wave: return L"wave";
-        case IconType::Robot: return L"robot";
-        case IconType::Spider: return L"spider";
-        case IconType::Swing: return L"swing";
-        case IconType::Jetpack: return L"jetpack";
-        case IconType::DeathEffect: return L"death";
-        case IconType::Special: return L"trail";
-        case IconType::ShipFire: return L"fire";
-        default: return L"";
-    }
-}
-#else
 std::string_view Constants::getFolderName(IconType type) {
     switch (type) {
         case IconType::Cube: return "icon";
@@ -119,7 +100,6 @@ std::string_view Constants::getFolderName(IconType type) {
         default: return "";
     }
 }
-#endif
 
 float Constants::getIconGap(IconType type) {
     switch (type) {

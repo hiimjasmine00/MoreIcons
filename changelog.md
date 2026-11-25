@@ -1,4 +1,9 @@
 # More Icons Changelog
+## v3.0.0 (2026-11-25)
+- Ported to Geometry Dash v2.209 / Geode SDK v6.0.0
+- Switched the file system from `std::filesystem` to `asp::fs`
+- Internal refactors and optimizations
+
 ## v2.1.3 (2026-04-02)
 - Fixed a bug where icons with different types but the same name would not load properly (Reported by [G4rlicbr3ad](user:27300083))
 

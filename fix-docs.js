@@ -7,10 +7,8 @@ for (const file of files) {
     fs.writeFileSync(file, content
         .replace(/&lt;MoreIcons\.hpp>/g, "&lt;hiimjustin000.more_icons/include/MoreIcons.hpp>")
         .replace(/&lt;IconInfo\.hpp>/g, "&lt;hiimjustin000.more_icons/include/IconInfo.hpp>")
-        .replace(/&lt;TrailInfo\.hpp>/g, "&lt;hiimjustin000.more_icons/include/TrailInfo.hpp>")
         .replace(/(\/classes\/[^'"]+)/g, "https://docs.geode-sdk.org$1")
         .replace(/https:\/\/docs\.geode-sdk\.org\/classes\/IconInfo/g, "/classes/IconInfo")
-        .replace(/https:\/\/docs\.geode-sdk\.org\/classes\/TrailInfo/g, "/classes/TrailInfo")
         .replace(/\/en\.cppreference\.com/g, "https://en.cppreference.com")
         .replace(/\/w\/cpp\/vector\/vector/g, "/w/cpp/container/vector")
         .replace(/\/w\/cpp\/vector\.h\/vector/g, "/w/cpp/container/vector")

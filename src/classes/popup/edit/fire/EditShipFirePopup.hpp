@@ -6,9 +6,9 @@ class IconButton;
 
 class EditShipFirePopup : public BasePopup, public FLAlertLayerProtocol {
 protected:
-    geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_pickListener;
-    geode::async::TaskHolder<geode::Result<std::vector<std::filesystem::path>>> m_pickManyListener;
-    std::filesystem::path m_pendingPath;
+    geode::async::TaskHolder<geode::Result<std::optional<asp::fs::Path>>> m_pickListener;
+    geode::async::TaskHolder<geode::Result<std::vector<asp::fs::Path>>> m_pickManyListener;
+    asp::fs::Path m_pendingPath;
     std::vector<CCMenuItemSpriteExtra*> m_frameButtons;
     cocos2d::CCMenu* m_frameMenu;
     cocos2d::CCSprite* m_streak;
@@ -30,9 +30,9 @@ protected:
     void onFrameRemove(cocos2d::CCObject* sender);
     void onImport(cocos2d::CCObject* sender);
     void onPreset(cocos2d::CCObject* sender);
-    void updateWithPath(std::filesystem::path path, int count);
+    void updateWithPath(asp::fs::Path path, int count);
     void onSave(cocos2d::CCObject* sender);
-    geode::Result<> saveShipFire(const gd::string& name);
+    geode::Result<> saveShipFire(const std::string& name);
     void onClose(cocos2d::CCObject* sender) override;
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override;
 public:

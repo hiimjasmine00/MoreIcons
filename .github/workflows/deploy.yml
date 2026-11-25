@@ -28,12 +28,12 @@ jobs:
 
     steps:
       - name: Checkout More Icons
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           path: ./MoreIcons
 
       - name: Download Flash
-        uses: robinraju/release-downloader@v1.12
+        uses: robinraju/release-downloader@v1.13
         with:
           repository: hiimjasmine00/flash
           latest: true
@@ -68,9 +68,9 @@ jobs:
           ../flash.exe -i ../MoreIcons -o . --overwrite && node ./fix-docs.js
 
       - name: Upload Pages
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ./dist
 
       - name: Deploy Pages
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

@@ -55,7 +55,7 @@ void IconButton::activate() {
             .description = "PNG files",
             .files = { "*.png" }
         }}
-    }), [this](Result<std::optional<std::filesystem::path>> res) {
+    }), [this](Result<std::optional<asp::fs::Path>> res) {
         if (res.isErr()) return Notify::error("Failed to import PNG file: {}", res.unwrapErr());
 
         auto path = std::move(res).unwrap();
@@ -65,7 +65,7 @@ void IconButton::activate() {
     });
 }
 
-void IconButton::setIcon(const std::filesystem::path& path) {
+void IconButton::setIcon(asp::fs::PathView path) {
     auto textureRes = Load::createTexture(path);
     if (textureRes.isErr()) {
         Notify::error("Failed to load texture: {}", textureRes.unwrapErr());
@@ -84,13 +84,13 @@ void IconButton::setIcon(const std::filesystem::path& path) {
     updateSprite();
 }
 
-std::filesystem::path IconButton::saveIcon(const std::filesystem::path& path) {
-    std::filesystem::path iconPath;
+asp::fs::Path IconButton::saveIcon(asp::fs::PathView path) {
+    asp::fs::Path iconPath;
     if (!m_unselectedSprite && !m_plusLabel) {
         auto texture = static_cast<CCSprite*>(getNormalImage())->getTexture();
         auto scaleFactor = Get::director->getContentScaleFactor();
         std::array scales = { 4.0f / scaleFactor, 2.0f / scaleFactor, 1.0f / scaleFactor };
-        std::array names = { L("icon-uhd.png"), L("icon-hd.png"), L("icon.png") };
+        std::array names = { "icon-uhd.png", "icon-hd.png", "icon.png" };
         for (int i = 0; i < 3; i++) {
             auto scale = scales[i];
             auto sprite = CCSprite::createWithTexture(texture);

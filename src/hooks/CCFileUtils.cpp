@@ -17,12 +17,12 @@ class $modify(MIFileUtils, CCFileUtils) {
         }
     }
 
-    gd::string fullPathForFilename(const char* filename, bool skipSuffix) {
+    std::string fullPathForFilename(const char* filename, bool skipSuffix) {
         if (!Get::director || isAbsolutePath(filename)) return CCFileUtils::fullPathForFilename(filename, skipSuffix);
 
         std::string_view name = filename;
         if (name.starts_with("icons/") || name.starts_with("PlayerExplosion_")) {
-            gd::string ret = Filesystem::pathToString(Icons::vanillaTexturePath(Filesystem::strWide(name), skipSuffix));
+            auto ret = Icons::vanillaTexturePath(name, skipSuffix).string();
             if (!skipSuffix) {
                 auto factor = Get::director->getContentScaleFactor();
                 if (factor >= 4.0f) {
@@ -37,7 +37,7 @@ class $modify(MIFileUtils, CCFileUtils) {
             if (isFileExist(ret)) return ret;
         }
         else if (name.starts_with("streak_") || name.starts_with("shipfire")) {
-            gd::string ret = Filesystem::pathToString(Icons::vanillaTexturePath(Filesystem::strWide(name), true));
+            auto ret = Icons::vanillaTexturePath(name, true).string();
             if (isFileExist(ret)) return ret;
         }
 

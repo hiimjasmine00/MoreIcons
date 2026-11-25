@@ -6,8 +6,8 @@ class IconButton;
 
 class EditTrailPopup : public BasePopup, public FLAlertLayerProtocol {
 protected:
-    geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
-    std::filesystem::path m_pendingPath;
+    geode::async::TaskHolder<geode::Result<std::optional<asp::fs::Path>>> m_listener;
+    asp::fs::Path m_pendingPath;
     cocos2d::CCSprite* m_streak;
     IconButton* m_iconButton;
     bool m_hasChanged = false;
@@ -16,8 +16,8 @@ protected:
     void onPNG(cocos2d::CCObject* sender);
     void onPreset(cocos2d::CCObject* sender);
     void onSave(cocos2d::CCObject* sender);
-    void updateWithPath(const std::filesystem::path& path);
-    geode::Result<> saveTrail(const gd::string& name);
+    void updateWithPath(asp::fs::PathView path);
+    geode::Result<> saveTrail(const std::string& name);
     void onClose(cocos2d::CCObject* sender) override;
     void FLAlert_Clicked(FLAlertLayer* layer, bool btn2) override;
 public:

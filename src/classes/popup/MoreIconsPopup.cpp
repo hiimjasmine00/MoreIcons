@@ -13,26 +13,11 @@
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
-#include <Geode/loader/Dispatch.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
 using namespace std::string_literals;
-
-namespace alpha::fine_outline {
-    enum class PlayerIcon {
-        SELECTED = -1,
-        ONE,
-        TWO
-    };
-
-    ccColor3B getColor(PlayerIcon player = PlayerIcon::SELECTED) GEODE_EVENT_EXPORT_CALL_NORES(
-        &getColor, (player), "alphalaneous.fine_outline/getColor"s);
-
-    void setOutlineColor(SimplePlayer* player, const ccColor3B& color) GEODE_EVENT_EXPORT_CALL_NORES(
-        &setOutlineColor, (player, color), "alphalaneous.fine_outline/_setOutlineColorSimplePlayer"s);
-}
 
 MoreIconsPopup* MoreIconsPopup::create() {
     auto ret = new MoreIconsPopup();
@@ -65,9 +50,6 @@ bool MoreIconsPopup::init() {
         m_color1 = MoreIcons::currentColor1(IconType::Cube, m_dual);
         m_color2 = MoreIcons::currentColor2(IconType::Cube, m_dual);
         m_colorGlow = MoreIcons::currentColorGlow(IconType::Cube, m_dual);
-    }
-    if (Loader::get()->isModLoaded("alphalaneous.fine_outline")) {
-        m_outlineColor = alpha::fine_outline::getColor();
     }
     m_glow = MoreIcons::currentGlow(m_dual);
 
@@ -124,7 +106,6 @@ void MoreIconsPopup::createMenu(IconType type) {
         auto icon = SimplePlayer::create(1);
         icon->updatePlayerFrame(id, type);
         more_icons::updateSimplePlayer(icon, info);
-        alpha::fine_outline::setOutlineColor(icon, m_outlineColor);
         if (MoreIcons::customGamemodeColors) {
             icon->setColor(MoreIcons::currentColor1(type, m_dual));
             icon->setSecondColor(MoreIcons::currentColor2(type, m_dual));

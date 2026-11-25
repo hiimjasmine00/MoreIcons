@@ -62,13 +62,13 @@ ExtendedResult::~ExtendedResult() = default;
 std::mutex imageMutex2;
 std::vector<ExtendedResult> images2;
 
-void loadDeathEffects(std::vector<arc::BlockingTaskHandle<void>>& tasks, Filesystem::PathView suffix) {
+void loadDeathEffects(std::vector<arc::BlockingTaskHandle<void>>& tasks, asp::fs::PathView suffix) {
     auto& rt = runtime();
 
     auto count = Get::gameManager->countForType(IconType::DeathEffect);
     for (int i = 1; i < count; i++) {
-        std::filesystem::path texture;
-        std::filesystem::path sheet;
+        asp::fs::Path texture;
+        asp::fs::Path sheet;
         MoreIcons::getIconPaths(nullptr, i + 1, IconType::DeathEffect, texture, sheet);
         tasks.push_back(rt.spawnBlocking<void>([texture = std::move(texture), sheet = std::move(sheet), i] mutable {
             auto res = Load::createFrames(texture, sheet, {}, IconType::DeathEffect);
@@ -101,7 +101,7 @@ void loadShipFires(std::vector<arc::BlockingTaskHandle<void>>& tasks) {
     for (int i = 2; i <= count; i++) {
         for (int j = 1; j <= Defaults::getShipFireCount(i); j++) {
             tasks.push_back(rt.spawnBlocking<void>([texture = MoreIcons::getFirePath(nullptr, i, j), i, j] mutable {
-                auto res = Load::createFrames(texture, std::filesystem::path(), {}, IconType::ShipFire);
+                auto res = Load::createFrames(texture, asp::fs::Path(), {}, IconType::ShipFire);
                 if (res.isErr()) return;
 
                 std::unique_lock lock(imageMutex2);
@@ -114,7 +114,7 @@ void loadShipFires(std::vector<arc::BlockingTaskHandle<void>>& tasks) {
         for (auto& info : *icons) {
             for (int i = 1; i <= info.getFireCount(); i++) {
                 tasks.push_back(rt.spawnBlocking<void>([texture = MoreIcons::getFirePath(&info, 0, i), info = &info, i] mutable {
-                    auto res = Load::createFrames(texture, std::filesystem::path(), {}, IconType::ShipFire);
+                    auto res = Load::createFrames(texture, asp::fs::Path(), {}, IconType::ShipFire);
                     if (res.isErr()) return;
 
                     std::unique_lock lock(imageMutex2);
@@ -146,9 +146,9 @@ bool FramePresetPopup::init(IconType type, Function<void(CCSpriteFrame*)> callba
     std::vector<arc::BlockingTaskHandle<void>> tasks;
 
     auto factor = Get::director->getContentScaleFactor();
-    Filesystem::PathView suffix;
-    if (factor >= 4.0f) suffix = L("-uhd");
-    else if (factor >= 2.0f) suffix = L("-hd");
+    std::string_view suffix;
+    if (factor >= 4.0f) suffix = "-uhd";
+    else if (factor >= 2.0f) suffix = "-hd";
 
     if (type == IconType::DeathEffect) loadDeathEffects(tasks, suffix);
     else if (type == IconType::ShipFire) loadShipFires(tasks);

@@ -6,8 +6,10 @@
 #include "Json.hpp"
 #include "Load.hpp"
 #include "Log.hpp"
+#include <asp/fs/DirectoryIterator.hpp>
+#include <Geode/cocos/textures/CCTextureCache.h>
 #include <Geode/loader/Dirs.hpp>
-#include <Geode/loader/Dispatch.hpp>
+#include <Geode/loader/EventExport.hpp>
 #include <Geode/loader/Mod.hpp>
 #include <jasmine/setting.hpp>
 #include <MoreIcons.hpp>
@@ -44,42 +46,43 @@ void Icons::loadSettings() {
     preloadIcons = jasmine::setting::getValue<bool>("preload-icons");
 }
 
-std::pair<Filesystem::PathView, Filesystem::PathView> splitPath(const std::filesystem::path& path, size_t removeCount) {
-    auto filename = Filesystem::filenameView(path);
-    filename.remove_suffix(removeCount);
-    auto& str = path.native();
-    return { Filesystem::PathView(str.data(), str.size() - filename.size() - removeCount), filename };
+std::pair<std::string_view, std::string_view> splitPath(asp::fs::PathView path, size_t removeCount) {
+    auto filename = path.filename().value_or("");
+    return {
+        path.view().substr(0, path.size() - filename.size()),
+        filename.view().substr(0, filename.size() - removeCount)
+    };
 }
 
-void migrateTrails(const std::filesystem::path& path) {
-    if (!Filesystem::doesExist(path)) return;
+void migrateTrails(asp::fs::PathView path) {
+    if (!path.exists()) return;
 
     log::info("Beginning trail migration in {}", path);
 
     auto& migratedTrails = Mod::get()->getSaveContainer()["migrated-trails"];
     if (!migratedTrails.isArray()) migratedTrails = matjson::Value::array();
 
-    Filesystem::iterate(path, std::filesystem::file_type::regular, [&migratedTrails](const std::filesystem::path& path) {
-        auto filename = Filesystem::filenameView(path);
-        if (!filename.ends_with(L(".png"))) return;
+    Filesystem::iterate(path, asp::fs::FileType::RegularFile, [&migratedTrails](const asp::fs::Path& path) {
+        auto filename = path.filename().value_or("").view();
+        if (!filename.ends_with(".png")) return;
 
-        matjson::Value pathValue = string::pathToString(path);
+        matjson::Value pathValue = path.string();
         if (std::ranges::contains(migratedTrails, pathValue)) return;
         else migratedTrails.push(std::move(pathValue));
 
         auto stem = filename.substr(0, filename.size() - 4);
-        auto directory = Filesystem::parentPath(path) / stem;
+        auto directory = path.parent().value_or("") / stem;
 
         if (auto res = file::createDirectoryAll(directory); res.isErr()) {
-            return log::error("{}: {}", Filesystem::strNarrow(stem), res.unwrapErr());
+            return log::error("{}: {}", stem, res.unwrapErr());
         }
 
-        if (auto res = Filesystem::renameFile(path, directory / L("trail.png")); res.isErr()) {
-            return log::error("{}: {}", Filesystem::strNarrow(filename), res.unwrapErr());
+        if (auto res = Filesystem::renameFile(path, directory / "trail.png"); res.isErr()) {
+            return log::error("{}: {}", filename, res.unwrapErr());
         }
 
-        if (auto res = Filesystem::renameFile(fmt::format(L("{}.json"), directory), directory / L("settings.json")); res.isErr()) {
-            return log::error("{}.json: {}", Filesystem::strNarrow(stem), res.unwrapErr());
+        if (auto res = Filesystem::renameFile(fmt::format("{}.json", directory), directory / "settings.json"); res.isErr()) {
+            return log::error("{}.json: {}", stem, res.unwrapErr());
         }
     });
 
@@ -89,7 +92,7 @@ void migrateTrails(const std::filesystem::path& path) {
 struct IconPack {
     std::string name;
     std::string id;
-    std::filesystem::path path;
+    asp::fs::Path path;
     bool vanilla;
     bool zipped;
 };
@@ -102,45 +105,45 @@ namespace geode::texture_loader {
         std::string name;
         VersionInfo version;
         std::vector<std::string> authors;
-        std::filesystem::path path;
-        std::filesystem::path resourcesPath;
+        asp::fs::Path path;
+        asp::fs::Path resourcesPath;
     };
 
-    std::vector<Pack> getAppliedPacks()
-        GEODE_EVENT_EXPORT_CALL_NORES(&getAppliedPacks, (), "geode.texture-loader/getAppliedPacks"s);
+    GEODE_EVENT_EXPORT_CALL(std::vector<Pack>, getAppliedPacks, (), (), "geode.texture-loader/getAppliedPacks"s);
 }
 
 void Icons::loadPacks() {
     packs.emplace_back("More Icons"s, std::string(), dirs::getGeodeDir(), false, false);
-    migrateTrails(std::move(Mod::get()->getConfigDir().make_preferred()) / L("trail"));
+    migrateTrails(std::move(Mod::get()->getConfigDir().makePreferred()) / "trail");
 
     for (auto& pack : texture_loader::getAppliedPacks()) {
         auto& name = pack.name;
         auto& id = pack.id;
         auto& resourcesPath = pack.resourcesPath;
 
-        resourcesPath.make_preferred();
+        resourcesPath.makePreferred();
 
-        auto& str = pack.path.native();
-        auto zipped = str.ends_with(L(".apk")) || str.ends_with(L(".zip"));
+        auto str = pack.path.view().view();
+        auto zipped = str.ends_with(".apk") || str.ends_with(".zip");
         if (traditionalPacks) {
-            if (Filesystem::doesExist(resourcesPath / L("icons"))) {
+            if ((resourcesPath / "icons").exists()) {
                 packs.emplace_back(name, id, resourcesPath, true, zipped);
                 log::info("Added vanilla icon pack {} from {}", name, resourcesPath);
             }
             else {
-                std::error_code code;
-                std::filesystem::directory_iterator it(resourcesPath, code);
-                if (!code) {
-                    for (; it != std::filesystem::end(it); it.increment(code)) {
-                        std::error_code code;
-                        if (it->status(code).type() != std::filesystem::file_type::regular) continue;
+                if (auto iterRes = asp::fs::DirectoryIterator::create(resourcesPath)) {
+                    for (auto itemRes : std::move(iterRes).unwrap()) {
+                        if (itemRes.isErr()) continue;
 
-                        auto filename = Filesystem::filenameView(it->path());
+                        auto item = std::move(itemRes).unwrap();
+                        std::error_code code;
+                        if (item.type != asp::fs::FileType::RegularFile) continue;
+
+                        auto filename = item.path.filename().value_or("").view();
                         if (
-                            (filename.starts_with(L("streak_")) && filename.ends_with(L("_001.png"))) ||
-                            (filename.starts_with(L("PlayerExplosion_")) && filename.ends_with(L(".png"))) ||
-                            (filename.starts_with(L("shipfire")) && filename.ends_with(L("_001.png")))
+                            (filename.starts_with("streak_") && filename.ends_with("_001.png")) ||
+                            (filename.starts_with("PlayerExplosion_") && filename.ends_with(".png")) ||
+                            (filename.starts_with("shipfire") && filename.ends_with("_001.png"))
                         ) {
                             packs.emplace_back(name, id, resourcesPath, true, zipped);
                             log::info("Added vanilla icon pack {} from {}", name, resourcesPath);
@@ -152,107 +155,83 @@ void Icons::loadPacks() {
         }
 
         auto configPath = resourcesPath / CONFIG_PATH;
-        if (Filesystem::doesExist(configPath)) {
+        if (configPath.exists()) {
             packs.emplace_back(name, id, resourcesPath, false, zipped);
             log::info("Added icon pack {} from {}", name, resourcesPath);
-            migrateTrails(std::move(configPath) / L("trail"));
+            migrateTrails(std::move(configPath) / "trail");
         }
     }
 }
 
-#ifdef GEODE_IS_WINDOWS
-Result<> checkPath(const std::filesystem::path& path) {
-    auto& wstr = path.native();
-    auto count = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr.size(), nullptr, 0, nullptr, nullptr);
-    if (count == 0) return Err(formatSystemError(GetLastError()));
-
-    std::string str(count, '\0');
-    auto result = WideCharToMultiByte(CP_UTF8, 0, wstr.data(), wstr.size(), &str[0], count, nullptr, nullptr);
-    if (result == 0) return Err(formatSystemError(GetLastError()));
-    else return Ok();
-}
-#else
-Result<> checkPath(const std::filesystem::path& path) {
-    return Ok();
-}
-#endif
-
 #ifdef GEODE_IS_MOBILE
-std::filesystem::path Icons::getUhdResourcesDir() {
-    return dirs::getModConfigDir() / L("weebify.high-graphics-android/" GEODE_GD_VERSION_STRING);
+asp::fs::Path Icons::getUhdResourcesDir() {
+    return dirs::getModConfigDir() / "weebify.high-graphics-android/" GEODE_GD_VERSION_STRING;
 }
 
-std::filesystem::path Icons::vanillaTexturePath(std::string_view path, bool skipSuffix) {
+asp::fs::Path Icons::vanillaTexturePath(asp::fs::PathView path, bool skipSuffix) {
     return (!skipSuffix && Get::director->getContentScaleFactor() >= 4.0f ? Icons::getUhdResourcesDir() : dirs::getResourcesDir()) / path;
 }
 #else
-std::filesystem::path Icons::vanillaTexturePath(Filesystem::PathView path, bool skipSuffix) {
+asp::fs::Path Icons::vanillaTexturePath(asp::fs::PathView path, bool skipSuffix) {
     return dirs::getResourcesDir() / path;
 }
 #endif
 
-void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
+void loadIcon(asp::fs::PathView path, const IconPack& pack) {
     auto factor = Get::director->getContentScaleFactor();
     auto [parent, stem] = splitPath(path, 6);
 
     std::string name;
     std::string shortName;
     TextureQuality quality;
-    if (stem.ends_with(L("-uhd"))) {
+    if (stem.ends_with("-uhd")) {
         stem.remove_suffix(4);
-        shortName = Filesystem::strNarrow(stem);
-        name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
+        name = pack.id.empty() ? std::string(stem) : fmt::format("{}:{}", pack.id, stem);
 
         if (factor < 4.0f && factor >= 2.0f) {
             if (
-                !Filesystem::doesExist(fmt::format(L("{}{}-hd.plist"), parent, stem)) &&
-                !Filesystem::doesExist(fmt::format(L("{}{}.plist"), parent, stem))
+                !asp::fs::Path(fmt::format("{}{}-hd.plist", parent, stem)).exists() &&
+                !asp::fs::Path(fmt::format("{}{}.plist", parent, stem)).exists()
             ) {
                 Log::warn(std::move(name), "Ignoring high-quality icon on medium texture quality");
             }
             return;
         }
         else if (factor < 2.0f) {
-            if (!Filesystem::doesExist(fmt::format(L("{}{}.plist"), parent, stem))) {
+            if (!asp::fs::Path(fmt::format("{}{}.plist", parent, stem)).exists()) {
                 Log::warn(std::move(name), "Ignoring high-quality icon on low texture quality");
             }
             return;
         }
         quality = kTextureQualityHigh;
     }
-    else if (stem.ends_with(L("-hd"))) {
+    else if (stem.ends_with("-hd")) {
         stem.remove_suffix(3);
-        shortName = Filesystem::strNarrow(stem);
-        name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
+        name = pack.id.empty() ? std::string(stem) : fmt::format("{}:{}", pack.id, stem);
 
         if (factor < 2.0f) {
-            if (!Filesystem::doesExist(fmt::format(L("{}{}.plist"), parent, stem))) {
+            if (!asp::fs::Path(fmt::format("{}{}.plist", parent, stem)).exists()) {
                 Log::warn(std::move(name), "Ignoring medium-quality icon on low texture quality");
             }
             return;
         }
 
-        if (factor >= 4.0f && Filesystem::doesExist(fmt::format(L("{}{}-uhd.plist"), parent, stem))) return;
+        if (factor >= 4.0f && asp::fs::Path(fmt::format("{}{}-uhd.plist", parent, stem)).exists()) return;
         quality = kTextureQualityMedium;
     }
     else {
-        shortName = Filesystem::strNarrow(stem);
-        name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
+        name = pack.id.empty() ? std::string(stem) : fmt::format("{}:{}", pack.id, stem);
 
-        if (factor >= 4.0f && Filesystem::doesExist(fmt::format(L("{}{}-uhd.plist"), parent, stem))) return;
-        else if (factor >= 2.0f && Filesystem::doesExist(fmt::format(L("{}{}-hd.plist"), parent, stem))) return;
+        if (factor >= 4.0f && asp::fs::Path(fmt::format("{}{}-uhd.plist", parent, stem)).exists()) return;
+        else if (factor >= 2.0f && asp::fs::Path(fmt::format("{}{}-hd.plist", parent, stem)).exists()) return;
         quality = kTextureQualityLow;
     }
 
     log::debug("Pre-loading icon {} from {}", name, pack.name);
 
-    if (auto res = checkPath(path); res.isErr()) {
-        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
-    }
-
-    auto texturePath = Filesystem::withExt(path, L(".png"));
-    if (!Filesystem::doesExist(texturePath)) {
-        return Log::error(std::move(name), fmt::format("Texture file {} not found", Filesystem::filenameFormat(texturePath)));
+    auto texturePath = path.withExtension(".png");
+    if (!texturePath.exists()) {
+        return Log::error(std::move(name), fmt::format("Texture file {} not found", texturePath.filename().value_or("")));
     }
 
     auto icon = more_icons::addIcon(
@@ -262,47 +241,40 @@ void loadIcon(const std::filesystem::path& path, const IconPack& pack) {
     log::debug("Finished pre-loading icon {} from {}", icon->getName(), pack.name);
 }
 
-void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
+void loadVanillaIcon(asp::fs::PathView path, const IconPack& pack) {
     auto factor = Get::director->getContentScaleFactor();
     auto [parent, stem] = splitPath(path, 4);
 
-    auto plistPath = Filesystem::withExt(path, L(".plist"));
-    auto vanillaPath = !Filesystem::doesExist(plistPath);
+    auto plistPath = path.withExtension(".plist");
+    auto vanillaPath = !plistPath.exists();
     if (vanillaPath) {
-        plistPath = Icons::vanillaTexturePath(fmt::format(L("{}.plist"), Filesystem::PathView(stem.data() - 6, stem.size() + 6)), false);
+        plistPath = Icons::vanillaTexturePath(fmt::format("{}.plist", std::string_view(stem.data() - 6, stem.size() + 6)), false);
     }
 
     std::string name;
     std::string shortName;
     TextureQuality quality;
-    if (stem.ends_with(L("-uhd"))) {
+    if (stem.ends_with("-uhd")) {
         if (factor < 4.0f) return;
         stem.remove_suffix(4);
-        shortName = Filesystem::strNarrow(stem);
-        name = fmt::format("{}:{}", pack.id, shortName);
+        name = fmt::format("{}:{}", pack.id, stem);
         quality = kTextureQualityHigh;
     }
-    else if (stem.ends_with(L("-hd"))) {
+    else if (stem.ends_with("-hd")) {
         if (factor < 2.0f) return;
         stem.remove_suffix(3);
-        if (factor >= 4.0f && Filesystem::doesExist(fmt::format(L("{}{}-uhd.png"), parent, stem))) return;
-        shortName = Filesystem::strNarrow(stem);
-        name = fmt::format("{}:{}", pack.id, shortName);
+        if (factor >= 4.0f && asp::fs::Path(fmt::format("{}{}-uhd.png", parent, stem)).exists()) return;
+        name = fmt::format("{}:{}", pack.id, stem);
         quality = kTextureQualityMedium;
     }
     else {
-        if (factor >= 4.0f && Filesystem::doesExist(fmt::format(L("{}{}-uhd.png"), parent, stem))) return;
-        else if (factor >= 2.0f && Filesystem::doesExist(fmt::format(L("{}{}-hd.png"), parent, stem))) return;
-        shortName = Filesystem::strNarrow(stem);
-        name = fmt::format("{}:{}", pack.id, shortName);
+        if (factor >= 4.0f && asp::fs::Path(fmt::format("{}{}-uhd.png", parent, stem)).exists()) return;
+        else if (factor >= 2.0f && asp::fs::Path(fmt::format("{}{}-hd.png", parent, stem)).exists()) return;
+        name = fmt::format("{}:{}", pack.id, stem);
         quality = kTextureQualityLow;
     }
 
     log::debug("Pre-loading vanilla icon {} from {}", name, pack.name);
-
-    if (auto res = checkPath(path); res.isErr()) {
-        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
-    }
 
     auto doesntExist = vanillaPath && !Load::doesExist(plistPath);
     if (doesntExist) return Log::error(std::move(name), fmt::format("Plist file not found (Last attempt: {})", plistPath));
@@ -314,32 +286,28 @@ void loadVanillaIcon(const std::filesystem::path& path, const IconPack& pack) {
     log::debug("Finished pre-loading vanilla icon {} from {}", icon->getName(), pack.name);
 }
 
-void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
+void loadTrail(asp::fs::PathView path, const IconPack& pack) {
     auto factor = Get::director->getContentScaleFactor();
-    auto shortName = std::string(Filesystem::strNarrow(Filesystem::filenameView(path)));
+    auto shortName = path.filename().value_or("").string();
     auto name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
-    auto texturePath = path / L("trail.png");
+    auto texturePath = path / "trail.png";
 
-    if (!Filesystem::doesExist(texturePath)) {
-        return Log::error(std::move(name), fmt::format("Texture file {} not found", Filesystem::filenameFormat(texturePath)));
+    if (!texturePath.exists()) {
+        return Log::error(std::move(name), fmt::format("Texture file {} not found", texturePath.filename().value_or("")));
     }
 
     log::debug("Pre-loading trail {} from {}", name, pack.name);
 
-    if (auto res = checkPath(path); res.isErr()) {
-        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
-    }
+    auto jsonPath = path / "settings.json";
 
-    auto jsonPath = path / L("settings.json");
+    auto iconPng = path / "icon.png";
+    auto iconHdPng = factor >= 2.0f ? path / "icon-hd.png" : asp::fs::Path();
+    auto iconUhdPng = factor >= 4.0f ? path / "icon-uhd.png" : asp::fs::Path();
 
-    auto iconPng = path / L("icon.png");
-    auto iconHdPng = factor >= 2.0f ? path / L("icon-hd.png") : std::filesystem::path();
-    auto iconUhdPng = factor >= 4.0f ? path / L("icon-uhd.png") : std::filesystem::path();
-
-    std::filesystem::path iconPath;
-    if (factor >= 4.0f && Filesystem::doesExist(iconUhdPng)) iconPath = std::move(iconUhdPng);
-    else if (factor >= 2.0f && Filesystem::doesExist(iconHdPng)) iconPath = std::move(iconHdPng);
-    else if (Filesystem::doesExist(iconPng)) iconPath = std::move(iconPng);
+    asp::fs::Path iconPath;
+    if (factor >= 4.0f && iconUhdPng.exists()) iconPath = std::move(iconUhdPng);
+    else if (factor >= 2.0f && iconHdPng.exists()) iconPath = std::move(iconHdPng);
+    else if (iconPng.exists()) iconPath = std::move(iconPng);
 
     auto trailInfo = file::readJson(jsonPath).unwrapOr(Defaults::getTrailInfo(0));
     auto icon = more_icons::addTrail(
@@ -350,17 +318,12 @@ void loadTrail(const std::filesystem::path& path, const IconPack& pack) {
     log::debug("Finished pre-loading trail {} from {}", icon->getName(), pack.name);
 }
 
-void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
-    auto filename = Filesystem::filenameView(path);
-    filename.remove_suffix(4);
-    auto shortName = std::string(Filesystem::strNarrow(filename));
+void loadVanillaTrail(asp::fs::PathView path, const IconPack& pack) {
+    auto filename = path.filename().value_or("");
+    auto shortName = std::string(filename.string().substr(0, filename.size() - 4));
     auto name = fmt::format("{}:{}", pack.id, shortName);
 
     log::debug("Pre-loading vanilla trail {} from {}", name, pack.name);
-
-    if (auto res = checkPath(path); res.isErr()) {
-        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
-    }
 
     auto trailID = numFromString<int>(std::string_view(shortName.data() + 7, shortName.size() - 11)).unwrapOrDefault();
     if (trailID == 0) trailID = -1;
@@ -372,25 +335,25 @@ void loadVanillaTrail(const std::filesystem::path& path, const IconPack& pack) {
     log::debug("Finished pre-loading vanilla trail {} from {}", icon->getName(), pack.name);
 }
 
-void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
+void loadDeathEffect(asp::fs::PathView path, const IconPack& pack) {
     auto factor = Get::director->getContentScaleFactor();
-    auto shortName = std::string(Filesystem::strNarrow(Filesystem::filenameView(path)));
+    auto shortName = path.filename().value_or("").string();
     auto name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
-    auto uhdPath = path / L("effect-uhd.plist");
-    auto hdPath = path / L("effect-hd.plist");
-    auto sdPath = path / L("effect.plist");
+    auto uhdPath = path / "effect-uhd.plist";
+    auto hdPath = path / "effect-hd.plist";
+    auto sdPath = path / "effect.plist";
 
     TextureQuality quality;
-    std::filesystem::path plistPath;
-    if (factor >= 4.0f && Filesystem::doesExist(uhdPath)) {
+    asp::fs::Path plistPath;
+    if (factor >= 4.0f && uhdPath.exists()) {
         plistPath = std::move(uhdPath);
         quality = kTextureQualityHigh;
     }
-    else if (factor >= 2.0f && Filesystem::doesExist(hdPath)) {
+    else if (factor >= 2.0f && hdPath.exists()) {
         plistPath = std::move(hdPath);
         quality = kTextureQualityMedium;
     }
-    else if (Filesystem::doesExist(sdPath)) {
+    else if (sdPath.exists()) {
         plistPath = std::move(sdPath);
         quality = kTextureQualityLow;
     }
@@ -400,25 +363,21 @@ void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
 
     log::debug("Pre-loading death effect {} from {}", name, pack.name);
 
-    if (auto res = checkPath(path); res.isErr()) {
-        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
+    auto texturePath = plistPath.withExtension(".png");
+    if (!texturePath.exists()) {
+        return Log::error(std::move(name), fmt::format("Texture file {} not found", texturePath.filename().value_or("")));
     }
 
-    auto texturePath = Filesystem::withExt(plistPath, L(".png"));
-    if (!Filesystem::doesExist(texturePath)) {
-        return Log::error(std::move(name), fmt::format("Texture file {} not found", Filesystem::filenameFormat(texturePath)));
-    }
+    auto jsonPath = path / "settings.json";
 
-    auto jsonPath = path / L("settings.json");
+    auto iconPng = path / "icon.png";
+    auto iconHdPng = factor >= 2.0f ? path / "icon-hd.png" : asp::fs::Path();
+    auto iconUhdPng = factor >= 4.0f ? path / "icon-uhd.png" : asp::fs::Path();
 
-    auto iconPng = path / L("icon.png");
-    auto iconHdPng = factor >= 2.0f ? path / L("icon-hd.png") : std::filesystem::path();
-    auto iconUhdPng = factor >= 4.0f ? path / L("icon-uhd.png") : std::filesystem::path();
-
-    std::filesystem::path iconPath;
-    if (factor >= 4.0f && Filesystem::doesExist(iconUhdPng)) iconPath = std::move(iconUhdPng);
-    else if (factor >= 2.0f && Filesystem::doesExist(iconHdPng)) iconPath = std::move(iconHdPng);
-    else if (Filesystem::doesExist(iconPng)) iconPath = std::move(iconPng);
+    asp::fs::Path iconPath;
+    if (factor >= 4.0f && iconUhdPng.exists()) iconPath = std::move(iconUhdPng);
+    else if (factor >= 2.0f && iconHdPng.exists()) iconPath = std::move(iconHdPng);
+    else if (iconPng.exists()) iconPath = std::move(iconPng);
 
     auto deathInfo = file::readJson(jsonPath).unwrapOr(Defaults::getDeathEffectInfo(0));
     auto icon = more_icons::addDeathEffect(
@@ -429,45 +388,38 @@ void loadDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
     log::debug("Finished pre-loading death effect {} from {}", icon->getName(), pack.name);
 }
 
-void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& pack) {
+void loadVanillaDeathEffect(asp::fs::PathView path, const IconPack& pack) {
     auto factor = Get::director->getContentScaleFactor();
     auto [parent, stem] = splitPath(path, 4);
 
-    auto plistPath = Filesystem::withExt(path, L(".plist"));
-    auto vanillaPath = !Filesystem::doesExist(plistPath);
-    if (vanillaPath) plistPath = Icons::vanillaTexturePath(Filesystem::filenameView(plistPath), false);
+    auto plistPath = path.withExtension(".plist");
+    auto vanillaPath = !plistPath.exists();
+    if (vanillaPath) plistPath = Icons::vanillaTexturePath(plistPath.filename().value_or(""), false);
 
     std::string name;
     std::string shortName;
     TextureQuality quality;
-    if (stem.ends_with(L("-uhd"))) {
+    if (stem.ends_with("-uhd")) {
         if (factor < 4.0f) return;
         stem.remove_suffix(4);
-        shortName = Filesystem::strNarrow(stem);
-        name = fmt::format("{}:{}", pack.id, shortName);
+        name = fmt::format("{}:{}", pack.id, stem);
         quality = kTextureQualityHigh;
     }
-    else if (stem.ends_with(L("-hd"))) {
+    else if (stem.ends_with("-hd")) {
         if (factor < 2.0f) return;
         stem.remove_suffix(3);
-        if (factor >= 4.0f && Filesystem::doesExist(fmt::format(L("{}{}-uhd.png"), parent, stem))) return;
-        shortName = Filesystem::strNarrow(stem);
-        name = fmt::format("{}:{}", pack.id, shortName);
+        if (factor >= 4.0f && asp::fs::Path(fmt::format("{}{}-uhd.png", parent, stem)).exists()) return;
+        name = fmt::format("{}:{}", pack.id, stem);
         quality = kTextureQualityMedium;
     }
     else {
-        if (factor >= 4.0f && Filesystem::doesExist(fmt::format(L("{}{}-uhd.png"), parent, stem))) return;
-        else if (factor >= 2.0f && Filesystem::doesExist(fmt::format(L("{}{}-hd.png"), parent, stem))) return;
-        shortName = Filesystem::strNarrow(stem);
-        name = fmt::format("{}:{}", pack.id, shortName);
+        if (factor >= 4.0f && asp::fs::Path(fmt::format("{}{}-uhd.png", parent, stem)).exists()) return;
+        else if (factor >= 2.0f && asp::fs::Path(fmt::format("{}{}-hd.png", parent, stem)).exists()) return;
+        name = fmt::format("{}:{}", pack.id, stem);
         quality = kTextureQualityLow;
     }
 
     log::debug("Pre-loading vanilla death effect {} from {}", name, pack.name);
-
-    if (auto res = checkPath(path); res.isErr()) {
-        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
-    }
 
     auto doesntExist = vanillaPath && !Load::doesExist(plistPath);
     if (doesntExist) return Log::error(std::move(name), fmt::format("Plist file not found (Last attempt: {})", plistPath));
@@ -484,45 +436,40 @@ void loadVanillaDeathEffect(const std::filesystem::path& path, const IconPack& p
     log::debug("Finished pre-loading vanilla death effect {} from {}", icon->getName(), pack.name);
 }
 
-void loadShipFire(const std::filesystem::path& path, const IconPack& pack) {
+void loadShipFire(asp::fs::PathView path, const IconPack& pack) {
     auto factor = Get::director->getContentScaleFactor();
-    auto shortName = std::string(Filesystem::strNarrow(Filesystem::filenameView(path)));
+    auto shortName = path.filename().value_or("").string();
     auto name = pack.id.empty() ? shortName : fmt::format("{}:{}", pack.id, shortName);
 
     auto fireCount = 0;
-    while (Filesystem::doesExist(path / fmt::format(L("fire_{:03}.png"), fireCount + 1))) fireCount++;
+    while ((path / fmt::format("fire_{:03}.png", fireCount + 1)).exists()) fireCount++;
     if (fireCount == 0) return Log::error(std::move(name), "No ship fire frames found");
 
     log::debug("Pre-loading ship fire {} from {}", name, pack.name);
 
-    if (auto res = checkPath(path); res.isErr()) {
-        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
-    }
+    auto jsonPath = path / "settings.json";
 
-    auto jsonPath = path / L("settings.json");
+    auto iconPng = path / "icon.png";
+    auto iconHdPng = factor >= 2.0f ? path / "icon-hd.png" : asp::fs::Path();
+    auto iconUhdPng = factor >= 4.0f ? path / "icon-uhd.png" : asp::fs::Path();
 
-    auto iconPng = path / L("icon.png");
-    auto iconHdPng = factor >= 2.0f ? path / L("icon-hd.png") : std::filesystem::path();
-    auto iconUhdPng = factor >= 4.0f ? path / L("icon-uhd.png") : std::filesystem::path();
-
-    std::filesystem::path iconPath;
-    if (factor >= 4.0f && Filesystem::doesExist(iconUhdPng)) iconPath = std::move(iconUhdPng);
-    else if (factor >= 2.0f && Filesystem::doesExist(iconHdPng)) iconPath = std::move(iconHdPng);
-    else if (Filesystem::doesExist(iconPng)) iconPath = std::move(iconPng);
+    asp::fs::Path iconPath;
+    if (factor >= 4.0f && iconUhdPng.exists()) iconPath = std::move(iconUhdPng);
+    else if (factor >= 2.0f && iconHdPng.exists()) iconPath = std::move(iconHdPng);
+    else if (iconPng.exists()) iconPath = std::move(iconPng);
 
     auto fireInfo = file::readJson(jsonPath).unwrapOr(Defaults::getShipFireInfo(0));
     auto icon = more_icons::addShipFire(
-        std::move(name), std::move(shortName), path / L("fire_001.png"), std::move(jsonPath), std::move(iconPath),
+        std::move(name), std::move(shortName), path / "fire_001.png", std::move(jsonPath), std::move(iconPath),
         fireCount, pack.id, pack.name, 0, std::move(fireInfo), false, pack.zipped
     );
 
     log::debug("Finished pre-loading ship fire {} from {}", icon->getName(), pack.name);
 }
 
-void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack) {
-    auto filename = Filesystem::filenameView(path);
-    filename.remove_suffix(8);
-    auto shortName = std::string(Filesystem::strNarrow(filename));
+void loadVanillaShipFire(asp::fs::PathView path, const IconPack& pack) {
+    auto filename = path.filename().value_or("");
+    auto shortName = filename.string().substr(0, filename.size() - 8);
     auto name = fmt::format("{}:{}", pack.id, shortName);
 
     auto fireID = numFromString<int>(std::string_view(shortName.data() + 12, shortName.size() - 12)).unwrapOrDefault();
@@ -531,10 +478,6 @@ void loadVanillaShipFire(const std::filesystem::path& path, const IconPack& pack
     auto fireCount = Defaults::getShipFireCount(fireID);
 
     log::debug("Pre-loading vanilla ship fire {} from {}", name, pack.name);
-
-    if (auto res = checkPath(path); res.isErr()) {
-        return Log::error(std::move(name), fmt::format("Failed to convert path: {}", res.unwrapErr()));
-    }
 
     auto icon = more_icons::addShipFire(
         std::move(name), std::move(shortName), path, {}, {}, Defaults::getShipFireCount(fireID),
@@ -558,21 +501,21 @@ std::mutex imageMutex;
 void Icons::loadIcons(IconType type) {
     Log::currentType = type;
 
-    Filesystem::PathView prefix;
+    std::string_view prefix;
     switch (type) {
-        case IconType::Cube: prefix = L("player_"); break;
-        case IconType::Ship: prefix = L("ship_"); break;
-        case IconType::Ball: prefix = L("player_ball_"); break;
-        case IconType::Ufo: prefix = L("bird_"); break;
-        case IconType::Wave: prefix = L("dart_"); break;
-        case IconType::Robot: prefix = L("robot_"); break;
-        case IconType::Spider: prefix = L("spider_"); break;
-        case IconType::Swing: prefix = L("swing_"); break;
-        case IconType::Jetpack: prefix = L("jetpack_"); break;
-        case IconType::DeathEffect: prefix = L("PlayerExplosion_"); break;
-        case IconType::Special: prefix = L("streak_"); break;
-        case IconType::ShipFire: prefix = L("shipfire"); break;
-        default: prefix = L(""); break;
+        case IconType::Cube: prefix = "player_"; break;
+        case IconType::Ship: prefix = "ship_"; break;
+        case IconType::Ball: prefix = "player_ball_"; break;
+        case IconType::Ufo: prefix = "bird_"; break;
+        case IconType::Wave: prefix = "dart_"; break;
+        case IconType::Robot: prefix = "robot_"; break;
+        case IconType::Spider: prefix = "spider_"; break;
+        case IconType::Swing: prefix = "swing_"; break;
+        case IconType::Jetpack: prefix = "jetpack_"; break;
+        case IconType::DeathEffect: prefix = "PlayerExplosion_"; break;
+        case IconType::Special: prefix = "streak_"; break;
+        case IconType::ShipFire: prefix = "shipfire"; break;
+        default: prefix = ""; break;
     }
     auto folder = Constants::getFolderName(type);
     auto name = Constants::getPluralLowercase(type);
@@ -582,7 +525,7 @@ void Icons::loadIcons(IconType type) {
 
         if (!pack.vanilla) {
             auto path = pack.path / CONFIG_PATH / folder;
-            if (!Filesystem::doesExist(path)) {
+            if (!path.exists()) {
                 if (it == packs.begin()) {
                     if (auto res = file::createDirectoryAll(path); res.isErr()) log::error("{}: {}", path, res.unwrapErr());
                 }
@@ -590,20 +533,18 @@ void Icons::loadIcons(IconType type) {
             }
 
             if (it == packs.begin()) {
-                std::error_code code;
-                std::filesystem::permissions(path, std::filesystem::perms::all, code);
-                if (code) log::error("{}: Failed to change permissions: {}", path, code.message());
+                if (auto res = Filesystem::giveAllPermissions(path); res.isErr()) log::error("{}: {}", path, res.unwrapErr());
             }
 
             log::info("Pre-loading {} from {}", name, path);
 
             if (type <= IconType::Jetpack) {
-                Filesystem::iterate(path, std::filesystem::file_type::regular, [&pack](const std::filesystem::path& path) {
-                    if (path.native().ends_with(L(".plist"))) loadIcon(path, pack);
+                Filesystem::iterate(path, asp::fs::FileType::RegularFile, [&pack](const asp::fs::Path& path) {
+                    if (path.view().view().ends_with(".plist")) loadIcon(path, pack);
                 });
             }
             else if (type >= IconType::DeathEffect) {
-                Filesystem::iterate(path, std::filesystem::file_type::directory, [type, &pack](const std::filesystem::path& path) {
+                Filesystem::iterate(path, asp::fs::FileType::Directory, [type, &pack](const asp::fs::Path& path) {
                     if (type == IconType::DeathEffect) loadDeathEffect(path, pack);
                     else if (type == IconType::Special) loadTrail(path, pack);
                     else if (type == IconType::ShipFire) loadShipFire(path, pack);
@@ -613,20 +554,20 @@ void Icons::loadIcons(IconType type) {
             log::info("Finished pre-loading {} from {}", name, path);
         }
         else if (traditionalPacks) {
-            auto path = type <= IconType::Jetpack ? pack.path / L("icons") : pack.path;
-            if (!Filesystem::doesExist(path)) continue;
+            auto path = type <= IconType::Jetpack ? pack.path / "icons" : pack.path;
+            if (!path.exists()) continue;
 
             log::info("Pre-loading {} from {}", name, path);
 
-            Filesystem::iterate(path, std::filesystem::file_type::regular, [type, &pack, prefix](const std::filesystem::path& path) {
-                auto filename = Filesystem::filenameView(path);
-                if (!filename.ends_with(L(".png")) || !filename.starts_with(prefix)) return;
+            Filesystem::iterate(path, asp::fs::FileType::RegularFile, [type, &pack, prefix](const asp::fs::Path& path) {
+                auto filename = path.filename().value_or("").view();
+                if (!filename.ends_with(".png") || !filename.starts_with(prefix)) return;
 
                 filename.remove_suffix(4);
 
                 if (type <= IconType::Jetpack) {
-                    if (type != IconType::Cube || !filename.starts_with(L("player_ball_"))) {
-                        if (!filename.ends_with(L("00")) && !filename.ends_with(L("00-hd")) && !filename.ends_with(L("00-uhd"))) {
+                    if (type != IconType::Cube || !filename.starts_with("player_ball_")) {
+                        if (!filename.ends_with("00") && !filename.ends_with("00-hd") && !filename.ends_with("00-uhd")) {
                             loadVanillaIcon(path, pack);
                         }
                     }
@@ -635,10 +576,10 @@ void Icons::loadIcons(IconType type) {
                     loadVanillaDeathEffect(path, pack);
                 }
                 else if (type == IconType::Special) {
-                    if (filename.ends_with(L("_001"))) loadVanillaTrail(path, pack);
+                    if (filename.ends_with("_001")) loadVanillaTrail(path, pack);
                 }
                 else if (type == IconType::ShipFire) {
-                    if (filename.ends_with(L("_001"))) loadVanillaShipFire(path, pack);
+                    if (filename.ends_with("_001")) loadVanillaShipFire(path, pack);
                 }
             });
 
@@ -721,7 +662,7 @@ void Icons::uncacheIcon(IconInfo* info) {
         }
     }
     if (Get::textureCache) {
-        Get::textureCache->removeTextureForKey(info->getTextureString().c_str());
+        Get::textureCache->removeTextureForKey(info->getTexture().c_str());
     }
 }
 

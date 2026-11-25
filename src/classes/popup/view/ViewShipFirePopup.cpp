@@ -76,7 +76,7 @@ bool ViewShipFirePopup::init(int id, IconInfo* info) {
         auto path = MoreIcons::getFirePath(info, id, i);
         auto textureRes = Load::createTexture(path, true);
         if (textureRes.isErr()) {
-            Notify::error("Failed to load {}: {}", Filesystem::filenameFormat(path), textureRes.unwrapErr());
+            Notify::error("Failed to load {}: {}", path.filename().value_or(""), textureRes.unwrapErr());
             failed = true;
             break;
         }

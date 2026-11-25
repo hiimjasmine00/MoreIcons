@@ -2,6 +2,7 @@
 #include "Filesystem.hpp"
 #include "Get.hpp"
 #include "Json.hpp"
+#include <Geode/cocos/textures/CCTextureCache.h>
 #if defined(GEODE_IS_MACOS) || defined(GEODE_IS_IOS)
 #include <CoreFoundation/CFPropertyList.h>
 #include <ImageIO/CGImageSource.h>
@@ -131,9 +132,9 @@ thread_local ApkFile* apkFile = [] {
 }();
 #endif
 
-Result<std::vector<uint8_t>> Load::readBinary(const std::filesystem::path& path) {
+Result<std::vector<uint8_t>> Load::readBinary(asp::fs::PathView path) {
     #ifdef GEODE_IS_ANDROID
-    auto& str = path.native();
+    auto str = path.string();
     if (str.starts_with("assets/")) {
         auto& fileList = apkFile->fileList;
         if (auto it = fileList.find(str); it != fileList.end()) {
@@ -161,16 +162,14 @@ bool existsInZip(const std::string& path) {
 }
 #endif
 
-bool Load::doesExist(const std::filesystem::path& path) {
+bool Load::doesExist(asp::fs::PathView path) {
     #ifdef GEODE_IS_ANDROID
-    auto& str = path.native();
-    if (str.starts_with("assets/")) return existsInZip(str);
+    if (path.view().starts_with("assets/")) return existsInZip(path.string());
     #endif
-    std::error_code code;
-    return std::filesystem::exists(path, code);
+    return path.exists();
 }
 
-Result<RGBAImage> Load::readPNG(const std::filesystem::path& path, bool premultiplyAlpha) {
+Result<RGBAImage> Load::readPNG(asp::fs::PathView path, bool premultiplyAlpha) {
     GEODE_UNWRAP_INTO(auto data, Load::readBinary(path).mapErr([](std::string err) {
         return fmt::format("Failed to read image: {}", err);
     }));
@@ -225,7 +224,7 @@ Result<RGBAImage> Load::readPNG(const std::filesystem::path& path, bool premulti
     return Ok(RGBAImage(std::move(image.data), image.width, image.height));
 }
 
-Result<CCTexture2D*> Load::createTexture(const std::filesystem::path& path, bool premultiplyAlpha) {
+Result<CCTexture2D*> Load::createTexture(asp::fs::PathView path, bool premultiplyAlpha) {
     GEODE_UNWRAP_INTO(auto image, Load::readPNG(path, premultiplyAlpha));
 
     return Ok(createTexture(image.data.data(), image.width, image.height, premultiplyAlpha));
@@ -252,8 +251,7 @@ void Load::initTexture(CCTexture2D* texture, const uint8_t* data, uint32_t width
 }
 
 Result<ImageResult> Load::createFrames(
-    const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type,
-    std::string_view target, bool premultiply
+    asp::fs::PathView png, asp::fs::PathView plist, std::string_view name, IconType type, std::string_view target, bool premultiply
 ) {
     GEODE_UNWRAP_INTO(auto image, Load::readPNG(png, premultiply));
 
@@ -262,7 +260,7 @@ Result<ImageResult> Load::createFrames(
         return fmt::format("Failed to create frames: {}", err);
     }));
 
-    return Ok(ImageResult(string::pathToString(png), std::move(texture), std::move(frames), std::move(image)));
+    return Ok(ImageResult(png.string(), std::move(texture), std::move(frames), std::move(image)));
 }
 
 matjson::Value parseNode(const pugi::xml_node& node) {
@@ -289,7 +287,7 @@ matjson::Value parseNode(const pugi::xml_node& node) {
     else return nullptr;
 }
 
-Result<matjson::Value> Load::readPlist(const std::filesystem::path& path) {
+Result<matjson::Value> Load::readPlist(asp::fs::PathView path) {
     GEODE_UNWRAP_INTO(auto data, readBinary(path));
 
     #if defined(GEODE_IS_MACOS) || defined(GEODE_IS_IOS)
@@ -428,7 +426,7 @@ CCSize sizeFromString(std::string_view content) {
 }
 
 Result<StringMap<Ref<CCSpriteFrame>>> Load::createFrames(
-    const std::filesystem::path& path, CCTexture2D* texture, std::string_view name, IconType type, std::string_view target, bool fixNames
+    asp::fs::PathView path, CCTexture2D* texture, std::string_view name, IconType type, std::string_view target, bool fixNames
 ) {
     StringMap<Ref<CCSpriteFrame>> frames;
     if (path.empty()) return Ok(std::move(frames));

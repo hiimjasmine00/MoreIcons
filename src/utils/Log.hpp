@@ -1,5 +1,6 @@
 #include <Geode/Enums.hpp>
 #include <Geode/loader/Types.hpp>
+#include <map>
 
 struct LogData {
     std::string name;

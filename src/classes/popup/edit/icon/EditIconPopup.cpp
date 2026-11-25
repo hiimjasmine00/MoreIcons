@@ -15,6 +15,7 @@
 #include "../../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/Slider.hpp>
+#include <Geode/cocos/extensions/GUI/CCControlExtension/CCScale9Sprite.h>
 #include <Geode/utils/file.hpp>
 #include <jasmine/mod.hpp>
 #include <matjson/std.hpp>
@@ -254,17 +255,17 @@ void EditIconPopup::onNextPage(CCObject* sender) {
 }
 
 void EditIconPopup::onLoadState(CCObject* sender) {
-    LoadEditorPopup::create(m_iconType, [this](const std::filesystem::path& directory) {
+    LoadEditorPopup::create(m_iconType, [this](const asp::fs::Path& directory) {
         return loadEditor(directory);
     })->show();
 }
 
-Result<> EditIconPopup::loadEditor(const std::filesystem::path& directory) {
-    GEODE_UNWRAP_INTO(auto state, file::readJson(directory / L("state.json")));
+Result<> EditIconPopup::loadEditor(asp::fs::PathView directory) {
+    GEODE_UNWRAP_INTO(auto state, file::readJson(directory / "state.json"));
     if (!state.isObject()) return Err("Expected object");
 
-    m_selectedPNG = directory / L("icon.png");
-    m_selectedPlist = directory / L("icon.plist");
+    m_selectedPNG = directory / "icon.png";
+    m_selectedPlist = directory / "icon.plist";
     GEODE_UNWRAP(updateWithSelectedFilesInternal(false));
 
     m_definitions = Json::get<StringMap<FrameDefinition>>(state, "definitions");
@@ -298,11 +299,11 @@ Result<> EditIconPopup::loadEditor(const std::filesystem::path& directory) {
 void EditIconPopup::onSaveState(CCObject* sender) {
     SaveIconPopup::create(
         m_iconType, true,
-        [this](const gd::string& name) {
-            m_pendingPath = MoreIcons::getEditorDir(m_iconType) / Filesystem::strWide(name);
-            return Filesystem::doesExist(m_pendingPath);
+        [this](const std::string& name) {
+            m_pendingPath = MoreIcons::getEditorDir(m_iconType) / name;
+            return m_pendingPath.exists();
         },
-        [this](const gd::string& name) {
+        [this](const std::string& name) {
             return saveEditor();
         },
         [this] {
@@ -312,11 +313,11 @@ void EditIconPopup::onSaveState(CCObject* sender) {
 }
 
 Result<> EditIconPopup::saveEditor() {
-    if (!Filesystem::doesExist(m_pendingPath)) {
+    if (!m_pendingPath.exists()) {
         GEODE_UNWRAP(file::createDirectoryAll(m_pendingPath));
     }
 
-    GEODE_UNWRAP(file::writeString(m_pendingPath / L("state.json"), matjson::makeObject({
+    GEODE_UNWRAP(file::writeString(m_pendingPath / "state.json", matjson::makeObject({
         { "definitions"s, matjson::Value(m_definitions) },
         { "main-color"s, matjson::Value(m_mainColor) },
         { "secondary-color"s, matjson::Value(m_secondaryColor) },
@@ -330,7 +331,7 @@ Result<> EditIconPopup::saveEditor() {
         packer.frame(fmt::format("icon{}.png", frameName), ImageRenderer::getImage(frame));
     }
 
-    GEODE_UNWRAP(ImageRenderer::save(packer, m_pendingPath / L("icon.png"), m_pendingPath / L("icon.plist"), "icon.png"));
+    GEODE_UNWRAP(ImageRenderer::save(packer, m_pendingPath / "icon.png", m_pendingPath / "icon.plist", "icon.png"));
 
     m_hasChanged = false;
     return Ok();
@@ -357,7 +358,7 @@ void EditIconPopup::onPieceImport(CCObject* sender) {
             .description = "PNG files",
             .files = { "*.png" }
         }}
-    }), [this](Result<std::optional<std::filesystem::path>> res) {
+    }), [this](Result<std::optional<asp::fs::Path>> res) {
         if (res.isErr()) return Notify::error("Failed to import PNG file: {}", res.unwrapErr());
 
         auto path = std::move(res).unwrap();
@@ -394,7 +395,7 @@ void EditIconPopup::onPNG(CCObject* sender) {
             .description = "PNG files",
             .files = { "*.png" }
         }}
-    }), [this](Result<std::optional<std::filesystem::path>> res) {
+    }), [this](Result<std::optional<asp::fs::Path>> res) {
         if (res.isErr()) return Notify::error("Failed to import PNG file: {}", res.unwrapErr());
 
         auto path = std::move(res).unwrap();
@@ -422,7 +423,7 @@ void EditIconPopup::onPlist(CCObject* sender) {
             .description = "Plist files",
             .files = { "*.plist" }
         }}
-    }), [this](Result<std::optional<std::filesystem::path>> res) {
+    }), [this](Result<std::optional<asp::fs::Path>> res) {
         if (res.isErr()) return Notify::error("Failed to import Plist file: {}", res.unwrapErr());
 
         auto path = std::move(res).unwrap();
@@ -458,18 +459,18 @@ void EditIconPopup::onSave(CCObject* sender) {
 
     SaveIconPopup::create(
         m_iconType, false,
-        [this](const gd::string& name) {
-            auto stem = Filesystem::getPathString(MoreIcons::getIconStem(name, m_iconType));
-            m_pngs[0] = fmt::format(L("{}-uhd.png"), stem);
-            m_pngs[1] = fmt::format(L("{}-hd.png"), stem);
-            m_pngs[2] = fmt::format(L("{}.png"), stem);
-            m_plists[0] = fmt::format(L("{}-uhd.plist"), stem);
-            m_plists[1] = fmt::format(L("{}-hd.plist"), stem);
-            m_plists[2] = fmt::format(L("{}.plist"), stem);
-            return Filesystem::doesExist(m_plists[0]) || Filesystem::doesExist(m_plists[1]) || Filesystem::doesExist(m_plists[2]) ||
-                Filesystem::doesExist(m_pngs[0]) || Filesystem::doesExist(m_pngs[1]) || Filesystem::doesExist(m_pngs[2]);
+        [this](const std::string& name) {
+            auto stem = MoreIcons::getIconStem(name, m_iconType).string();
+            m_pngs[0] = fmt::format("{}-uhd.png", stem);
+            m_pngs[1] = fmt::format("{}-hd.png", stem);
+            m_pngs[2] = fmt::format("{}.png", stem);
+            m_plists[0] = fmt::format("{}-uhd.plist", stem);
+            m_plists[1] = fmt::format("{}-hd.plist", stem);
+            m_plists[2] = fmt::format("{}.plist", stem);
+            return m_plists[0].exists() || m_plists[1].exists() || m_plists[2].exists() ||
+                m_pngs[0].exists() || m_pngs[1].exists() || m_pngs[2].exists();
         },
-        [this](const gd::string& name) {
+        [this](const std::string& name) {
             return saveIcon(name);
         },
         [this] {
@@ -483,7 +484,7 @@ void EditIconPopup::onSave(CCObject* sender) {
     )->show();
 }
 
-Result<> EditIconPopup::saveIcon(const gd::string& name) {
+Result<> EditIconPopup::saveIcon(const std::string& name) {
     std::array<texpack::Packer, 3> packers = {};
     auto scaleFactor = Get::director->getContentScaleFactor();
     int index;

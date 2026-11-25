@@ -3,7 +3,7 @@
 
 class IconButton : public CCMenuItemSpriteExtra {
 protected:
-    geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
+    geode::async::TaskHolder<geode::Result<std::optional<asp::fs::Path>>> m_listener;
     cocos2d::CCSprite* m_unselectedSprite;
     cocos2d::CCLabelBMFont* m_plusLabel;
 
@@ -12,8 +12,8 @@ protected:
 public:
     static IconButton* create();
 
-    std::filesystem::path saveIcon(const std::filesystem::path& path);
-    void setIcon(const std::filesystem::path& path);
+    asp::fs::Path saveIcon(asp::fs::PathView path);
+    void setIcon(asp::fs::PathView path);
     void resetIcon();
     cocos2d::CCTexture2D* getIconTexture();
 };

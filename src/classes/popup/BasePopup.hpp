@@ -5,7 +5,8 @@
 class BasePopup : public geode::Popup {
 protected:
     bool init(
-        float width, float height, const char* background = "GJ_square01.png", geode::CircleBaseColor closeColor = geode::CircleBaseColor::Green
+        float width, float height, geode::ZStringView background = "GJ_square01.png",
+        geode::CircleBaseColor closeColor = geode::CircleBaseColor::Green
     );
 public:
     void close();

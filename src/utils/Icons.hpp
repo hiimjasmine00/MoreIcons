@@ -1,12 +1,12 @@
-#include <cocos2d.h>
+#include <asp/fs/Path.hpp>
+#include <fmt/format.h>
+#include <Geode/cocos/cocoa/CCObject.h>
 #include <Geode/Enums.hpp>
+#include <Geode/GeneratedPredeclare.hpp>
 #include <Geode/loader/Types.hpp>
+#include <map>
 
-#ifdef GEODE_IS_WINDOWS
-#define CONFIG_PATH std::wstring_view(L"config\\" GEODE_CONCAT(L, GEODE_MOD_ID), sizeof(GEODE_MOD_ID) + 6)
-#else
 #define CONFIG_PATH std::string_view("config/" GEODE_MOD_ID, sizeof(GEODE_MOD_ID) + 6)
-#endif
 
 class IconInfo;
 class IconWrapper;
@@ -30,14 +30,14 @@ namespace Icons {
     cocos2d::CCTexture2D* createAndAddFrames(IconInfo* info);
     void finishLoading();
     #ifdef GEODE_IS_MOBILE
-    std::filesystem::path getUhdResourcesDir();
+    asp::fs::Path getUhdResourcesDir();
     #endif
     void loadIcons(IconType type);
     void loadPacks();
     void loadSettings();
     void setIcon(cocos2d::CCNode* node, IconInfo* info);
     void uncacheIcon(IconInfo* info);
-    std::filesystem::path vanillaTexturePath(std::basic_string_view<std::filesystem::path::value_type> path, bool skipSuffix);
+    asp::fs::Path vanillaTexturePath(asp::fs::PathView path, bool skipSuffix);
 }
 
 class IconWrapper : public cocos2d::CCObject {

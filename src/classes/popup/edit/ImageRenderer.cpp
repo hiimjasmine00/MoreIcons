@@ -1,5 +1,8 @@
 #include "ImageRenderer.hpp"
 #include "../../../utils/Get.hpp"
+#include <Geode/cocos/CCDirector.h>
+#include <Geode/cocos/sprite_nodes/CCSpriteFrame.h>
+#include <Geode/cocos/kazmath/include/kazmath/GL/matrix.h>
 #include <Geode/utils/file.hpp>
 
 using namespace geode::prelude;
@@ -160,7 +163,7 @@ texpack::Image ImageRenderer::getImage(CCSpriteFrame* frame) {
     return { std::move(data), width, height };
 }
 
-Result<> ImageRenderer::save(texpack::Packer& packer, const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name) {
+Result<> ImageRenderer::save(texpack::Packer& packer, asp::fs::PathView png, asp::fs::PathView plist, std::string_view name) {
     GEODE_UNWRAP(packer.pack().mapErr([](std::string err) {
         return fmt::format("Failed to pack image: {}", err);
     }));

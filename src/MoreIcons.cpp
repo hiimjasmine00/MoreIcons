@@ -9,7 +9,11 @@
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJGarageLayer.hpp>
 #include <Geode/binding/SimplePlayer.hpp>
+#include <Geode/cocos/misc_nodes/CCMotionStreak.h>
+#include <Geode/cocos/platform/CCFileUtils.h>
+#include <Geode/cocos/textures/CCTextureCache.h>
 #include <Geode/loader/Mod.hpp>
+#include <Geode/loader/ModEvent.hpp>
 #include <MoreIcons.hpp>
 
 using namespace geode::prelude;
@@ -42,11 +46,10 @@ $on_mod(Loaded) {
     }
 }
 
-Result<std::filesystem::path> MoreIcons::createTrash() {
-    auto trashPath = Mod::get()->getConfigDir() / L("trash");
+Result<asp::fs::Path> MoreIcons::createTrash() {
+    auto trashPath = Mod::get()->getConfigDir() / "trash";
     GEODE_UNWRAP(file::createDirectoryAll(trashPath));
-    std::error_code code;
-    std::filesystem::permissions(trashPath, std::filesystem::perms::all, code);
+    (void)Filesystem::giveAllPermissions(trashPath);
     return Ok(std::move(trashPath));
 }
 
@@ -175,7 +178,7 @@ void MoreIcons::blendStreak(CCMotionStreak* streak, IconInfo* info) {
 }
 
 CCSprite* MoreIcons::customIcon(IconInfo* info) {
-    auto square = CCSprite::create(info->getIconString().c_str());
+    auto square = CCSprite::create(info->getIcon().c_str());
     if (square && !square->getUserObject("geode.texture-loader/fallback")) return square;
 
     square = CCSprite::createWithSpriteFrameName("playerSquare_001.png");
@@ -188,7 +191,7 @@ CCSprite* MoreIcons::customIcon(IconInfo* info) {
         square->addChild(question);
     }
     else {
-        auto sprite = CCSprite::create(info->getTextureString().c_str());
+        auto sprite = CCSprite::create(info->getTexture().c_str());
         limitNodeHeight(sprite, 27.0f, 999.0f, 0.001f);
         sprite->setPosition(square->getContentSize() / 2.0f);
         square->addChild(sprite);
@@ -197,16 +200,16 @@ CCSprite* MoreIcons::customIcon(IconInfo* info) {
     return square;
 }
 
-std::filesystem::path MoreIcons::getEditorDir(IconType type) {
-    return Mod::get()->getConfigDir() / L("editor") / Constants::getFolderName(type);
+asp::fs::Path MoreIcons::getEditorDir(IconType type) {
+    return Mod::get()->getConfigDir() / "editor" / Constants::getFolderName(type);
 }
 
-std::filesystem::path MoreIcons::getIconDir(IconType type) {
+asp::fs::Path MoreIcons::getIconDir(IconType type) {
     return Mod::get()->getConfigDir() / Constants::getFolderName(type);
 }
 
-std::filesystem::path MoreIcons::getIconStem(std::string_view name, IconType type) {
-    return getIconDir(type) / Filesystem::strWide(name);
+asp::fs::Path MoreIcons::getIconStem(std::string_view name, IconType type) {
+    return getIconDir(type) / name;
 }
 
 std::string MoreIcons::getIconName(int id, IconType type) {
@@ -227,26 +230,22 @@ std::string MoreIcons::getIconName(int id, IconType type) {
     }
 }
 
-std::filesystem::path MoreIcons::getIconPath(IconInfo* info, int id, IconType type) {
-    std::filesystem::path png;
-    std::filesystem::path plist;
+asp::fs::Path MoreIcons::getIconPath(IconInfo* info, int id, IconType type) {
+    asp::fs::Path png;
+    asp::fs::Path plist;
     getIconPaths(info, id, type, png, plist);
     return png;
 }
 
-std::filesystem::path getFullPath(const std::string& filename) {
-    #ifdef GEODE_IS_WINDOWS
-    return std::filesystem::path(Filesystem::strWide(Get::fileUtils->fullPathForFilename(filename.c_str(), false)));
-    #else
-    return std::filesystem::path(std::string(Get::fileUtils->fullPathForFilename(filename.c_str(), false)));
-    #endif
+asp::fs::Path getFullPath(const std::string& filename) {
+    return Get::fileUtils->fullPathForFilename(filename.c_str(), false);
 }
 
-std::filesystem::path MoreIcons::getFirePath(IconInfo* info, int id, int frame) {
+asp::fs::Path MoreIcons::getFirePath(IconInfo* info, int id, int frame) {
     if (info) {
         auto path = info->getTexture();
         auto& pathString = Filesystem::getPathString(path);
-        pathString.replace(pathString.size() - 7, 3, fmt::format(L("{:03}"), frame));
+        pathString.replace(pathString.size() - 7, 3, fmt::format("{:03}", frame));
         return path;
     }
     else {
@@ -254,7 +253,7 @@ std::filesystem::path MoreIcons::getFirePath(IconInfo* info, int id, int frame) 
     }
 }
 
-void MoreIcons::getIconPaths(IconInfo* info, int id, IconType type, std::filesystem::path& png, std::filesystem::path& plist) {
+void MoreIcons::getIconPaths(IconInfo* info, int id, IconType type, asp::fs::Path& png, asp::fs::Path& plist) {
     if (info) {
         png = info->getTexture();
         plist = info->getSheet();

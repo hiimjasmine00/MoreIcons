@@ -7,6 +7,9 @@
 #include <Geode/binding/ExplodeItemNode.hpp>
 #include <Geode/binding/GameManager.hpp>
 #include <Geode/binding/GJBaseGameLayer.hpp>
+#include <Geode/cocos/misc_nodes/CCMotionStreak.h>
+#include <Geode/cocos/misc_nodes/CCRenderTexture.h>
+#include <Geode/cocos/textures/CCTextureCache.h>
 #include <Geode/modify/PlayerObject.hpp>
 #include <jasmine/random.hpp>
 #include <MoreIcons.hpp>
@@ -165,7 +168,7 @@ class $modify(MIPlayerObject, PlayerObject) {
 
             m_regularTrail->updateFade(fade);
             m_regularTrail->setStroke(stroke);
-            m_regularTrail->setTexture(Get::textureCache->addImage(info->getTextureString().c_str(), false));
+            m_regularTrail->setTexture(Get::textureCache->addImage(info->getTexture().c_str(), false));
             if (info->getSpecialID() == 6) m_regularTrail->enableRepeatMode(0.1f);
             MoreIcons::blendStreak(m_regularTrail, info);
             Icons::setIcon(m_regularTrail, info);
@@ -178,7 +181,7 @@ class $modify(MIPlayerObject, PlayerObject) {
             auto& fireInfo = info->getSpecialInfo();
             auto fade = Json::get(fireInfo, "fade", 0.1f);
             auto stroke = Json::get(fireInfo, "stroke", 20.0f);
-            auto texture = Get::textureCache->addImage(info->getTextureString().c_str(), false);
+            auto texture = Get::textureCache->addImage(info->getTexture().c_str(), false);
             if (m_shipStreak) {
                 m_shipStreak->updateFade(fade);
                 m_shipStreak->setStroke(stroke);
@@ -235,7 +238,7 @@ class $modify(MIPlayerObject, PlayerObject) {
         }
 
         if (auto info = getIconInfo(IconType::ShipFire)) {
-            auto texture = info->getTextureString();
+            auto texture = info->getTexture().string();
             auto fireCount = info->getFireCount();
             auto interval = Json::get(info->getSpecialInfo(), "interval", 0.05f);
             texture.replace(texture.size() - 7, 3, fmt::format("{:03}", (int)(m_totalTime / interval) % fireCount + 1));

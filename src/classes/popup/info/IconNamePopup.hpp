@@ -1,12 +1,13 @@
 #include "../BasePopup.hpp"
 #include <Geode/binding/FLAlertLayerProtocol.hpp>
+#include <Geode/ui/TextInput.hpp>
 
 class IconInfo;
 
 class IconNamePopup : public BasePopup, public FLAlertLayerProtocol {
 protected:
-    std::vector<std::pair<std::filesystem::path, std::filesystem::path>> m_pendingPaths;
-    cocos2d::CCTextFieldTTF* m_nameInput;
+    std::vector<std::pair<asp::fs::Path, asp::fs::Path>> m_pendingPaths;
+    geode::TextInput* m_nameInput;
     IconInfo* m_info;
     IconType m_iconType;
 

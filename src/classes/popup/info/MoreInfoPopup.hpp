@@ -7,8 +7,8 @@ class IconInfo;
 
 class MoreInfoPopup : public BasePopup, public FLAlertLayerProtocol {
 protected:
-    geode::async::TaskHolder<geode::Result<std::optional<std::filesystem::path>>> m_listener;
-    std::filesystem::path m_pendingPath;
+    geode::async::TaskHolder<geode::Result<std::optional<asp::fs::Path>>> m_listener;
+    asp::fs::Path m_pendingPath;
     SimpleIcon* m_icon;
     IconInfo* m_info;
     bool m_toggled;

@@ -41,21 +41,21 @@ struct ImageResult {
 
 namespace Load {
     void fixFrameName(std::string& frameName, std::string_view name, IconType type);
-    geode::Result<std::vector<uint8_t>> readBinary(const std::filesystem::path& path);
-    geode::Result<RGBAImage> readPNG(const std::filesystem::path& path, bool premultiplyAlpha);
-    geode::Result<matjson::Value> readPlist(const std::filesystem::path& path);
-    bool doesExist(const std::filesystem::path& path);
-    geode::Result<cocos2d::CCTexture2D*> createTexture(const std::filesystem::path& path, bool premultiplyAlpha = false);
+    geode::Result<std::vector<uint8_t>> readBinary(asp::fs::PathView path);
+    geode::Result<RGBAImage> readPNG(asp::fs::PathView path, bool premultiplyAlpha);
+    geode::Result<matjson::Value> readPlist(asp::fs::PathView path);
+    bool doesExist(asp::fs::PathView path);
+    geode::Result<cocos2d::CCTexture2D*> createTexture(asp::fs::PathView path, bool premultiplyAlpha = false);
     cocos2d::CCTexture2D* createTexture(const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha = false);
     void initTexture(cocos2d::CCTexture2D* texture, const uint8_t* data, uint32_t width, uint32_t height, bool premultiplyAlpha = false);
     void initTexture(cocos2d::CCTexture2D* texture, const RGBAImage& image, bool premultiplyAlpha = false);
     void initTexture(const ImageResult& image, bool premultiplyAlpha = false);
     geode::Result<ImageResult> createFrames(
-        const std::filesystem::path& png, const std::filesystem::path& plist, std::string_view name, IconType type,
+        asp::fs::PathView png, asp::fs::PathView plist, std::string_view name, IconType type,
         std::string_view target = {}, bool premultiply = false
     );
     geode::Result<geode::utils::StringMap<geode::Ref<cocos2d::CCSpriteFrame>>> createFrames(
-        const std::filesystem::path& path, cocos2d::CCTexture2D* texture, std::string_view name, IconType type,
+        asp::fs::PathView path, cocos2d::CCTexture2D* texture, std::string_view name, IconType type,
         std::string_view target = {}, bool fixNames = true
     );
     cocos2d::CCTexture2D* addFrames(ImageResult& image, std::vector<std::string>& frameNames);

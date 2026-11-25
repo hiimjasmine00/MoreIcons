@@ -1,6 +1,7 @@
 #include "../MoreIcons.hpp"
 #include "../utils/Get.hpp"
 #include "../utils/Icons.hpp"
+#include <Geode/cocos/textures/CCTextureCache.h>
 #include <Geode/modify/LoadingLayer.hpp>
 
 using namespace geode::prelude;

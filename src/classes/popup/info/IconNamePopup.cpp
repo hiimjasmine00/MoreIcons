@@ -4,7 +4,6 @@
 #include "../../../utils/Filesystem.hpp"
 #include "../../../utils/Notify.hpp"
 #include <Geode/binding/ButtonSprite.hpp>
-#include <Geode/ui/TextInput.hpp>
 #include <Geode/utils/StringBuffer.hpp>
 #include <MoreIcons.hpp>
 
@@ -32,15 +31,13 @@ bool IconNamePopup::init(IconInfo* info) {
     m_info = info;
     m_iconType = type;
 
-    auto nameInput = TextInput::create(300.0f, "Name");
-    nameInput->setPosition({ 175.0f, 70.0f });
-    nameInput->setFilter("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-. ");
-    nameInput->setMaxCharCount(100);
-    nameInput->setString(info->getShortName());
-    nameInput->setID("name-input");
-    m_mainLayer->addChild(nameInput);
-
-    m_nameInput = nameInput->getInputNode()->m_textField;
+    m_nameInput = TextInput::create(300.0f, "Name");
+    m_nameInput->setPosition({ 175.0f, 70.0f });
+    m_nameInput->setFilter("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-. ");
+    m_nameInput->setMaxCharCount(100);
+    m_nameInput->setString(info->getShortName());
+    m_nameInput->setID("name-input");
+    m_mainLayer->addChild(m_nameInput);
 
     auto confirmButton = CCMenuItemSpriteExtra::create(ButtonSprite::create("Confirm", 0.8f), this, menu_selector(IconNamePopup::onConfirm));
     confirmButton->setPosition({ 175.0f, 30.0f });
@@ -53,7 +50,7 @@ bool IconNamePopup::init(IconInfo* info) {
 }
 
 void IconNamePopup::onConfirm(CCObject* sender) {
-    auto& name = *m_nameInput->m_pInputText;
+    auto& name = m_nameInput->getString();
     if (name.empty()) return Notify::info("Name cannot be empty.");
 
     std::string_view old = m_info->getShortName();
@@ -62,74 +59,74 @@ void IconNamePopup::onConfirm(CCObject* sender) {
     StringBuffer message;
     message.append("Are you sure you want to rename <cy>{}</c> to <cy>{}</c>?", old, name);
 
-    auto parent = Filesystem::parentPath(m_info->getTexture());
+    auto parent = m_info->getTexture().parent().value_or("").toPath();
     auto type = m_iconType;
-    if (type >= IconType::DeathEffect) parent = Filesystem::parentPath(std::move(parent));
+    if (type >= IconType::DeathEffect) parent = parent.parent().value_or("");
 
-    auto stemOld = parent / Filesystem::strWide(old);
-    auto stemNew = parent / Filesystem::strWide(name);
+    auto stemOld = parent / old;
+    auto stemNew = parent / name;
 
     m_pendingPaths.clear();
 
     StringBuffer files;
     if (type >= IconType::DeathEffect) {
-        if (Filesystem::doesExist(stemOld)) {
-            if (Filesystem::doesExist(stemNew)) {
+        if (stemOld.exists()) {
+            if (stemNew.exists()) {
                 files.append("\n<cg>{}</c>", old);
             }
             m_pendingPaths.emplace_back(std::move(stemOld), std::move(stemNew));
         }
     }
     else {
-        std::filesystem::path uhdPng = fmt::format(L("{}-uhd.png"), stemOld);
-        if (Filesystem::doesExist(uhdPng)) {
-            std::filesystem::path newPath = fmt::format(L("{}-uhd.png"), stemNew);
-            if (Filesystem::doesExist(newPath)) {
+        asp::fs::Path uhdPng = fmt::format("{}-uhd.png", stemOld);
+        if (uhdPng.exists()) {
+            asp::fs::Path newPath = fmt::format("{}-uhd.png", stemNew);
+            if (newPath.exists()) {
                 files.append("\n<cg>{}-uhd.png</c>", old);
             }
             m_pendingPaths.emplace_back(std::move(uhdPng), std::move(newPath));
         }
 
-        std::filesystem::path hdPng = fmt::format(L("{}-hd.png"), stemOld);
-        if (Filesystem::doesExist(hdPng)) {
-            std::filesystem::path newPath = fmt::format(L("{}-hd.png"), stemNew);
-            if (Filesystem::doesExist(newPath)) {
+        asp::fs::Path hdPng = fmt::format("{}-hd.png", stemOld);
+        if (hdPng.exists()) {
+            asp::fs::Path newPath = fmt::format("{}-hd.png", stemNew);
+            if (newPath.exists()) {
                 files.append("\n<cg>{}-hd.png</c>", old);
             }
             m_pendingPaths.emplace_back(std::move(hdPng), std::move(newPath));
         }
 
-        std::filesystem::path png = fmt::format(L("{}.png"), stemOld);
-        if (Filesystem::doesExist(png)) {
-            std::filesystem::path newPath = fmt::format(L("{}.png"), stemNew);
-            if (Filesystem::doesExist(newPath)) {
+        asp::fs::Path png = fmt::format("{}.png", stemOld);
+        if (png.exists()) {
+            asp::fs::Path newPath = fmt::format("{}.png", stemNew);
+            if (newPath.exists()) {
                 files.append("\n<cg>{}.png</c>", old);
             }
             m_pendingPaths.emplace_back(std::move(png), std::move(newPath));
         }
 
-        std::filesystem::path uhdPlist = fmt::format(L("{}-uhd.plist"), stemOld);
-        if (Filesystem::doesExist(uhdPlist)) {
-            std::filesystem::path newPath = fmt::format(L("{}-uhd.plist"), stemNew);
-            if (Filesystem::doesExist(newPath)) {
+        asp::fs::Path uhdPlist = fmt::format("{}-uhd.plist", stemOld);
+        if (uhdPlist.exists()) {
+            asp::fs::Path newPath = fmt::format("{}-uhd.plist", stemNew);
+            if (newPath.exists()) {
                 files.append("\n<cg>{}-uhd.plist</c>", old);
             }
             m_pendingPaths.emplace_back(std::move(uhdPlist), std::move(newPath));
         }
 
-        std::filesystem::path hdPlist = fmt::format(L("{}-hd.plist"), stemOld);
-        if (Filesystem::doesExist(hdPlist)) {
-            std::filesystem::path newPath = fmt::format(L("{}-hd.plist"), stemNew);
-            if (Filesystem::doesExist(newPath)) {
+        asp::fs::Path hdPlist = fmt::format("{}-hd.plist", stemOld);
+        if (hdPlist.exists()) {
+            asp::fs::Path newPath = fmt::format("{}-hd.plist", stemNew);
+            if (newPath.exists()) {
                 files.append("\n<cg>{}-hd.plist</c>", old);
             }
             m_pendingPaths.emplace_back(std::move(hdPlist), std::move(newPath));
         }
 
-        std::filesystem::path plist = fmt::format(L("{}.plist"), stemOld);
-        if (Filesystem::doesExist(plist)) {
-            std::filesystem::path newPath = fmt::format(L("{}.plist"), stemNew);
-            if (Filesystem::doesExist(newPath)) {
+        asp::fs::Path plist = fmt::format("{}.plist", stemOld);
+        if (plist.exists()) {
+            asp::fs::Path newPath = fmt::format("{}.plist", stemNew);
+            if (newPath.exists()) {
                 files.append("\n<cg>{}.plist</c>", old);
             }
             m_pendingPaths.emplace_back(std::move(plist), std::move(newPath));
@@ -153,7 +150,7 @@ void IconNamePopup::onConfirm(CCObject* sender) {
 }
 
 void IconNamePopup::onClose(CCObject* sender) {
-    auto& name = *m_nameInput->m_pInputText;
+    auto& name = m_nameInput->getString();
     if (name.empty() || name == m_info->getShortName()) return close();
 
     auto type = m_iconType;
@@ -178,7 +175,7 @@ void IconNamePopup::FLAlert_Clicked(FLAlertLayer* layer, bool btn2) {
                 if (res.isErr()) return Notify::error(res.unwrapErr());
             }
 
-            auto& name = *m_nameInput->m_pInputText;
+            auto& name = m_nameInput->getString();
             auto notif = fmt::format("{} renamed to {}!", m_info->getShortName(), name);
             more_icons::renameIcon(m_info, name);
             MoreIcons::updateGarageAndNotify(notif);

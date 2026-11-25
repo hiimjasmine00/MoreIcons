@@ -3,6 +3,9 @@
 #include <Geode/binding/ButtonSprite.hpp>
 #include <Geode/binding/CCMenuItemSpriteExtra.hpp>
 #include <Geode/binding/FLAlertLayer.hpp>
+#include <Geode/cocos/draw_nodes/CCDrawingPrimitives.h>
+#include <Geode/cocos/label_nodes/CCLabelBMFont.h>
+#include <Geode/cocos/menu_nodes/CCMenu.h>
 
 using namespace geode::prelude;
 
