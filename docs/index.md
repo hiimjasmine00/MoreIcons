@@ -10,7 +10,7 @@ To use the More Icons API, you must add it as a dependency in your `mod.json` fi
 {
     "dependencies": {
         "hiimjustin000.more_icons": {
-            "version": ">=v2.1.0",
+            "version": ">=v3.0.0",
             "required": true
         }
     }
@@ -23,10 +23,10 @@ For non-required dependencies, make sure to add this definition before including
 
 ```cpp
 #define MORE_ICONS_EVENTS
-#include <hiimjustin000.more_icons/include/MoreIcons.hpp>
+#include <hiimjustin000.more_icons/MoreIcons.hpp>
 ```
 
-## Supported [Icon Types](https://github.com/geode-sdk/bindings/blob/02cd3eb702ffc7cb7e91eb9e92267950ee5a9851/bindings/include/Geode/Enums.hpp#L927)
+## Supported [Icon Types](https://github.com/geode-sdk/bindings/blob/acb2c10d5de79fecec11e6f91f5e929447738b2e/bindings/include/Geode/Enums.hpp#L943)
 - `IconType::Cube` (0)
 - `IconType::Ship` (1)
 - `IconType::Ball` (2)
